@@ -1,0 +1,154 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【数组合并】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132819395-01-3c0b138bf5.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_6"></a>最长无重复子数组【MID】</h2>
+<p>先来看看数组数据结构的题目<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-02-01ef3c5c82.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_9"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132819395-03-243bda139f.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">]</span>
+
+返回值&#xff1a;
+<span class="token number">4</span>
+
+说明&#xff1a;
+<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">]</span>是最长子数组
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">99</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span>
+
+返回值&#xff1a;
+<span class="token number">5</span>
+
+说明&#xff1a;
+最长子数组为<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">99</span><span class="token punctuation">]</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_34"></a>解题思路</h3>
+<p>整体目标就是获取最大的无重复滑动窗口</p>
+<ol><li>双指针标识数组或字符串的位置&#xff0c;右指针可以理解为放大窗口指针&#xff0c;左指针可以理解为缩小窗口指针</li><li>定义一个set用来存储元素位置对应的值</li><li>右指针先行&#xff0c;如果一直无重复就一直开拓窗口并更新max值&#xff0c;否则移动左指针缩小窗口&#xff0c;直到将重复值缩到窗口以外。</li></ol>
+<p>如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-04-fb36aca1ef.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_44"></a>代码实现</h3>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>哈希表</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针、滑动窗口</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param arr int整型一维数组 the array
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> maxLength <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> arr<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 判断入参是否为空列表</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>arr<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义返回结果最大值和左右指针以及滑动窗口集合</span>
+        <span class="token keyword">int</span> max <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> left <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> right <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token class-name">Set</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> set <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashSet</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 滑动窗口移动并在无重复时计算最大值</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>left <span class="token operator">&lt;</span> arr<span class="token punctuation">.</span>length <span class="token operator">&amp;&amp;</span> right <span class="token operator">&lt;</span> arr<span class="token punctuation">.</span>length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 1 无重复&#xff0c;右指针继续移动&#xff0c;重新计算最大值</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>set<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span>right<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                set<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span>right<span class="token operator">&#43;&#43;</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                max <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>max<span class="token punctuation">,</span> right <span class="token operator">-</span> left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2 有重复&#xff0c;左指针继续移动&#xff0c;直到将重复元素移出集合</span>
+                set<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span>left<span class="token operator">&#43;&#43;</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> max<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_90"></a>复杂度分析</h3>
+<p><strong>时间复杂度为O&#xff08;N&#xff09;</strong>&#xff0c;因为遍历了数组&#xff1b;<strong>空间复杂度为O&#xff08;N&#xff09;</strong>&#xff0c;借助了HashSet的存储空间</p>
+<h2><a rel="noopener noreferrer" id="MID_93"></a>下一个排列【MID】</h2>
+<p>又是一道考验数组结构技法的题</p>
+<h3><a rel="noopener noreferrer" id="_96"></a>题干</h3>
+<p>直接粘题干和用例<img alt="在这里插入图片描述" src="./posts/assets/132819395-05-ac6de77eed.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_99"></a>解题思路</h3>
+<p><a href="https://leetcode.cn/problems/next-permutation/solutions/80560/xia-yi-ge-pai-lie-suan-fa-xiang-jie-si-lu-tui-dao-/" rel="nofollow"><strong>原题解出处</strong></a>&#xff0c;<strong>下一个排列的定义是</strong>&#xff1a;给定数字序列的字典序中下一个更大的排列。如果不存在下一个更大的排列&#xff0c;则将数字重新排列成最小的排列&#xff08;即升序排列&#xff09;。</p>
+<p>我们可以将该问题形式化地描述为&#xff1a;<strong>给定若干个数字&#xff0c;将其组合为一个整数。如何将这些数字重新排列&#xff0c;以得到下一个更大的整数</strong>。如 123 下一个更大的数为 132。如果没有更大的整数&#xff0c;则输出最小的整数。以 1,2,3,4,5,6 为例&#xff0c;其排列依次为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">123456</span>
+<span class="token number">123465</span>
+<span class="token number">123546</span>
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token number">654321</span>
+</code></pre>
+<p>可以看到有这样的关系&#xff1a;<code>123456 &lt; 123465 &lt; 123546 &lt; ... &lt; 654321</code>&#xff0c;如何得到这样的排列顺序&#xff1f;这是重点。我们可以这样来分析&#xff1a;</p>
+<ol><li>我们<strong>希望下一个数 比当前数大</strong>&#xff0c;这样才满足 “下一个排列” 的定义。因此只需要 <strong>将后面的「大数」与前面的「小数」交换</strong>&#xff0c;就能得到一个更大的数。比如 123456&#xff0c;将 5 和 6 交换就能得到一个更大的数 123465</li><li>我们还<strong>希望下一个数 增加的幅度尽可能的小</strong>&#xff0c;这样才满足“下一个排列与当前排列紧邻“的要求。为了满足这个要求&#xff0c;我们需要&#xff1a;
+  <ol><li>在 尽可能靠右的低位 进行交换&#xff0c;需要 <strong>从后向前 查找</strong></li><li><strong>将一个 尽可能小的「大数」 与前面的「小数」交换</strong>。比如 123465&#xff0c;下一个排列应该把 5 和 4 交换而不是把 6 和 4 交换</li><li><strong>将「大数」换到前面后&#xff0c;需要将「大数」后面的所有数 重置为升序</strong>&#xff0c;升序排列就是最小的排列。以 123465 为例&#xff1a;首先按照上一步&#xff0c;交换 5 和 4&#xff0c;得到 123564&#xff1b;然后需要将 5 之后的数重置为升序&#xff0c;得到 123546。显然 123546 比 123564 更小&#xff0c;123546 就是 123465 的下一个排列</li></ol> </li></ol>
+<p>以上就是求 “下一个排列” 的分析过程。标准的 “下一个排列” 算法可以描述为&#xff1a;</p>
+<ol><li><code>从后向前</code> 查找第一个 <code>相邻升序</code> 的元素对 <code>(i,j)</code>&#xff0c;满足 <code>A[i] &lt; A[j]</code>。此时 <code>[j,end)</code> 必然是降序</li><li>在 <code>[j,end)</code> 从后向前 查找第一个满足 <code>A[i] &lt; A[k]</code> 的 k。<code>A[i]、A[k]</code> 分别就是上文所说的「小数」、「大数」</li><li>将 <code>A[i]</code> 与 <code>A[k]</code> 交换</li><li>可以断定这时 <code>[j,end)</code> 必然是降序&#xff0c;逆置 <code>[j,end)</code>&#xff0c;使其升序</li><li>如果在步骤 1 找不到符合的相邻元素对&#xff0c;说明当前 <code>[begin,end)</code> 为一个降序顺序&#xff0c;则直接跳到步骤 4<br /> 该方法支持数据重复</li></ol>
+<p>以求 12385764 的下一个排列为例<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-06-d18782bc19.png" loading="lazy"></p>
+<p>首先从后向前查找第一个相邻升序的元素对 (i,j)。这里 i&#61;4&#xff0c;j&#61;5&#xff0c;对应的值为 5&#xff0c;7&#xff1a;我们要找到比5大的数<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-07-27517007bf.png" loading="lazy"><br /> 然后在 [j,end) 从后向前查找第一个大于 A[i] 的值 A[k]。这里 A[i] 是 5&#xff0c;故 A[k] 是 6&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-08-f750751a27.png" loading="lazy"><br /> 将 A[i] 与 A[k] 交换。这里交换 5、6<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-09-de37326ec6.png" loading="lazy"><br /> 这时 [j,end) 必然是降序&#xff0c;逆置 [j,end)&#xff0c;使其升序。这里逆置 [7,5,4]&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/132819395-10-c003449045.png" loading="lazy"><br /> 因此&#xff0c;12385764 的下一个排列就是 12386457。最后再可视化地对比一下这两个相邻的排列&#xff08;橙色是蓝色的下一个排列&#xff09;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132819395-11-75dfd2d759.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_143"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针&#xff08;逆序双指针&#xff09;</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">nextPermutation</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 从后往前&#xff0c;找到第一个后边数大于前一个数的位置,target就是要交换的值</span>
+        <span class="token keyword">int</span> findIndex <span class="token operator">&#61;</span> nums<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>findIndex <span class="token operator">&gt;&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>findIndex<span class="token punctuation">]</span> <span class="token operator">&gt;</span> nums<span class="token punctuation">[</span>findIndex <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            findIndex<span class="token operator">--</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">int</span> targetIndex <span class="token operator">&#61;</span> findIndex <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 从目标值后边的区间里找到第一个比目标值大的数&#xff0c;因为后边区间已经是降序了&#xff0c;所以从后往前找即可</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>targetIndex <span class="token operator">&gt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 这里设定targetIndex&gt;&#61;0是为了防止没有找到目标值即整个数组是降序&#xff0c;则下一个排列就是整个数组的反转</span>
+            <span class="token keyword">int</span> swapIndex <span class="token operator">&#61;</span> nums<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span>swapIndex <span class="token operator">&gt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>swapIndex<span class="token punctuation">]</span> <span class="token operator">&gt;</span> nums<span class="token punctuation">[</span>targetIndex<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                swapIndex<span class="token operator">--</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 3 交换目标值与稍大的值</span>
+            <span class="token function">swap</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> targetIndex<span class="token punctuation">,</span> swapIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+
+        <span class="token comment">// 4 将目标值后续区间反转</span>
+        <span class="token function">reverse</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> findIndex<span class="token punctuation">,</span> nums<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 交换数组元素方法</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">swap</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> left<span class="token punctuation">,</span> <span class="token keyword">int</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> temp <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span>left<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        nums<span class="token punctuation">[</span>left<span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span>right<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        nums<span class="token punctuation">[</span>right<span class="token punctuation">]</span> <span class="token operator">&#61;</span> temp<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 反转数组方法</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">reverse</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> left<span class="token punctuation">,</span> <span class="token keyword">int</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>left <span class="token operator">&lt;</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token function">swap</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> left<span class="token punctuation">,</span> right<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            left<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+            right<span class="token operator">--</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_208"></a>复杂度分析</h3>
+<ul><li><strong>时间复杂度&#xff1a;O(N)</strong>。遍历了一遍数组&#xff0c;时间复杂度为O&#xff08;N&#xff09;</li><li><strong>空间复杂度&#xff1a;O(1)</strong>。 需要建立长度为 m&#43;n 的中间数组</li></ul>

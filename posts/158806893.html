@@ -1,0 +1,116 @@
+<p>在分布式消息系统中，消息传递通常分为三种语义：</p>
+<ul>
+ <li><strong>At most once</strong>：消息最多传递一次，可能丢失，但不会重复。</li>
+ <li><strong>At least once</strong>：消息至少传递一次，不会丢失，但可能重复。</li>
+ <li><strong>Exactly once</strong>：消息恰好传递一次，既不丢失也不重复。</li>
+</ul>
+<p>Kafka 从 0.11.0 版本开始引入了对 Exactly-Once 语义的支持，主要通过<strong>幂等性生产者</strong>和<strong>事务性生产者</strong>来实现。但要真正达到端到端的 Exactly-Once，还需要 Broker 端的正确配置和消费者端的幂等处理。本文将全面剖析 Kafka 如何保证消息不丢不重，并按照“问题 → 解决方案”的结构，清晰呈现每一步的设计思路。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="At_Least_Once__11"></a>第一部分：如何保证消息不丢（At Least Once 的基础）</h2>
+<p>消息丢失可能发生在生产者、Broker、消费者三个环节。我们需要在每个环节都设置正确的机制。</p>
+<h3><a rel="noopener noreferrer" id="1__15"></a>1. 生产者端：确保消息成功发送</h3>
+<p><strong>问题</strong>：生产者调用 <code>send()</code> 后，消息可能因网络问题未到达 Broker，或到达后因超时未收到确认而认为失败。如果没有确认机制，消息就会丢失。</p>
+<p><strong>解决方案</strong>：</p>
+<ul>
+ <li><strong>异步发送 + 回调确认</strong>：Kafka 的 <code>send()</code> 是异步的，返回一个 <code>Future</code>。通过注册回调（Callback）可以获知发送结果。<pre><code class="prism language-java">producer<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ProducerRecord</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token string">"topic"</span><span class="token punctuation">,</span> <span class="token string">"key"</span><span class="token punctuation">,</span> <span class="token string">"value"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>metadata<span class="token punctuation">,</span> exception<span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token punctuation">{
+
+     <!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>exception <span class="token operator">==</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{
+
+     <!-- --></span>
+        <span class="token comment">// 发送成功</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{
+
+     <!-- --></span>
+        <span class="token comment">// 发送失败，记录日志或重试</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre> </li>
+ <li><strong>配置重试</strong>：设置 <code>retries</code> 为较大值（如 <code>Integer.MAX_VALUE</code>），并配合 <code>retry.backoff.ms</code> 让生产者在遇到可重试错误时自动重试。</li>
+ <li><strong>同步发送</strong>：对于关键消息，可调用 <code>producer.send().get()</code> 阻塞等待结果，但会降低吞吐量，不推荐在高性能场景使用。</li>
+</ul>
+<h3><a rel="noopener noreferrer" id="2_Broker__33"></a>2. Broker 端：多副本与确认机制</h3>
+<p><strong>问题</strong>：消息到达 Broker 后，若 Leader 副本宕机且数据未同步给 Follower，可能导致消息丢失。例如，Leader 写入成功但未同步给 Follower 就宕机，新选举的 Leader 没有该消息。</p>
+<p><strong>解决方案</strong>：</p>
+<ul>
+ <li><strong>副本机制</strong>：设置 Topic 的 <code>replication.factor ≥ 3</code>，确保数据分布在多个 Broker 上。</li>
+ <li><strong>ISR（In-Sync Replicas）</strong>：Kafka 动态维护一个与 Leader 保持同步的副本集合（ISR）。生产者可通过 <code>acks</code> 参数控制消息的持久化级别：
+  <ul>
+   <li><code>acks=0</code>：生产者不等待任何确认，可能丢消息。</li>
+   <li><code>acks=1</code>：Leader 写入本地日志即返回成功，不等待 Follower 确认。如果 Leader 随后宕机，消息可能丢失。</li>
+   <li><code>acks=all</code>（或 <code>-1</code>）：Leader 等待所有 ISR 副本都写入成功后才返回成功。这是最安全的级别。</li>
+  </ul> </li>
+ <li><strong>最小同步副本</strong>：配合 <code>min.insync.replicas</code> 参数，要求至少指定数量的 ISR 副本确认。例如设置 <code>min.insync.replicas=2</code>，那么当 ISR 少于 2 时，写入将失败，避免数据只写入单一副本。</li>
+ <li><strong>Unclean Leader 选举</strong>：默认情况下，Kafka 不允许非 ISR 副本成为 Leader，防止数据丢失。应保持 <code>unclean.leader.election.enable=false</code>。</li>
+</ul>
+<h3><a rel="noopener noreferrer" id="3__46"></a>3. 消费者端：手动提交偏移量</h3>
+<p><strong>问题</strong>：消费者拉取消息后，若自动提交偏移量，但业务处理失败，则消息“丢失”（因为偏移量已提交，不会再消费）。例如，消费者拉取一批消息，处理到一半时宕机，偏移量已提交，重启后将从下一条开始消费，导致未处理完的消息丢失。</p>
+<p><strong>解决方案</strong>：</p>
+<ul>
+ <li><strong>手动提交</strong>：设置 <code>enable.auto.commit=false</code>，在业务处理成功后再手动提交偏移量。<pre><code class="prism language-java"><span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{
+
+     <!-- --></span>
+    <span class="token class-name">ConsumerRecords</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> records <span class="token operator">=</span> consumer<span class="token punctuation">.</span><span class="token function">poll</span><span class="token punctuation">(</span><span class="token class-name">Duration</span><span class="token punctuation">.</span><span class="token function">ofMillis</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">ConsumerRecord</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> record <span class="token operator">:</span> records<span class="token punctuation">)</span> <span class="token punctuation">{
+
+     <!-- --></span>
+        <span class="token function">process</span><span class="token punctuation">(</span>record<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 业务处理</span>
+    <span class="token punctuation">}</span>
+    consumer<span class="token punctuation">.</span><span class="token function">commitSync</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 处理完一批后手动提交</span>
+<span class="token punctuation">}</span>
+</code></pre> </li>
+ <li><strong>确保幂等处理</strong>：由于可能发生重复消费（下文详述），业务逻辑需设计为幂等。</li>
+</ul>
+<p>通过上述三层的防护，我们可以实现 <strong>At Least Once</strong> 语义——消息不会丢失，但可能重复。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="ExactlyOnce__67"></a>第二部分：如何保证消息不重（Exactly-Once 的核心）</h2>
+<p>即使消息不丢，重复消息也可能发生。重复的原因主要有：</p>
+<ul>
+ <li><strong>生产者端</strong>：因网络超时、Leader 选举等原因导致生产者重试，Broker 可能收到多条相同的消息。</li>
+ <li><strong>消费者端</strong>：因消费者再平衡、手动提交失败等原因，导致同一条消息被消费多次。</li>
+</ul>
+<p>解决消息不重的问题，需要分别从生产者和消费者两个层面入手。</p>
+<h3><a rel="noopener noreferrer" id="_75"></a>生产者端：防止因重试导致的重复</h3>
+<h4><a rel="noopener noreferrer" id="_77"></a>问题：生产者重试如何导致重复？</h4>
+<p>当生产者因为网络超时、Leader 选举等原因没有收到 Broker 的确认（ACK）时，它会重试发送<strong>同一批消息</strong>。如果 Broker 实际上已经成功写入这批消息，那么重试就会导致 Broker 存储两份相同的数据。例如：</p>
+<ol>
+ <li>生产者发送消息批次 A。</li>
+ <li>Broker 成功写入 A，但 ACK 在网络中丢失。</li>
+ <li>生产者超时后重试，再次发送相同的批次 A。</li>
+ <li>Broker 再次写入 A，造成重复。</li>
+</ol>
+<h4><a rel="noopener noreferrer" id="_85"></a>解决方案一：幂等性生产者（单会话内不重复）</h4>
+<p><strong>原理</strong>：</p>
+<ul>
+ <li>开启 <code>enable.idempotence=true</code> 后，每个生产者被分配一个全局唯一的 <strong>Producer ID（PID）</strong>。同时，对于每个目标分区，生产者会维护一个单调递增的 <strong>序列号（Sequence Number）</strong>，从 0 开始，每发送一批消息就递增 1。</li>
+ <li>生产者发送消息时，会在请求中带上 <code>(PID, 分区, 序列号)</code> 三元组。Broker 端为每个 PID 的每个分区缓存最近写入的 5 个（可配置）序列号。</li>
+ <li>如果 Broker 接收到的序列号等于已写入的最大序列号 + 1，则正常写入；如果小于或等于已写入的最大序列号，则视为重复请求，直接返回成功但不实际写入。</li>
+</ul>
+<p><strong>解答疑惑</strong>：为什么重试时序列号相同？</p>
+<ul>
+ <li>重试发送的是<strong>同一批次</strong>消息，因此使用<strong>相同的序列号</strong>。Broker 通过比较序列号发现重复，直接丢弃重试批次，保证数据不重复。</li>
+</ul>
+<p><strong>局限</strong>：</p>
+<ul>
+ <li>仅对单个生产者会话内有效。如果生产者进程重启，PID 会改变，无法跨会话去重。</li>
+ <li>仅保证单分区内不重复，无法实现跨分区的原子性。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="_ExactlyOnce_99"></a>解决方案二：事务性生产者（跨分区/跨会话的 Exactly-Once）</h4>
+<p><strong>问题</strong>：幂等性生产者无法处理跨分区原子性和生产者重启后的重复问题。例如，一个业务需要原子地向两个分区写入数据，或者生产者重启后可能导致数据重复。</p>
+<p><strong>原理</strong>：</p>
+<ul>
+ <li>事务性生产者需配置 <code>transactional.id</code>（逻辑生产者，由用户指定，应用层代码配置，由业务前缀 + 稳定实例标识（如实例序号）组成，在部署时确定，重启后不变）。Broker 端的事务协调器会为该 ID 分配一个 PID，并将映射关系持久化到事务日志中。</li>
+ <li>当生产者以相同 <code>transactional.id</code> 重启时，协调器会检查之前是否有未完成的事务，并强制中止（abort）僵尸事务，然后允许新生产者使用相同的 PID 和序列号，从而继承状态，避免因重启导致的序列号断裂。</li>
+ <li>事务性生产者支持将多个跨分区的消息作为一个原子事务提交：<pre><code class="prism language-java">producer<span class="token punctuation">.</span><span class="token function">initTransactions</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+producer<span class="token punctuation">.</span><span class="token function">beginTransaction</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+producer<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ProducerRecord</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token string">"topic1"</span><span class="token punctuation">,</span> <span class="token string">"key1"</span><span class="token punctuation">,</span> <span class="token string">"value1"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+producer<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ProducerRecord</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token string">"topic2"</span><span class="token punctuation">,</span> <span class="token string">"key2"</span><span class="token punctuation">,</span> <span class="token string">"value2"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+producer<span class="token punctuation">.</span><span class="token function">commitTransaction</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre> </li>
+ <li>如果事务提交失败，协调器会回滚所有写入，确保原子性。</li>
+</ul>
+<p><strong>效果</strong>：</p>
+<ul>
+ <li>跨会话幂等：生产者重启后仍能使用相同的 PID 和序列号，避免重复。</li>
+ <li>跨分区原子性：要么全部写入成功，要么全部失败。</li>
+</ul>

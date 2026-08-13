@@ -1,0 +1,191 @@
+<p>文章主要目标是让一个java程序员如何迅速适应.net的开发环境&#xff0c;在上一篇已经讲到了开发环境的安装&#xff0c;接下来计划使用两篇博客迅速上手C#&#xff0c;这是第一篇&#xff0c;主要从基础语法和一些简单操作里来体现&#xff0c;通过对比学习的方法&#xff0c;更加深刻的掌握.net的用法和规则&#xff0c;因为楼主即将转向.net开发&#xff0c;所以这里在对比阐述的时候会对c#重点分析。<br /> 学习内容来源于&#xff1a;</p>
+<blockquote>
+ <p>菜鸟教程http://www.runoob.com/csharp/csharp-methods.html</p>
+</blockquote>
+<p>#C#与Java不同的地方</p>
+<p>##整体结构<br /> 整体结构的不通风主要体现在层次架构上&#xff0c;java的结构是 <strong>项目–包--类&#xff08;成员变量&#43;成员方法&#xff09;</strong>。而C#则是使用 <strong>解决方案–命名空间–类&#xff08;成员变量&#43;成员函数&#xff09;</strong>&#xff0c;接下来从以下几个方面&#xff0c;对整体上的一些不同进行详述。<br /> ###程序结构<br /> <img alt="这里写图片描述" src="./posts/assets/78532573-ext-332f84e1db45.png" loading="lazy"></p>
+<ul><li>程序的第一行 using System; - using 关键字用于在程序中包含 System 命名空间。 一个程序一般有多个 using 语句。<strong>相当于java里的import&#xff0c;引入你需要的包</strong></li><li>下一行是 namespace 声明。一个 namespace 是一系列的类。HelloWorldApplication 命名空间包含了类 HelloWorld。<strong>相当于java里的包&#xff0c;该包下可以有很多类</strong></li><li>下一行是 class 声明。类 HelloWorld 包含了程序使用的数据和方法声明。类一般包含多个方法。方法定义了类的行为。在这里&#xff0c;HelloWorld 类只有一个 Main 方法。<strong>相当于java里的类</strong></li><li>下一行定义了 Main 方法&#xff0c;是所有 C# 程序的 入口点。Main 方法说明当执行时 类将做什么动作。</li></ul>
+<p>###基本语法<br /> 语法上的不同&#xff0c;体现在标识符上&#xff0c;而这时唯一的区别就是&#xff0c;java使用的特殊字符是$符&#xff0c;而C#使用的是&#64;符。<br /> ###输入输出</p>
+<ul><li>输出语句 <code>Console.WriteLine(&#34;Hello World&#34;);</code> 用于向控制台输出语句&#xff0c;<strong>类似于java里的System.out.println()。</strong><br /> 在输出上java显然更好用一些&#xff0c;直接字符串和参数拼接&#xff0c;而C#需要使用占位符</li></ul>
+<pre><code>static void Main(string[] args)
+{
+    Console.WriteLine(&#34;A:{0}&#xff0c;a:{1}&#34;,65,97);
+    Console.ReadLine();
+}
+</code></pre>
+<p>输出顺序与占位符顺序一一对应。</p>
+<ul><li> <p>输入语句 <code>Console.ReadLine(&#34;Hello World&#34;);</code>用于读入用户输入的数值&#xff0c;<strong>类似于java里的Scanner&#xff0c;不过比Scanner方便了很多</strong></p> </li><li> <p>Console.ReadKey(); 是针对 <a href="http://VS.NET" rel="nofollow">VS.NET</a> 用户的。这使得程序会等待一个按键的动作&#xff0c;防止程序从 Visual Studio .NET 启动时屏幕会快速运行并关闭。</p> </li></ul>
+<p>###继承和实现的书写</p>
+<ol><li>java里的继承使用extends关键字&#xff0c;实现使用&#xff1a;关键字&#xff0c;而C#统一使用&#xff1a;&#xff0c;在书写规范上C#推荐接口用I开头来区别类和接口的不同。</li><li>java里子类调用父类方法或者实现父类构造方法使用super关键字&#xff0c;而在C#里使用base关键字</li></ol>
+<p>##成员变量<br /> 成员变量的不同体现在一些常量&#xff0c;不同的变量&#xff0c;C#定义较为繁琐<br /> ###常量<br /> C#里的常量使用专用关键字const&#xff0c;而java则使用final。之后还会提到C#定义不可继承方法的时候有专用关键字sealed&#xff0c;而java依旧使用final。<br /> ###数据类型<br /> <img alt="这里写图片描述" src="./posts/assets/78532573-ext-96881a5220ef.png" loading="lazy"><br /> ####对于值类型<br /> C#的数据类型里多了很多无符号的值类型&#xff0c;而且多了一个精度更高的 decimal类型。<br /> ####对于引用类型<br /> 对象类型&#xff0c;字符串类型不用多数&#xff0c;主要的不同就是动态类型&#xff0c;相对于java里的“假”的泛型&#xff0c;我感觉C#的泛型可以说是真泛型了<br /> ####对于指针类型<br /> C#官方都说了是不安全方式&#xff0c;我感觉有指针的存在只是为了照顾之前的C和C&#43;&#43;的学习者吧。<br /> ###类型转换<br /> 类型转换上&#xff0c;C#似乎更方便&#xff0c;提供了很全面的方法&#xff0c;显式转换与隐式转换与java大同小异。<br /> ###可空类型<br /> 该类型在java里并不存在&#xff0c;也不知道这种类型存在的意义<br /> ####定义<br /> C# 提供了一个特殊的数据类型&#xff0c;nullable 类型&#xff08;可空类型&#xff09;&#xff0c;可空类型可以表示其基础值类型正常范围内的值&#xff0c;再加上一个 null 值</p>
+<pre><code>using System;
+namespace CalculatorApplication
+{
+   class NullablesAtShow
+   {
+      static void Main(string[] args)
+      {
+         int? num1 &#61; null;
+         int? num2 &#61; 45;
+         double? num3 &#61; new double?();
+         double? num4 &#61; 3.14157;
+
+         bool? boolval &#61; new bool?();
+
+         // 显示值
+
+         Console.WriteLine(&#34;显示可空类型的值&#xff1a; {0}, {1}, {2}, {3}&#34;,
+                            num1, num2, num3, num4);
+         Console.WriteLine(&#34;一个可空的布尔值&#xff1a; {0}&#34;, boolval);
+         Console.ReadLine();
+
+      }
+   }
+}
+</code></pre>
+<p>运行结果</p>
+<pre><code>显示可空类型的值&#xff1a; , 45,  , 3.14157
+一个可空的布尔值&#xff1a;
+</code></pre>
+<p>####合并运算符<br /> Null 合并运算符用于定义可空类型和引用类型的默认值。Null 合并运算符为类型转换定义了一个预设值&#xff0c;以防可空类型的值为 Null。Null 合并运算符把操作数类型隐式转换为另一个可空&#xff08;或不可空&#xff09;的值类型的操作数的类型。<br /> 如果第一个操作数的值为 null&#xff0c;则运算符返回第二个操作数的值&#xff0c;否则返回第一个操作数的值。下面的实例演示了这点&#xff1a;</p>
+<pre><code>using System;
+namespace CalculatorApplication
+{
+   class NullablesAtShow
+   {
+
+      static void Main(string[] args)
+      {
+
+         double? num1 &#61; null;
+         double? num2 &#61; 3.14157;
+         double num3;
+         num3 &#61; num1 ?? 5.34;
+         Console.WriteLine(&#34;num3 的值&#xff1a; {0}&#34;, num3);
+         num3 &#61; num2 ?? 5.34;
+         Console.WriteLine(&#34;num3 的值&#xff1a; {0}&#34;, num3);
+         Console.ReadLine();
+
+      }
+   }
+}
+</code></pre>
+<p>运行结果</p>
+<pre><code>num3 的值&#xff1a; 5.34
+num3 的值&#xff1a; 3.14157
+</code></pre>
+<p>##成员方法<br /> ###访问修饰符<br /> <strong>C#提供了5种级别的访问修饰符限定</strong></p>
+<p>Private&#xff1a;对象本身在对象内部可以访问&#xff1b;<strong>和java一样</strong><br /> Internal&#xff1a;同一个程序集的对象可以访问&#xff08;<strong>对应于java里的default</strong>&#xff09;&#xff1b;</p>
+<p><strong>Protected&#xff1a;只有该类对象及其子类对象可以访问</strong>同一个包中不能访问&#xff0c;这个算是C#比较特有的。</p>
+<p>Protected internal&#xff1a;该程序集内的派生类访问&#xff0c;是protected和internal的交集&#xff08;Protected Internal 访问修饰符允许在本类,派生类或者包含该类的程序集中访问。这也被用于实现继承。&#xff09;&#xff1b;<strong>和java里的protected一样</strong></p>
+<p>Public&#xff1a;所有对象都可以访问&#xff1b;<strong>和java一样</strong></p>
+<p>###方法的参数传递<br /> <img alt="这里写图片描述" src="./posts/assets/78532573-ext-00771b7183e4.png" loading="lazy"><br /> 前两种与java的相同&#xff0c;主要区别在于C#多了一种叫做“输出参数”的传递形式。看了很多&#xff0c;理解到&#xff0c;输出参数最重要的作用就是&#xff1a;<strong>当需要从一个参数没有指定初始值的方法中返回值时&#xff0c;输出参数特别有用</strong></p>
+<pre><code>using System;
+
+namespace CalculatorApplication
+{
+   class NumberManipulator
+   {
+      public void getValues(out int x, out int y )
+      {
+          Console.WriteLine(&#34;请输入第一个值&#xff1a; &#34;);
+          x &#61; Convert.ToInt32(Console.ReadLine());
+          Console.WriteLine(&#34;请输入第二个值&#xff1a; &#34;);
+          y &#61; Convert.ToInt32(Console.ReadLine());
+      }
+
+      static void Main(string[] args)
+      {
+         NumberManipulator n &#61; new NumberManipulator();
+         /* 局部变量定义 */
+         int a , b;
+
+         /* 调用函数来获取值 */
+         n.getValues(out a, out b);
+
+         Console.WriteLine(&#34;在方法调用之后&#xff0c;a 的值&#xff1a; {0}&#34;, a);
+         Console.WriteLine(&#34;在方法调用之后&#xff0c;b 的值&#xff1a; {0}&#34;, b);
+         Console.ReadLine();
+      }
+   }
+}
+</code></pre>
+<p>要知道&#xff0c;这里a,b都没有赋初值&#xff0c;但是依然可以使用&#xff0c;这就是输出参数的好处所在。</p>
+<pre><code>请输入第一个值&#xff1a;
+7
+请输入第二个值&#xff1a;
+8
+在方法调用之后&#xff0c;a 的值&#xff1a; 7
+在方法调用之后&#xff0c;b 的值&#xff1a; 8
+</code></pre>
+<p>###重写<br /> 几个区别比较大的地方<br /> 1&#xff0c;C#里是通过抽象类&#xff1a;虚方法virtual和abstract实现动态多态<br /> ####抽象方法<br /> 和虚方法类似&#xff0c;只不过没有方法体&#xff0c;和java的类似。<br /> ####虚方法<br /> 和java里的普通方法类似&#xff0c;但感觉更加规范了&#xff0c;只有需要重写的时候才尽量用virtual方法&#xff0c;其它时候用普通方法。java这块儿就比较模糊了&#xff08;只要方法名相同&#xff0c;就默认重写&#xff09;。Java默认的多态&#xff0c;C#要求加上virtual&#xff08;被继承的方法&#xff09;和override&#xff08;继承的方法&#xff09;&#xff0c;而且C#要求不能改变原来的访问修饰符&#xff0c;不像java那样&#xff0c;可以指定更加宽松的访问方式。如果有人利用C#来写程序&#xff0c;必须经常带上virtual和override&#xff0c;还必须照抄原来的访问控制符</p>
+<pre><code>using System;
+
+class A
+{
+
+    public void F()
+    {
+
+        Console.WriteLine(&#34;A.F&#34;);
+
+
+    }
+
+    public virtual void G()
+    {
+
+        Console.WriteLine(&#34;A.G&#34;);
+        Console.ReadKey();
+
+    }
+
+}
+
+class B : A
+{
+
+    new public void F()
+    {
+
+        Console.WriteLine(&#34;B.F&#34;);
+
+
+    }
+
+    public override void G()
+    {
+
+        Console.WriteLine(&#34;B.G&#34;);
+        Console.ReadKey();
+
+    }
+
+}
+
+class Test
+{
+
+    static void Main()
+    {
+
+
+        A a&#61; new B();
+        a.F();
+        a.G();
+
+    }
+}
+</code></pre>
+<p>输出结构</p>
+<pre><code>A.F  //编译看左边&#xff0c;运行看右边&#xff0c;编译看非虚&#xff0c;运行看虚方法
+B.G
+</code></pre>
+<p>感觉virtual这个关键字有点儿鸡肋&#xff0c;觉的还是java的方便理解一些</p>
+<p>####sealed方法<br /> 其实和java里的final差不多&#xff0c;修饰的类不可继承<br /> ##一些结论<br /> 1&#xff0c;C#和java最大的区别就是java各方面规定比较宽泛&#xff0c;而C#则粒度更加细致&#xff0c;每个方面都规定的特别多详细<br /> 2&#xff0c;如果说写代码的体验&#xff0c;肯定是java更好一点儿&#xff0c;不是那么细分&#xff0c;比较好理解&#xff0c;但有些东西规范的比较宽泛&#xff0c;出了错不好排错。如果搭配ide来食用的话&#xff0c;感觉C#&#43;2015食用起来更佳&#xff0c;很多便于团队协作和注释之类的设置&#xff0c;而且2015功能非常强大&#xff0c;但鸡肋的地方就是每次调试都要出框&#xff0c;关了才能修改&#xff0c;比较麻烦&#xff0c;当然也有可能是我现在还没有熟练使用的原因。</p>
+<p>#C#额外可使用的地方</p>
+<p>##结构体</p>
+<ol><li>结构可带有方法、字段、索引、属性、运算符方法和事件。</li><li>结构可定义构造函数&#xff0c;但不能定义析构函数。但是&#xff0c;您不能为结构定义默认的构造函数。默认的构造函数是自动定义的&#xff0c;且不能被改变。</li><li>与类不同&#xff0c;<strong>结构不能继承其他的结构或类。结构不能作为其他结构或类的基础结构</strong>。结构可实现一个或多个接口。</li><li>结构成员不能指定为 abstract、virtual 或 protected。</li><li>当您使用 New 操作符创建一个结构对象时&#xff0c;会调用适当的构造函数来创建结构。与类不同&#xff0c;结构可以不使用 New 操作符即可被实例化。<br /> 如果不使用 New 操作符&#xff0c;只有在所有的字段都被初始化之后&#xff0c;字段才被赋值&#xff0c;对象才被使用。</li></ol>
+<p>不知道该怎么形容结构体&#xff0c;感觉就是为了适用之前的C强行加的。</p>
+<p>##析构函数<br /> 可能是因为没有JVM如此强大的垃圾回收能力吧&#xff0c;所以使用析构函数来弥补CLR的不足吧&#xff0c;但好像官方也不怎么推荐这个功能。<br /> ##预编译与条件指令<br /> 1&#xff0c;预处理器指令指导编译器在实际编译开始之前对信息进行预处理。<br /> 所有的预处理器指令都是以 # 开始。且在一行上&#xff0c;只有空白字符可以出现在预处理器指令之前。预处理器指令不是语句&#xff0c;所以它们不以分号&#xff08;;&#xff09;结束。<br /> 2&#xff0c;C# 编译器没有一个单独的预处理器&#xff0c;但是&#xff0c;指令被处理时就像是有一个单独的预处理器一样。在 C# 中&#xff0c;预处理器指令用于在条件编译中起作用。与 C 和 C&#43;&#43; 不同的是&#xff0c;它们不是用来创建宏。一个预处理器指令必须是该行上的唯一指令。</p>
+<p>未完待续&#xff0c;现在只是粗浅的认识&#xff0c;之后随着学习的深入会一直更新。。。</p>

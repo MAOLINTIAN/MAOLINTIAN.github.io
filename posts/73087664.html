@@ -1,0 +1,138 @@
+<p>上一篇blog介绍了Java的基础语法&#xff0c;在第一篇中我们也提到过面向对象和面向过程的区别&#xff0c;这篇blog我们来重点聊一下面向对象思想&#xff0c;首先我们得搞明白什么是对象。</p>
+<h2><a rel="noopener noreferrer" id="_2"></a>面向对象基本概念</h2>
+<p>什么是对象呢&#xff1f;什么又是面向对象编程&#xff0c;面向对象的天然优势有哪些&#xff0c;为什么面向对象有这些优势&#xff0c;面向对象又有如何设计原则。</p>
+<h3><a rel="noopener noreferrer" id="_4"></a>什么是对象</h3>
+<p>什么是对象什么又是类呢&#xff1f;二者有什么关系呢</p>
+<ul><li><strong>对象</strong>&#xff1a;是把数据和数据操作方法放在一起&#xff0c;作为一个相互依存的整体&#xff0c;对象由<strong>成员变量</strong>以及<strong>方法</strong>组成</li><li><strong>类</strong>&#xff1a;对同类对象抽象出的共性&#xff0c;即类、类型、类别 &#xff0c;是一种抽象概念&#xff0c;是一系列具备相同特征和相同行为的对象的集合</li></ul>
+<p>所以我们面向对象进行编程&#xff0c;是面向一个抽象出来的实体进行编程。</p>
+<h3><a rel="noopener noreferrer" id="_10"></a>对象间关系</h3>
+<p>对象之间主要有四种关系&#xff0c;<strong>关联关系</strong>&#xff08;一个类中的某个方法调用另一个类&#xff09;&#xff0c;<strong>继承关系</strong>&#xff08;父类与子类&#xff09;&#xff0c;<strong>聚合关系</strong>&#xff08;整体和部分&#xff09;&#xff0c;<strong>实现关系</strong>&#xff08;接口&#xff09;</p>
+<ul><li><strong>关联关系</strong>&#xff1a;一般是一个类【A类】中的某个方法里的某个参数是另一个类【B类】的对象&#xff1a;<font color="red"><strong>一般是一个类中的方法里的某个参数是另一个类的对象</strong></font></li><li><strong>聚合关系</strong>&#xff1a;聚集是一种松耦合&#xff0c;表明部分【A类】是整体【B类】的一部分&#xff0c;也即【A类】不一定非属于<strong>父对象</strong>&#xff1b;而组合是一种紧耦合&#xff0c;部分【A类】是整体【B类】必不可少的一部分。在属性层面上区分&#xff0c;<font color="red"><strong>一般是一个类中的某个成员变量是另一个类的对象</strong></font></li><li><strong>继承关系</strong>&#xff1a;<strong>子类是一种父类</strong>&#xff0c;子类来自于父类&#xff0c;拥有父类的全部内容&#xff0c;自己还可以加以扩展&#xff0c;java没有多重继承</li><li><strong>实现关系</strong>&#xff1a;接口抽象出一种行为&#xff0c;实现类去实现&#xff0c;具体怎么实现不用去管。<strong>方法层面上区分</strong></li></ul>
+<p>其实这四种关系构成了我们后来对类与对象的使用模式。</p>
+<h3><a rel="noopener noreferrer" id="_18"></a>什么是面向对象</h3>
+<p>了解了什么是对象后&#xff0c;我们再说什么是面向对象和面向过程&#xff1a;</p>
+<ul><li><strong>面向过程</strong>就是分析出解决问题所需要的步骤&#xff0c;然后用函数把这些步骤一步一步实现&#xff0c;使用的时候一个一个依次调用就可以了。</li><li><strong>面向对象</strong>是把构成问题事务分解成各个对象&#xff0c;建立对象的目的不是为了完成一个步骤&#xff0c;而是为了描叙某个事物在整个解决问题的步骤中的行为。</li></ul>
+<p>总而言之就是把问题分解成对象&#xff0c;对象直接隔离且有自己完备的结构&#xff0c;可以互相通过方法沟通来达成结构清晰稳定的目标</p>
+<h3><a rel="noopener noreferrer" id="_24"></a>面向对象优势</h3>
+<p>由于面向对象更容易从我们自身的角度出发去看问题&#xff0c;所以有天然的拟人优势&#xff0c;而且由于结构清晰明了&#xff0c;所以具备如下优势&#xff1a;<strong>较高的开发效率&#xff1b;较高的扩展性和代码可重用性&#xff1b;保证软件的高可维护性</strong>&#xff0c;这些优势又是由面向对象的特征来决定的。</p>
+<h3><a rel="noopener noreferrer" id="_26"></a>面向对象特征</h3>
+<p>面向对象包含三大特征&#xff1a;<font color="red"><strong>继承、封装和多态</strong></font>&#xff0c;当然有时候抽象也可以算作一个特征。</p>
+<ul><li><strong>继承</strong>&#xff0c;继承是一种联结类的层次模型&#xff0c;并且允许和鼓励类的重用&#xff0c;它提供了一种明确表述共性的方法。对象的一个新类可以从现有的类中派生&#xff0c;这个过程称为类继承。<strong>新类继承了原始类的特性&#xff0c;新类称为原始类的派生类&#xff08;子类&#xff09;&#xff0c;而原始类称为新类的基类&#xff08;父类&#xff09;。派生类可以从它的基类那里继承方法和实例变量&#xff0c;并且类可以修改或增加新的方法使之更适合特殊的需要。</strong></li><li><strong>封装</strong>&#xff0c;封装是客观事物抽象成类&#xff0c;<strong>每个类对自身的数据和方法进行保护</strong>&#xff0c;类可以把自己的数据和方法只让可信的类或者对象操作&#xff0c;对不可信的进行信息隐藏&#xff0c;<strong>高内聚低耦合</strong>。</li><li><strong>多态性</strong>&#xff0c;多态性是指<strong>允许不同类的对象对同一消息作出响应</strong>。比如同样的加法&#xff0c;把两个时间加在一起和把两个整数加在一起肯定完全不同。又比如&#xff0c;同样的选择编辑-粘贴操作&#xff0c;在字处理程序和绘图程序中有不同的效果。多态性包括参数化多态性和包含多态性。多态性语言具有灵活、抽象、行为共享、代码共享的优势&#xff0c;很好的解决了应用程序函数同名问题。</li><li><strong>抽象</strong>&#xff0c;抽象就是忽略一个主题中与当前目标无关的那些方面&#xff0c;以便更充分地注意与当前目标有关的方面。<strong>抽象并不打算了解全部问题&#xff0c;而只是选择其中的一部分&#xff0c;暂时不用部分细节。</strong>&#xff0c;在面向对象的语言中抽象是以抽象类来体现的&#xff0c;由于抽象类不是一个具体的对象&#xff0c;所以不能直接被实例化&#xff0c;抽象有利于项目的维护和扩展</li></ul>
+<p>了解了面向对象的特征后&#xff0c;我们来看看如何设计类来满足面向对象原则使其特征发挥足够的优势.</p>
+<h3><a rel="noopener noreferrer" id="_34"></a>面向对象六大原则</h3>
+<p>面向对象设计有六大原则&#xff0c;单一职责原则、开放封闭原则、里式替换原则、依赖导致原则、接口隔离原则、合成复用原则</p>
+<ol><li><strong>单一职责原则&#xff08;迪米特法则&#xff09;</strong>&#xff08;Single-Resposibility Principle&#xff09;&#xff1a;一个类&#xff0c;最好只做一件事&#xff0c;只有一个引起它的变化。单一职责原则可以看做是<strong>低耦合、高内聚</strong>在面向对象原则上的引申&#xff0c;将职责定义为引起变化的原因&#xff0c;以提高内聚性来减少引起变化的原因。</li><li><strong>开放封闭原则&#xff08;Open-Closed principle&#xff09;</strong>&#xff1a;软件实体应该是可扩展的&#xff0c;而不可修改的。也就是&#xff0c;<strong>对扩展开放&#xff0c;对修改封闭</strong>的。</li><li><strong>里式替换原则&#xff08;Liskov-Substituion Principle&#xff09;</strong>&#xff1a;<strong>子类必须能够替换其基类</strong>。这一思想体现为对继承机制的约束规范&#xff0c;只有子类能够替换基类时&#xff0c;才能保证系统在运行期内识别子类&#xff0c;这是保证继承复用的基础。</li><li><strong>依赖倒置原则&#xff08;Dependecy-Inversion Principle&#xff09;</strong>&#xff1a;依赖于抽象。<strong>具体而言就是高层模块不依赖于底层模块&#xff0c;二者都同依赖于抽象</strong>&#xff1b;<strong>抽象不依赖于具体&#xff0c;具体依赖于抽象。</strong></li><li><strong>接口隔离原则&#xff08;Interface-Segregation Principle&#xff09;</strong>&#xff1a;<strong>使用多个小的专门的接口&#xff0c;而不要使用一个大的总接口</strong></li><li><strong>合成复用原则</strong>&#xff08;Composite Reuse Principle) 是尽量使用合成/聚合的方式&#xff0c;有合成聚合方式就尽量使用继承。</li></ol>
+<p>以上就是面向对象的六大原则&#xff0c;按照这个原则设计类与才能让其发挥更大价值</p>
+<h2><a rel="noopener noreferrer" id="_46"></a>类的结构</h2>
+<p>以上讨论了类与对象的关系&#xff0c;面向对象的思想&#xff0c;那么接下来我们需要详细了解下类到底是个什么结构&#xff1f;我们拿个小例子来说明下</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> animals<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Dog</span> <span class="token punctuation">{<!-- --></span>                       <span class="token comment">//类名用大驼峰</span>
+	<span class="token keyword">public</span> String furColor<span class="token punctuation">;</span>
+	<span class="token keyword">public</span> String height<span class="token punctuation">;</span>
+	<span class="token keyword">public</span> String weight<span class="token punctuation">;</span>                  <span class="token comment">//变量名方法名用小驼峰</span>
+
+	<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">catchMouse</span><span class="token punctuation">(</span>mouse m<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>    <span class="token comment">//建立狗和老鼠之间的关联关系</span>
+		<span class="token keyword">this</span><span class="token punctuation">.</span>height<span class="token operator">&#61;</span><span class="token number">7</span><span class="token punctuation">;</span>
+		m<span class="token punctuation">.</span><span class="token function">scream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>狗类有个抓耗子的方法&#xff0c;耗子类有个输出的方法</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">mouse</span> <span class="token punctuation">{<!-- --></span>
+   <span class="token keyword">void</span> <span class="token function">scream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+	   System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;TML是大帅比&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+   <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>当狗对象调用抓耗子方法的时候&#xff0c;耗子调用方法输出&#xff1a;TML是大帅比</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">test</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      Dog dog<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Dog</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      mouse m<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">mouse</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>      <span class="token comment">//关联关系&#xff0c;耗子类的对象是狗类对象调用方法的参数</span>
+      dog<span class="token punctuation">.</span><span class="token function">catchMouse</span><span class="token punctuation">(</span>m<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>以上我们可以看的出&#xff0c;类是由方法和变量构成的。</p>
+<h3><a rel="noopener noreferrer" id="_87"></a>关键字说明</h3>
+<p>我们看下类中涉及到的一些关键字&#xff0c;包括this、import、package以及一些访问修饰符。</p>
+<h4><a rel="noopener noreferrer" id="packageimport_89"></a>package和import</h4>
+<p>什么是包&#xff1f;包的定义如下</p>
+<ol><li>把功能相似或相关的类或接口组织在同一个包中&#xff0c;方便类的查找和使用。</li><li>如同文件夹一样&#xff0c;包也采用了树形目录的存储方式。同一个包中的类名字是不同的&#xff0c;不同的包中的类的名字是可以相同的&#xff0c;当同时调用两个不同包中相同类名的类时&#xff0c;应该加上包名加以区别。因此&#xff0c;包可以避免名字冲突。</li><li>包也限定了访问权限&#xff0c;拥有包访问权限的类才能访问某个包中的类</li></ol>
+<p><strong>package表示当前类所属包的详细地址</strong>。package语句使用方式如下&#xff1a;</p>
+<ul><li>package语句必须作为源文件的<strong>第一条非注释性语句</strong></li><li>一个源文件只能指定<strong>一个包</strong>&#xff0c;只能包含<strong>一条package</strong>语句</li></ul>
+<p>包可以通过关键字管理&#xff0c;为了能够使用某一个包的成员&#xff0c;我们需要在 Java 程序中明确导入该包。使用 <strong>import 语句</strong>可完成此功能。在 java 源文件中 import 语句应位于 package 语句之前&#xff0c;所有类的定义之前&#xff0c;可以没有&#xff0c;也可以有多条&#xff0c;其语法格式为&#xff1a;<code>import package1[.package2…].(classname|*);</code> <strong>如果在一个包中&#xff0c;一个类想要使用本包中的另一个类&#xff0c;那么该包名可以省略</strong>&#xff0c;导入时需要注意&#xff1a;</p>
+<ul><li>import java.util.* ; 该语句能访问java/util目录下的所有类&#xff0c;<strong>不能访问java/util子目录下的所有类</strong>&#xff0c;记住:我的附庸的附庸不是我的附庸。</li></ul>
+<p>导入java.util.*不能读取其子目录的类&#xff0c;因为如果java.util里面有个a类&#xff0c;java.util.regex里面也有个a类&#xff0c;我们若是要调用a类的方法或属性时&#xff0c;应该使用哪个a类呢。</p>
+<h4><a rel="noopener noreferrer" id="this_105"></a>this关键字</h4>
+<p><strong>this用该对象对自己的引用</strong>&#xff0c;成员变量和局部变量重名的时候可以用this来区分成员变量和局部变量&#xff0c;用this标识的为成员变量。</p>
+<h4><a rel="noopener noreferrer" id="_107"></a>访问限制修饰符</h4>
+<p>访问级别共有四种&#xff1a;public(全部可见)&#xff0c;protected(本包所有类和跨包子类可见)&#xff0c;default(本包所有类可见)&#xff0c;private(仅对本类可见)。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/73087664-01-96dab861b8.png" loading="lazy"><br />
+对于类、变量、方法&#xff0c;其实修饰符有不同的选择方式&#xff1a;</p>
+<blockquote>
+<p>类的访问修饰符</p>
+</blockquote>
+<ul><li><strong>public</strong> &#xff1a;将一个类声明为公共类&#xff0c;他可以被任何对象访问&#xff0c;一个程序的主类必须是公共类。</li><li>默认的修饰符&#xff08;<strong>default</strong>&#xff09;&#xff1a;只有在相同包中的对象才能使用这样的类。</li></ul>
+<p>为什么类只有两种修饰符呢&#xff0c;因为要想使用一个类&#xff0c;需要import导入&#xff0c;那么只有两种情况&#xff0c;public的能导入成功&#xff0c;default的导入不成功。</p>
+<blockquote>
+<p>成员变量的访问修饰符</p>
+</blockquote>
+<ul><li>public&#xff08;公共访问修饰符&#xff09;</li><li>protected&#xff08;保护访问修饰符&#xff09;指定该变量可以被自己的类、同包的类、子类访问。在子类中可以(<strong>通过super或者不调用来访问</strong>)。</li><li>default&#xff0c;在同一个包中的类可以访问&#xff0c;其他包中的类不能访问。</li><li>private&#xff08;私有访问修饰符&#xff09;指定该变量只允许自己的类的方法访问&#xff0c;其他任何类&#xff08;包括子类&#xff09;中的方法均不能访问</li></ul>
+<blockquote>
+<p>方法的访问修饰符</p>
+</blockquote>
+<ul><li>public&#xff08;公共修饰符&#xff09;</li><li>protected&#xff08;保护访问修饰符&#xff09;指定该方法可以被它的类和子类(<strong>通过super或者不调用来访问</strong>)进行访问。</li><li>default&#xff0c;在同一个包中的类可以访问&#xff0c;其他包中的类不能访问。</li><li>private&#xff08;私有修饰符&#xff09;指定此方法只能有自己的类、同包的类、子类访问&#xff0c;其他的类不能访问&#xff08;包括子类&#xff09;</li></ul>
+<p>需要注意的是protected&#xff0c;如果在子类的方法中new一个父类出来&#xff0c;再用父类变量去调用方法还是会报错<br />
+<img alt="在这里插入图片描述" src="./posts/assets/73087664-02-6fd6c6a639.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_136"></a>变量</h3>
+<p>一个类可以包含以下类型变量&#xff1a;</p>
+<ul><li><strong>局部变量</strong>&#xff1a;在<strong>方法、构造方法或者语句块</strong>中定义的变量被称为局部变量。变量声明和初始化都是在方法中&#xff0c;方法结束后&#xff0c;变量就会自动销毁。</li><li><strong>成员变量</strong>&#xff1a;成员变量是定义在<strong>类中&#xff0c;方法体之外</strong>的变量。这种变量在创建对象的时候实例化。成员变量可以被类中方法、构造方法和特定类的语句块访问。</li><li><strong>类变量&#xff08;静态变量&#xff09;</strong>&#xff1a;类变量也声明在类中&#xff0c;方法体之外&#xff0c;但必须声明为 <strong>static</strong> 类型。</li></ul>
+<p>经过static修饰的类变量&#xff0c;该类的所有对象共享一份&#xff0c;成员变量为该对象独享&#xff0c;局部变量作用域则为一个对象中的一个方法或语句块。</p>
+<h3><a rel="noopener noreferrer" id="_144"></a>方法</h3>
+<p>什么是方法? 方法包含一个方法头和一个方法体。下面是一个方法的所有部分&#xff1a;</p>
+<ul><li><strong>修饰符</strong>&#xff1a;这是可选的&#xff0c;告诉编译器如何调用该方法。定义了该方法的访问类型&#xff08;<strong>访问限制和是否静态</strong>&#xff09;。</li><li><strong>返回值类型</strong> &#xff1a;方法可能会返回值。returnValueType 是方法返回值的数据类型。有些方法执行所需的操作&#xff0c;但没有返回值。在这种情况下&#xff0c;returnValueType 是关键字void。</li><li><strong>方法名</strong>&#xff1a;是方法的实际名称。方法名和参数列表共同构成方法签名。</li><li><strong>参数列表</strong>&#xff1a;参数像是一个占位符。当方法被调用时&#xff0c;传递值给参数。这个值被称为实参或变量。参数列表是指方法的<strong>参数类型、顺序和参数的个数</strong>。参数是可选的&#xff0c;方法可以不包含任何参数。</li><li><strong>方法体</strong>&#xff1a;方法体包含具体的语句&#xff0c;定义该方法的功能。</li></ul>
+<p>一个完整的方法结构如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/73087664-03-cbb5b969d7.png" loading="lazy"><br />
+需要注意的是<strong>一个方法的方法名和参数列表共同构成了一个方法的签名</strong></p>
+<ul><li>
+<p><font color="red"><strong>方法重载</strong></font>需满足如下条件&#xff1a;在同一个类中 &#xff1b;方法名相同&#xff1b;方法的形参列表不同&#xff0c;具体的不同表现为&#xff1a; <strong>类型、个数、顺序的不同</strong>才可以构成重载。需要注意的是方法的重载<strong>与方法的返回值类型与访问权限或是抛出异常无关</strong>&#xff0c;还有一点就是java中<strong>可以有多个重载的main方法</strong>&#xff0c;只有<code>public static void main(String[] args){}</code>是函数入口</p>
+</li><li>
+<p>方法调用&#xff1a;方法在调用时&#xff0c;<strong>形参与局部变量同等对待</strong>&#xff0c;都被分配到栈上&#xff0c;真正的对象被new在堆里&#xff0c;方法在调用时&#xff0c;形参指向传递的实参引用指向的堆中对象&#xff0c;并可以进行修改&#xff0c;<strong>方法调用完之后&#xff0c;给该方法分配的局部变量&#xff0c;返回值以及形参等全部消失&#xff0c;这些栈上内容指向的堆上的对象若无引用则等待垃圾回收器回收</strong>&#xff0c;传递的实参则走自己所属作用域的逻辑。</p>
+</li></ul>
+<p>方法分析时需注意以上两个先导概念&#xff0c;之后在进行内存分析时会用到。</p>
+<h4><a rel="noopener noreferrer" id="_161"></a>成员方法</h4>
+<p>上述示例中dog类中的catchMouse方法就是一种成员方法&#xff0c;它只有在一个类被new出的对象中调用&#xff0c;所以有时候也叫动态方法&#xff1a;</p>
+<ul><li><strong>成员方法只能通过对象引用进行调用</strong></li><li><strong>在成员方法里可以访问静态和非静态的变量或方法</strong></li><li><strong>成员方法只在该类实例初始化后贮存在内存中&#xff0c;当该类调用完毕后会被垃圾回收器收集释放</strong></li></ul>
+<p>我们可能更常使用的是成员方法。</p>
+<h4><a rel="noopener noreferrer" id="_168"></a>静态方法</h4>
+<p>当方法声明为静态方法时&#xff0c;必须使用static关键字来做修饰符&#xff0c;静态方法有如下的使用事项&#xff1a;</p>
+<ul><li><strong>静态方法可以直接通过对象引用和类名进行调用</strong></li><li><strong>在静态方法里不能直接访问非静态成员&#xff0c;但是可以通过在静态方法体中new出一个对象&#xff0c;再用这个对象显式调用非静态成员来访</strong></li><li><strong>静态方法在初始化类时初始化&#xff0c;并分配内存&#xff0c;初始化后会一直贮存在内存中&#xff0c;不会被垃圾回收器回收</strong></li></ul>
+<p>main方法也是静态方法&#xff0c;在main方法中访问类中的成员变量和方法&#xff0c;需要在方法体中创建类的对象</p>
+<h4><a rel="noopener noreferrer" id="_177"></a>构造方法</h4>
+<p>每个类都有构造方法。如果没有显式地为类定义构造方法&#xff0c;Java 编译器将会为该类提供一个默认构造方法。在创建一个对象的时候&#xff0c;至少要调用一个构造方法。<font color="red"><strong>构造方法的名称必须与类同名且没有返回值&#xff08;返回值也不能为void&#xff09;&#xff0c;用来初始化对象的函数</strong></font>&#xff0c;一个类可以重载多个构造方法。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Puppy</span><span class="token punctuation">{<!-- --></span>   <span class="token comment">//两个重载的构造方法</span>
+    String dogName<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token function">Puppy</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token function">Puppy</span><span class="token punctuation">(</span>String name<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+       dogName<span class="token operator">&#61;</span>name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>构造方法主要用于初始化对象&#xff0c;通过new 构造方法来创建一个新的对象。<code>Puppy p&#61;new Puppy(”阿拉斯加&#34;)</code>初始化对象的过程如下&#xff1a;</p>
+<ol><li><strong>在栈里给局部变量分配内存空间</strong></li><li><strong>在堆里new出一个对象&#xff0c;局部变量的值通过构造函数赋给对象</strong></li><li><strong>方法执行完毕以后&#xff0c;为该方法分配的局部变量栈里内存消失&#xff0c;p引用堆里的对象</strong></li></ol>
+<p>当然实际的内存应用关系可能更为复杂&#xff0c;这块在JVM虚拟机那一块儿再详细聊聊。</p>
+<h5><a rel="noopener noreferrer" id="_198"></a>使用原则</h5>
+<p>构造方法有如下几条使用原则&#xff1a;</p>
+<ul><li><strong>构造方法可以被重载</strong>&#xff0c;重载就是方法签名中方法明相同但是参数列表不同的意思&#xff0c;后边会详细提到</li><li><strong>一个构造方法可以通过this关键字调用另一个构造方法</strong>&#xff0c;<strong>this语句必须位于构造方法的第一行</strong></li><li>子类通过<strong>super关键字调用</strong>父类的一个构造方法&#xff0c;也必须位于构造方法第一行&#xff0c;所以<strong>super和this不能共存</strong> &#xff1b;<strong>由于this函数指向的构造函数默认有super()方法&#xff0c;所以规定this()和super()不能同时出现在一个构造函数中</strong></li><li>当一个类中<strong>没有定义任何构造方法</strong>&#xff0c;Java将自动提供一个缺省构造方法&#xff1b;<strong>只有在不显示声明构造方法时&#xff0c;系统才提供默认无参构造方法</strong>&#xff0c;也就是说系统不会总是提供&#xff0c;要看你提供没有。</li><li>当子类的某个构造方法没有通过super关键字调用父类的构造方法&#xff0c;通过这个构造方法创建子类对象时&#xff0c;会<strong>自动先调用父类的缺省构造方法</strong>如果子类既没有用super调用父类的构造方法&#xff0c;而父类中又没有无参的构造函数&#xff0c;则编译出错。父类有参&#xff0c;必须用super调用&#xff0c;如果是多个有参&#xff0c;则子类构造方法任意选一个即可&#xff0c;如果只有一个那就选那个&#xff0c;父类如果无参&#xff0c;也可以用super&#xff0c;或者不用&#xff0c;则默认调用</li></ul>
+<p>总结而言就是&#xff1a;Java会默认给类添加一个缺省构造方法&#xff0c;构造方法可以重载多个&#xff0c;同类中可以相互通过显式this调&#xff0c;但必须放在方法体第一行&#xff1b;子类在使用时默认自动super父类的缺省构造方法&#xff0c;如果父类没有缺省构造方法换言之就是父类显示声明了构造方法&#xff0c;则如果声明的构造方法无参不需要显式super&#xff0c;如果有参必须显式super</p>
+<h5><a rel="noopener noreferrer" id="_208"></a>使用时机</h5>
+<p>构造函数在定义类对象&#xff08;类实例化对象&#xff09;时<strong>自动执行</strong>用来初始化对象&#xff0c;也就是new 的时候</p>
+<h5><a rel="noopener noreferrer" id="_210"></a>修饰符使用规定</h5>
+<p>构造方法<strong>不能被static、final、synchronized、abstract、native修饰</strong>&#xff0c;但<strong>可以被public、private&#xff08;单例模式&#xff09;、protected修饰  也可以不加任何修饰符表示相当于被default修饰&#xff1b;</strong></p>
+<ol><li>构造方法用于创建一个新的对象&#xff0c;不能作为类的静态方法&#xff0c;所以用static修饰没有意义。</li><li>构造方法<strong>不能被子类继承</strong>&#xff0c;所以用final修饰没有意义。</li><li>对于synchronized关键字&#xff0c;构造方法每次都是new一个新对象&#xff0c;不存在多线程共享同一变量的问题&#xff0c;所以不需要同步。</li><li>构造函数是用来初始化对象的&#xff0c;abstract声明为抽象函数没有意义</li><li>native是方法修饰符&#xff0c;native方法是由另外一种语言&#xff08;如C/C&#43;&#43;,汇编等&#xff09;实现的本地方法&#xff0c;因为在外部实现了方法&#xff0c;所以在 java代码中&#xff0c;就不需要声明了</li></ol>
+<p>总而言之<font color="red"><strong>构造方法只要加访问限制符来作为修饰符</strong></font>即可。</p>

@@ -1,0 +1,116 @@
+<p>在分布式系统设计中，存储机制是决定性能、可靠性和扩展性的核心要素。Elasticsearch、Redis 和 Kafka 作为三种主流的中间件，分别服务于搜索、缓存和消息队列场景，它们的存储设计各具匠心。本文将深入剖析这三者的存储原理，从底层文件组织、写入流程到可靠性保障，并最后对 Elasticsearch 和 Kafka 的存储架构进行横向对比，揭示其设计哲学。</p>
+<h2><a rel="noopener noreferrer" id="_Elasticsearch__1"></a>一 Elasticsearch 存储机制</h2>
+<p>Elasticsearch 的存储机制围绕<strong>段（Segment）</strong> 和 <strong>事务日志（Translog）</strong> 设计，在保证数据可靠性的同时，实现了高写入性能和近实时搜索能力。下面我们深入剖析每个环节。<br> <img alt="在这里插入图片描述" src="./posts/assets/158597275-01-6b1179ebbd.png" loading="lazy"></p>
+<hr>
+<h3><a rel="noopener noreferrer" id="1__7"></a>1 什么是段以及段的不可变性</h3>
+<h4><a rel="noopener noreferrer" id="1_Segment_8"></a>1 段（Segment）：存储的基本单元</h4>
+<ul>
+ <li>每个分片（Shard）是一个 Lucene 索引，而 Lucene 索引由多个<strong>段（Segment）</strong> 组成。</li>
+ <li><strong>每个段本身就是一个完整的倒排索引</strong>，包含文档数据、词项字典、倒排列表等。</li>
+ <li>段具有<strong>不可变性（Immutable）</strong>：一旦写入磁盘，就永远不会被修改。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="2__14"></a>2 为什么段被设计为不可变？</h4>
+<ul>
+ <li><strong>历史背景</strong>：如果整个索引是一个巨大的倒排索引，每次更新都需要全量重建，成本极高。</li>
+ <li><strong>分段的好处</strong>：
+  <ul>
+   <li><strong>写操作优化</strong>：新增文档只需创建新段，无需修改旧段。</li>
+   <li><strong>删除与更新</strong>：删除时仅在 <code>.del</code> 文件中标记文档 ID，查询时过滤；更新则是“删除旧文档 + 索引新文档”，旧文档标记删除，新文档写入新段。</li>
+   <li><strong>并发控制</strong>：由于段不可变，读操作完全无锁，显著提升并发性能。</li>
+   <li><strong>缓存友好</strong>：段一旦加载到文件系统缓存，就可以长期驻留，后续查询直接命中缓存，减少磁盘 I/O。</li>
+  </ul> </li>
+</ul>
+<h4><a rel="noopener noreferrer" id="3__22"></a>3 段的不变性带来的挑战及解决方案</h4>
+<ul>
+ <li><strong>挑战</strong>：段数量会不断增长，导致查询时需要合并多个段的结果，影响性能；标记删除的文档仍占用磁盘空间。</li>
+ <li><strong>解决方案</strong>：<strong>段合并（Segment Merge）</strong>。</li>
+</ul>
+<hr>
+<h3><a rel="noopener noreferrer" id="2_Segment_Merge_28"></a>2 段合并（Segment Merge）</h3>
+<h4><a rel="noopener noreferrer" id="21__30"></a>2.1 为什么需要合并？</h4>
+<ul>
+ <li>随着写入进行，段数量激增，查询时需要从多个段中检索并合并结果，开销增大。</li>
+ <li>标记删除的文档物理上仍存在于段中，占用磁盘空间。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="22__34"></a>2.2 合并过程</h4>
+<p><img alt="在这里插入图片描述" src="./posts/assets/158597275-02-b173ac48e7.png" loading="lazy"></p>
+<p>什么时候会进行段合并，段合并的步骤是什么。段合并时机和步骤：</p>
+<ol>
+ <li><strong>段合并在进行索引和搜索时会自动进行</strong>（一般是当存在大量删除标记或小段过多的适合），合并进程选择一小部分大小相似的段，并且在后台将它们合并到更大的段中</li>
+ <li><strong>待合并的段既可以是未提交的也可以是已提交</strong>【文件操作系统缓存里的或磁盘里的】的。合并结束后老的段会被删除，新的段被 flush 到磁盘，同时写入一个包含新段（已排除旧的被合并的段）的新提交点</li>
+ <li>新的段被打开可以用来搜索</li>
+</ol>
+<h3><a rel="noopener noreferrer" id="3__44"></a>3 写入流程与延迟写策略</h3>
+<h4><a rel="noopener noreferrer" id="31__46"></a>3.1 为什么需要延迟写？</h4>
+<ul>
+ <li>如果每次写入都直接落盘，磁盘 I/O 将成为瓶颈，严重限制写入吞吐量。</li>
+ <li><strong>延迟写</strong>（即先写入内存缓冲区，定期刷新）利用文件系统缓存，将多次写入合并为一次落盘，大幅提升性能。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="32__Translog__50"></a>3.2 写入基本流程（无 Translog 时的问题）</h4>
+<ol>
+ <li>文档写入<strong>内存缓冲区</strong>（不可搜索）。</li>
+ <li>每秒（默认）执行一次 <strong><code>refresh</code></strong>：
+  <ul>
+   <li>内存缓冲区内容写入<strong>文件系统缓存（OS Cache）</strong>，生成一个新段，此时文档<strong>可搜索</strong>。</li>
+   <li>内存缓冲区清空。</li>
+  </ul> </li>
+ <li>每30分钟或当 translog 达到512MB（见下文）时执行 <strong><code>flush</code></strong>：
+  <ul>
+   <li>将文件系统缓存中的所有段强制 <code>fsync</code> 到磁盘。</li>
+   <li>生成<strong>提交点（Commit Point）</strong>，记录这些段。</li>
+  </ul> </li>
+</ol>
+<p><strong>问题</strong>：如果仅依赖 <code>flush</code>，在两次 <code>flush</code> 之间发生宕机（主机断电或进程崩溃），文件系统缓存中的数据会全部丢失，最多丢失 <strong>30分钟</strong> 的数据。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="4_Translog_63"></a>4 Translog：数据可靠性的基石</h3>
+<h4><a rel="noopener noreferrer" id="41_Translog__65"></a>4.1 Translog 的作用</h4>
+<ul>
+ <li><strong>防止因故障丢失数据</strong>：在写入内存缓冲区的同时，将操作记录到 <strong>事务日志（Translog）</strong> 中。Translog 是顺序写入的，性能高，并且定期刷盘。</li>
+ <li>保证即使在 <code>flush</code> 间隔内发生宕机，也能通过重放 Translog 恢复未落盘的数据。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="42_Translog__69"></a>4.2 Translog 的工作流程</h4>
+<p><img alt="在这里插入图片描述" src="./posts/assets/158597275-03-eda4db91fc.png" loading="lazy"></p>
+<ol>
+ <li><strong>文档写入</strong>：
+  <ul>
+   <li>同时写入 <strong>内存缓冲区</strong> 和 <strong>Translog</strong>（初始在内存中）。</li>
+  </ul> </li>
+ <li><strong>Translog 刷盘</strong>：
+  <ul>
+   <li>默认每 <strong>5秒</strong> 执行一次 <code>fsync</code>，将 Translog 从内存刷到磁盘（保证最多丢5秒数据）。</li>
+   <li>也可配置为每次写入后同步（<code>durability: request</code>），但会降低性能。</li>
+  </ul> </li>
+ <li><strong>Refresh</strong>（每秒）：
+  <ul>
+   <li>内存缓冲区 → 文件系统缓存，生成新段，文档可搜索。</li>
+   <li>内存缓冲区清空，但 Translog 保持不变。</li>
+  </ul> </li>
+ <li><strong>Flush</strong>（触发条件）：
+  <ul>
+   <li>当 Translog 大小达到 <strong>512MB</strong>（默认）或距离上次 flush 超过 <strong>30分钟</strong>（默认），或手动调用。</li>
+   <li><strong>Flush 过程</strong>：
+    <ul>
+     <li>将文件系统缓存中的所有段强制 <code>fsync</code> 到磁盘。</li>
+     <li>生成新的提交点。</li>
+     <li>清空 Translog，创建新的 Translog 文件。</li>
+    </ul> </li>
+  </ul> </li>
+</ol>
+<h4><a rel="noopener noreferrer" id="43__87"></a>4.3 故障恢复机制</h4>
+<ul>
+ <li><strong>进程重启</strong>时：
+  <ol>
+   <li>读取磁盘上最后一个提交点，加载已落盘的段。</li>
+   <li>读取 Translog（已刷盘部分），重放所有未落盘的操作，重建内存缓冲区和文件系统缓存中的段。</li>
+  </ol> </li>
+ <li><strong>因此，最多丢失的数据 = Translog 未刷盘的部分（默认 5秒）</strong>。</li>
+</ul>
+<hr>
+<h3><a rel="noopener noreferrer" id="5__Translog_95"></a>5 完整写入流程（带 Translog）</h3>
+<ol>
+ <li><strong>客户端请求</strong> → 协调节点 → 主分片节点。</li>
+ <li><strong>主分片</strong>：
+  <ul>
+   <li>将操作写入 <strong>Translog</strong>（内存）。</li>
+  </ul></li>
+</ol>

@@ -1,0 +1,222 @@
+<p>根据锁出现在Java中的时间&#xff0c;Java中的锁&#xff0c;可以分为<strong>同步锁</strong>和<strong>JUC包中的锁</strong>&#xff0c;同步锁指的是通过<strong>synchronized关键字</strong>来进行同步&#xff0c;实现对竞争资源的互斥访问的锁&#xff0c;同步锁的原理是&#xff1a;</p>
+<ul><li><strong>对于每一个对象&#xff0c;有且仅有一个同步锁</strong>&#xff0c;不同的线程能共同访问该同步锁。</li><li><strong>在同一个时间点&#xff0c;该同步锁能且只能被一个线程获取到</strong>。</li></ul>
+<p>这样&#xff0c;<strong>获取到同步锁的线程就能进行CPU调度&#xff0c;从而在CPU上执行</strong>&#xff1b;而<strong>没有获取到同步锁的线程&#xff0c;必须进行等待</strong>&#xff0c;直到获取到同步锁之后才能继续运行<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114336687-01-b4ad8e1bf0.png" loading="lazy"><br />
+相比同步锁&#xff0c;JUC包中的锁的功能更加强大&#xff0c;它<strong>为锁提供了一个框架&#xff0c;该框架允许更灵活地使用锁</strong>。</p>
+<h2><a rel="noopener noreferrer" id="_8"></a>接口</h2>
+<p>接口共有三个Lock接口、ReadWriteLock以及Condition接口。</p>
+<h3><a rel="noopener noreferrer" id="Lock_10"></a>Lock接口&#xff08;范式&#xff09;</h3>
+<p>JUC包中的 <strong>Lock 接口支持那些语义不同(重入、公平等)的锁规则</strong>。所谓语义不同&#xff0c;是指锁可是有<strong>公平机制的锁、非公平机制的锁、可重入的锁</strong>等等。</p>
+<ul><li>公平机制是指&#34;不同线程获取锁的机制是公平的&#xff0c;而非公平机制则是指&#34;不同线程获取锁的机制是非公平的&#34;&#xff0c;<strong>这里的公平指的是如果公平&#xff0c;那么等待锁的多个线程将会按照申请锁的时间顺序来依次获得锁</strong></li><li>可重入的锁是指<strong>同一个锁能够被一个线程多次获取</strong></li></ul>
+<p>它为实现自己的锁类提供了如下的一些方法&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">void</span> <span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">boolean</span> <span class="token function">tryLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">lockInterruptibly</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException<span class="token punctuation">;</span>  <span class="token comment">//等待可中断</span>
+<span class="token keyword">boolean</span> <span class="token function">tryLock</span><span class="token punctuation">(</span><span class="token keyword">long</span> time<span class="token punctuation">,</span> TimeUnit unit<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException<span class="token punctuation">;</span>   <span class="token comment">//定时可中断</span>
+<span class="token keyword">void</span> <span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Condition <span class="token function">newCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//组合的方式获取Condition条件</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="ReadWriteLock_27"></a>ReadWriteLock接口</h3>
+<p>ReadWriteLock 接口以和Lock类似的方式定义了一些<strong>读取者可以共享而写入者独占的锁</strong>。JUC包只有一个类实现了该接口&#xff0c;即 <code>ReentrantReadWriteLock</code>&#xff0c;因为它适用于大部分的标准用法上下文。但程序员可以创建自己的、适用于非标准要求的实现。方法如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">ReadWriteLock</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * Returns the lock used for reading.
+     *
+     * &#64;return the lock used for reading
+     */</span>
+    Lock <span class="token function">readLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * Returns the lock used for writing.
+     *
+     * &#64;return the lock used for writing
+     */</span>
+    Lock <span class="token function">writeLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Condition_48"></a>Condition接口</h3>
+<p>Condition需要和Lock联合使用&#xff0c;它的作用是代替Object监视器方法&#xff0c;可以通过<strong>await(),signal()来休眠/唤醒线程</strong>。Condition 接口描述了可能会与锁有关联的条件变量。这些变量在用法上与使用 Object.wait 访问的隐式监视器类似&#xff0c;但提供了更强大的功能。需要特别指出的是&#xff0c;<strong>单个 Lock 可能与多个 Condition 对象关联</strong>。为了避免兼容性问题&#xff0c;Condition 方法的名称与对应的 Object 版本中的不同。</p>
+<pre><code class="prism language-java"><span class="token keyword">void</span> <span class="token function">await</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException<span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">awaitUninterruptibly</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">long</span> <span class="token function">awaitNanos</span><span class="token punctuation">(</span><span class="token keyword">long</span> nanosTimeout<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException<span class="token punctuation">;</span>
+<span class="token keyword">boolean</span> <span class="token function">await</span><span class="token punctuation">(</span><span class="token keyword">long</span> time<span class="token punctuation">,</span> TimeUnit unit<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException<span class="token punctuation">;</span>
+<span class="token keyword">boolean</span> <span class="token function">awaitUntil</span><span class="token punctuation">(</span>Date deadline<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException<span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">signal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">signalAll</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>使用起来较为简单&#xff1a;</p>
+<pre><code class="prism language-java">Lock lock <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ReentrantLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Condition condition <span class="token operator">&#61;</span> lock<span class="token punctuation">.</span><span class="token function">newCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">conditionWait</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+   lock<span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+   <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+       condition<span class="token punctuation">.</span><span class="token function">await</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{<!-- --></span>
+       lock<span class="token punctuation">.</span><span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">conditionSignal</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+   lock<span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+   <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+     condition<span class="token punctuation">.</span><span class="token function">signal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+   <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{<!-- --></span>
+     lock<span class="token punctuation">.</span><span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+   <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>一般都会将Condition对象作为成员变量。<strong>当调用await()方法后&#xff0c;当前线程会释放锁并在此等待&#xff0c;而其他线程调用Condition对象的signal()方法&#xff0c;通知当前线程后&#xff0c;当前线程才从await()方法返回&#xff0c;并且在返回前已经获取了锁</strong></p>
+<h2><a rel="noopener noreferrer" id="_84"></a>抽象类</h2>
+<p>抽象类共有三个&#xff0c;AbstractOwnableSynchronizer&#xff0c;AbstractQueuedSynchronizer&#xff0c;AbstractQueuedLongSynchronizer三个抽象类</p>
+<h3><a rel="noopener noreferrer" id="AQS_87"></a>AQS抽象类&#xff08;模版&#xff09;</h3>
+<p><strong>AbstractQueuedSynchronizer</strong>就是被称之为AQS的类&#xff0c;它是一个非常有用的超类&#xff0c;可<strong>用来定义锁以及依赖于排队阻塞线程的其他同步器</strong>&#xff0c;ReentrantLock&#xff0c;ReentrantReadWriteLock&#xff0c;CountDownLatch&#xff0c;CyclicBarrier和Semaphore等这些类都是基于AQS类实现的</p>
+<h4><a rel="noopener noreferrer" id="AQS_90"></a>AQS原理</h4>
+<p>AQS核⼼思想是&#xff0c;如果被请求的共享资源空闲&#xff0c;则将当前请求资源的线程设置为有效的⼯作线程&#xff0c;并且将共享资源设置为锁定状态。如果被请求的共享资源被占⽤&#xff0c;那么就需要⼀套线程阻塞等待以及被唤醒时锁分配的机制&#xff0c;这个机制AQS是⽤CLH队列锁实现的&#xff0c;即将暂时获取不到锁的线程加⼊到队列中<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114336687-02-b13b2909b1.png" loading="lazy"><br />
+AQS使⽤⼀个int成员变量来表示同步状态&#xff0c;通过内置的FIFO队列来完成获取资源线程的排队⼯作。AQS使⽤CAS对该同步状态进⾏原⼦操作实现对其值的修改</p>
+<pre><code class="prism language-java"> <span class="token comment">/**
+     * The synchronization state.
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">volatile</span> <span class="token keyword">int</span> state<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * Returns the current value of synchronization state.
+     * This operation has memory semantics of a {&#64;code volatile} read.
+     * &#64;return current state value
+     */</span>
+    <span class="token keyword">protected</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getState</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> state<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * Sets the value of synchronization state.
+     * This operation has memory semantics of a {&#64;code volatile} write.
+     * &#64;param newState the new state value
+     */</span>
+    <span class="token keyword">protected</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">setState</span><span class="token punctuation">(</span><span class="token keyword">int</span> newState<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        state <span class="token operator">&#61;</span> newState<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * Atomically sets synchronization state to the given updated
+     * value if the current state value equals the expected value.
+     * This operation has memory semantics of a {&#64;code volatile} read
+     * and write.
+     *
+     * &#64;param expect the expected value
+     * &#64;param update the new value
+     * &#64;return {&#64;code true} if successful. False return indicates that the actual
+     *         value was not equal to the expected value.
+     */</span>
+    <span class="token keyword">protected</span> <span class="token keyword">final</span> <span class="token keyword">boolean</span> <span class="token function">compareAndSetState</span><span class="token punctuation">(</span><span class="token keyword">int</span> expect<span class="token punctuation">,</span> <span class="token keyword">int</span> update<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// See below for intrinsics setup to support this</span>
+        <span class="token keyword">return</span> unsafe<span class="token punctuation">.</span><span class="token function">compareAndSwapInt</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> stateOffset<span class="token punctuation">,</span> expect<span class="token punctuation">,</span> update<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="AQS__135"></a>AQS 对资源的共享⽅式</h4>
+<p>AQS定义两种资源共享⽅式</p>
+<ul><li>Exclusive&#xff08;独占&#xff09;&#xff1a;只有⼀个线程能执⾏&#xff0c;如ReentrantLock。⼜可分为公平锁和⾮公平锁&#xff1a;公平锁&#xff1a;按照线程在队列中的排队顺序&#xff0c;先到者先拿到锁&#xff0c;⾮公平锁&#xff1a;当线程要获取锁时&#xff0c;⽆视队列顺序直接去抢锁&#xff0c;谁抢到就是谁的</li><li>Share&#xff08;共享&#xff09;&#xff1a;多个线程可同时执⾏&#xff0c;如Semaphore、CountDownLatch、 CyclicBarrier等</li><li>ReentrantReadWriteLock 可以看成是组合式&#xff0c;因为ReentrantReadWriteLock也就是读写锁允许多个线程同时对某⼀资源进⾏读。</li></ul>
+<p>不同的⾃定义同步器争⽤共享资源的⽅式也不同。⾃定义同步器在实现时只需要实现共享资源 state的获取与释放⽅式即可&#xff0c;⾄于具体线程等待队列的维护&#xff08;如获取资源失败⼊队/唤醒出队等&#xff09;&#xff0c;AQS已经在顶层实现好了。</p>
+<h4><a rel="noopener noreferrer" id="AQS_142"></a>AQS底层使用了模板方法模式</h4>
+<p>同步器的设计是基于模板⽅法模式的&#xff0c;如果需要⾃定义同步器⼀般的⽅式是这样&#xff08;模板⽅法模式很经典的⼀个应⽤&#xff09;&#xff1a;</p>
+<ol><li>使⽤者继承AbstractQueuedSynchronizer并重写指定的⽅法。&#xff08;这些重写⽅法很简单&#xff0c;⽆⾮是对于共享资源state的获取和释放&#xff09;</li><li>将AQS组合在⾃定义同步组件的实现中&#xff0c;并调⽤其模板⽅法&#xff0c;⽽这些模板⽅法会调⽤使⽤者重写的⽅法。这和我们以往通过实现接⼝的⽅式有很⼤区别&#xff0c;这是模板⽅法模式很经典的⼀个运⽤。</li></ol>
+<p>AQS使⽤了模板⽅法模式&#xff0c;⾃定义同步器时需要重写下⾯⼏个AQS提供的模板⽅法&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token function">isHeldExclusively</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token comment">//该线程是否正在独占资源。只有⽤到condition才需要去实现它。</span>
+<span class="token function">tryAcquire</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span><span class="token comment">//独占⽅式。尝试获取资源&#xff0c;成功则返回true&#xff0c;失败则返回false。</span>
+<span class="token function">tryRelease</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span><span class="token comment">//独占⽅式。尝试释放资源&#xff0c;成功则返回true&#xff0c;失败则返回false。</span>
+<span class="token function">tryAcquireShared</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span><span class="token comment">//共享⽅式。尝试获取资源。负数表示失败&#xff1b;0表示成功&#xff0c;但没有剩余可⽤资源&#xff1b;正数表示成功&#xff0c;且有剩余资源。</span>
+<span class="token function">tryReleaseShared</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span><span class="token comment">//共享⽅式。尝试释放资源&#xff0c;成功则返回true&#xff0c;失败则返回false。</span>
+</code></pre>
+<p>这些⽅法的实现必须是内部线程安全的&#xff0c;并且通常应该简短⽽不是阻塞。AQS类中的其他⽅法都是final &#xff0c;所以⽆法被其他类使⽤&#xff0c;只有这⼏个⽅法可以被其他类使⽤&#xff0c;例如ReentrantLock实现一个非公平锁</p>
+<pre><code class="prism language-java">  <span class="token comment">/**
+     * Creates an instance of {&#64;code ReentrantLock}.
+     * This is equivalent to using {&#64;code ReentrantLock(false)}.
+     */</span>
+    <span class="token keyword">public</span> <span class="token function">ReentrantLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        sync <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">NonfairSync</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>非公平锁的底层实现调用并重写了<strong>tryAcquire</strong></p>
+<pre><code class="prism language-java"> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">class</span> <span class="token class-name">NonfairSync</span> <span class="token keyword">extends</span> <span class="token class-name">Sync</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">long</span> serialVersionUID <span class="token operator">&#61;</span> <span class="token number">7316153563782823691</span>L<span class="token punctuation">;</span>
+
+        <span class="token comment">/**
+         * Performs lock.  Try immediate barge, backing up to normal
+         * acquire on failure.
+         */</span>
+        <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">compareAndSetState</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token function">setExclusiveOwnerThread</span><span class="token punctuation">(</span>Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">else</span>
+                <span class="token function">acquire</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">protected</span> <span class="token keyword">final</span> <span class="token keyword">boolean</span> <span class="token function">tryAcquire</span><span class="token punctuation">(</span><span class="token keyword">int</span> acquires<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token function">nonfairTryAcquire</span><span class="token punctuation">(</span>acquires<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="AQLS__190"></a>AQLS 抽象类</h3>
+<p>提供AQS相同的功能但扩展了<strong>对同步状态的 64 位的支持</strong>。</p>
+<h3><a rel="noopener noreferrer" id="AOS__192"></a>AOS 抽象类</h3>
+<p>AQS还是AQLS两者都扩展了类 <strong>AbstractOwnableSynchronizer&#xff08;一个帮助记录当前保持独占同步的线程的简单类&#xff09;</strong>。</p>
+<pre><code class="prism language-java">    <span class="token keyword">private</span> <span class="token keyword">transient</span> Thread exclusiveOwnerThread<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * Sets the thread that currently owns exclusive access.
+     * A {&#64;code null} argument indicates that no thread owns access.
+     * This method does not otherwise impose any synchronization or
+     * {&#64;code volatile} field accesses.
+     * &#64;param thread the owner thread
+     */</span>
+    <span class="token keyword">protected</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">setExclusiveOwnerThread</span><span class="token punctuation">(</span>Thread thread<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        exclusiveOwnerThread <span class="token operator">&#61;</span> thread<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * Returns the thread last set by {&#64;code setExclusiveOwnerThread},
+     * or {&#64;code null} if never set.  This method does not otherwise
+     * impose any synchronization or {&#64;code volatile} field accesses.
+     * &#64;return the owner thread
+     */</span>
+    <span class="token keyword">protected</span> <span class="token keyword">final</span> Thread <span class="token function">getExclusiveOwnerThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> exclusiveOwnerThread<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_219"></a>普通类</h2>
+<p>如果说Lock接口提供了锁的行为规范&#xff0c;AQS接口提供了锁的复杂实现&#xff0c;那么接下来的普通类就是使用时候的具体实现了。</p>
+<h3><a rel="noopener noreferrer" id="LockSupport_221"></a>LockSupport类</h3>
+<p>当需要阻塞或唤醒一个线程的时候&#xff0c;都会使用LockSupport工具类来完成相应工作&#xff0c;底层调用的是同步原语。LockSupport定义了一组的公共静态方法&#xff0c;这些方法提供了最基本的线程阻塞和唤醒功能&#xff0c;而LockSupport也成为构建同步组件的基础工具。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">park</span><span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token comment">//阻塞</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">unpark</span><span class="token punctuation">(</span>Thread thread<span class="token punctuation">)</span> <span class="token comment">//唤醒一个阻塞中的线程</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">parkNanos</span><span class="token punctuation">(</span><span class="token keyword">long</span> nanos<span class="token punctuation">)</span> <span class="token comment">//阻塞不超过nanos纳秒</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">parkUntil</span><span class="token punctuation">(</span><span class="token keyword">long</span> deadline<span class="token punctuation">)</span>  <span class="token comment">//最晚阻塞到时间点</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="ReentrantLock_231"></a>ReentrantLock类</h3>
+<p>ReentrantLock是<strong>独占锁</strong>。所谓独占锁&#xff0c;是指只能被独自占领&#xff0c;<strong>即同一个时间点只能被一个线程锁获取到的锁</strong>&#xff08;<strong>互斥同步语义</strong>&#xff09;。ReentrantLock锁包括<strong>公平的ReentrantLock</strong>和<strong>非公平的ReentrantLock</strong>&#xff08;<strong>公平非公平语义</strong>&#xff09;。ReentrantLock是<strong>可重入的锁</strong>&#xff08;<strong>可重入语义</strong>&#xff09;</p>
+<ul><li>ReentrantLock实现了Lock接口。</li><li>ReentrantLock中有一个成员变量sync&#xff0c;sync是Sync类型&#xff1b;Sync是一个抽象类&#xff0c;而且它继承于AQS。</li><li>ReentrantLock中有公平锁类FairSync和非公平锁类NonfairSync&#xff0c;它们都是Sync的子类。ReentrantReadWriteLock中sync对象&#xff0c;是FairSync与NonfairSync中的一种&#xff0c;这也意味着ReentrantLock是公平锁&#34;或非公平锁中的一种&#xff0c;ReentrantLock默认是非公平锁。</li></ul>
+<p>是否公平依据构造函数决定</p>
+<pre><code class="prism language-java">  <span class="token comment">/**
+     * Creates an instance of {&#64;code ReentrantLock} with the
+     * given fairness policy.
+     *
+     * &#64;param fair {&#64;code true} if this lock should use a fair ordering policy
+     */</span>
+    <span class="token keyword">public</span> <span class="token function">ReentrantLock</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> fair<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        sync <span class="token operator">&#61;</span> fair <span class="token operator">?</span> <span class="token keyword">new</span> <span class="token class-name">FairSync</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">:</span> <span class="token keyword">new</span> <span class="token class-name">NonfairSync</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>一般会将其与Synchronized进行比较</p>
+<ul><li>两者默认都是非公平&#xff0c;悲观&#xff0c;独享&#xff0c;互斥&#xff0c;可重入锁</li><li>synchronized 依赖于 JVM ⽽ ReentrantLock 依赖于 API&#xff0c;不但可以通过一些监控工具监控synchronized的锁定&#xff0c;而且在代码执行时出现异常&#xff0c;JVM会自动释放锁定&#xff0c;但是使用Lock则不行&#xff0c;lock是通过代码实现的&#xff0c;要保证锁定一定会被释放&#xff0c;就必须将unLock放到finally{}中</li><li>ReentrantLock 拥有Synchronized相同的并发性和内存语义&#xff0c;此外还多了 可实现选择性通知&#xff08;锁可以绑定多个条件&#xff09;&#xff0c;定时锁等候/等待可中断&#xff0c;可实现公平锁</li></ul>
+<p>需要注意&#xff0c;随着Synchronized的优化&#xff0c;性能已不能作为二者比较的标准</p>
+<h3><a rel="noopener noreferrer" id="ReentrantReadWriteLock_256"></a>ReentrantReadWriteLock类</h3>
+<p>ReentrantReadWriteLock是读写锁接口ReadWriteLock的实现类&#xff0c;它包括内部类ReadLock和WriteLock。ReadLock是共享锁&#xff0c;而WriteLock是独占锁。</p>
+<pre><code class="prism language-java">   <span class="token comment">/** Inner class providing readlock */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> ReentrantReadWriteLock<span class="token punctuation">.</span>ReadLock readerLock<span class="token punctuation">;</span>
+    <span class="token comment">/** Inner class providing writelock */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> ReentrantReadWriteLock<span class="token punctuation">.</span>WriteLock writerLock<span class="token punctuation">;</span>
+    <span class="token comment">/** Performs all synchronization mechanics */</span>
+    <span class="token keyword">final</span> Sync sync<span class="token punctuation">;</span>
+</code></pre>
+<p>其继承结构为&#xff1a;</p>
+<ul><li>ReentrantReadWriteLock实现了ReadWriteLock接口。</li><li>ReentrantReadWriteLock中包含<strong>sync对象&#xff0c;读锁readerLock和写锁writerLock</strong>。<strong>读锁ReadLock和写锁WriteLock都实现了Lock接口</strong>。</li><li>和ReentrantLock一样&#xff0c;sync是Sync类型&#xff1b;而且&#xff0c;Sync也是一个继承于AQS的抽象类。<strong>Sync也包括公平锁FairSync和非公平锁NonfairSync</strong>。</li></ul>
+<p>其实和ReentrantLock类似&#xff0c;只不过ReentrantLock实现了它的一个独占版本。</p>

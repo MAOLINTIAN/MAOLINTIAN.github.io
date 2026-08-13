@@ -1,0 +1,148 @@
+<p>最近在处理接口请求进行数据写入的一个case时&#xff0c;我希望上游只使用我一个写入接口去实现不同类型的数据写入&#xff0c;而上游的数据写入Model是各不相同的&#xff0c;这就要求我<strong>接口的一个对象可以应对上游不同类型对象的写入请求</strong>。关于Jackson的概念不再赘述&#xff0c;参照这篇Blog&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/120208823" rel="nofollow"><strong>【Spring MVC学习笔记 五】SpringMVC框架整合Jackson工具</strong></a></p>
+<h2><a rel="noopener noreferrer" id="_1"></a>模拟代码实现示例</h2>
+<p>为了代码保密&#xff0c;同样用示例的方式进行介绍</p>
+<h3><a rel="noopener noreferrer" id="_3"></a>基类及子类</h3>
+<blockquote>
+ <p><strong>接收请求的基类</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller<span class="token punctuation">.</span>model</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">com<span class="token punctuation">.</span>fasterxml<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">JsonFormat</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">com<span class="token punctuation">.</span>fasterxml<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">JsonSubTypes</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">com<span class="token punctuation">.</span>fasterxml<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">JsonTypeInfo</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Data</span></span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>time<span class="token punctuation">.</span></span><span class="token class-name">LocalDateTime</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2023/8/14
+ */</span>
+<span class="token annotation punctuation">&#64;JsonTypeInfo</span><span class="token punctuation">(</span>use <span class="token operator">&#61;</span> <span class="token class-name">JsonTypeInfo<span class="token punctuation">.</span>Id</span><span class="token punctuation">.</span><span class="token constant">NAME</span><span class="token punctuation">,</span> property <span class="token operator">&#61;</span> <span class="token string">&#34;sceneCode&#34;</span><span class="token punctuation">,</span> visible <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;JsonSubTypes</span><span class="token punctuation">(</span>value <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token annotation punctuation">&#64;JsonSubTypes.Type</span><span class="token punctuation">(</span>value <span class="token operator">&#61;</span> <span class="token class-name">JmBrandEnterSceneModel</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> name <span class="token operator">&#61;</span> <span class="token string">&#34;JmBrandEnterSceneModel&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token annotation punctuation">&#64;JsonSubTypes.Type</span><span class="token punctuation">(</span>value <span class="token operator">&#61;</span> <span class="token class-name">JmsEnterSceneModel</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> name <span class="token operator">&#61;</span> <span class="token string">&#34;JmsEnterSceneModel&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SceneModel</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 场景名称
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> sceneCode<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 场景时间
+     */</span>
+    <span class="token annotation punctuation">&#64;JsonFormat</span><span class="token punctuation">(</span>pattern <span class="token operator">&#61;</span> <span class="token string">&#34;yyyy-MM-dd HH:mm:ss&#34;</span><span class="token punctuation">,</span> timezone <span class="token operator">&#61;</span> <span class="token string">&#34;GMT&#43;8&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">LocalDateTime</span> sceneTime<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 请求数据来源
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> requestSource<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<blockquote>
+ <p><strong>继承基类的类型一</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller<span class="token punctuation">.</span>model</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2023/8/14
+ */</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token annotation punctuation">&#64;EqualsAndHashCode</span><span class="token punctuation">(</span>callSuper <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">JmBrandEnterSceneModel</span> <span class="token keyword">extends</span> <span class="token class-name">SceneModel</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 加盟品牌名称
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> brandName<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 加盟品牌ID
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> brandId<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 加盟公司税号
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> comTaxNo<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<blockquote>
+ <p><strong>继承基类的类型二</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller<span class="token punctuation">.</span>model</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">com<span class="token punctuation">.</span>fasterxml<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">JsonFormat</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>time<span class="token punctuation">.</span></span><span class="token class-name">LocalDateTime</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2023/8/14
+ */</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token annotation punctuation">&#64;EqualsAndHashCode</span><span class="token punctuation">(</span>callSuper <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">JmsEnterSceneModel</span> <span class="token keyword">extends</span> <span class="token class-name">SceneModel</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">/**
+     * 加盟商名称
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> franchiserName<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_100"></a>数据请求接口</h3>
+<blockquote>
+ <p><strong>请求接口</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller<span class="token punctuation">.</span>model<span class="token punctuation">.</span></span><span class="token class-name">SceneModel</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">PostMapping</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RequestBody</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RequestMapping</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RestController</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2023/8/14
+ */</span>
+<span class="token annotation punctuation">&#64;RestController</span>
+<span class="token annotation punctuation">&#64;RequestMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/scene&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SceneSyncController</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;PostMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/sync&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sceneSync</span><span class="token punctuation">(</span><span class="token annotation punctuation">&#64;RequestBody</span> <span class="token class-name">SceneModel</span> sceneModel<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>sceneModel<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_127"></a>请求实验示例</h3>
+<blockquote>
+ <p><strong>POSTMAN请求一</strong></p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132286580-01-204d49a16c.png" loading="lazy"></p>
+<blockquote>
+ <p><strong>请求结果一</strong></p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132286580-02-8d39209705.png" loading="lazy"></p>
+<blockquote>
+ <p><strong>POSTMAN请求二</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/132286580-03-128117d3a1.png" loading="lazy"><br /> <strong>请求结果二</strong></p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132286580-04-13a7a29a21.png" loading="lazy"></p>
+<p>这样随着我请求的不同&#xff0c;Jackson依据不同请求Model中的属性进行解析判断。需要注意的是Jackson本身支持这一注解&#xff0c;并非只有SpringBoot支持&#xff0c;只不过SpringBoot的mvc请求使用了Jackson</p>
+<h2><a rel="noopener noreferrer" id="JsonTypeInfo_143"></a>JsonTypeInfo用法</h2>
+<p>这里简单普及一下&#xff0c;<code>&#64;JsonTypeInfo</code> 是 Jackson 库中的注解之一&#xff0c;用于在序列化和反序列化 JSON 数据时处理多态性&#xff0c;特别是在处理继承结构时非常有用。它允许在 JSON 数据中包含有关对象类型的信息&#xff0c;以便正确地进行数据绑定。</p>
+<p>以下是 <code>&#64;JsonTypeInfo</code> 注解的主要参数和功能&#xff1a;</p>
+<ul><li> <p><code>use</code>&#xff1a;定义类型信息的使用方式。可以使用以下常量之一&#xff0c;以告诉 Jackson 库在序列化和反序列化时如何处理类型信息&#xff1a;</p>
+  <ul><li><code>JsonTypeInfo.Id.CLASS</code>&#xff1a;将类的全名作为类型信息。</li><li><code>JsonTypeInfo.Id.NAME</code>&#xff1a;将一个字符串作为类型信息&#xff0c;需要与 <code>&#64;JsonSubTypes</code> 注解一起使用&#xff0c;<font color="red"><strong>一般使用这个配置</strong>。</font></li><li><code>JsonTypeInfo.Id.MINIMAL_CLASS</code>&#xff1a;类似于 <code>CLASS</code>&#xff0c;但只使用类名的相对路径。</li><li><code>JsonTypeInfo.Id.NONE</code>&#xff1a;不包含任何类型信息。</li><li><code>JsonTypeInfo.Id.CUSTOM</code>&#xff1a;使用自定义的类型解析器处理类型信息。</li></ul> </li><li> <p><code>include</code>&#xff1a;定义类型信息的包含位置。可以是以下常量之一&#xff1a;</p>
+  <ul><li><code>JsonTypeInfo.As.WRAPPER_OBJECT</code>&#xff1a;将类型信息包装在 JSON 对象中。</li><li><code>JsonTypeInfo.As.PROPERTY</code>&#xff1a;将类型信息作为 JSON 属性添加到数据中&#xff0c;<font color="red"><strong>一般使用这个配置</strong>。</font></li></ul> </li><li> <p><code>property</code>&#xff1a;定义用于存储类型信息的属性名。默认为 <code>&#34;&#64;class&#34;</code>。当 <code>include</code> 设置为 <code>JsonTypeInfo.As.PROPERTY</code> 时&#xff0c;此属性用于存储类型信息。</p> </li><li> <p><code>visible</code>&#xff1a;设置类型信息是否可见。默认为 <code>false</code>&#xff0c;意味着类型信息不会序列化到 JSON 数据中。如果设置为 <code>true</code>&#xff0c;类型信息将包含在 JSON 数据中&#xff0c;<font color="red"><strong>一般使用这个配置设置为true</strong>。</font></p> </li><li> <p><code>defaultImpl</code>&#xff1a;定义默认的实现类&#xff0c;用于在反序列化时处理无法匹配类型信息的情况。</p> </li><li> <p><code>useDefaultImpl</code>&#xff1a;设置是否在无法匹配类型信息时使用默认实现类。默认为 <code>true</code>。</p> </li></ul>
+<p>综上所述&#xff0c;<code>&#64;JsonTypeInfo</code> 注解用于在序列化和反序列化 JSON 数据时处理多态性和继承结构&#xff0c;通过在数据中包含类型信息来确保正确的映射。</p>
+<h2><a rel="noopener noreferrer" id="_169"></a>总结一下</h2>
+<p>JsonTypeInfo注解的使用可以降低同一类数据处理接口的提供数量&#xff0c;调用方可以只调用一个接口&#xff0c;接口内部可以依据调用方组装的Model和内置参数确定处理逻辑&#xff0c;扩展性和易用性都很强&#xff0c;在数据同步的场景里挺值得一用的。</p>

@@ -1,0 +1,152 @@
+<p>研一的时候学习C#&#xff0c;发现和自己学的Java不一样&#xff0c;为啥&#xff0c;C#里还有结构体这个东西&#xff0c;这个东西不多余么&#xff1f;今天学习了下结构体&#xff0c;发现&#xff0c;这东西确实挺多余的&#xff0c;没啥用&#xff0c;<strong>但是通过对结构体的学习&#xff0c;可以让我更好的理解值类型</strong>&#xff0c;C# 中的简单类型&#xff0c;如<strong>int、double、bool等都是结构类型</strong>。如果需要的话&#xff0c;<strong>甚至可以使用结构类型结合运算符运算重载&#xff0c;再为 C# 语言创建出一种新的值类型来</strong>。</p>
+<p>在进入正题前&#xff0c;先来简单复习下值类型和引用类型&#xff1a;</p>
+<ul><li>值类型要求直接创建内存拷贝&#xff0c;<strong>变量直接包含数据&#xff0c;两个变量不可能引用同一内存位置</strong>&#xff08;ref和out只不过是给变量起了一个别名&#xff0c;实际上传递的还是该变量的地址。一个指向栈里的地址&#xff09;</li><li>引用类型在栈里传递的是引用个&#xff0c;是指向堆里的地址。</li></ul>
+<p><strong>栈复制的好处是垃圾回收的清理代价低&#xff0c;但是却需要频繁的拷贝&#xff0c;对性能造成影响</strong>&#xff0c;如果拷贝值类型的代价比拷贝引用高出四倍&#xff0c;就应该把它考虑设计成引用类型了。</p>
+<h3><a rel="noopener noreferrer" id="_9"></a>结构</h3>
+<p>除了string和object是引用类型&#xff0c;其它所有C#内建类型都是值类型。开发者甚至可以通过struct自己定义值类型。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">struct</span> Angle
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Angle</span><span class="token punctuation">(</span><span class="token keyword">int</span> degrees<span class="token punctuation">,</span> <span class="token keyword">int</span> minutes<span class="token punctuation">,</span> <span class="token keyword">int</span> seconds<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Degrees <span class="token operator">&#61;</span> degrees<span class="token punctuation">;</span>
+            Minutes <span class="token operator">&#61;</span> minutes<span class="token punctuation">;</span>
+            Seconds <span class="token operator">&#61;</span> seconds<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// Using C# 6.0 read-only, automatically implemented properties</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Degrees <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Minutes <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Seconds <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">Angle</span> <span class="token function">Move</span><span class="token punctuation">(</span><span class="token keyword">int</span> degrees<span class="token punctuation">,</span> <span class="token keyword">int</span> minutes<span class="token punctuation">,</span> <span class="token keyword">int</span> seconds<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Angle</span><span class="token punctuation">(</span>
+                Degrees <span class="token operator">&#43;</span> degrees<span class="token punctuation">,</span>
+                Minutes <span class="token operator">&#43;</span> minutes<span class="token punctuation">,</span>
+                Seconds <span class="token operator">&#43;</span> seconds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+</code></pre>
+<p>要创建不可变的值类型&#xff0c;值类型一旦被new出来&#xff0c;就不能修改该实例&#xff0c;要修改应该创建一个新的实例。有几点需要注意&#xff1a;</p>
+<ul><li>1&#xff0c;结构包含属性、字段&#xff0c;还可以包含方法和构造函数&#xff08;可以包含静态成员&#xff09;&#xff0c;<font color="red"><strong>但不能定义无参的构造函数&#xff0c;只能用系统默认的无参构造函数</strong></font>。</li><li>2&#xff0c;结构中<strong>不能显式的在字段声明中初始化字段&#xff0c;只能通过构造函数来赋值&#xff0c;或者不赋值隐式的使用字段默认值。当然也可以通过只读自动属性来赋默认值</strong></li><li>3&#xff0c;值类型必须显式的初始化来避免编译时错误&#xff0c;结合第2条&#xff0c;<font color="red"><strong>值类型最好通过只读自动属性来初始化字段</strong></font></li><li>4&#xff0c;<font color="red"><strong>所有值类型都是隐式密封的</strong></font>&#xff0c;所以值类型不能被继承&#xff0c;值类型只能继承自System.ValueType&#xff0c;当然值类型也能实现接口&#xff0c;例如一些比较的接口。</li></ul>
+<p>new一个值类型的实例时会发生什么呢&#xff1f;其实也就是new一个结构出来。比较下引用类型和值类型两种不同的new的方式&#xff1a;</p>
+<ol><li>为引用类型使用new操作符&#xff0c;“运行时”会在<strong>托管堆</strong>上创建对象的新实例&#xff0c;将所有字段初始化为默认值&#xff0c;再调用构造函数&#xff0c;将对实例的引用以this的形式传递。new操作符最后返回对实例的引用&#xff0c;该引用被拷贝到和变量关联的内存位置。</li><li>相反&#xff0c;为值类型使用new操作符&#xff0c;“运行时”会在<strong>临时存储池</strong>中创建对象的新实例&#xff0c;将所有字段初始化为默认值&#xff08;字段不能声明时初始化&#xff09;&#xff0c;调用构造函数&#xff0c;将<strong>临时存储位置作为ref变量以this的形式传递</strong>。结果是值被存储到临时存储位置&#xff0c;然后可将该值拷贝到和变量关联的内存位置&#xff0c;所以值类型的变量直接包含它的数据。</li></ol>
+<p>和类不同&#xff0c;结构不支持终结器。结构以值的形式拷贝&#xff0c;不像引用类型那样具有“引用同一性”&#xff0c;所以难以知道什么时候能安全执行终结器并释放结构占用的非托管资源。<strong>垃圾回收器知道在什么时候没有了对引用类型实例的“活动”引用&#xff0c;可在此之后的任何时间运行终结器。但“运行时”没有任何机制能跟踪值类型在特定时刻有多少个拷贝</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_49"></a>装箱与拆箱</h3>
+<p>上文讨论过值类型和引用类型的区别&#xff0c;那么如果把值类型转换为它实现的某个接口或者object会怎么样&#xff0c;就像把int类型转为object类型会发生什么呢&#xff1f;看一下实现和CIL代码&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103605340-01-d2ecc6b14e.png" loading="lazy"><br />
+装箱的结果<strong>必然是对一个存储位置的引用</strong>。该位置表面上包含引用类型的实例&#xff0c;但实际包含值类型的值。这种转换称为装箱&#xff08;boxing&#xff09;&#xff0c;它具有一些特殊行为。从值类型的变量&#xff08;直接引用其数据&#xff09;转换为引用类型&#xff08;引用堆上的一个位置&#xff09;会涉及以下几个步骤。</p>
+<ol><li><strong>首先在堆上分配内存。它将用于存放值类型的数据以及少许额外开销</strong>&#xff08;SyncBlockIndex和方法表指针&#xff09;。需要这些开销&#xff0c;对象才能看起来像引用类型的托管对象实例。</li><li>接着<strong>发生一次内存拷贝动作&#xff0c;当前存储位置的值类型数据拷贝到堆上分配好的位置</strong>。</li><li>最后&#xff0c;<strong>转换结果是对堆上的新存储位置的引用</strong>。</li></ol>
+<p>相反的过程称为<strong>拆箱</strong>&#xff08;unboxing&#xff09;&#xff1a;</p>
+<ol><li>首先<strong>核实已装箱值的类型兼容于要拆箱成的值的类型</strong>&#xff0c;也就是说装箱后虽然是object&#xff0c;但它本质是int&#xff0c;所以也是兼容于int类型的。</li><li>然后<strong>拷贝堆中存储的值</strong></li><li>返回结果是<strong>堆上存储的值的拷贝</strong>。</li></ol>
+<p>关于类型检查需要注意&#xff0c;就是要关心的是值类型实例的真正类型&#xff01;例如number真正的类型是int&#xff0c;<font color="red"><strong>拆箱时就不能直接转为double&#xff0c;必须先转为对应的基础类型再做其他转换</strong></font>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DisplayFibonacci</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// ...</span>
+
+            <span class="token keyword">int</span> number<span class="token punctuation">;</span>
+            <span class="token keyword">object</span> thing<span class="token punctuation">;</span>
+            <span class="token keyword">double</span> bigNumber<span class="token punctuation">;</span>
+
+            number <span class="token operator">&#61;</span> <span class="token number">42</span><span class="token punctuation">;</span>
+            thing <span class="token operator">&#61;</span> number<span class="token punctuation">;</span>
+            <span class="token comment">// ERROR: InvalidCastException</span>
+            <span class="token comment">// bigNumber &#61; (double)thing;</span>
+            bigNumber <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">double</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span>thing<span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>装箱和拆箱如果频繁很可能会引发性能问题。找个小例子分析一下装箱和拆箱&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            List<span class="token operator">&lt;</span><span class="token keyword">double</span><span class="token operator">&gt;</span> list <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">List</span><span class="token punctuation">&lt;</span><span class="token keyword">double</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">//1&#xff0c;装箱&#xff0c;将值类型装箱为object类型</span>
+            list<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">double</span><span class="token punctuation">)</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            list<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">double</span><span class="token punctuation">)</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> count <span class="token operator">&lt;</span> list<span class="token punctuation">.</span>Count<span class="token punctuation">;</span> count<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//2&#xff0c;先拆箱后装箱&#xff0c;object拆箱为double计算后再装箱到list里</span>
+                list<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">double</span><span class="token punctuation">)</span>list<span class="token punctuation">[</span>count <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span><span class="token keyword">double</span><span class="token punctuation">)</span>list<span class="token punctuation">[</span>count <span class="token operator">-</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">foreach</span> <span class="token punctuation">(</span><span class="token keyword">double</span> count <span class="token keyword">in</span> list<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//3&#xff0c;先拆箱后装箱&#xff0c;foreach遍历把list里的每一个object都拆箱为count赋值&#xff0c;</span>
+                   <span class="token comment">//然后再通过 Console.Write方法将count装箱为object</span>
+                Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span><span class="token string">&#34;{0}, &#34;</span><span class="token punctuation">,</span> count<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p><font color="red"><strong>每次装箱都涉及内存分配和拷贝&#xff1b;每次拆箱都涉及类型检查和拷贝</strong></font>。如所有操作都用已拆箱的类型完成&#xff0c;就可避免内存分配和类型检查。显然&#xff0c;可通过避免许多装箱操作来提升代码性能。例如上例的foreach循环可将double换成object来改进。另一个改进是将ArrayList数据类型更改为泛型集合。再来举一个复杂的例子&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// ...</span>
+
+            <span class="token class-name">Angle</span> angle <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Angle</span><span class="token punctuation">(</span><span class="token number">25</span><span class="token punctuation">,</span> <span class="token number">58</span><span class="token punctuation">,</span> <span class="token number">23</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// Example 1: Simple box operation</span>
+            <span class="token keyword">object</span> objectAngle <span class="token operator">&#61;</span> angle<span class="token punctuation">;</span>  <span class="token comment">// Box</span>
+         <span class="token number">1</span><span class="token operator">--</span><span class="token operator">-</span>   Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>Angle<span class="token punctuation">)</span>objectAngle<span class="token punctuation">)</span><span class="token punctuation">.</span>Degrees<span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//方法参数要求值类型</span>
+
+            <span class="token comment">// Example 2: Unbox, modify unboxed value, and discard value</span>
+            <span class="token punctuation">(</span><span class="token punctuation">(</span>Angle<span class="token punctuation">)</span>objectAngle<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">MoveTo</span><span class="token punctuation">(</span><span class="token number">26</span><span class="token punctuation">,</span> <span class="token number">58</span><span class="token punctuation">,</span> <span class="token number">23</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token number">2</span><span class="token operator">--</span><span class="token operator">-</span>    Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span><span class="token string">&#34;, &#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>Angle<span class="token punctuation">)</span>objectAngle<span class="token punctuation">)</span><span class="token punctuation">.</span>Degrees<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// Example 3: Box, modify boxed value, and discard reference to box</span>
+            <span class="token punctuation">(</span><span class="token punctuation">(</span>IAngle<span class="token punctuation">)</span>angle<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">MoveTo</span><span class="token punctuation">(</span><span class="token number">26</span><span class="token punctuation">,</span> <span class="token number">58</span><span class="token punctuation">,</span> <span class="token number">23</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token number">3</span><span class="token operator">--</span><span class="token operator">-</span>    Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span><span class="token string">&#34;, &#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>Angle<span class="token punctuation">)</span>angle<span class="token punctuation">)</span><span class="token punctuation">.</span>Degrees<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// Example 4: Modify boxed value directly</span>
+            <span class="token punctuation">(</span><span class="token punctuation">(</span>IAngle<span class="token punctuation">)</span>objectAngle<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">MoveTo</span><span class="token punctuation">(</span><span class="token number">26</span><span class="token punctuation">,</span> <span class="token number">58</span><span class="token punctuation">,</span> <span class="token number">23</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token number">4</span><span class="token operator">--</span><span class="token operator">-</span>   Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;, &#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>Angle<span class="token punctuation">)</span>objectAngle<span class="token punctuation">)</span><span class="token punctuation">.</span>Degrees<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>这里的Angle 是一个结构体&#xff0c;也就是一个值类型。讨论以上四种情况&#xff1a;</p>
+<ol><li>第一种情况&#xff0c;输出值为25&#xff0c;<strong>装箱返回一个引用类型的地址&#xff0c;然后输出时又进行拆箱返回堆里值的拷贝</strong>&#xff0c;所以还是25没有问题。</li><li>第二种情况&#xff0c;输出值为25&#xff0c;<strong>先对引用类型拆箱返回一个值类型的拷贝&#xff0c;然后调用方法修改该拷贝的值为26&#xff0c;但是打印的时候还是打印原objectAngle引用的堆上的值</strong>&#xff0c;也就是25.</li><li>第三种情况&#xff0c;输出值为25&#xff0c;<strong>先对值类型angle装箱为接口&#xff0c;在堆上创建值的拷贝&#xff0c;然后修改了拷贝值为26&#xff0c;但是打印的时候其实使用的还是该值类型再次装箱后的值</strong>,也就是25</li><li>第四种情况&#xff0c;输出值为26&#xff0c;<strong>将引用类型objectAngle转为接口&#xff0c;不算装箱&#xff0c;修改为26&#xff0c;然后拆箱返回修改值26</strong></li></ol>
+<p>其实&#xff0c;最好还是避免在方法调用时候进行装箱&#xff0c;在已装箱的值类型上调用接口方法&#xff0c;可以避免内存开销&#xff08;每次装箱调用方法都会拷贝一次&#xff09;&#xff0c;以及保证一致性。也就是说<strong>尽量用第四种情况&#xff0c;少用第三种情况</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_149"></a>枚举</h3>
+<p>枚举是由<strong>开发者声明的可读性更强的值类型</strong>。举一个枚举的小例子&#xff0c;枚举默认第一个枚举值为0&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">enum</span> ConnectionState <span class="token punctuation">:</span> <span class="token keyword">short</span>
+    <span class="token punctuation">{<!-- --></span>
+        Disconnected<span class="token punctuation">,</span>     <span class="token comment">//0</span>
+        Connecting <span class="token operator">&#61;</span> <span class="token number">10</span><span class="token punctuation">,</span>    <span class="token comment">//10</span>
+        Connected<span class="token punctuation">,</span>            <span class="token comment">//11</span>
+        Joined <span class="token operator">&#61;</span> Connected<span class="token punctuation">,</span>  <span class="token comment">//11</span>
+        Disconnecting        <span class="token comment">//12</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>枚举有以下几点需要注意&#xff1a;</p>
+<ul><li>枚举<strong>总是具有一个基础类型&#xff0c;可以是除了char之外的任何整型</strong>。</li><li><strong>能转换成基础类型&#xff0c;就能转换成枚举类型</strong>。该设计的优点在于可在未来的API版本中为枚举添加新值&#xff0c;同时不会破坏早期版本。例如以后如果需要一个新的类型作为枚举&#xff0c;那么只要能转基础类型&#xff0c;就能转。</li><li><strong>枚举值为已知值提供了名称&#xff0c;同时允许在运行时分配未知的值</strong>。该设计的缺点在于编码时须谨慎&#xff0c;要主动考虑到未命名值的可能性。例如&#xff0c;将case ConnectionState.Disconnecting替换成default&#xff0c;并认定default case唯一可能的值就是ConnectionState.Disconnecting&#xff0c;那么就是不明智的。相反&#xff0c;应显式处理Disconnecting这一case&#xff0c;而让default case报告一个错误&#xff0c;或者执行其他无害的行为。</li><li><font color="red"><strong>从枚举转换为基础类型以及从基础类型转换为枚举类型都涉及显式转型&#xff0c;而不是隐式转型</strong></font></li></ul>
+<p>枚举和字符串的相互转换&#xff1a;</p>
+<blockquote>
+<p>1&#xff0c;使用Enum.Parse()将字符串转换为枚举</p>
+</blockquote>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">ThreadPriorityLevel</span> priority <span class="token operator">&#61;</span> <span class="token punctuation">(</span>ThreadPriorityLevel<span class="token punctuation">)</span>Enum<span class="token punctuation">.</span><span class="token function">Parse</span><span class="token punctuation">(</span>
+                <span class="token keyword">typeof</span><span class="token punctuation">(</span>ThreadPriorityLevel<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">&#34;Idle&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>     <span class="token comment">//第一个参数是枚举类型</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>priority<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>Enum.Parse(&#xff09;方法返回一个object类型的值&#xff0c;然后通过显式方式强转为枚举类型。当然还可以使用TryParse方式&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>Enum<span class="token punctuation">.</span><span class="token function">TryParse</span><span class="token punctuation">(</span><span class="token string">&#34;Idle&#34;</span><span class="token punctuation">,</span> <span class="token keyword">out</span> <span class="token class-name">ThreadPriorityLevel</span> priority<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>priority<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>在转换枚举的同时做是否转换成功的检查。</p>
+<blockquote>
+<p>2&#xff0c;直接使用ToString方法将枚举值转为字符串值<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103605340-02-d6c48f3c93.png" loading="lazy"></p>
+</blockquote>
+<p>总结一下&#xff0c;这一篇博客其实就是介绍了值类型的本质到底是什么&#xff0c;装箱和拆箱操作的行为底层到底是什么&#xff0c;以及枚举和字符串类型的互转方式。</p>

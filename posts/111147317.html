@@ -1,0 +1,41 @@
+<div id="content_views" class="markdown_views prism-tomorrow-night-eighties">
+
+                    <p>这篇blog实际上就是对整个计算机网络学习内容的的一个总结和归纳，这里举个实际的例子，来尽可能的覆盖全学习到的一些知识，把这些知识都串联起来。首先描述下背景：</p>
+<pre><code class="prism language-java">之前我在京东商城看中一个戴森吹风机想要在一周年的时候送给女朋友小郭，但是当时看的价格比较高，想要在<span class="token number">20</span>分钟后秒杀的时候再买于是
+就把它放入到了购物车，然后在到时间后我登录后点击链接 https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>www<span class="token punctuation">.</span>jd<span class="token punctuation">.</span>com<span class="token operator">/</span> 请求数据，发出请求到看到页面的整个过程是什么样的？
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_6" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>网络通信流程</h3>
+<p>互联网内各网络设备间的通信都遵循TCP/IP协议，利用TCP/IP协议族进行网络通信时，会通过分层顺序与对方进行通信。分层由高到低分别为：<strong>应用层、运输层、网络层、数据链路层、物理层</strong>。发送端从应用层往下走，接收端从物理层往上走</p>
+<ul><li>在<strong>请求的时候</strong>我的浏览器是发送端而京东服务器为接收端</li><li>在<strong>响应的时候</strong>我的浏览器是接收端而京东服务器为发送端</li></ul>
+<p>接下来分层次的探讨一下这个问题。附关于跨域问题https://cloud.tencent.com/developer/article/1876493</p>
+<h4><a rel="noopener noreferrer" id="_12" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>应用层</h4>
+<p>首先我在浏览器客户端发出了请求，请求携带了Cookie信息，而Cookie记录了SessionID，为一个标准的https请求：<br>
+<img alt="在这里插入图片描述" src="./posts/assets/111147317-01-86ed3cdb31.png" loading="lazy"><br>
+那么这一层要做的最重要的事情就是<font color="red"><strong>域名解析</strong></font>，用域名服务器将域名解析为对应的标准IP地址。主机向本地域名服务器发起解析请求，本地域名服务器则采用迭代的方式按顺序去询问：<strong>根域名服务器【DNS域名服务器】-&gt;顶级域名服务器【COM域名服务器】-&gt;权限域名服务器【JD.COM域名服务器】</strong>，最后权限域名服务器告诉了本地域名服务器站点的IP地址【<strong>120.52.30.30</strong>】，本地域名服务器返回给了主机。</p>
+<h4><a rel="noopener noreferrer" id="_17" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>运输层</h4>
+<p>在拿到了主机地址【<strong>127.0.0.1</strong>】京东的服务器的IP地址【<strong>120.52.30.30</strong>】、运输层的HTTP协议端口【<strong>443</strong>】以及请求的<strong>应用层HTTP数据报文</strong>后，运输层的TCP协议将<strong>应用层HTTP数据报文</strong>按照顺序切割为多个<strong>运输层TCP报文段</strong>。准备进行可靠连接：</p>
+<ul><li>TCP使用<font color="red"><strong>三次握手</strong></font>将通信双方的机器进行连接，当然数据传输完毕后要使用<font color="red"><strong>四次挥手</strong></font>断开连接</li><li>TCP使用<font color="red"><strong>滑动窗口</strong></font>来保证每次传输都是有序可靠的</li><li>TCP使用<font color="red"><strong>拥塞控制</strong></font>来保证发送的传输速率可控，防止接收方扛不住</li></ul>
+<p>建立好连接后就要开始进行数据传送了，这里需要做的就是配置好<strong>网关</strong></p>
+<h4><a rel="noopener noreferrer" id="_24" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>网络层</h4>
+<p>每个<strong>运输层TCP报文段</strong>在传送的时候都会被加上IP的首部作为<strong>网络层IP数据报</strong>来进行传送，那么每个报文段需要被配送到哪个地址呢？这个由<font color="red"><strong>分组转发算法</strong></font>来决定，例如我的请求被<strong>转发到了华南区，到了华南区某个京东的机房里的一台服务器</strong><br>
+<img alt="在这里插入图片描述" src="./posts/assets/111147317-02-1a6e6d7904.png" loading="lazy"><br>
+而在确定好了下一跳要被转发到哪个<strong>路由器或者目的主机</strong>后，使用<font color="red"><strong>ARP地址解析协议</strong></font>来将逻辑的<strong>IP地址</strong>转化为实际的物理<strong>MAC地址</strong>，以上三层实现了虚拟地址到真实物理地址的转化，接下来就是真实物理地址的字节传递，上边部分可以归纳下：<br>
+<img alt="在这里插入图片描述" src="./posts/assets/111147317-03-bdc1e1e6a0.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_32" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>数据链路层</h4>
+<p>明确了数据要传送到的实际物理地址后，<strong>网络层IP数据报</strong>被加上首部和尾部组装成了一个<strong>数据链路层PPP帧</strong>，通过数据链路层的传输，可以实现<strong>差错控制的透明传输</strong>，通常使用<strong>交换机</strong>来加快传输速率。</p>
+<h4><a rel="noopener noreferrer" id="_34" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>物理层</h4>
+<p>每一个<strong>数据链路层PPP帧</strong>在物理层均被解析为<strong>物理层二进制位码流</strong>，然后通过电信号、光信号或者无线信号来进行传输，这样整个数据就实现了交换。</p>
+<p>这样整个流程就实现完成了，请求到达了京东的服务器，并且通过redis拿到了购物车信息，获取到了戴森吹风机，这个时候我下单购买了戴森吹风机，女朋友就很happy！</p>
+<h3><a rel="noopener noreferrer" id="_39" href="https://blog.csdn.net/sinat_33087001/article/details/111147317"></a>信件的传递</h3>
+<p>还想举个例子来聊聊在整个流程中我们传递的内容该怎么理解，举个例子：一个小区里（<strong>主机</strong>）里住着很多住户（<strong>不同的应用进程</strong>），各自有门牌号（<strong>端口号</strong>），现在一个叫万维网的用户要给远方的另一个小区（<strong>目标主机</strong>）里的<strong>万维网亲戚</strong>写信：</p>
+<ol><li>
+<p>把信（<strong>HTTP请求报文</strong>）放到信封（<strong>端口号</strong>）里，并且告诉邮局对方的邮编（<strong>URL</strong>），接下来会有怎样的流程？</p>
+</li><li>
+<p>邮局拿到邮编后首先查表（<strong>DNS域名服务器</strong>）将其解析为对方小区的地址（<strong>IP地址</strong>），选择好双方的连接方案（<strong>运输层传输协议</strong>）。然后依据客户要求选择中国邮政EMS(<strong>提供TCP可靠分组交付</strong>)，并且把信的三页纸分装到三个相同的信封包括：信封（<strong>TCP数据报</strong>）包括：（<strong>TCP数据报首部</strong>，保存源目的端口地址）+信纸部分（<strong>切割的HTTP请求报文段</strong>）</p>
+</li><li>
+<p>EMS（<strong>TCP协议</strong>）承包了该客人的业务，它拿到客户的信后依据之前邮局对照表（<strong>路由表</strong>）里对应的（<strong>IP地址</strong>）把这封信放到一个包裹里（<strong>IP数据报</strong>）包括：包裹外壳（<strong>IP数据报首部</strong>，保存源目的IP地址）+完整的信（<strong>TCP数据报</strong>）。然后快递公司站点把包裹投递出去，经过服务站点的层层转发（使用了下三层：数据链路层，物理层）送到对应住户（<strong>进程</strong>）所在的小区（<strong>主机</strong>），因为只知道地址（<strong>IP地址</strong>），而不知道具体怎么过去，但是快递员认路（<strong>ARP协议</strong>）</p>
+</li></ol>
+<p>送到所在小区后，快递员取出包裹，拿出信，对照着信封的格式送到了具体的住户家里，信件的传递也就是上三层的寻址过程。</p>
+
+
+                </div>

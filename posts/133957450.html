@@ -1,0 +1,70 @@
+<p>抽象地说&#xff0c;解决一个回溯问题&#xff0c;实际上就是遍历一棵决策树的过程&#xff0c;树的每个叶子节点存放着一个合法答案。你把整棵树遍历一遍&#xff0c;把叶子节点上的答案都收集起来&#xff0c;就能得到所有的合法答案。站在回溯树的一个节点上&#xff0c;你只需要思考 3 个问题&#xff1a;</p>
+<ol><li><strong>路径</strong>&#xff1a;也就是已经做出的选择。</li><li><strong>选择列表</strong>&#xff1a;也就是你当前可以做的选择。</li><li><strong>结束条件</strong>&#xff1a;也就是到达决策树底层&#xff0c;无法再做选择的条件。</li></ol>
+<p>回溯算法的框架&#xff1a;</p>
+<h2><a rel="noopener noreferrer" id="_8"></a>回溯算法框架代码</h2>
+<p>以下就是回溯算法的框架代码</p>
+<pre><code class="prism language-java">result <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+def <span class="token function">backtrack</span><span class="token punctuation">(</span>路径<span class="token punctuation">,</span> 选择列表<span class="token punctuation">)</span><span class="token operator">:</span>
+    <span class="token keyword">if</span> 满足结束条件<span class="token operator">:</span>
+        result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>路径<span class="token punctuation">)</span>
+        <span class="token keyword">return</span>
+
+    <span class="token keyword">for</span> 选择 in 选择列表<span class="token operator">:</span>
+        做选择
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>路径<span class="token punctuation">,</span> 选择列表<span class="token punctuation">)</span>
+        撤销选择
+
+</code></pre>
+<p>其<strong>核心就是 for 循环里面的递归&#xff0c;在递归调用之前「做选择」&#xff0c;在递归调用之后「撤销选择」</strong></p>
+<h2><a rel="noopener noreferrer" id="_27"></a>排列、组合、子集</h2>
+<p>无论是排列、组合还是子集问题&#xff0c;简单说无非就是让你从序列 nums 中以给定规则取若干元素&#xff0c;主要有以下几种变体&#xff1a;</p>
+<ol><li><strong>元素无重不可复选【I】</strong>&#xff0c;即 nums 中的元素都是唯一的&#xff0c;每个元素最多只能被使用一次&#xff0c;这也是最基本的形式。以组合为例&#xff0c;如果输入 nums &#61; [2,3,6,7]&#xff0c;和为 7 的组合应该只有 [7]。</li><li><strong>元素可重不可复选【II】</strong>&#xff0c;即 nums 中的元素可以存在重复&#xff0c;每个元素最多只能被使用一次。以组合为例&#xff0c;如果输入 nums &#61; [2,5,2,1,2]&#xff0c;和为 7 的组合应该有两种 [2,2,2,1] 和 [5,2]。</li><li><strong>元素无重可复选</strong>&#xff0c;即 nums 中的元素都是唯一的&#xff0c;每个元素可以被使用若干次。以组合为例&#xff0c;如果输入 nums &#61; [2,3,6,7]&#xff0c;和为 7 的组合应该有两种 [2,2,3] 和 [7]。</li></ol>
+<p>当然&#xff0c;也可以说有第四种形式&#xff0c;即元素可重可复选。但既然元素可复选&#xff0c;那又何必存在重复元素呢&#xff1f;元素去重之后就等同于形式三&#xff0c;所以这种情况不用考虑。</p>
+<h3><a rel="noopener noreferrer" id="_36"></a>排列</h3>
+<p>排列的概念和排列树</p>
+<h4><a rel="noopener noreferrer" id="_38"></a>排列的概念</h4>
+<p>全排列是一个组合数学概念&#xff0c;它指的是一个给定集合中<strong>所有元素</strong>的<strong>不同排列方式【不同顺序是两个】</strong>。全排列是一个重要的排列组合问题&#xff0c;通常用于解决诸如排列、组合、密码学和计算机算法等领域的问题。</p>
+<p><strong>假设有一个集合&#xff0c;其中包含n个不同的元素&#xff0c;全排列就是这些元素的所有可能的排列方式。每个元素在每个排列中都只出现一次</strong>。全排列问题通常用于计算和枚举这些排列&#xff0c;以便解决各种问题&#xff0c;如密码破解、计算机编程中的排列操作等。</p>
+<p>在数学符号中&#xff0c;全排列通常用符号P(n)来表示&#xff0c;其中n表示集合中元素的数量。因此&#xff0c;对于上述例子&#xff0c;<code>P(3) &#61; 3! &#61; 3 × 2 × 1 &#61; 6</code>。全排列的数量等于元素个数的阶乘。</p>
+<h4><a rel="noopener noreferrer" id="_44"></a>排列树</h4>
+<p>排列树如下<br />
+<img alt="在这里插入图片描述" src="./posts/assets/133957450-01-afdb6b4f00.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_48"></a>子集</h3>
+<p>子集的概念和子集树</p>
+<h4><a rel="noopener noreferrer" id="_50"></a>子集的概念</h4>
+<p>组合问题和子集问题其实是等价的&#xff0c;什么是子集呢&#xff1f;<strong>子集是集合论中的一个重要概念&#xff0c;它指的是一个集合中的部分元素的集合。更具体地说&#xff0c;如果集合A中的所有元素都包含在集合B中&#xff0c;那么A是B的一个子集</strong>。这可以用符号表示为A ⊆ B。</p>
+<p>以下是子集的一些关键特点和定义&#xff1a;</p>
+<ol><li>
+<p>子集关系&#xff1a;<strong>如果集合A的任意一个元素都是集合B的元素&#xff0c;那么集合A称为集合B的子集</strong></p>
+</li><li>
+<p><strong>空集合是任何集合的子集</strong>&#xff1a;空集合&#xff08;不包含任何元素的集合&#xff09;是所有集合的子集。形式化地&#xff0c;∅&#xff08;空集合&#xff09;是任何集合A的子集&#xff0c;即∅ ⊆ A。</p>
+</li><li>
+<p><strong>集合是其自身的子集</strong>&#xff1a;任何集合都是其自身的子集&#xff0c;即对于任何集合A&#xff0c;A ⊆ A。</p>
+</li><li>
+<p>真子集&#xff1a;<strong>如果A是B的子集&#xff0c;但A和B不相等&#xff0c;那么A被称为B的真子集</strong>。形式化地&#xff0c;如果A ⊆ B 且 A ≠ B&#xff0c;那么A是B的真子集&#xff0c;可以表示为A ⊂ B。</p>
+</li></ol>
+<p>例如&#xff0c;假设有两个集合&#xff1a;<br />
+A &#61; {1, 2}<br />
+B &#61; {1, 2, 3, 4}</p>
+<p>在这种情况下&#xff0c;集合A是集合B的子集&#xff0c;因为A中的所有元素都包含在B中。所以&#xff0c;A ⊆ B。同时&#xff0c;A也是B的真子集&#xff0c;因为它们不相等&#xff0c;即A ≠ B&#xff0c;可以表示为A ⊂ B。</p>
+<h4><a rel="noopener noreferrer" id="_68"></a>子集树</h4>
+<p>子集树如下<br />
+<img alt="在这里插入图片描述" src="./posts/assets/133957450-02-7bf9435eda.png" loading="lazy"><br />
+<strong>所有子集&#xff0c;就是把所有节点的值都收集起来</strong></p>
+<h3><a rel="noopener noreferrer" id="_73"></a>组合</h3>
+<p>组合的概念和组合树</p>
+<h4><a rel="noopener noreferrer" id="_75"></a>组合的概念</h4>
+<p>组合是组合数学中的一个重要概念&#xff0c;它涉及从给定的集合中选择出一定数量的元素&#xff0c;而不考虑元素的顺序。组合用来计算在不同的选择中&#xff0c;选取一组元素的方式&#xff0c;而不考虑它们的排列顺序。组合通常表示为 “C(n, k)”&#xff0c;其中 “n” 表示集合中的元素数量&#xff0c;“k” 表示要选择的元素数量。</p>
+<p>组合的定义如下&#xff1a;</p>
+<p>在集合中&#xff0c;从n个不同的元素中选择k个元素&#xff0c;其中1 ≤ k ≤ n&#xff0c;这种选择方式称为一个组合。组合通常用 “C(n, k)” 表示&#xff0c;其中 “n” 是总元素数量&#xff0c; “k” 是选择的元素数量。组合的数量可以用以下公式计算&#xff1a;</p>
+<p>C(n, k) &#61; n! / (k!(n-k)!)</p>
+<p>其中 “n!” 表示n的阶乘&#xff0c;即n的所有正整数的乘积。</p>
+<p>组合与排列不同&#xff0c;排列考虑元素的顺序&#xff0c;而组合仅考虑元素的选择&#xff0c;无论其顺序如何。例如&#xff0c;如果有一个集合 {A, B, C}&#xff0c;那么从中选择两个元素的组合有三种&#xff1a;{A, B}、{A, C} 和 {B, C}&#xff0c;而不考虑元素的排列顺序。</p>
+<p>组合的应用非常广泛&#xff0c;包括在组合优化、统计学、概率论、密码学、计算机科学和组合数学等领域。</p>
+<h4><a rel="noopener noreferrer" id="_89"></a>组合树</h4>
+<p>组合树与子集树相同&#xff0c;只不过是子集树上满足条件的某一层节点<br />
+<img alt="在这里插入图片描述" src="./posts/assets/133957450-03-7589f99538.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_92"></a>排列、子集、组合的区别和联系</h3>
+<p>下表是排列、子集和组合的联系与区别的简要总结&#xff1a;</p>
+
+<table><thead><tr><th>特点</th><th>排列&#xff08;Permutation&#xff09;</th><th>子集&#xff08;Subset&#xff09;</th><th>组合&#xff08;Combination&#xff09;</th></tr></thead><tbody><tr><td>定义</td><td><strong>考虑元素的排列顺序</strong></td><td><strong>不考虑元素的排列顺序</strong></td><td><strong>不考虑元素的排列顺序</strong></td></tr><tr><td>选择元素个数&#xff08;k&#xff09;</td><td>k个元素</td><td>0到n个元素</td><td>k个元素</td></tr><tr><td>顺序重要性</td><td>重要</td><td>不重要</td><td>不重要</td></tr><tr><td>表示形式</td><td>P(n, k)</td><td>-</td><td>C(n, k)</td></tr><tr><td>计算公式</td><td>n! / (n-k)!</td><td>-</td><td>n! / (k!(n-k)!)</td></tr><tr><td>例子</td><td>排列一组车辆的顺序</td><td>集合中的元素的所有可能子集</td><td>从一组学生中选择小组</td></tr></tbody></table><p>这个表格总结了排列、子集和组合的定义、特点、选择元素个数、顺序重要性、表示形式和计算公式&#xff0c;以帮助理解它们之间的联系和区别。</p>

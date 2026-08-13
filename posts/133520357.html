@@ -1,0 +1,279 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【搜索算法】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/133520357-01-0d3e439b1a.png" loading="lazy"><br /> 明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="_3"></a>岛屿数量</h2>
+<p>来做这道传说中的岛屿数量&#xff0c;我们所熟悉的 **DFS&#xff08;深度优先搜索&#xff09;**问题通常是在树或者图结构上进行的。而我们今天要讨论的 DFS 问题&#xff0c;是在一种「网格」结构中进行的。岛屿问题是这类网格 DFS 问题的典型代表。网格结构遍历起来要比二叉树复杂一些&#xff0c;如果没有掌握一定的方法&#xff0c;DFS 代码容易写得冗长繁杂</p>
+<h3><a rel="noopener noreferrer" id="_5"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133520357-02-c39a5b24e7.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_8"></a>解题思路</h3>
+<p>首先明确下这一类题目该如何求解&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="1__10"></a>1 网格问题的基本概念</h4>
+<p>我们首先明确一下岛屿问题中的网格结构是如何定义的&#xff0c;以方便我们后面的讨论。网格问题是由 <strong>m×n</strong>个小方格组成一个网格&#xff0c;每个小方格与其<strong>上下左右四个方格</strong>认为是相邻的&#xff0c;要在这样的网格上进行某种搜索。</p>
+<p>岛屿问题是一类典型的网格问题。每个格子中的数字可能是 0 或者 1。<strong>我们把数字为 0 的格子看成海洋格子&#xff0c;数字为 1 的格子看成陆地格子&#xff0c;这样相邻的陆地格子就连接成一个岛屿</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/133520357-03-2cc17ce30f.png" loading="lazy"><br /> 在这样一个设定下&#xff0c;就出现了各种岛屿问题的变种&#xff0c;包括<strong>岛屿的数量、面积、周长</strong>等。不过这些问题&#xff0c;基本都可以用 DFS 遍历来解决</p>
+<h4><a rel="noopener noreferrer" id="2_DFS__16"></a>2 DFS 的基本结构</h4>
+<p>网格结构要比二叉树结构稍微复杂一些&#xff0c;它其实是一种简化版的图结构。要写好网格上的 DFS 遍历&#xff0c;我们首先要理解二叉树上的 DFS 遍历方法&#xff0c;再类比写出网格结构上的 DFS 遍历。我们写的二叉树 DFS 遍历一般是这样的&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">void</span> <span class="token function">traverse</span><span class="token punctuation">(</span><span class="token class-name">TreeNode</span> root<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 判断 base case</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>root <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 访问两个相邻结点&#xff1a;左子结点、右子结点</span>
+    <span class="token function">traverse</span><span class="token punctuation">(</span>root<span class="token punctuation">.</span>left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">traverse</span><span class="token punctuation">(</span>root<span class="token punctuation">.</span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>可以看到&#xff0c;二叉树的 DFS 有两个要素&#xff1a;「<strong>访问相邻结点</strong>」和「<strong>判断 base case</strong>」。</p>
+<ul><li> <p>第一个要素是<strong>访问相邻结点</strong>。二叉树的相邻结点非常简单&#xff0c;只有左子结点和右子结点两个。二叉树本身就是一个递归定义的结构&#xff1a;一棵二叉树&#xff0c;它的左子树和右子树也是一棵二叉树。那么我们的 DFS 遍历只需要递归调用左子树和右子树即可。</p> </li><li> <p>第二个要素是 <strong>判断 base case</strong>。一般来说&#xff0c;二叉树遍历的 base case 是 <code>root &#61;&#61; null</code>。这样一个条件判断其实有两个含义&#xff1a;一方面&#xff0c;这表示 root 指向的子树为空&#xff0c;不需要再往下遍历了。另一方面&#xff0c;在 <code>root &#61;&#61; null</code> 的时候及时返回&#xff0c;可以让后面的 <code>root.left</code> 和 <code>root.right</code> 操作不会出现空指针异常。</p> </li></ul>
+<p>对于网格上的 DFS&#xff0c;我们完全可以参考二叉树的 DFS&#xff0c;写出网格 DFS 的两个要素&#xff1a;</p>
+<ol><li>首先&#xff0c;网格结构中的格子有多少相邻结点&#xff1f;答案是上下左右四个。对于格子 (r, c) 来说&#xff08;r 和 c 分别代表行坐标和列坐标&#xff09;&#xff0c;四个相邻的格子分别是 (r-1, c)、(r&#43;1, c)、(r, c-1)、(r, c&#43;1)。换句话说&#xff0c;网格结构是「四叉」的</li></ol>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133520357-04-f95d5c2622.png" loading="lazy"></p>
+<ol start="2"><li>其次&#xff0c;网格 DFS 中的 base case 是什么&#xff1f;从二叉树的 base case 对应过来&#xff0c;应该是网格中不需要继续遍历、<strong>grid[r][c]</strong> 会出现数组下标越界异常的格子&#xff0c;也就是那些超出网格范围的格子</li></ol>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133520357-05-963f9b2560.png" loading="lazy"></p>
+<p>这一点稍微有些反直觉&#xff0c;坐标竟然可以临时超出网格的范围&#xff1f;这种方法我称为「先污染后治理」—— 甭管当前是在哪个格子&#xff0c;先往四个方向走一步再说&#xff0c;如果发现走出了网格范围再赶紧返回。这跟二叉树的遍历方法是一样的&#xff0c;先递归调用&#xff0c;发现 <code>root &#61;&#61; null</code> 再返回。</p>
+<p>这样&#xff0c;我们得到了网格 DFS 遍历的框架代码</p>
+<pre><code class="prism language-java"><span class="token keyword">void</span> <span class="token function">dfs</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 判断 base case</span>
+    <span class="token comment">// 如果坐标 (r, c) 超出了网格范围&#xff0c;直接返回</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">inArea</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 访问上、下、左、右四个相邻结点</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 判断坐标 (r, c) 是否在网格中</span>
+<span class="token keyword">boolean</span> <span class="token function">inArea</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token number">0</span> <span class="token operator">&lt;&#61;</span> r <span class="token operator">&amp;&amp;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length
+	<span class="token operator">&amp;&amp;</span> <span class="token number">0</span> <span class="token operator">&lt;&#61;</span> c <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__70"></a>3 如何避免重复遍历</h4>
+<p>网格结构的 DFS 与二叉树的 DFS 最大的不同之处在于&#xff0c;遍历中可能遇到遍历过的结点。这是因为&#xff0c;网格结构本质上是一个「图」&#xff0c;我们可以把每个格子看成图中的结点&#xff0c;每个结点有向上下左右的四条边。在图中遍历时&#xff0c;自然可能遇到重复遍历结点<br /> <img alt="在这里插入图片描述" src="./posts/assets/133520357-06-d957e25935.png" loading="lazy"><br /> 如何避免这样的重复遍历呢&#xff1f;答案是标记已经遍历过的格子。以岛屿问题为例&#xff0c;我们需要在所有值为 1 的陆地格子上做 DFS 遍历。每走过一个陆地格子&#xff0c;就把格子的值改为 2&#xff0c;这样当我们遇到 2 的时候&#xff0c;就知道这是遍历过的格子了。也就是说&#xff0c;每个格子可能取三个值&#xff1a;</p>
+<ul><li>0 —— 海洋格子</li><li>1 —— 陆地格子&#xff08;未遍历过&#xff09;</li><li>2 —— 陆地格子&#xff08;已遍历过&#xff09;</li></ul>
+<p>我们在框架代码中加入避免重复遍历的语句&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">void</span> <span class="token function">dfs</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 判断 base case</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">inArea</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 如果这个格子不是岛屿&#xff0c;直接返回</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">!&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> <span class="token comment">// 将格子标记为「已遍历过」</span>
+
+    <span class="token comment">// 访问上、下、左、右四个相邻结点</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">dfs</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 判断坐标 (r, c) 是否在网格中</span>
+<span class="token keyword">boolean</span> <span class="token function">inArea</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token number">0</span> <span class="token operator">&lt;&#61;</span> r <span class="token operator">&amp;&amp;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length
+	<span class="token operator">&amp;&amp;</span> <span class="token number">0</span> <span class="token operator">&lt;&#61;</span> c <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133520357-07-88e6163033.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_108"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>搜索算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     * 判断岛屿数量
+     * &#64;param grid char字符型二维数组
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> solve <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 记录岛屿数量</span>
+        <span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> r <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length<span class="token punctuation">;</span> r<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> c <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span> c<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 找到岛屿入口</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;1&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 记录岛屿数量</span>
+                    count<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+                    <span class="token comment">// 发现并设置出完整岛屿轮廓</span>
+                    <span class="token function">dfsFind</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> count<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">dfsFind</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 遍历到边界则返回</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">isInArea</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 遍历到非陆地的地方直接返回【海洋以及已探索陆地】</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">!&#61;</span> <span class="token char">&#39;1&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 遍历过的陆地设置为2&#xff0c;防止重复计数</span>
+        grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token char">&#39;2&#39;</span><span class="token punctuation">;</span>
+
+        <span class="token function">dfsFind</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">dfsFind</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">dfsFind</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">dfsFind</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">isInArea</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 判断当前坐标是否仍然在岛屿范围内</span>
+        <span class="token keyword">return</span> r <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length <span class="token operator">&amp;&amp;</span> c <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_176"></a>复杂度分析</h3>
+<p>计算岛屿数量的问题通常通过深度优先搜索&#xff08;DFS&#xff09;或广度优先搜索&#xff08;BFS&#xff09;来解决。以下是使用深度优先搜索&#xff08;DFS&#xff09;算法来计算岛屿数量的时间和空间复杂度分析&#xff1a;</p>
+<p><strong>时间复杂度&#xff1a;</strong> 在最坏情况下&#xff0c;DFS需要访问矩阵中的每个格子一次&#xff0c;因此时间复杂度为O(M*N)&#xff0c;其中M是矩阵的行数&#xff0c;N是矩阵的列数。</p>
+<p><strong>空间复杂度&#xff1a;</strong> 空间复杂度取决于递归调用的深度。在最坏情况下&#xff0c;如果整个矩阵都是陆地&#xff0c;DFS的递归深度可能达到M<em>N&#xff0c;因此空间复杂度为O(M</em>N)。通常&#xff0c;DFS的空间复杂度还包括了用于存储访问标记的数据结构&#xff08;如一个额外的矩阵或集合&#xff09;&#xff0c;因此实际的空间复杂度可能稍微高一些。</p>
+<p>需要注意的是&#xff0c;如果使用迭代而不是递归来实现DFS&#xff0c;可以通过使用栈来降低空间复杂度&#xff0c;但时间复杂度仍然是O(M*N)。</p>
+<p>总之&#xff0c;岛屿数量问题的时间复杂度是O(M<em>N)&#xff0c;空间复杂度通常为O(M</em>N)&#xff0c;但在一些优化的情况下可以降低到O(min(M, N))。这取决于具体的实现方式和问题的输入。</p>
+<h2><a rel="noopener noreferrer" id="MID_186"></a>岛屿的最大面积【MID】</h2>
+<p>接着岛屿数量的题&#xff0c;继续做与之相关的岛屿最大面积的计算</p>
+<h3><a rel="noopener noreferrer" id="_188"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133520357-08-c99a53f3af.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_190"></a>解题思路</h3>
+<p>这道题目只需要对每个岛屿做 DFS 遍历&#xff0c;求出每个岛屿的面积就可以了。求岛屿面积的方法也很简单&#xff0c;代码如下&#xff0c;每遍历到一个格子&#xff0c;就把面积加一</p>
+<pre><code class="prism language-java"><span class="token keyword">int</span> <span class="token function">area</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token number">1</span>
+        <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span>
+        <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span>
+        <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span>
+        <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_203"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>搜索算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">maxAreaOfIsland</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token keyword">int</span> maxArea <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> r <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length<span class="token punctuation">;</span> r<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> c <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span> c<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 找到岛屿入口</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 发现并设置出完整岛屿轮廓</span>
+                    <span class="token keyword">int</span> area <span class="token operator">&#61;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment">// 比较并设置最大面积</span>
+                    maxArea <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>maxArea<span class="token punctuation">,</span> area<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+          <span class="token keyword">return</span> maxArea<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+     <span class="token keyword">private</span> <span class="token keyword">int</span> <span class="token function">area</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 遍历到边界则返回0</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">isInArea</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 遍历到非陆地的地方直接返回0【海洋以及已探索陆地】</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">!&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 遍历过的陆地设置为2&#xff0c;防止重复计数</span>
+        grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 每发现一格岛屿&#xff0c;面积就加1 </span>
+        <span class="token keyword">return</span> <span class="token number">1</span> <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span>  <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span>
+                r <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token function">area</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">isInArea</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 判断当前坐标是否仍然在岛屿范围内</span>
+        <span class="token keyword">return</span> r <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length <span class="token operator">&amp;&amp;</span> c <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_258"></a>复杂度分析</h3>
+<p>计算岛屿的最大面积通常也使用深度优先搜索&#xff08;DFS&#xff09;或广度优先搜索&#xff08;BFS&#xff09;来解决。以下是使用DFS算法来计算岛屿最大面积的时间和空间复杂度分析&#xff1a;</p>
+<p><strong>时间复杂度&#xff1a;</strong> 在最坏情况下&#xff0c;DFS需要访问矩阵中的每个格子一次&#xff0c;因此时间复杂度仍然是O(M<em>N)&#xff0c;其中M是矩阵的行数&#xff0c;N是矩阵的列数。每次访问一个岛屿格子时&#xff0c;需要递归地访问与之相邻的陆地格子&#xff0c;但总体的时间复杂度仍然是O(M</em>N)。</p>
+<p><strong>空间复杂度&#xff1a;</strong> 空间复杂度取决于<strong>递归调用的深度</strong>。在最坏情况下&#xff0c;如果整个矩阵都是陆地&#xff0c;DFS的递归深度可能达到M<em>N&#xff0c;因此空间复杂度为O(M</em>N)。通常&#xff0c;DFS的空间复杂度还包括了用于存储访问标记的数据结构&#xff08;如一个额外的矩阵或集合&#xff09;&#xff0c;因此实际的空间复杂度可能稍微高一些。</p>
+<p>与计算岛屿数量类似&#xff0c;如果使用迭代而不是递归来实现DFS&#xff0c;可以通过使用栈来降低空间复杂度&#xff0c;但时间复杂度仍然是O(M*N)。</p>
+<p>总结一下&#xff0c;计算岛屿的最大面积问题的时间复杂度是O(M<em>N)&#xff0c;空间复杂度通常为O(M</em>N)&#xff0c;但在一些优化的情况下可以降低到O(min(M, N))。这仍然取决于具体的实现方式和问题的输入。</p>
+<h2><a rel="noopener noreferrer" id="_268"></a>岛屿的周长</h2>
+<p>继续用DFS网络搜索框架解这道题</p>
+<h3><a rel="noopener noreferrer" id="_270"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133520357-09-5879c3bcda.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_272"></a>解题思路</h3>
+<p>岛屿的周长是计算岛屿全部的「边缘」&#xff0c;而这些边缘就是我们在 DFS 遍历中&#xff0c;dfs 函数返回的位置。观察题目示例&#xff0c;我们可以将岛屿的周长中的边分为两类&#xff0c;如下图所示。<strong>黄色的边是与网格边界相邻的周长&#xff0c;而蓝色的边是与海洋格子相邻的周长</strong>。<br /> <img alt="在这里插入图片描述" src="./posts/assets/133520357-10-0454dca991.png" loading="lazy"><br /> 当我们的 dfs 函数因为「坐标 (r, c) 超出网格范围」返回的时候&#xff0c;实际上就经过了一条黄色的边&#xff1b;而当函数因为「当前格子是海洋格子」返回的时候&#xff0c;实际上就经过了一条蓝色的边。这样&#xff0c;我们就把岛屿的周长跟 DFS 遍历联系起来了</p>
+<h3><a rel="noopener noreferrer" id="_276"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>搜索算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">islandPerimeter</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> perimeter <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> r <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length<span class="token punctuation">;</span> r<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> c <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span> c<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    perimeter <span class="token operator">&#61;</span> <span class="token function">dfsLength</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> perimeter<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">int</span> <span class="token function">dfsLength</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 函数因为「坐标 (r, c) 超出网格范围」返回&#xff0c;对应一条黄色的边</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">isInArea</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 分开讨论非陆地【海洋以及已探索陆地】</span>
+        <span class="token comment">// 2-1 函数因为「当前格子是海洋格子」返回&#xff0c;对应一条蓝色的边</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2-2 函数因为「当前格子是已遍历的陆地格子」返回&#xff0c;和周长没关系</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span><span class="token number">2</span> <span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        grid<span class="token punctuation">[</span>r<span class="token punctuation">]</span><span class="token punctuation">[</span>c<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+        <span class="token comment">// 继续向四面拓展</span>
+        <span class="token keyword">return</span> <span class="token function">dfsLength</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token function">dfsLength</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r<span class="token punctuation">,</span> c <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token function">dfsLength</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span>
+                r <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token function">dfsLength</span><span class="token punctuation">(</span>grid<span class="token punctuation">,</span> r <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">isInArea</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> grid<span class="token punctuation">,</span> <span class="token keyword">int</span> r<span class="token punctuation">,</span> <span class="token keyword">int</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> r <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> r <span class="token operator">&lt;</span> grid<span class="token punctuation">.</span>length <span class="token operator">&amp;&amp;</span> c <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;</span> grid<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_329"></a>复杂度分析</h3>
+<p>计算岛屿的周长通常可以在深度优先搜索&#xff08;DFS&#xff09;或广度优先搜索&#xff08;BFS&#xff09;的基础上实现。以下是使用DFS算法来计算岛屿周长的时间和空间复杂度分析&#xff1a;</p>
+<p><strong>时间复杂度&#xff1a;</strong> 在最坏情况下&#xff0c;DFS需要访问矩阵中的每个岛屿格子一次&#xff0c;因此时间复杂度为O(M*N)&#xff0c;其中M是矩阵的行数&#xff0c;N是矩阵的列数。对于每个岛屿格子&#xff0c;DFS会探索与之相邻的四个方向&#xff0c;所以在最坏情况下&#xff0c;访问一个岛屿格子的操作的时间复杂度是O(1)。</p>
+<p><strong>空间复杂度&#xff1a;</strong> 空间复杂度取决于递归调用的深度。在最坏情况下&#xff0c;如果整个矩阵都是陆地&#xff0c;DFS的递归深度可能达到M<em>N&#xff0c;因此空间复杂度为O(M</em>N)。通常&#xff0c;DFS的空间复杂度还包括了用于存储访问标记的数据结构&#xff08;如一个额外的矩阵或集合&#xff09;&#xff0c;因此实际的空间复杂度可能稍微高一些。</p>
+<p>与计算岛屿数量和最大面积不同&#xff0c;计算岛屿周长问题的时间复杂度是O(M*N)&#xff0c;因为它只涉及到对每个岛屿格子的一次访问和检查。</p>
+<p>需要注意的是&#xff0c;虽然DFS是一种递归算法&#xff0c;但在实际应用中&#xff0c;可以考虑使用迭代的方式来实现&#xff0c;以避免潜在的栈溢出问题。此时&#xff0c;空间复杂度会有所降低。</p>
+<p>总结一下&#xff0c;计算岛屿周长问题的时间复杂度是O(M<em>N)&#xff0c;空间复杂度通常为O(M</em>N)&#xff0c;但在一些优化的情况下可以降低到O(min(M, N))。这取决于具体的实现方式和问题的输入。</p>
+<h2><a rel="noopener noreferrer" id="DFS_341"></a>拓展知识&#xff1a;DFS在网格中的应用</h2>
+<p>深度优先搜索&#xff08;Depth-First Search&#xff0c;DFS&#xff09;是一种用于图遍历和搜索的算法&#xff0c;它可以应用于各种问题&#xff0c;包括在网格中的问题。在网格中&#xff0c;DFS通常用于解决以下类型的问题&#xff1a;</p>
+<ol><li> <p><strong>迷宫求解</strong>&#xff1a;DFS可用于寻找从一个起始点到达目标点的路径。在一个网格迷宫中&#xff0c;你可以使用DFS来探索不同的路径&#xff0c;直到找到通向目标的路径或者确定没有可行的路径。</p> </li><li> <p><strong>岛屿计数</strong>&#xff1a;给定一个由陆地和水组成的网格&#xff0c;DFS可以用于计算陆地区域的数量。<strong>通过从一个陆地格子开始&#xff0c;DFS可以递归地标记与之相连的所有陆地格子&#xff0c;从而统计出岛屿的数量</strong>。</p> </li><li> <p><strong>联通分量计算</strong>&#xff1a;DFS还可用于计算一个网格中的连通分量数量。连通分量是指由相互连接的格子组成的区域。DFS可以用于标记和计数这些连通分量。</p> </li><li> <p><strong>单词搜索游戏</strong>&#xff1a;在字母矩阵中查找给定单词的存在是另一个DFS的应用。DFS可用于从一个字母格子出发&#xff0c;尝试构建单词并逐步扩展搜索路径&#xff0c;直到找到单词或确定不存在。</p> </li><li> <p><strong>图像填充</strong>&#xff1a;DFS可以用于图像处理&#xff0c;例如在图像上进行填充操作。你可以从一个起始像素开始&#xff0c;使用DFS来填充相邻像素&#xff0c;直到达到某个条件为止。</p> </li></ol>
+<p>在DFS的应用中&#xff0c;关键是选择适当的起始点&#xff0c;并设计好递归函数或迭代算法&#xff0c;以便在网格中进行深度优先搜索。<font color="red"><strong>DFS通常需要使用一个数据结构来记录已经访问过的格子&#xff0c;以防止重复访问&#xff0c;通常可以使用一个集合&#xff08;集合或哈希表&#xff09;来实现这个目的</strong>。</font></p>
+<p>需要注意的是&#xff0c;DFS是一种递归算法&#xff0c;可能会导致栈溢出问题&#xff0c;因此在实际应用中&#xff0c;可能需要考虑使用迭代的方式来实现DFS&#xff0c;或者使用递归的时候设置递归深度限制&#xff0c;以避免潜在的问题。</p>

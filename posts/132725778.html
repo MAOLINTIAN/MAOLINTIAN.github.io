@@ -1,0 +1,255 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【链表的相关判断】&#xff0c;使用【链表】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132725778-01-c5e8ba028d.png" loading="lazy"></p>
+<p>名曲目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="EASY_5"></a>环形链表【EASY】</h2>
+<p>判断链表中是否有环</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132725778-02-3e567d876d.png" loading="lazy"><br /> <img alt="在这里插入图片描述" src="./posts/assets/132725778-03-661fc16776.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_11"></a>解题思路</h3>
+<p>使用快慢双指针遍历链表&#xff0c;有环则一定会相遇<br /> <img alt="给出解题思路&#xff0c;最好有图" src="./posts/assets/132725778-04-1edfb0fd3b.png" loading="lazy"><br /> 为什么有环就一定相遇呢&#xff1f;具象化一下问题&#xff0c;如果两个指针在环里不相遇那么只有一种情况&#xff0c;它们保持了相同的相对距离&#xff0c;要想完成这个的前提是二者速度一致。显然当快慢指针的情况下&#xff0c;二者的距离是不断缩小的</p>
+<ol><li>快指针如果慢于慢指针2格或者1格&#xff0c;因为每次距离缩小1&#xff0c;一定会缩小到0</li><li>如果快指针比慢指针大1格&#xff0c;则最多在慢指针走完一圈前追上</li><li>但如果快指针是慢指针3倍&#xff0c;每次距离缩小2&#xff0c;则不一定&#xff0c;如果快指针早于慢指针1格&#xff0c;则会越过慢指针。<br /> <img alt="在这里插入图片描述" src="./posts/assets/132725778-05-9a66d2bf62.png" loading="lazy"></li></ol>
+<h3><a rel="noopener noreferrer" id="_22"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+<span class="token comment">/**
+ * Definition for singly-linked list.
+ * class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) {
+ *         val &#61; x;
+ *         next &#61; null;
+ *     }
+ * }
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">hasCycle</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 当链表尾null直接返回false</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>head <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 定义快慢指针&#xff0c;快指针每次走两步&#xff0c;慢指针每次走一步</span>
+        <span class="token class-name">ListNode</span> fast <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> slow <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token comment">// 3 直到快指针到链表结尾如果快慢还没有相遇则无环</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>fast <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> fast<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token comment">// 如果中途相遇&#xff0c;则有环&#xff0c;停止遍历&#xff0c;直接返回</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>fast <span class="token operator">&#61;&#61;</span> slow<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_72"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历链表&#xff0c;<strong>时间复杂度为O&#xff08;N&#xff09;</strong><br /> 空间复杂度&#xff1a;无额外空间使用&#xff0c;<strong>空间复杂度为O&#xff08;1&#xff09;</strong></p>
+<h2><a rel="noopener noreferrer" id="IIMID_75"></a>环形链表II【MID】</h2>
+<p>相比于环形链表难度升级在找到环形链表的环的入口节点&#xff0c;链表的尾节点指向该入口节点。</p>
+<h3><a rel="noopener noreferrer" id="_77"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132725778-06-bed7e2d5e4.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_80"></a>解题思路</h3>
+<p>我们使用两个指针&#xff0c;fast 与 slow。它们起始都位于链表的头部。随后&#xff0c;slow指针每次向后移动一个位置&#xff0c;而 fast 指针向后移动两个位置。如果链表中存在环&#xff0c;则 fast指针最终将再次与 slow指针在环中相遇。<br /> <img alt="在这里插入图片描述" src="./posts/assets/132725778-07-2e75c14e3c.png" loading="lazy"></p>
+<p>设链表中环外部分的长度为 a。slow 指针进入环后&#xff0c;又走了 b 的距离与 fast 相遇。此时&#xff0c;fast指针已经走完了环的 n圈&#xff0c;因此它走过的总距离为 <code>a&#43;n(b&#43;c)&#43;b&#61;a&#43;(n&#43;1)b&#43;n</code>&#xff0c;根据题意&#xff0c;任意时刻&#xff0c;fast指针走过的距离都为 slow 指针的 22 倍。因此&#xff0c;我们有</p>
+<pre><code class="prism language-java">a<span class="token operator">&#43;</span><span class="token punctuation">(</span>n<span class="token operator">&#43;</span><span class="token number">1</span><span class="token punctuation">)</span>b<span class="token operator">&#43;</span>nc<span class="token operator">&#61;</span><span class="token function">2</span><span class="token punctuation">(</span>a<span class="token operator">&#43;</span>b<span class="token punctuation">)</span>⟹a<span class="token operator">&#61;</span>c<span class="token operator">&#43;</span><span class="token punctuation">(</span>n−<span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">(</span>b<span class="token operator">&#43;</span>c<span class="token punctuation">)</span>
+</code></pre>
+<p>我们会发现&#xff1a;<strong>从相遇点到入环点的距离加上 n−1 圈的环长&#xff0c;恰好等于从链表头部到入环点的距离</strong>。由以上公式得出&#xff1a;</p>
+<ol><li>如果链表有环&#xff0c;找到相遇点</li><li>两个指针一个从头节点出发&#xff0c;一个从相遇点出发&#xff0c;二者指向同一个节点时即是环的入口节点</li></ol>
+<p>也是一种数学推演技巧</p>
+<h3><a rel="noopener noreferrer" id="_96"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+<span class="token comment">/*
+ public class ListNode {
+    int val;
+    ListNode next &#61; null;
+
+    ListNode(int val) {
+        this.val &#61; val;
+    }
+}
+*/</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> <span class="token class-name">EntryNodeOfLoop</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> pHead<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ListNode</span> p1 <span class="token operator">&#61;</span> pHead<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> p2 <span class="token operator">&#61;</span> pHead<span class="token punctuation">;</span>
+
+        <span class="token comment">// 1 如果存在碰撞点&#xff0c;则证明链表有环&#xff0c;将p2设置到碰撞点</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">getCrashNode</span><span class="token punctuation">(</span>pHead<span class="token punctuation">)</span> <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            p2 <span class="token operator">&#61;</span> <span class="token function">getCrashNode</span><span class="token punctuation">(</span>pHead<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2 如果不存在碰撞点&#xff0c;则证明链表无环&#xff0c;直接返回null</span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 3 节点相交位置即是环入口节点&#xff0c;当然p2可能会经过N圈</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>p1 <span class="token operator">!&#61;</span> p2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            p1 <span class="token operator">&#61;</span> p1<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            p2 <span class="token operator">&#61;</span> p2<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> p1<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 获取换节点碰撞点</span>
+    <span class="token keyword">private</span> <span class="token class-name">ListNode</span> <span class="token function">getCrashNode</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> pHead<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ListNode</span> fast <span class="token operator">&#61;</span> pHead<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> slow <span class="token operator">&#61;</span> pHead<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>fast <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> fast<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>slow <span class="token operator">&#61;&#61;</span> fast<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> fast<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_160"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;O(n)&#xff0c;需要将链表的所有结点遍历一遍&#xff0c;时间复杂度为O(n)&#xff1b;<br /> 空间复杂度&#xff1a;O(1)&#xff0c;需要额外两个快慢指针来遍历结点。</p>
+<h2><a rel="noopener noreferrer" id="EASY_163"></a>回文链表【EASY】</h2>
+<p>判断链表是否是回文结构</p>
+<h3><a rel="noopener noreferrer" id="_165"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132725778-08-22568a1988.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_169"></a>解题思路</h3>
+<p>这题是让判断链表是否是回文链表&#xff0c;所谓的回文链表就是以链表中间为中心点两边对称。我们常见的有判断一个字符串是否是回文字符串&#xff0c;这个比较简单&#xff0c;可以使用两个指针&#xff0c;一个最左边一个最右边&#xff0c;两个指针同时往中间靠&#xff0c;判断所指的字符是否相等。<strong>但这题判断的是链表&#xff0c;因为这里是单向链表&#xff0c;只能从前往后访问&#xff0c;不能从后往前访问&#xff0c;所以使用判断字符串的那种方式是行不通的。但我们可以通过找到链表的中间节点然后把链表后半部分反转</strong>&#xff0c;最后再用后半部分反转的链表和前半部分一个个比较即可</p>
+<ol><li>使用快慢指针找到链表的中点&#xff0c;如果是奇数个&#xff0c;则舍弃中心点</li><li>将链表后半部分反转</li><li>双指针分别在前半部分后半部分移动&#xff0c;如果遇到不相等的值则返回false</li></ol>
+<p>最终如果指针到达链尾且值都相同则返回true</p>
+<h3><a rel="noopener noreferrer" id="_178"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param head ListNode类 the head
+     * &#64;return bool布尔型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> isPail <span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 判断入参&#xff0c;如果是空链表&#xff0c;返回false</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>head <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义快慢指针&#xff0c;快指针每次两步&#xff0c;到结尾时&#xff0c;慢指针刚好到中间</span>
+        <span class="token class-name">ListNode</span> fast <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> slow <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>fast <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> fast<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 如果fast不为null&#xff0c;则链表长度为奇数&#xff0c;且slow位于中点&#xff0c;中点不用判断&#xff0c;所以slow应该向后移一位</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>fast <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 反转后半段回文链表&#xff0c;并且slow指向后半部分头部、fast回到头部&#xff0c;两个链表继续向后</span>
+        slow <span class="token operator">&#61;</span> <span class="token function">reverse</span><span class="token punctuation">(</span>slow<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        fast <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>slow <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>slow<span class="token punctuation">.</span>val <span class="token operator">!&#61;</span> fast<span class="token punctuation">.</span>val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+                slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">ListNode</span> <span class="token function">reverse</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ListNode</span> pre <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>cur <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">ListNode</span> pNext <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pre<span class="token punctuation">;</span>
+            pre <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+            cur <span class="token operator">&#61;</span> pNext<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> pre<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_259"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历链表&#xff0c;<strong>时间复杂度为O&#xff08;N&#xff09;</strong><br /> 空间复杂度&#xff1a;无额外空间使用&#xff0c;<strong>空间复杂度为O&#xff08;1&#xff09;</strong></p>
+<h2><a rel="noopener noreferrer" id="EASY_262"></a>相交链表【EASY】</h2>
+<p>当两个链表相交时找到其交点</p>
+<h3><a rel="noopener noreferrer" id="_264"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132725778-09-10268af4d9.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_267"></a>解题思路</h3>
+<p>使用两个指针N1,N2&#xff0c;一个从链表1的头节点开始遍历&#xff0c;我们记为N1&#xff0c;一个从链表2的头节点开始遍历&#xff0c;我们记为N2。</p>
+<ol><li>让N1和N2一起遍历&#xff0c;当N1先走完链表1的尽头&#xff08;为null&#xff09;的时候&#xff0c;则从链表2的头节点继续遍历&#xff0c;同样&#xff0c;如果N2先走完了链表2的尽头&#xff0c;则从链表1的头节点继续遍历&#xff0c;也就是说&#xff0c;N1和N2都会遍历链表1和链表2。</li><li>因为两个指针&#xff0c;<strong>同样的速度&#xff0c;走完同样长度&#xff08;链表1&#43;链表2&#xff09;&#xff0c;不管两条链表有无相同节点&#xff0c;都能够到达同时到达终点</strong>。</li></ol>
+<p>&#xff08;N1最后肯定能到达链表2的终点&#xff0c;N2肯定能到达链表1的终点&#xff09;。</p>
+<p>所以&#xff0c;如何得到公共节点&#xff1a;</p>
+<ul><li>有公共节点的时候&#xff0c;N1和N2必会相遇&#xff0c;因为长度一样嘛&#xff0c;速度也一定&#xff0c;必会走到相同的地方的&#xff0c;所以当两者相等的时候&#xff0c;则会第一个公共的节点</li><li>无公共节点的时候&#xff0c;此时N1和N2则都会走到终点&#xff0c;那么他们此时都是null&#xff0c;所以也算是相等了&#xff0c;这样循环也会终止</li></ul>
+<p>可以看做将非公共节点互相补全后&#xff0c;两个指针从头开始遍历&#xff0c;一定会找到终点&#xff0c;终点是一个就表示相交&#xff0c;不是一个都是null&#xff0c;也算相等</p>
+<h3><a rel="noopener noreferrer" id="_280"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+<span class="token comment">/*
+public class ListNode {
+    int val;
+    ListNode next &#61; null;
+
+    ListNode(int val) {
+        this.val &#61; val;
+    }
+}*/</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> <span class="token class-name">FindFirstCommonNode</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> pHead1<span class="token punctuation">,</span> <span class="token class-name">ListNode</span> pHead2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义双指针分别指到链表头节点</span>
+        <span class="token class-name">ListNode</span> p1 <span class="token operator">&#61;</span> pHead1<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> p2 <span class="token operator">&#61;</span> pHead2<span class="token punctuation">;</span>
+        <span class="token comment">// 2 相等时结束循环&#xff0c;可能是相交节点&#xff0c;也可能是null</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>p1 <span class="token operator">!&#61;</span> p2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            p1 <span class="token operator">&#61;</span> p1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> pHead2 <span class="token operator">:</span> p1<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            p2 <span class="token operator">&#61;</span> p2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> pHead1 <span class="token operator">:</span> p2<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 3 相交节点或null都满足题目要求&#xff1a;如果无相交节点则返回空</span>
+        <span class="token keyword">return</span> p1<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_322"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;<strong>O(m&#43;n)</strong>。链表1和链表2的长度之和。</p>
+<p>空间复杂度&#xff1a;<strong>O(1)</strong>。常数的空间。</p>

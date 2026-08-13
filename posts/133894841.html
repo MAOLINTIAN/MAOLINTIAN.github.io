@@ -1,0 +1,199 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【回溯算法】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/133894841-01-b3b06b4280.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_5"></a>全排列【MID】</h2>
+<p>一道一直想要解决的高频题&#xff0c;理解回溯算法&#xff0c;解决回溯算法经典题目&#xff1a;全排列&#xff0c;排列树如下<br /> <img alt="在这里插入图片描述" src="./posts/assets/133894841-02-29baf72b61.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_9"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133894841-03-bdcaec82ce.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_12"></a>解题思路</h3>
+<p><a href="https://labuladong.gitee.io/algo/di-san-zha-24031/bao-li-sou-96f79/hui-su-sua-c26da/#%E4%B8%80%E3%80%81%E5%85%A8%E6%8E%92%E5%88%97%E9%97%AE%E9%A2%98" rel="nofollow"><strong>原题解思路地址</strong></a>&#xff0c;我们在高中的时候就做过排列组合的数学题&#xff0c;我们也知道 n 个不重复的数&#xff0c;全排列共有 n! 个。那么我们当时是怎么穷举全排列的呢&#xff1f;比方说给三个数 [1,2,3]&#xff0c;一般是这样&#xff1a;先固定第一位为 1&#xff0c;然后第二位可以是 2&#xff0c;那么第三位只能是 3&#xff1b;然后可以把第二位变成 3&#xff0c;第三位就只能是 2 了&#xff1b;然后就只能变化第一位&#xff0c;变成 2&#xff0c;然后再穷举后两位<br /> <img alt="在这里插入图片描述" src="./posts/assets/133894841-04-00281b3a38.png" loading="lazy"><br /> 只要从根遍历这棵树&#xff0c;记录路径上的数字&#xff0c;其实就是所有的全排列。我们不妨把这棵树称为回溯算法的「<strong>决策树</strong>」。为啥说这是决策树呢&#xff0c;因为你在每个节点上其实都在做决策。比如说你站在下图的红色节点上<br /> <img alt="在这里插入图片描述" src="./posts/assets/133894841-05-e55ee5bdf0.png" loading="lazy"><br /> 你现在就在做决策&#xff0c;可以选择 1 那条树枝&#xff0c;也可以选择 3 那条树枝。为啥只能在 1 和 3 之中选择呢&#xff1f;因为 2 这个树枝在你身后&#xff0c;这个选择你之前做过了&#xff0c;而全排列是不允许重复使用数字的。<strong>所以[2] 就是「路径」&#xff0c;记录你已经做过的选择&#xff1b;[1,3] 就是「选择列表」&#xff0c;表示你当前可以做出的选择&#xff1b;「结束条件」就是遍历到树的底层叶子节点&#xff0c;这里也就是选择列表为空的时候</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/133894841-06-69e1ffd360.png" loading="lazy"><br /> 我们定义的 backtrack 函数其实就像一个指针&#xff0c;在这棵树上游走&#xff0c;同时要正确维护每个节点的属性&#xff0c;每当走到树的底层叶子节点&#xff0c;其「路径」就是一个全排列&#xff0c;<strong>「路径」和「选择」是每个节点的属性&#xff0c;函数在树上游走要正确处理节点的属性&#xff0c;那么就要在这两个特殊时间点搞点动作</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/133894841-07-5546dd0f21.png" loading="lazy"><br /> 所以其核心逻辑就是</p>
+<pre><code class="prism language-java"><span class="token keyword">for</span> 选择 in 选择列表<span class="token operator">:</span>
+    # 做选择
+    将该选择从选择列表移除
+    路径<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>选择<span class="token punctuation">)</span>
+    <span class="token function">backtrack</span><span class="token punctuation">(</span>路径<span class="token punctuation">,</span> 选择列表<span class="token punctuation">)</span>
+    # 撤销选择
+    路径<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>选择<span class="token punctuation">)</span>
+    将该选择再加入选择列表
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133894841-08-6baeecad91.png" loading="lazy"><br /> 符合回溯框架&#xff0c;而且时间复杂度都不可能低于 O(N!)&#xff0c;因为穷举整棵决策树是无法避免的&#xff0c;你最后肯定要穷举出 N! 种全排列结果。<strong>这也是回溯算法的一个特点&#xff0c;不像动态规划存在重叠子问题可以优化&#xff0c;回溯算法就是纯暴力穷举&#xff0c;复杂度一般都很高</strong></p>
+<h3><a rel="noopener noreferrer" id="_36"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 定义结果集参数</span>
+    <span class="token keyword">private</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ArrayList</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span>
+    <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ArrayList</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义路径</span>
+    <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param num int整型一维数组
+     * &#64;return int整型ArrayList&lt;ArrayList&lt;&gt;&gt;
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ArrayList</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> permute <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> num<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 存储使用标识</span>
+        <span class="token keyword">boolean</span><span class="token punctuation">[</span><span class="token punctuation">]</span> used <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">boolean</span><span class="token punctuation">[</span>num<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token comment">// 2 回溯寻找路径存储路径,num为选择列表</span>
+        <span class="token function">backTrack</span><span class="token punctuation">(</span>num<span class="token punctuation">,</span> used<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backTrack</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> num<span class="token punctuation">,</span> <span class="token keyword">boolean</span><span class="token punctuation">[</span><span class="token punctuation">]</span> used<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 设置结束条件,寻找到叶子节点,补充结果集</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> num<span class="token punctuation">.</span>length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 遍历选择列表&#xff0c;将选择列表中元素增加到路径列表</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> num<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 1 已经用过的元素不合法,跳出循环</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>used<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">continue</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token comment">// 2 当前元素从选择列表拿出来放到路径列表</span>
+            used<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>num<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 3 进入下一层选择</span>
+            <span class="token function">backTrack</span><span class="token punctuation">(</span>num<span class="token punctuation">,</span> used<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 4 回溯&#xff0c;将当前元素放回到选择列表&#xff0c;从路径列表移除</span>
+            used<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_98"></a>复杂度分析</h3>
+<p>上述代码是一个用于生成整数数组的全排列的回溯算法&#xff0c;下面是对其时间复杂度和空间复杂度的分析&#xff1a;</p>
+<p><strong>时间复杂度</strong>&#xff1a;</p>
+<ol><li> <p>回溯算法的时间复杂度通常取决于递归的深度和每层递归的操作数量。在这个算法中&#xff0c;每层递归都会尝试 <code>num</code> 数组中的每个元素&#xff0c;直到达到终止条件。</p> </li><li> <p>在每层递归中&#xff0c;有一个循环来遍历 <code>num</code> 数组的所有元素。由于每个元素都被考虑一次&#xff0c;因此总共有 <code>n</code> 个元素&#xff0c;所以在每层递归中有 <code>O(n)</code> 的操作。</p> </li><li> <p>递归的深度取决于 <code>num</code> 数组的大小&#xff0c;也就是 <code>n</code>。在最坏的情况下&#xff0c;递归会深入到 <code>n</code> 层&#xff0c;因此总时间复杂度是 <code>O(n * n!)</code>。</p> </li></ol>
+<p><strong>空间复杂度</strong>&#xff1a;</p>
+<ol><li> <p>空间复杂度主要取决于递归调用的深度&#xff0c;以及用于存储中间结果的数据结构。</p> </li><li> <p>递归的深度是 <code>n</code>&#xff0c;因此在调用堆栈中会有最多 <code>n</code> 层递归帧。每个递归帧包括 <code>used</code> 数组和 <code>path</code> 数组&#xff0c;它们的空间复杂度都是 <code>O(n)</code>。</p> </li><li> <p>由于存在 <code>n</code> 层递归帧&#xff0c;因此总的空间复杂度为 <code>O(n^2)</code>。</p> </li></ol>
+<p>综上所述&#xff0c;上述代码的时间复杂度是 <code>O(n * n!)</code>&#xff0c;其中 <code>n</code> 是输入数组 <code>num</code> 的大小&#xff0c;空间复杂度是 <code>O(n^2)</code>。由于全排列问题的本质&#xff0c;这个时间复杂度是可以接受的&#xff0c;因为全排列的数量本身是 <code>n!</code>&#xff0c;因此生成所有排列的算法必然具有阶乘级的时间复杂度。</p>
+<h2><a rel="noopener noreferrer" id="II_119"></a>全排列II</h2>
+<p>增加难度&#xff0c;在有重复元素的选择列表里选择所有的组合</p>
+<h3><a rel="noopener noreferrer" id="_121"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133894841-09-371e3b0e2e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_123"></a>解题思路</h3>
+<p>假设输入为 <code>nums &#61; [1,2,2&#39;]</code>&#xff0c;标准的全排列算法会得出如下答案&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">[</span>
+    <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token char">&#39;],[1,2&#39;</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token char">&#39;],[2,2&#39;</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">[</span><span class="token number">2</span>&#39;<span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">2</span>&#39;<span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">]</span>
+<span class="token punctuation">]</span>
+
+</code></pre>
+<p>显然&#xff0c;这个结果存在重复&#xff0c;比如 <code>[1,2,2&#39;]</code> 和 <code>[1,2&#39;,2]</code> 应该只被算作同一个排列&#xff0c;但被算作了两个不同的排列。所以现在的关键在于&#xff0c;如何设计剪枝逻辑&#xff0c;把这种重复去除掉&#xff1f;答案是&#xff0c;<font color="red"><strong>保证相同元素在排列中的相对位置保持不变</strong></font>。比如说 <code>nums &#61; [1,2,2&#39;]</code> 这个例子&#xff0c;我<strong>保持排列中 2 一直在 2’ 前面</strong>。这样的话&#xff0c;你从上面 6 个排列中只能挑出 3 个排列符合这个条件&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">[</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span>&#39;<span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token char">&#39;],[2,2&#39;</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token punctuation">]</span>
+</code></pre>
+<p>这也就是正确答案。进一步&#xff0c;如果 nums &#61; <code>[1,2,2&#39;,2&#39;&#39;]</code>&#xff0c;我只要保证重复元素 2 的相对位置固定&#xff0c;比如说 <code>2 -&gt; 2&#39; -&gt; 2&#39;&#39;</code>&#xff0c;也可以得到无重复的全排列结果</p>
+<p><strong>标准全排列算法之所以出现重复&#xff0c;是因为把相同元素形成的排列序列视为不同的序列&#xff0c;但实际上它们应该是相同的&#xff1b;而如果固定相同元素形成的序列顺序&#xff0c;当然就避免了重复</strong></p>
+<pre><code class="prism language-java"><span class="token comment">// 新添加的剪枝逻辑&#xff0c;固定相同的元素在排列中的相对位置</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&gt;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> nums<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>used<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 如果前面的相邻相等元素没有用过&#xff0c;则跳过</span>
+    <span class="token keyword">continue</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 选择 nums[i]</span>
+
+</code></pre>
+<p>当出现重复元素时&#xff0c;比如输入 <code>nums &#61; [1,2,2&#39;,2&#39;&#39;]</code>&#xff0c;<strong>2’ 只有在 2 已经被使用的情况下才会被选择&#xff0c;同理&#xff0c;2’’ 只有在 2’ 已经被使用的情况下才会被选择&#xff0c;这就保证了相同元素在排列中的相对位置保证固定</strong></p>
+<h3><a rel="noopener noreferrer" id="_154"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 定义结果集</span>
+    <span class="token keyword">private</span>  <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ArrayList</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ArrayList</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义路径集合以及使用标识集合</span>
+    <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param num int整型一维数组
+     * &#64;return int整型ArrayList&lt;ArrayList&lt;&gt;&gt;
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ArrayList</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> permuteUnique <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> num<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义占用列表</span>
+        <span class="token keyword">boolean</span><span class="token punctuation">[</span><span class="token punctuation">]</span> used <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">boolean</span><span class="token punctuation">[</span>num<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 对现有集合排序&#xff0c;保证重复元素相邻</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">sort</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 进行路径寻找和结果集补充</span>
+        <span class="token function">backTrack</span><span class="token punctuation">(</span>num<span class="token punctuation">,</span> used<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backTrack</span><span class="token punctuation">(</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> num<span class="token punctuation">,</span> <span class="token keyword">boolean</span><span class="token punctuation">[</span><span class="token punctuation">]</span> used<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 终止条件&#xff0c;到达叶子节点</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> num<span class="token punctuation">.</span>length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 本层路径寻踪和补充</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> num<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 1 剪枝&#xff0c;使用过的元素保持相对位置</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&gt;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> num<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> num<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>used<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">continue</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 标准剪枝逻辑</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>used<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">continue</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token comment">// 2 路径补充</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>num<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            used<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 3 继续到下一层寻找</span>
+            <span class="token function">backTrack</span><span class="token punctuation">(</span>num<span class="token punctuation">,</span> used<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 4 返回后回溯</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            used<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_221"></a>复杂度分析</h3>
+<p>全排列II&#xff08;Permutations II&#xff09;是一个排列问题&#xff0c;与上述的全排列问题不同的是&#xff0c;这里的输入数组 <code>num</code> 可能包含重复元素。解决这个问题的代码也使用回溯算法&#xff0c;但在处理重复元素时需要特殊考虑。以下是全排列II问题的时间复杂度和空间复杂度分析&#xff1a;</p>
+<p><strong>时间复杂度</strong>&#xff1a;</p>
+<ol><li> <p>与全排列问题类似&#xff0c;回溯算法的时间复杂度取决于递归的深度和每层递归的操作数量。</p> </li><li> <p>在每层递归中&#xff0c;需要遍历 <code>num</code> 数组中的所有元素。由于可能有重复元素&#xff0c;需要确保相同的元素在同一层递归中只被考虑一次。因此&#xff0c;在每层递归中&#xff0c;可以采取一些方法来跳过重复元素&#xff0c;从而降低遍历的操作数量。</p> </li><li> <p>递归的深度仍然取决于 <code>num</code> 数组的大小&#xff0c;即 <code>n</code>。</p> </li><li> <p>在最坏的情况下&#xff0c;递归会深入到 <code>n</code> 层&#xff0c;因此总的时间复杂度仍然是 <code>O(n * n!)</code>&#xff0c;但由于考虑重复元素&#xff0c;实际执行的操作数量可能比全排列问题少一些。</p> </li></ol>
+<p><strong>空间复杂度</strong>&#xff1a;</p>
+<ol><li> <p>空间复杂度主要取决于递归调用的深度&#xff0c;以及用于存储中间结果的数据结构。</p> </li><li> <p>递归的深度是 <code>n</code>&#xff0c;因此在调用堆栈中会有最多 <code>n</code> 层递归帧。每个递归帧包括 <code>used</code> 数组和 <code>path</code> 数组&#xff0c;它们的空间复杂度都是 <code>O(n)</code>。</p> </li><li> <p>由于存在 <code>n</code> 层递归帧&#xff0c;因此总的空间复杂度为 <code>O(n^2)</code>。</p> </li></ol>
+<p>综上所述&#xff0c;全排列II的时间复杂度仍然是 <code>O(n * n!)</code>&#xff0c;其中 <code>n</code> 是输入数组 <code>num</code> 的大小&#xff0c;空间复杂度是 <code>O(n^2)</code>。同样&#xff0c;由于全排列问题的本质&#xff0c;这个时间复杂度在最坏情况下是可以接受的&#xff0c;尽管考虑了重复元素。然而&#xff0c;实际操作的数量可能比全排列问题少一些&#xff0c;因为会跳过相同的元素。</p>
+<h2><a rel="noopener noreferrer" id="_243"></a>拓展知识&#xff1a;回溯算法解题框架</h2>
+<p>抽象地说&#xff0c;解决一个回溯问题&#xff0c;实际上就是遍历一棵决策树的过程&#xff0c;树的每个叶子节点存放着一个合法答案。你把整棵树遍历一遍&#xff0c;把叶子节点上的答案都收集起来&#xff0c;就能得到所有的合法答案。站在回溯树的一个节点上&#xff0c;你只需要思考 3 个问题&#xff1a;</p>
+<ol><li><strong>路径</strong>&#xff1a;也就是已经做出的选择。</li><li><strong>选择列表</strong>&#xff1a;也就是你当前可以做的选择。</li><li><strong>结束条件</strong>&#xff1a;也就是到达决策树底层&#xff0c;无法再做选择的条件。</li></ol>
+<p>回溯算法的框架&#xff1a;</p>
+<pre><code class="prism language-java">result <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+def <span class="token function">backtrack</span><span class="token punctuation">(</span>路径<span class="token punctuation">,</span> 选择列表<span class="token punctuation">)</span><span class="token operator">:</span>
+    <span class="token keyword">if</span> 满足结束条件<span class="token operator">:</span>
+        result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>路径<span class="token punctuation">)</span>
+        <span class="token keyword">return</span>
+
+    <span class="token keyword">for</span> 选择 in 选择列表<span class="token operator">:</span>
+        做选择
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>路径<span class="token punctuation">,</span> 选择列表<span class="token punctuation">)</span>
+        撤销选择
+
+</code></pre>
+<p>其<strong>核心就是 for 循环里面的递归&#xff0c;在递归调用之前「做选择」&#xff0c;在递归调用之后「撤销选择」</strong></p>

@@ -1,0 +1,77 @@
+<p>从今天开始更新一些业务常用到的中间件的学习&#xff0c;Redis已经进行了几篇了Kafka也开个头吧&#xff0c;计划总共用五篇博客来学习和了解这个消息框架&#xff0c;<strong>当然一开始不会花太多的精力去深入探究&#xff0c;自己整理了一个学习路线大纲&#xff0c;之后依据对业务的了解和公司内部的使用情况需要了再更新和学习</strong>&#xff1a;</p>
+<ul><li>【Kafka从入门到放弃系列 一】概述及基本架构&#xff1a;前置概念理解&#xff08;消息队列、生产者消费者模式&#xff09;、消息系统的使用、Kafka的基本架构等基本知识。</li><li>【Kafka从入门到放弃系列 二】ZooKeeper集成及详细执行机制&#xff1a;ZooKeeper和Kafka的集成使用以及Kafka的详细设计机制等原理性知识。</li><li>【Kafka从入门到放弃系列 三】Kafka安装及使用&#xff1a;了解了基本架构和原理等内容就来进行简单的操作吧</li><li>【Kafka从入门到放弃系列 四】Kafka的高可用实现: 增加了中间件&#xff0c;可用性必然会降低&#xff0c;那么Kafka使用何种机制来实现高可用呢</li><li>【Kafka从入门到放弃系列 五】Kafka性能测试&#xff1a;在实战中观察和调试kafka的性能</li></ul>
+<p>本篇博客是Kafka系列的第一篇&#xff0c;旨在解答问题的why和when&#xff0c;也就是为什么需要用kafka和什么时候用kafka&#xff0c;<strong>至于为何是从入门到放弃系列&#xff0c;因为俺相信&#xff0c;框架总会过时&#xff0c;总有更优秀的会出现&#xff0c;重要的是思想&#xff0c;所以这里的放弃是脱离框架而探寻框架的实现原理和思想&#xff0c;这个相较而言更重要吧</strong>。<br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-01-5b7da3f53b.png" loading="lazy"></p>
+<p>为了方便阅读和学习&#xff0c;采用我一贯喜欢使用的金字塔模式&#xff1a;总分结构&#xff0c;所以本篇博客的结构如下&#xff1a;</p>
+<ul><li><strong>前置概念了解</strong>&#xff1a;消息系统、生产者消费者模式等</li><li><strong>Kafka基本概念</strong>&#xff1a;Kafka的术语了解以及基本概念</li><li><strong>Kafka基本架构</strong>&#xff1a;术语介绍、架构图解析、常用策略和机制等</li></ul>
+<p>本篇博客参考了以下博主的内容&#xff0c;这里提前贴出来&#xff0c;欢迎一起学习&#xff1a;</p>
+<blockquote>
+ <p>技术世界&#xff0c;关于分布式架构&#xff1a;http://www.jasongj.com/2015/03/10/KafkaColumn1/</p>
+</blockquote>
+<p>同时也参考了在线学习教程W3C School(也开始采用会员制资源获取了&#xff0c;不错&#xff0c;转型了):</p>
+<blockquote>
+ <p>W3C School :https://www.w3cschool.cn/apache_kafka/apache_kafka_cluster_architecture.html</p>
+</blockquote>
+<p>以及阿里云栖社区的一篇对消息队列内容的介绍的博客。</p>
+<blockquote>
+ <p>阿里云栖社区 https://www.jianshu.com/p/36a7775b04ec</p>
+</blockquote>
+<h3><a rel="noopener noreferrer" id="_29"></a>前置概念了解</h3>
+<p>在正式介绍Kafka之前&#xff0c;先来了解下什么是<strong>生产者消费者模式</strong>&#xff0c;以及什么是<strong>消息队列</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_31"></a>生产者消费者模型</h4>
+<p>生产者消费者模型具体来讲&#xff0c;就是在一个系统中&#xff0c;存在生产者和消费者两种角色&#xff0c;他们通过内存缓冲区进行通信&#xff0c;生产者生产消费者需要的资料&#xff0c;消费者把资料做成产品。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/100110557-02-0397b74804.png" loading="lazy"></p>
+<p>简而言之就是生产者生产数据&#xff0c;放到一个篮子里&#xff0c;消费者按顺序从篮子里拿到数据去消费。</p>
+<h4><a rel="noopener noreferrer" id="_37"></a>消息队列</h4>
+<p>首先我感觉大家应该都了解队列的概念&#xff0c;队列是一种先进先出的数据结构&#xff0c;可以理解为一个管道&#xff0c;在我的另一篇博客里有详细的介绍 <a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/76596129"><strong>数据结构—队列</strong></a> 其结构如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-03-43e49e81d5.png" loading="lazy"><br /> 那显而易见&#xff0c;<strong>消息队列就是存放消息的队列</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_42"></a>消息队列应用场景</h5>
+<p>消息队列具有<strong>低耦合、可靠投递、广播、流量控制、最终一致性</strong>等一系列功能&#xff0c;成为异步RPC的主要手段之一。那么为什么要使用队列呢&#xff1f;我这么理解&#xff1a;</p>
+<ul><li>1&#xff0c;在分布式高并发场景下&#xff0c;如何保证系统性能不受影响&#xff0c;也就是用户无感知&#xff08;<font color="red"><strong>削峰、减少响应所需时间</strong>&#xff09;</font>,一般网站响应时间超过200ms就难以忍受了&#xff0c;高并发同步向数据库内写数据&#xff0c;数据库会扛不住压力的&#xff0c;而且响应速度也会明显减慢。<br /> *2&#xff0c;不同系统之间的异步通信如何实现&#xff08; <font color="red"><strong>降低系统耦合性</strong>&#xff09;</font>,一个系统必然有很多模块组成&#xff0c;不同模块各自有实现&#xff0c;各自有自己的迭代&#xff0c;如果耦合性低&#xff0c;不存在强依赖&#xff0c;那最好了&#xff0c;微服务架构的思想也类似此&#xff0c;降低耦合性。</li></ul>
+<p>第一个场景下&#xff0c;例如有个业务&#xff1a;下班打车&#xff0c;企业滴滴&#xff0c;晚上8点半上地这边爆满&#xff0c;各种打车订单同时涌入系统&#xff0c;系统要爆&#xff0c;加上消息队列后&#xff0c;订单进入消息队列&#xff0c;然后反馈给用户订单在处理&#xff0c;然后按照入队顺序一个个处理该消息&#xff0c;直到消费到该消息订单后才将订单入库&#xff0c;当然这个时候才能反馈给用户说打车成功。<strong>这样有效的抵抗了峰值时间的冲击</strong>。</p>
+<p>第二个场景下&#xff0c;系统的不同模块之间各自有各自的实现。模块之间不存在直接调用&#xff0c;那么新增模块或者修改模块就对其他模块影响较小&#xff0c;所以如果有个消息系统在中间作为中转&#xff0c;<strong>消息发送者将消息发送至分布式消息队列即结束对消息的处理&#xff0c;消息接受者从分布式消息队列获取该消息后进行后续处理&#xff0c;并不需要知道该消息从何而来</strong>。对新增业务&#xff0c;只要对该类消息感兴趣&#xff0c;即可订阅该消息&#xff0c;对原有系统和业务没有任何影响&#xff0c;从而实现网站业务的可扩展性设计。</p>
+<h5><a rel="noopener noreferrer" id="_51"></a>消息队列问题</h5>
+<p>系统里平白无故加入一个消息队列服务器当然会影响系统的整体性能&#xff0c;增加系统的复杂性&#xff0c;还需要担心异步消息发送的一致性问&#xff0c;消息服务器的稳定性等问题&#xff1a;</p>
+<ul><li><strong>系统可用性降低</strong>&#xff1a; 系统可用性在某种程度上降低&#xff0c;在加入MQ之前&#xff0c;不用考虑消息丢失或者说MQ挂掉等等的情况&#xff0c;但是&#xff0c;引入MQ之后就需要去考虑了</li><li><strong>系统复杂性提高</strong>&#xff1a; 加入MQ之后&#xff0c;需要保证消息没有被重复消费、处理消息丢失的情况、保证消息传递的顺序性&#xff0c;消息服务器有没有宕机等问题</li><li><strong>一致性问题</strong>&#xff1a; 消息队列可以实现异步&#xff0c;异步确实可以提高系统响应速度。但是&#xff0c;万一消息的真正消费者并没有正确消费消息就会导致数据不一致的情况了。</li></ul>
+<p>所以不管使用哪个消息队列&#xff0c;都需要在能使用优势的同时&#xff0c;尽可能解决这些问题。</p>
+<h5><a rel="noopener noreferrer" id="_60"></a>消息队列模型</h5>
+<p>消息队列目前有两种协议&#xff1a;JMS和AMQP&#xff0c;JMS轻量不能跨平台&#xff0c;AMQP性能强但是复杂&#xff0c;感觉就是美图秀秀和PS的区别&#xff0c;但是大家用的多的还是美图秀秀&#xff0c;那么就<strong>以JMS为主</strong>吧&#xff0c;咱就好好用轮子吧。</p>
+<p><strong>1 点到点&#xff08;P2P&#xff09;模型</strong></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/100110557-04-9446d0aa38.png" loading="lazy"><br /> 使用队列&#xff08;Queue&#xff09;作为消息通信载体&#xff1a;满足<strong>生产者与消费者模式</strong>&#xff0c;<strong>一条消息只能被一个消费者使用&#xff0c;未被消费的消息在队列中保留直到被消费或超时</strong>。</p>
+<p><strong>2 发布/订阅&#xff08;Pub/Sub&#xff09;模型</strong></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/100110557-05-5e9d6b8048.png" loading="lazy"><br /> 发布订阅模型&#xff08;Pub/Sub&#xff09; 使用主题&#xff08;Topic&#xff09;作为消息通信载体&#xff0c;类似于广播模式,发布者发布一条消息&#xff0c;<strong>该消息通过主题传递给所有的订阅者</strong>&#xff0c;一条消息可以被多个消费者使用。在一条消息广播之后才订阅的用户则是收不到该条消息的。</p>
+<h5><a rel="noopener noreferrer" id="_74"></a>消息队列框架</h5>
+<p>目前市场上主流的框架比较多&#xff0c;但是目前接触到的就是两种Kafka和RabbitMQ ,前段时间公司内部开始将框架从RabbitMQ 更改为Kafka&#xff0c;之前不太懂&#xff0c;通过对比来了解下吧&#xff1a;</p>
+<ul><li>RabbitMQ 基于 AMQP 协议实现的&#xff0c;Kafka基于JMS协议&#xff0c;所以Kafka支持的消息类型更多&#xff1a;<strong>StreamMessage &#xff08;Java原始值的数据流&#xff09;&#xff1b;MapMessage&#xff08;一套名称-值对&#xff09;&#xff1b;TextMessage&#xff08;一个字符串对象&#xff09;&#xff1b;ObjectMessage&#xff08;一个序列化的 Java对象&#xff09;&#xff1b;BytesMessage&#xff08;一个字节的数据流&#xff09;</strong>&#xff0c;而RabbitMQ 只支持<strong>二进制字符流</strong></li><li>RabbitMQ 在吞吐量方面虽然稍逊于 Kafka &#xff0c;但是由于它基于 erlang 开发&#xff0c;所以<strong>并发能力很强&#xff0c;性能极其好&#xff0c;延时很低&#xff0c;达到微秒级</strong>。如果业务场景对并发量要求不是太高&#xff08;十万级、百万级&#xff09;&#xff0c;RabbitMQ 一定是首选。如果是大数据领域的实时计算、日志采集等场景&#xff0c;用 Kafka 是业内标准的&#xff0c;绝对没问题</li></ul>
+<p><font color="red"><strong>综合而言就是公司内业务量增加&#xff0c;对并发量有了要求</strong></font>&#xff0c;RabbitMQ 的性能可能不太跟的上了。就好像PS启动一次贼麻烦&#xff0c;但能完成很复杂的功能&#xff0c;美图秀秀秒开&#xff0c;只能美颜&#xff0c;如果你只用美颜功能&#xff0c;没必要下PS。</p>
+<h3><a rel="noopener noreferrer" id="Kafka_81"></a>Kafka基本概念</h3>
+<p>了解了生产者消费者模式、消息队列的基本概念和使用场景以及最后的技术选型定为Kafka&#xff0c;接下来就要对Kafka的基本概念做个详细的了解了。</p>
+<h4><a rel="noopener noreferrer" id="_85"></a>基本定义</h4>
+<p>从使用者角度来讲&#xff0c;Kafka是一个<strong>分布式、支持分区的、多副本的基于Zookeeper协调</strong>的分布式日志服务&#xff0c;非常适合在线日志收集等高吞吐场景。与大多数消息系统比较&#xff0c;kafka有<strong>更好的吞吐量&#xff0c;内置分区&#xff0c;副本和故障转移</strong>&#xff0c;这有利于处理大规模的消息&#xff0c;所以kafka被各大公司广泛运用于消息队列的构建。</p>
+<h4><a rel="noopener noreferrer" id="_88"></a>基本术语</h4>
+<p>kafka的基本组成如下图所示&#xff1a;消息由生产者生产&#xff0c;依据类别发往不同的主题&#xff0c;每个主题包含一个或多个分区<br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-06-0af4b508ac.png" loading="lazy"><br /> 先了解下架构里的有哪些常用术语&#xff0c;理解概念然后在架构里就比较好定位&#xff1a;</p>
+<p><strong>1 Producer&#xff08;生产者&#xff09;</strong>&#xff1a;负责发布消息到Kafka broker&#xff0c;就是向kafka broker发消息的客户端。</p>
+<p><strong>2 主题和分区&#xff1a;<font color="red">一个主题包含一个或多个Partition</font></strong></p>
+<ul><li><strong>Topics&#xff08;主题&#xff09;****: 属于</strong>特定类别的消息流**称为主题。 数据存储在主题中。主题被拆分成分区。 对于每个主题&#xff0c;Kafka保存一个分区的数据。 每个这样的分区包含不可变有序序列的消息。 分区被实现为具有相等大小的一组分段文件。&#xff08;物理上不同Topic的消息分开存储&#xff0c;逻辑上一个Topic的消息虽然保存于一个或多个broker上但用户只需指定消息的Topic即可生产或消费数据而不必关心数据存于何处&#xff09;&#xff0c;也可以理解为一个队列&#xff0c;通过对消息指定主题可以将消息分类&#xff0c;消费者可以只关注自己需要的Topic中的消息。</li><li><strong>Partition&#xff08;分区&#xff09;</strong>&#xff0c;Parition是<strong>物理</strong>上的概念&#xff0c;每个Topic包含一个或多个Partition. 为了实现扩展性&#xff0c;一个非常大的topic可以分布到多个broker&#xff08;即服务器&#xff09;上&#xff0c;一个topic可以分为多个partition&#xff0c;每个partition是一个有序的队列。</li><li><strong>分区索引</strong> partition中的每条消息都会被分配一个有序的id&#xff08;offset&#xff09;。kafka只保证按一个partition中的顺序将消息发给consumer&#xff0c;不保证一个topic的整体&#xff08;多个partition间&#xff09;的顺序&#xff0c;</li><li><strong>Replicas of partition&#xff08;分区备份&#xff09;</strong>&#xff1a;副本只是一个分区的备份。 副本从不读取或写入数据。 它们用于防止数据丢失。</li><li><strong>Leader&#xff08;领导者&#xff09;</strong>&#xff1a; Leader 是负责给定分区的所有读取和写入的节点。 每个分区都有一个服务器充当Leader。</li><li><strong>Follower&#xff08;追随者&#xff09;</strong>&#xff1a;跟随领导者指令的节点被称为Follower。 如果领导失败&#xff0c;一个追随者将自动成为新的领导者。 跟随者作为正常消费者&#xff0c;拉取消息并更新其自己的数据存储。</li></ul>
+<p><strong>3 Kafka集群和Kafka服务器</strong>&#xff1a;<strong><font color="red">一个Kafka集群包含多个Kafka服务器</font></strong></p>
+<ul><li><strong>Kafka Cluster&#xff08;Kafka集群&#xff09;</strong>&#xff1a;Kafka有多个服务器被称为Kafka集群。 可以扩展Kafka集群&#xff0c;无需停机。 这些集群用于管理消息数据的持久性和复制。</li><li><strong>Broker&#xff08;Kafka服务器&#xff09;</strong>&#xff1a;一台kafka服务器就是一个broker。一个集群由多个broker组成。一个broker可以容纳多个topic。</li></ul>
+<p><strong>4 Consumer(消费者)和 Consumer Group&#xff08;消费者集群&#xff09;</strong>&#xff1a;<strong><font color="red">一个消费者集群包含多个消费者</font></strong></p>
+<ul><li><strong>Consumer Group&#xff08;消费者集群&#xff09;</strong>&#xff1a;consumer group是kafka提供的可扩展且具有容错性的消费者机制。组内可以有多个消费者或消费者实例&#xff0c;它们共享一个公共的group ID。组内的所有消费者协调在一起来共享订阅主题的所有分区。</li><li><strong>Consumer(消费者)</strong>&#xff1a;消息消费者&#xff0c;向Kafka broker读取消息的客户端。</li></ul>
+<p>综合而言我理解就是&#xff0c;<strong><font color="red">Kafka集群和Kafka服务器属于物理机器上的概念&#xff0c;而主题和分区属于发出去的消息的分类&#xff0c;一个纵向&#xff0c;一个横向&#xff0c;一个broker上可以有很多主题的分区&#xff0c;一个主题也可以在很多broker上放置分区&#xff0c;是多对多的关系</font></strong>。</p>
+<h3><a rel="noopener noreferrer" id="Kafka_113"></a>Kafka基本架构</h3>
+<p>一个典型的Kafka集群中包含若干Producer&#xff08;可以是web前端产生的Page View&#xff0c;或者是服务器日志&#xff0c;系统CPU、Memory等&#xff09;&#xff0c;若干broker&#xff08;Kafka支持水平扩展&#xff0c;一般broker数量越多&#xff0c;集群吞吐率越高&#xff09;&#xff0c;若干Consumer Group&#xff0c;以及一个Zookeeper集群。<strong>Kafka通过Zookeeper管理集群配置&#xff0c;选举leader&#xff0c;以及在Consumer Group发生变化时进行rebalance</strong>。Producer使用push模式将消息发布到broker&#xff0c;Consumer使用pull模式从broker订阅并消费消息。 　<br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-07-534d69783c.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_117"></a>消息传递流程</h4>
+<p>消息由生产者生产&#xff0c;并发往Kafka集群&#xff0c;Kafka集群获取到消息后再发往消费者&#xff0c;以下是Pub-Sub消息的逐步工作流程 &#xff1a;</p>
+<ol><li>Producer生产者&#xff0c;定期向Kafka集群发送消息&#xff0c;在发送消息之前&#xff0c;会对消息进行分类&#xff0c;即Topic</li><li>Broker存储为该特定主题配置的分区中的所有消息。 它确保消息在分区之间平等共享。 如果生产者发送两个消息并且有两个分区&#xff0c;Kafka将在第一分区中存储一个消息&#xff0c;在第二分区中存储第二消息。</li><li>消费者订阅特定主题&#xff0c;一旦消费者订阅主题&#xff0c;Kafka将向消费者提供主题的当前偏移&#xff0c;并且还将偏移保存在Zookeeper系综中。</li><li>消费者通过与kafka集群建立长连接的方式&#xff0c;不断地从集群中拉取消息&#xff0c;然后可以对这些消息进行处理</li><li>一旦Kafka收到来自生产者的消息&#xff0c;它将这些消息转发给消费者。</li><li>消费者将收到消息并进行处理,一旦消息被处理&#xff0c;消费者将向Kafka代理发送确认。</li><li>一旦Kafka收到确认&#xff0c;它将偏移更改为新值&#xff0c;并在Zookeeper中更新它。 由于偏移在Zookeeper中维护&#xff0c;消费者可以正确地读取下一封邮件&#xff0c;即使在服务器暴力期间。</li></ol>
+<p>以上流程将重复&#xff0c;直到消费者停止请求。<strong>消费者可以随时回退/跳到所需的主题偏移量&#xff0c;并阅读所有后续消息&#xff08;这点就比较牛逼了&#xff09;</strong>。</p>
+<h5><a rel="noopener noreferrer" id="kafka_130"></a>kafka基本存储策略</h5>
+<p>在以上流程中需要注意的是Kafka的存储&#xff0c;<strong>主要的特点就是分区&#xff0c;即partitions&#xff0c;分区是实现其高吞吐量和均衡负载的关键。创建一个topic时&#xff0c;同时可以指定分区数目&#xff0c;分区数越多&#xff0c;其吞吐量也越大&#xff0c;但是需要的资源也越多&#xff0c;同时也会导致更高的不可用性</strong>&#xff0c;<font color="red"><strong>kafka在接收到生产者发送的消息之后&#xff0c;会根据均衡策略将消息存储到不同的分区中</strong></font><br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-08-79b3cea696.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="Kafka_134"></a>Kafka与生产者交互</h5>
+<p>生产者在向kafka集群发送消息的时候&#xff0c;可以通过指定分区来发送到指定的分区中&#xff0c;也可以通过指定均衡策略来将消息发送到不同的分区中&#xff0c;如果不指定&#xff0c;就会采用默认的随机均衡策略&#xff0c;将消息随机的存储到不同的分区中<br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-09-6329201aec.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="kafka_138"></a>kafka与消费者的交互</h5>
+<p>在消费者消费消息时&#xff0c;kafka使用offset来记录当前消费的位置。在kafka的设计中&#xff0c;可以有多个不同的group来同时消费同一个topic下的消息&#xff0c;如图&#xff0c;两个不同的group同时消费&#xff0c;他们的的消费的记录位置offset各不相同&#xff0c;不互相干扰。<strong>对于一个group而言&#xff0c;消费者的数量不应该多于分区的数量</strong>&#xff0c;因为在一个group中&#xff0c;每个分区至多只能绑定到一个消费者上&#xff0c;即一个消费者可以消费多个分区&#xff0c;一个分区只能给一个消费者消费&#xff0c;因此&#xff0c;若一个group中的消费者数量大于分区数量的话&#xff0c;多余的消费者将不会收到任何消息。<br /> <img alt="在这里插入图片描述" src="./posts/assets/100110557-10-1326750d1b.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="ZooKeeper_141"></a>ZooKeeper的作用</h4>
+<p>Kafka的一个关键依赖是Zookeeper&#xff0c;它是一个<strong>分布式配置和同步服务</strong>。 Zookeeper是Broker和消费者之间的协调接口。 Kafka服务器通过Zookeeper集群共享信息。 Kafka在Zookeeper中存储基本元数据&#xff0c;例如关于主题&#xff0c;Broker&#xff0c;消费者偏移(队列读取器)等的信息。</p>
+<p>由于所有关键信息存储在Zookeeper中&#xff0c;并且它通常在其整体上复制此数据&#xff0c;因此Kafka代理/ Zookeeper的故障不会影响Kafka集群的状态。一旦Zookeeper重新启动 &#xff0c;Kafka将恢复状态。 这为Kafka带来了零停机时间。 Kafka代理之间的领导者选举也通过使用Zookeeper在领导者失败的情况下完成。</p>
+<h3><a rel="noopener noreferrer" id="_145"></a>总结</h3>
+<p>通过写这篇博客我了解和学习了以下的一些内容&#xff0c;算是入门和简单对Kafka的使用有个大致了解吧&#xff0c;综合而言学了&#xff1a;</p>
+<ul><li>了解和学习了消息系统是什么&#xff0c;以及什么使用场景&#xff0c;它的优势&#xff1a;解耦和异步削峰</li><li>了解和学习了哪些常用的消息框架&#xff0c;并且技术如何选型</li><li>了解和学习了Kafka的基本术语&#xff0c;基本概念、基本架构、基本流程和一些常用机制</li></ul>
+<p>下一篇博客就来详细探究下Kafka如何和ZooKeepe搭配使用以及详细使用时候的一些机制。每天进步一点点&#xff01;&#xff01;&#xff01;</p>

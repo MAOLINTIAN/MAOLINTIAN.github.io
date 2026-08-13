@@ -1,0 +1,281 @@
+<p>本篇Blog继续学习结构型模式&#xff0c;了解如何更优雅的布局类和对象。结构型模式描述如何<strong>将类或对象按某种布局组合以便获得更好、更灵活的结构</strong>。虽然面向对象的继承机制提供了最基本的子类扩展父类的功能&#xff0c;但结构型模式不仅仅简单地使用继承&#xff0c;而更多地通过组合与运行期的动态组合来实现更灵活的功能。它分为类结构型模式和对象结构型模式&#xff0c;<strong>前者采用继承机制来组织接口和类&#xff0c;后者釆用组合或聚合来组合对象</strong>。本篇学习的是<font color="red"><strong>享元模式</strong></font>。由于学习的都是设计模式&#xff0c;所有系列文章都遵循如下的目录&#xff1a;</p>
+<ul><li><strong>模式档案</strong>&#xff1a;包含模式的定义、模式的特点、解决什么问题、优缺点、使用场景等</li><li><strong>模式结构</strong>&#xff1a;包含模式的角色定义及调用关系以及其模版代码</li><li><strong>模式示例</strong>&#xff1a;包含模式的实现方式代码举例&#xff0c;生活中的简单问题映射</li><li><strong>模式实践</strong>&#xff1a;如果工作中或开源项目用到了该模式&#xff0c;就将使用过程贴到这里&#xff0c;并且客观讨论使用的是否恰当</li><li><strong>模式对比</strong>&#xff1a;如果模式相似&#xff0c;有必要体现其相似点及不同点&#xff0c;区分使用&#xff0c;说明哪些场景下使用哪种模式比较好</li><li><strong>模式扩展</strong>&#xff1a;如果模式有与标准结构定义不同的变体形式&#xff0c;一并体现出其变体结构</li></ul>
+<p>接下来所有设计模式的介绍都暂且遵循此基本行文逻辑吗&#xff0c;如果某一条目没有则无需体现&#xff0c;但条目顺序遵循此结构</p>
+<h2><a rel="noopener noreferrer" id="_10"></a>模式档案</h2>
+<p>在面向对象程序设计过程中&#xff0c;有时会面临要创建大量相同或相似对象实例的问题。创建那么多的对象将会耗费很多的系统资源&#xff0c;它是系统性能提高的一个瓶颈。例如&#xff0c;围棋和五子棋中的黑白棋子、图像中的坐标点或颜色&#xff0c;这些对象有很多相似的地方&#xff0c;如果能<strong>把它们相同的部分提取出来共享&#xff0c;则能节省大量的系统资源</strong>&#xff0c;这就是享元模式</p>
+<p><font color="red"><strong>模式定义</strong></font>&#xff1a;享元模式运用共享技术来有效地支持大量细粒度对象的复用。它通过共享已经存在的<strong>不变对象</strong>来大幅度减少需要创建的对象数量、避免大量相似类的开销&#xff0c;从而提高系统资源的利用率。</p>
+<p><font color="red"><strong>解决什么问题</strong></font>&#xff1a;享元模式的意图是复用对象&#xff0c;节省内存&#xff0c;前提是享元对象是不可变对象&#xff0c;具体来讲&#xff0c;当一个系统中存在大量重复对象的时候&#xff0c;如果这些重复的对象是不可变对象&#xff0c;我们就可以利用享元模式将对象设计成享元&#xff0c;在内存中只保留一份实例&#xff0c;供多处代码引用。这样可以减少内存中对象的数量&#xff0c;起到节省内存的目的。实际上&#xff0c;<strong>不仅仅相同对象可以设计成享元&#xff0c;对于相似对象&#xff0c;我们也可以将这些对象中相同的部分&#xff08;字段&#xff09;提取出来&#xff0c;设计成享元</strong>&#xff0c;让这些大量相似对象引用这些享元。</p>
+<p><font color="red"><strong>优点</strong></font>&#xff1a;相同对象只要保存一份&#xff0c;这降低了系统中对象的数量&#xff0c;从而降低了系统中细粒度对象给内存带来的压力</p>
+<p><font color="red"><strong>缺点</strong></font>&#xff1a;享元模式 使得系统更加复杂&#xff0c;需要分离出内部状态和外部状态&#xff0c;这使得程序的逻辑复杂化&#xff1b;</p>
+<p><font color="red"><strong>使用场景</strong></font>&#xff1a;当满足如下场景时可以使用享元模式&#xff1a;</p>
+<ol><li>系统中存在大量相同或相似的对象&#xff0c;这些对象耗费大量的内存资源。</li><li>由于享元模式需要额外维护一个保存享元的数据结构&#xff0c;所以应当在有足够多的享元实例时才值得使用享元模式。</li></ol>
+<p>需要注意的是&#xff1a;享元对象应该为不可变对象&#xff0c;<strong>不可变对象</strong>指一旦通过构造函数初始化完成之后&#xff0c;它的状态&#xff08;对象的成员变量或者属性&#xff09;就不会再被修改了。所以&#xff0c;不可变对象不能暴露任何 <code>set()</code> 等修改内部状态的方法。之所以要求享元是不可变对象&#xff0c;那是因为它会被多处代码共享使用&#xff0c;避免一处代码对享元进行了修改&#xff0c;影响到其他使用它的代码</p>
+<h2><a rel="noopener noreferrer" id="_27"></a>模式结构</h2>
+<p>享元模式的主要角色有如下。</p>
+<ul><li><strong>抽象享元角色</strong>&#xff08;Flyweight&#xff09;&#xff1a;是所有的具体享元类的基类&#xff0c;为具体享元规范需要实现的公共接口&#xff0c;非享元的外部状态以参数的形式通过方法传入。</li><li><strong>具体享元角色</strong>&#xff08;Concrete Flyweight&#xff09;&#xff1a;实现抽象享元角色中所规定的接口。</li><li><strong>非享元角色</strong>&#xff08;Unsharable Flyweight)&#xff1a;是不可以共享的外部状态&#xff0c;它以参数的形式注入具体享元的相关方法中。</li><li><strong>享元工厂角色</strong>&#xff08;Flyweight Factory&#xff09;&#xff1a;负责创建和管理享元角色。当客户对象请求一个享元对象时&#xff0c;享元工厂检査系统中是否存在符合求的享元对象&#xff0c;如果存在则提供给客户&#xff1b;如果不存在的话&#xff0c;则创建一个新的享元对象。</li></ul>
+<p>角色间的关系UML如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/124527180-01-90fc275dc5.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_36"></a>模式实现</h2>
+<p>按照如上UML图角色代码如下&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="1__38"></a>1 抽象享元角色</h3>
+<pre><code class="prism language-java"><span class="token comment">// 抽象享元角色</span>
+<span class="token keyword">interface</span> <span class="token class-name">IFlyweight</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token class-name">UnsharedConcreteFlyweight</span> unsharedConcreteFlyweight<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2__47"></a>2 具体享元角色</h3>
+<pre><code class="prism language-java"><span class="token comment">// 具体享元角色</span>
+<span class="token keyword">class</span> <span class="token class-name">ConcreteFlyweight</span> <span class="token keyword">implements</span> <span class="token class-name">IFlyweight</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> intrinsicState<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">ConcreteFlyweight</span><span class="token punctuation">(</span><span class="token class-name">String</span> intrinsicState<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>intrinsicState <span class="token operator">&#61;</span> intrinsicState<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token class-name">UnsharedConcreteFlyweight</span> unsharedConcreteFlyweight<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Object address: &#34;</span> <span class="token operator">&#43;</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">identityHashCode</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;IntrinsicState: &#34;</span> <span class="token operator">&#43;</span> <span class="token keyword">this</span><span class="token punctuation">.</span>intrinsicState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;ExtrinsicState: &#34;</span> <span class="token operator">&#43;</span> unsharedConcreteFlyweight<span class="token punctuation">.</span><span class="token function">getExtrinsicState</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__67"></a>3 非享元角色</h3>
+<pre><code class="prism language-java"><span class="token comment">// 非享元角色</span>
+<span class="token keyword">class</span> <span class="token class-name">UnsharedConcreteFlyweight</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> extrinsicState<span class="token punctuation">;</span>
+
+    <span class="token class-name">UnsharedConcreteFlyweight</span><span class="token punctuation">(</span><span class="token class-name">String</span> extrinsicState<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>extrinsicState <span class="token operator">&#61;</span> extrinsicState<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getExtrinsicState</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> extrinsicState<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setExtrinsicState</span><span class="token punctuation">(</span><span class="token class-name">String</span> extrinsicState<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>extrinsicState <span class="token operator">&#61;</span> extrinsicState<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4__88"></a>4 享元工厂角色</h3>
+<pre><code class="prism language-java"><span class="token comment">// 享元工厂</span>
+<span class="token keyword">class</span> <span class="token class-name">FlyweightFactory</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">IFlyweight</span><span class="token punctuation">&gt;</span></span> pool <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 因为内部状态具备不变性&#xff0c;因此作为缓存的键</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">IFlyweight</span> <span class="token function">getFlyweight</span><span class="token punctuation">(</span><span class="token class-name">String</span> intrinsicState<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>pool<span class="token punctuation">.</span><span class="token function">containsKey</span><span class="token punctuation">(</span>intrinsicState<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">IFlyweight</span> flyweight <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ConcreteFlyweight</span><span class="token punctuation">(</span>intrinsicState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            pool<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>intrinsicState<span class="token punctuation">,</span> flyweight<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> pool<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>intrinsicState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>客户端调用代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FlyweightPattern</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">IFlyweight</span> flyweight1 <span class="token operator">&#61;</span> <span class="token class-name">FlyweightFactory</span><span class="token punctuation">.</span><span class="token function">getFlyweight</span><span class="token punctuation">(</span><span class="token string">&#34;intrinsicState-a&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">IFlyweight</span> flyweight2 <span class="token operator">&#61;</span> <span class="token class-name">FlyweightFactory</span><span class="token punctuation">.</span><span class="token function">getFlyweight</span><span class="token punctuation">(</span><span class="token string">&#34;intrinsicState-b&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">IFlyweight</span> flyweight3 <span class="token operator">&#61;</span> <span class="token class-name">FlyweightFactory</span><span class="token punctuation">.</span><span class="token function">getFlyweight</span><span class="token punctuation">(</span><span class="token string">&#34;intrinsicState-a&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">UnsharedConcreteFlyweight</span> unsharedConcreteFlyweight_1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">UnsharedConcreteFlyweight</span><span class="token punctuation">(</span><span class="token string">&#34;extrinsicState-1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">UnsharedConcreteFlyweight</span> unsharedConcreteFlyweight_2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">UnsharedConcreteFlyweight</span><span class="token punctuation">(</span><span class="token string">&#34;extrinsicState-2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">UnsharedConcreteFlyweight</span> unsharedConcreteFlyweight_3 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">UnsharedConcreteFlyweight</span><span class="token punctuation">(</span><span class="token string">&#34;extrinsicState-3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        flyweight1<span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span>unsharedConcreteFlyweight_1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        flyweight2<span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span>unsharedConcreteFlyweight_2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        flyweight3<span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span>unsharedConcreteFlyweight_3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>打印结果如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/124527180-02-2a96d8d396.png" loading="lazy"><br /> 内部状态一致时&#xff0c;可以看到打印的是同一个享元对象。</p>
+<h2><a rel="noopener noreferrer" id="_125"></a>模式实践</h2>
+<p>就以下棋为例进行实践举例&#xff1a;设计一个在线棋牌游戏大厅</p>
+<h3><a rel="noopener noreferrer" id="_127"></a>设计一个在线棋牌游戏大厅</h3>
+<p>一个游戏厅中有成千上万个房间&#xff0c;每个房间对应一个棋局。棋局要保存每个棋子的数据&#xff0c;比如&#xff1a;<strong>棋子类型</strong>&#xff08;将、相、士、炮等&#xff09;、<strong>棋子颜色</strong>&#xff08;红方、黑方&#xff09;、<strong>棋子在棋局中的位置</strong>。利用这些数据&#xff0c;我们就能显示一个完整的棋盘给玩家。具体的代码如下所示。其中&#xff0c;ChessPiece 类表示棋子&#xff0c;ChessBoard 类表示一个棋局&#xff0c;里面保存了象棋中 32 个棋子的信息</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChessPiece</span> <span class="token punctuation">{<!-- --></span><span class="token comment">//棋子</span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> id<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> text<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> color<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token keyword">int</span> positionX<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token keyword">int</span> positionY<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">ChessPiece</span><span class="token punctuation">(</span><span class="token class-name">String</span> id<span class="token punctuation">,</span> <span class="token class-name">String</span> text<span class="token punctuation">,</span> <span class="token class-name">Color</span> color<span class="token punctuation">,</span> <span class="token keyword">int</span> positionX<span class="token punctuation">,</span> <span class="token keyword">int</span> positionY<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>id <span class="token operator">&#61;</span> id<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>text <span class="token operator">&#61;</span> text<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>color <span class="token operator">&#61;</span> color<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>positionX <span class="token operator">&#61;</span> positionX<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>positionY <span class="token operator">&#61;</span> positionX<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">// ...省略其他属性和getter/setter方法...</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChessBoard</span> <span class="token punctuation">{<!-- --></span><span class="token comment">//棋局</span>
+  <span class="token keyword">private</span> <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span> <span class="token punctuation">,</span> <span class="token class-name">ChessPiece</span><span class="token punctuation">&gt;</span></span> chessPieces <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">ChessBoard</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    chessPieces<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;black-che-0-0&#34;</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">ChessPiece</span><span class="token punctuation">(</span><span class="token string">&#34;black-che-0-0&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;車&#34;</span><span class="token punctuation">,</span> <span class="token class-name">ChessPiece<span class="token punctuation">.</span>Color</span><span class="token punctuation">.</span>BLACK<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    chessPieces<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;red-che-0-1&#34;</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">ChessPiece</span><span class="token punctuation">(</span><span class="token string">&#34;red-che-0-0&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;馬&#34;</span><span class="token punctuation">,</span> <span class="token class-name">ChessPiece<span class="token punctuation">.</span>Color</span><span class="token punctuation">.</span>BLACK<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//...省略摆放其他棋子的代码...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">move</span><span class="token punctuation">(</span><span class="token class-name">String</span> chessPieceId<span class="token punctuation">,</span> <span class="token keyword">int</span> toPositionX<span class="token punctuation">,</span> <span class="token keyword">int</span> toPositionY<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...省略...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>为了记录每个房间当前的棋局情况&#xff0c;我们需要给每个房间都创建一个 ChessBoard 棋局对象。因为游戏大厅中有成千上万的房间&#xff08;实际上&#xff0c;百万人同时在线的游戏大厅也有很多&#xff09;&#xff0c;那保存这么多棋局对象就会消耗大量的内存。有没有什么办法来节省内存呢&#xff1f;这个时候&#xff0c;享元模式就可以派上用场了。像刚刚的实现方式&#xff0c;在内存中会有大量的相似对象。这些相似对象的 <strong>id、text、color</strong> 都是相同的&#xff0c;唯独 <strong>positionX、positionY</strong> 不同。实际上&#xff0c;我们可以将棋子的 id、text、color 属性拆分出来&#xff0c;设计成独立的类&#xff0c;并且作为享元供多个棋盘复用。这样&#xff0c;棋盘只需要记录每个棋子的位置信息就可以了。具体的代码实现如下所示&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>designpattern<span class="token punctuation">.</span>flyweight</span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">AllArgsConstructor</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Data</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Getter</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">HashMap</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Map</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChessBoard</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ChessPieceUnit</span> chessPieceUnit1 <span class="token operator">&#61;</span> <span class="token class-name">ChessPieceUnitFactory</span><span class="token punctuation">.</span><span class="token function">getChessPiece</span><span class="token punctuation">(</span><span class="token string">&#34;black-che&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">PiecePos</span> piecePos1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">PiecePos</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ChessPieceUnit</span> chessPieceUnit2 <span class="token operator">&#61;</span> <span class="token class-name">ChessPieceUnitFactory</span><span class="token punctuation">.</span><span class="token function">getChessPiece</span><span class="token punctuation">(</span><span class="token string">&#34;black-che&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">PiecePos</span> piecePos2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">PiecePos</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ChessPieceUnit</span> chessPieceUnit3 <span class="token operator">&#61;</span> <span class="token class-name">ChessPieceUnitFactory</span><span class="token punctuation">.</span><span class="token function">getChessPiece</span><span class="token punctuation">(</span><span class="token string">&#34;red-che&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">PiecePos</span> piecePos3 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">PiecePos</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        chessPieceUnit1<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span>piecePos1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        chessPieceUnit2<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span>piecePos2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        chessPieceUnit3<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span>piecePos3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 抽象享元角色</span>
+<span class="token keyword">interface</span> <span class="token class-name">ChessPieceUnit</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">void</span> <span class="token function">move</span><span class="token punctuation">(</span><span class="token class-name">PiecePos</span> piecePos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 非享元角色</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token annotation punctuation">&#64;AllArgsConstructor</span>
+<span class="token keyword">class</span> <span class="token class-name">PiecePos</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> toPositionX<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> toPositionY<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 具体享元角色</span>
+<span class="token annotation punctuation">&#64;AllArgsConstructor</span>
+<span class="token annotation punctuation">&#64;Getter</span>
+<span class="token keyword">class</span> <span class="token class-name">ChessPieceUnitImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ChessPieceUnit</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> text<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> color<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">move</span><span class="token punctuation">(</span><span class="token class-name">PiecePos</span> piecePos<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Object address: &#34;</span> <span class="token operator">&#43;</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">identityHashCode</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">&#43;</span> <span class="token string">&#34;棋子所在棋盘位置为: &#34;</span> <span class="token operator">&#43;</span> piecePos<span class="token punctuation">.</span>toPositionX <span class="token operator">&#43;</span> <span class="token string">&#34;,&#34;</span> <span class="token operator">&#43;</span> piecePos<span class="token punctuation">.</span>toPositionY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 享元工厂</span>
+<span class="token keyword">class</span> <span class="token class-name">ChessPieceUnitFactory</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">ChessPieceUnitImpl</span><span class="token punctuation">&gt;</span></span> pieces <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ChessPieceUnitImpl</span> chessPieceUnit_black_che <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ChessPieceUnitImpl</span><span class="token punctuation">(</span><span class="token string">&#34;black-che&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;車&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;black&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ChessPieceUnitImpl</span> chessPieceUnit_red_che <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ChessPieceUnitImpl</span><span class="token punctuation">(</span><span class="token string">&#34;red-che&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;車&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;red&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        pieces<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>chessPieceUnit_black_che<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> chessPieceUnit_black_che<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        pieces<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>chessPieceUnit_red_che<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> chessPieceUnit_red_che<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//...省略其他棋子的代码...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">ChessPieceUnitImpl</span> <span class="token function">getChessPiece</span><span class="token punctuation">(</span><span class="token class-name">String</span> chessPieceId<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> pieces<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>chessPieceId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>上面的代码中&#xff0c;我们利用工厂类来缓存 ChessPieceUnitImpl 信息&#xff08;也就是 id、text、color&#xff09;。通过工厂类获取到的 ChessPieceUnitImpl 就是享元。所有的 ChessBoard 对象共享这 32 个 ChessPieceUnitImpl 对象&#xff08;因为象棋中只有 32 个棋子&#xff09;。在使用享元模式之前&#xff0c;记录 1 万个棋局&#xff0c;我们要创建 32 万&#xff08;32*1 万&#xff09;个棋子的 ChessPieceUnitImpl 对象。利用享元模式&#xff0c;我们只需要创建 32 个享元对象供所有棋局共享使用即可&#xff0c;大大节省了内存。实际上&#xff0c;它的代码实现非常简单&#xff0c;主要是<strong>通过工厂模式&#xff0c;在工厂类中&#xff0c;通过一个 Map 来缓存已经创建过的享元对象&#xff0c;来达到复用的目的</strong></p>
+<h3><a rel="noopener noreferrer" id="JDK_240"></a>享元模式在JDK中应用</h3>
+<p>享元模式应用于Java中的基本类型Cache和String类型的缓存。</p>
+<h4><a rel="noopener noreferrer" id="IntegerCache_242"></a>IntegerCache实现</h4>
+<p>Java中的IntegerCache就是享元模式的一个应用&#xff1a;当我们通过自动装箱&#xff0c;也就是调用 <code>valueOf()</code> 来创建 Integer 对象的时候</p>
+<pre><code class="prism language-java"><span class="token class-name">Integer</span> i <span class="token operator">&#61;</span> <span class="token number">59</span>&#xff1b;底层执行了&#xff1a;<span class="token class-name">Integer</span> i <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">59</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>如果要创建的 Integer 对象的值在 -128 到 127 之间&#xff0c;会从 IntegerCache 类中直接返回&#xff0c;否则才调用 new 方法创建</p>
+<pre><code class="prism language-java">
+<span class="token comment">/**
+ * Cache to support the object identity semantics of autoboxing for values between
+ * -128 and 127 (inclusive) as required by JLS.
+ *
+ * The cache is initialized on first usage.  The size of the cache
+ * may be controlled by the {&#64;code -XX:AutoBoxCacheMax&#61;&lt;size&gt;} option.
+ * During VM initialization, java.lang.Integer.IntegerCache.high property
+ * may be set and saved in the private system properties in the
+ * sun.misc.VM class.
+ */</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">IntegerCache</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">int</span> low <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">128</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">int</span> high<span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Integer</span> cache<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// high value may be configured by property</span>
+        <span class="token keyword">int</span> h <span class="token operator">&#61;</span> <span class="token number">127</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> integerCacheHighPropValue <span class="token operator">&#61;</span>
+            sun<span class="token punctuation">.</span>misc<span class="token punctuation">.</span>VM<span class="token punctuation">.</span><span class="token function">getSavedProperty</span><span class="token punctuation">(</span><span class="token string">&#34;java.lang.Integer.IntegerCache.high&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>integerCacheHighPropValue <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token function">parseInt</span><span class="token punctuation">(</span>integerCacheHighPropValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                i <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>i<span class="token punctuation">,</span> <span class="token number">127</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// Maximum array size is Integer.MAX_VALUE</span>
+                h <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>i<span class="token punctuation">,</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span>MAX_VALUE <span class="token operator">-</span> <span class="token punctuation">(</span><span class="token operator">-</span>low<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span><span class="token punctuation">(</span> <span class="token class-name">NumberFormatException</span> nfe<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// If the property cannot be parsed into an int, ignore it.</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        high <span class="token operator">&#61;</span> h<span class="token punctuation">;</span>
+
+        cache <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Integer</span><span class="token punctuation">[</span><span class="token punctuation">(</span>high <span class="token operator">-</span> low<span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> j <span class="token operator">&#61;</span> low<span class="token punctuation">;</span>
+        <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> k <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> k <span class="token operator">&lt;</span> cache<span class="token punctuation">.</span>length<span class="token punctuation">;</span> k<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            cache<span class="token punctuation">[</span>k<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Integer</span><span class="token punctuation">(</span>j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// range [-128, 127] must be interned (JLS7 5.1.7)</span>
+        <span class="token keyword">assert</span> <span class="token class-name">IntegerCache</span><span class="token punctuation">.</span>high <span class="token operator">&gt;&#61;</span> <span class="token number">127</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">IntegerCache</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>以下的例子中&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token class-name">Integer</span> a <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Integer</span><span class="token punctuation">(</span><span class="token number">123</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token class-name">Integer</span> a <span class="token operator">&#61;</span> <span class="token number">123</span><span class="token punctuation">;</span>
+<span class="token class-name">Integer</span> a <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">123</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>第一种创建方式并不会使用到 IntegerCache&#xff0c;而后面两种创建方法可以利用 IntegerCache 缓存&#xff0c;返回共享的对象&#xff0c;以达到节省内存的目的。举一个极端一点的例子&#xff0c;假设程序需要创建 1 万个 -128 到 127 之间的 Integer 对象。使用第一种创建方式&#xff0c;我们需要分配 1 万个 Integer 对象的内存空间&#xff1b;使用后两种创建方式&#xff0c;我们最多只需要分配 256 个 Integer 对象的内存空间</p>
+<h4><a rel="noopener noreferrer" id="String_304"></a>String字符串常量池</h4>
+<p>Java的Sting也用到了享元模式&#xff0c;JVM 会专门开辟一块存储区来存储字符串常量&#xff0c;这块存储区叫作字符串常量池&#xff0c;细节参照我这篇Blog&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/114251292" rel="nofollow"><strong>【深入理解JVM 三】类Class文件结构</strong></a>。</p>
+<pre><code class="prism language-java">
+<span class="token class-name">String</span> s1 <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span>
+<span class="token class-name">String</span> s2 <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span>
+<span class="token class-name">String</span> s3 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span><span class="token string">&#34;tml&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>s1 <span class="token operator">&#61;&#61;</span> s2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>s1 <span class="token operator">&#61;&#61;</span> s3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>上面代码的运行结果是&#xff1a;<strong>一个 true&#xff0c;一个 false</strong>。跟 Integer 类的设计思路相似&#xff0c;String 类利用享元模式来复用相同的字符串常量&#xff08;也就是代码中的<code>tml</code>&#xff09;。</p>
+<h2><a rel="noopener noreferrer" id="_317"></a>模式对比</h2>
+<p>分别看看享元模式和几个相似概念的对比&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="_319"></a>享元模式跟单例的区别</h3>
+<p>在单例模式中&#xff0c;一个类只能创建一个对象&#xff0c;而在享元模式中&#xff0c;一个类可以创建多个对象&#xff0c;每个对象被多处代码引用共享。实际上&#xff0c;享元模式有点类似于之前讲到的单例的变体&#xff1a;多例。但是区别两种设计模式&#xff0c;不能光看代码实现&#xff0c;而是要看设计意图&#xff0c;也就是要解决的问题。尽管从代码实现上来看&#xff0c;享元模式和多例有很多相似之处&#xff0c;但从设计意图上来看&#xff0c;它们是完全不同的。<strong>应用享元模式是为了对象复用&#xff0c;节省内存&#xff0c;而应用多例模式是为了限制对象的个数</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_321"></a>享元模式跟缓存的区别</h3>
+<p>在享元模式的实现中&#xff0c;我们通过工厂类来缓存已经创建好的对象。这里的缓存实际上是存储的意思&#xff0c;跟我们平时所说的数据库缓存、CPU 缓存、MemCache 缓存是两回事。我们平时所讲的缓存&#xff0c;<strong>主要是为了提高访问效率&#xff0c;而非复用</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_323"></a>享元模式跟对象池的区别</h3>
+<p>对象池、连接池&#xff08;比如数据库连接池&#xff09;、线程池等也是为了复用&#xff0c;那它们跟享元模式有什么区别呢&#xff1f;虽然对象池、连接池、线程池、享元模式都是为了复用&#xff0c;但是对象池、连接池、线程池等池化技术中的“复用”和享元模式中的“复用”实际上是不同的概念。</p>
+<ul><li><strong>池化技术中的复用可以理解为重复使用&#xff0c;主要目的是节省时间</strong>&#xff08;比如从数据库池中取一个连接&#xff0c;不需要重新创建&#xff09;。在任意时刻&#xff0c;每一个对象、连接、线程&#xff0c;并不会被多处使用&#xff0c;而是被一个使用者独占&#xff0c;当使用完成之后&#xff0c;放回到池中&#xff0c;再由其他使用者重复利用。</li><li><strong>享元模式中的复用可以理解为共享使用&#xff0c;在整个生命周期中&#xff0c;都是被所有使用者共享的&#xff0c;主要目的是节省空间</strong>。</li></ul>
+<p>所以说设计结构类似但是设计意图不同</p>
+<h2><a rel="noopener noreferrer" id="_330"></a>总结一下</h2>
+<p>享元模式从概念上看非常简单&#xff0c;意图就是复用相似对象&#xff0c;结构上和多例模式、缓存、池化技术等类似都用到了工厂&#xff0c;但是设计意图却大相径庭&#xff0c;例如多例模式主要用于限制对象个数&#xff0c;缓存时提高对象访问效率&#xff0c;池化技术主要目的是节省时间。从这里也能看出&#xff0c;有些模型设计虽然结构非常类似&#xff0c;但是出发点却不同&#xff0c;这也印证了学习设计模式的出发点应为设计意图而非死记结构&#xff0c;最终结构只是设计的落地方式而已。</p>

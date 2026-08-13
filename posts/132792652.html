@@ -1,0 +1,65 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【查找链表】&#xff0c;使用【链表】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132792652-01-b0eac0f069.png" loading="lazy"></p>
+<p>名曲目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="KEAZY_5"></a>链表中倒数第K个节点【EAZY】</h2>
+<p>与删除倒数第K个节点类似。</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132792652-02-10f814832f.png" loading="lazy"><br /> 需要注意的一点&#xff1a;为了符合大多数人的习惯&#xff0c;<strong>本题从1开始计数&#xff0c;即链表的尾节点是倒数第1个节点</strong></p>
+<h3><a rel="noopener noreferrer" id="_11"></a>解题思路</h3>
+<p>看到链表的题就可以想到快慢指针&#xff0c;让快指针先走K步&#xff0c;当快指针走到链表结尾时&#xff0c;慢指针基本就在倒数第K个节点&#xff0c;细节上可能会差一两个节点&#xff0c;需要做边界条件判断</p>
+<ol><li>step 1&#xff1a;准备一个快指针&#xff0c;从链表头开始&#xff0c;在链表上先走k步。</li><li>step 2&#xff1a;准备慢指针指向原始链表头&#xff0c;代表当前元素&#xff0c;则慢指针与快指针之间的距离一直都是k。<font color="red"><strong>这里需要注意&#xff0c;每次移动前都要做判断&#xff0c;如果还没移动完k步就到了链表末尾&#xff0c;则证明链表长度小于k&#xff0c;返回null</strong></font></li><li>step 3&#xff1a;快慢指针同步移动&#xff0c;当快指针到达链表尾部的时候&#xff0c;慢指针正好到了倒数k个元素的位置</li></ol>
+<h3><a rel="noopener noreferrer" id="_18"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param pHead ListNode类
+     * &#64;param k int整型
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> <span class="token class-name">FindKthToTail</span> <span class="token punctuation">(</span><span class="token class-name">ListNode</span> pHead<span class="token punctuation">,</span> <span class="token keyword">int</span> k<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义快慢双指针</span>
+        <span class="token class-name">ListNode</span> fast <span class="token operator">&#61;</span> pHead<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> slow <span class="token operator">&#61;</span> pHead<span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 快指针先行k步</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> k<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>fast <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-1 如果没到链表尾部&#xff0c;继续前进</span>
+                fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-1 如果还没走完k步就到链表尾部&#xff0c;说明链表长度小于k&#xff0c;返回null</span>
+                <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 3 快慢指针同时前进</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>fast <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> slow<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_79"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历了一遍链表&#xff0c;<strong>时间复杂度为O&#xff08;N&#xff09;</strong><br /> 空间复杂度&#xff1a;没有借助外部数据结构&#xff0c;<strong>空间复杂度为O&#xff08;1&#xff09;</strong></p>

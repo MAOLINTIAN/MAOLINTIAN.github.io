@@ -1,0 +1,202 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【删除有序链表中的重复元素】&#xff0c;使用【链表】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132723604-01-4f2b01666b.png" loading="lazy"></p>
+<p>名曲目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="NMID_5"></a>删除链表的倒数第N个节点【MID】</h2>
+<p>来解决这道MID题目</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132723604-02-51d620c98a.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token number">2</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">2</span><span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_18"></a>解题思路</h3>
+<p>给出解题思路<br /> <img alt="在这里插入图片描述" src="./posts/assets/132723604-03-2d115edcc2.png" loading="lazy"><br /> 算法实现步骤如下&#xff1a;</p>
+<ol><li>fast快指针先行N步和慢指针拉开N个节点距离</li><li>fast和slow指针一直向前直到快指针到链表的尾节点停止&#xff0c;此时慢指针因为落后快指针N个节点&#xff0c;所以在链表的倒数第N&#43;1个位置</li><li>slow指针直接指向其下一个节点的下一个&#xff0c;将下一个节点从链表中删除</li></ol>
+<p>注意这里为什么用了虚拟头结点作为哨兵&#xff0c;如果要删除的是倒数第5个节点也就是头节点&#xff0c;按照上述算法将无法处理&#xff0c;所以需要设置一个虚拟头节点</p>
+<h3><a rel="noopener noreferrer" id="_29"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param head ListNode类
+     * &#64;param n int整型
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> removeNthFromEnd <span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">,</span> <span class="token keyword">int</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参校验及哨兵节点设置</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>head <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token class-name">ListNode</span> dummyNode <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ListNode</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dummyNode<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 定义快慢指针&#xff0c;都从表头出发</span>
+        <span class="token class-name">ListNode</span> fast <span class="token operator">&#61;</span> dummyNode<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> slow <span class="token operator">&#61;</span> dummyNode<span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 快指针先行N步&#xff0c;拉开与慢指针N个节点间隔</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>n <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            n<span class="token operator">--</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 4 快慢指针同时前进&#xff0c;当快指针到链表尾部的时候&#xff0c;慢指针就对应倒数第N个节点的前一个节点&#xff0c;因为快慢指针拉开的是N个节点距离</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>fast<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            fast <span class="token operator">&#61;</span> fast<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            slow <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        slow<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> slow<span class="token punctuation">.</span>next<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+
+        <span class="token keyword">return</span> dummyNode<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_96"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;由于只遍历了一遍&#xff0c;所以<strong>时间复杂度为O&#xff08;N&#xff09;</strong><br /> 空间复杂度&#xff1a;由于没有用到辅助空间&#xff0c;所以<strong>空间复杂度为O&#xff08;1&#xff09;</strong></p>
+<h2><a rel="noopener noreferrer" id="EASY_100"></a>删除有序链表中的重复元素【EASY】</h2>
+<p>先来个简单的热热身</p>
+<h3><a rel="noopener noreferrer" id="_102"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132723604-04-49cca50433.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_105"></a>解题思路</h3>
+<p>比较简单&#xff0c;由于链表有序&#xff0c;则重复元素一定相邻&#xff0c;删除重复元素即可。<br /> <img alt="在这里插入图片描述" src="./posts/assets/132723604-05-8a110c2e2d.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_109"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param head ListNode类
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> deleteDuplicates <span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1-单指针进行链表遍历</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>cur <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> cur<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-只有当前节点和下一节点都不为null才能进行val比较</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>cur<span class="token punctuation">.</span>val <span class="token operator">&#61;&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">.</span>val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-1 比较一致则删除下一个节点</span>
+                cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-2 比较不一致则继续向前搜索&#xff0c;直到cur到链表尾部</span>
+                cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> head<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_163"></a>复杂度分析</h3>
+<p>时空复杂度分析</p>
+<ul><li>时间复杂度&#xff1a;遍历一遍链表&#xff0c;所以<strong>时间复杂度O&#xff08;N&#xff09;</strong></li><li>空间复杂度&#xff1a;未用到辅助结构&#xff0c;所以<strong>空间复杂度O&#xff08;1&#xff09;</strong></li></ul>
+<h2><a rel="noopener noreferrer" id="IIMID_168"></a>删除有序链表中的重复元素II【MID】</h2>
+<p>难度升级&#xff0c;和上一题的区别是把重复的元素全部干掉而不是留一个&#xff0c;所以需要有pre指针记录重复节点的上一个</p>
+<h3><a rel="noopener noreferrer" id="_170"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132723604-06-ba6aa26edd.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_173"></a>解题思路</h3>
+<p><img alt="给出解题思路&#xff0c;最好有图" src="./posts/assets/132723604-07-4d99219514.png" loading="lazy"><br /> 这里需要注意虽有有两个while&#xff0c;但是内层的while是去重用的&#xff0c;它前进的时候也会影响到外层循环&#xff0c;所以总<strong>体时间复杂度就不是O(N^2)&#xff0c;而是O(N)</strong></p>
+<h3><a rel="noopener noreferrer" id="_177"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param head ListNode类
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> deleteDuplicates <span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参校验</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>head <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> head<span class="token punctuation">.</span>next <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> head<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 设置哨兵节点</span>
+        <span class="token class-name">ListNode</span> dummy <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ListNode</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dummy<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> pre <span class="token operator">&#61;</span> dummy<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token comment">// 3 双指针遍历</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>cur <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> cur<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>cur<span class="token punctuation">.</span>val <span class="token operator">!&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">.</span>val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 1-比较不一致则继续前进</span>
+                cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+                pre <span class="token operator">&#61;</span> pre<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-比较一致则cur继续向前直到直到不一致的为止</span>
+                <span class="token keyword">while</span> <span class="token punctuation">(</span> cur <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> cur<span class="token punctuation">.</span>next <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> cur<span class="token punctuation">.</span>val <span class="token operator">&#61;&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">.</span>val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token comment">// 3-删除中间所有的重复节点&#xff0c;cur继续指向新节点</span>
+                pre<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+                cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dummy<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_245"></a>复杂度分析</h3>
+<p>时空复杂度分析</p>
+<ul><li>时间复杂度&#xff1a;这里需要注意虽有有两个while&#xff0c;但是内层的while是去重用的&#xff0c;它前进的时候也会影响到外层循环&#xff0c;所以<strong>总体时间复杂度就不是O(N^2)&#xff0c;而是O(N)</strong></li><li>空间复杂度&#xff1a;没有借助外部结构&#xff0c;<strong>空间复杂度为O&#xff08;1&#xff09;</strong></li></ul>

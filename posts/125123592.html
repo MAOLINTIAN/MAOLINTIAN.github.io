@@ -1,0 +1,157 @@
+<p>在完整的需求开发中&#xff0c;代码的落地实际上是最后一步了&#xff0c;也就是我们所谓的面向对象编程&#xff08;OOP&#xff09;&#xff0c;实际上拿到需求后最好先进行分析和设计&#xff0c;这部分工作基本都被我省略了或者只是在纸上或者wiki上简单画一画&#xff0c;分析和设计并没有按照规范落到实处。而面向对象分析和设计最终的产出是类的设计&#xff0c;包括<strong>程序被拆解为哪些类</strong>&#xff0c;<strong>每个类有哪些属性方法</strong>&#xff0c;<strong>类与类之间如何交互</strong>等等。它们比其他的分析和设计更加具体、更加落地、更加贴近编码&#xff0c;更能够顺利地过渡到面向对象编程环节。</p>
+<p>我们以一个实际的<strong>接口鉴权</strong>的例子来进行面向对象开发&#xff1a;<strong>为了保证接口调用的安全性&#xff0c;我们希望设计实现一个接口调用鉴权功能&#xff0c;只有经过认证之后的系统才能调用我们的接口&#xff0c;没有认证过的系统调用我们的接口会被拒绝</strong>。</p>
+<h2><a rel="noopener noreferrer" id="_4"></a>面向对象分析</h2>
+<p>当然接口鉴权的需求并不明确&#xff0c;同样的实际场景下我们接到的大多数需求都不是百分百明确的&#xff0c;不管是需求分析还是面向对象分析&#xff0c;我们首先要做的都是<font color="red"><strong>将笼统的需求细化到足够清晰、可执行。我们需要通过沟通、挖掘、分析、假设、梳理&#xff0c;搞清楚具体的需求有哪些&#xff0c;哪些是现在要做的&#xff0c;哪些是未来可能要做的&#xff0c;哪些是不用考虑做的</strong></font>。那么如何做面向对象分析呢&#xff1f;实际上&#xff0c;这跟做算法题类似&#xff0c;<strong>先从最简单的方案想起&#xff0c;然后再优化</strong></p>
+<h3><a rel="noopener noreferrer" id="1__6"></a>1. 第一轮基础分析</h3>
+<p>首先我们能想到最简单的解决方案就是&#xff0c;通过用户名加密码来做认证。</p>
+<ol><li>给每个允许访问我们服务的调用方&#xff0c;派发一个应用名&#xff08;或者叫应用 ID、AppID&#xff09;和一个对应的密码&#xff08;或者叫秘钥&#xff09;。</li><li>调用方每次进行接口请求的时候&#xff0c;都携带自己的 AppID 和密码。微服务在接收到接口调用请求之后&#xff0c;会解析出 AppID 和密码&#xff0c;跟存储在微服务端的 AppID 和密码进行比对。如果一致&#xff0c;说明认证成功&#xff0c;则允许接口调用请求&#xff1b;否则&#xff0c;就拒绝接口调用请求。</li></ol>
+<p>不过&#xff0c;这样的验证方式&#xff0c;每次都要明文传输密码。密码很容易被截获&#xff0c;是不安全的&#xff0c;即使对密码加密&#xff0c;照样可以被未认证系统&#xff08;或者说黑客&#xff09;截获&#xff0c;未认证系统可以携带这个加密之后的密码以及对应的 AppID&#xff0c;伪装成已认证系统来访问我们的接口。这就是典型的<strong>重放攻击</strong>&#xff08;把以前窃听到的数据原封不动地重新发送给接收方&#xff09;。</p>
+<h3><a rel="noopener noreferrer" id="2__13"></a>2. 第二轮分析优化</h3>
+<p>借助 OAuth 的验证思路来解决。调用方将请求接口的 <strong>URL 、 AppID、密码、时间戳</strong>拼接在一起&#xff0c;然后进行加密&#xff0c;生成一个 token&#xff0c;由于引入的时间戳为随机变量&#xff0c;所以每次接口请求生成的 token 都不一样。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/125123592-01-f66ea1d4d1.png" loading="lazy"></p>
+<p>虽然这样还不是绝对安全。未认证系统还是可以在这一分钟的 token 失效窗口内&#xff0c;通过截获请求、重放请求&#xff0c;来调用我们的接口&#xff01;不过&#xff0c;<strong>攻与防之间&#xff0c;本来就没有绝对的安全。我们能做的就是&#xff0c;尽量提高攻击的成本</strong>。这个方案虽然还有漏洞&#xff0c;但是实现起来足够简单&#xff0c;而且不会过度影响接口本身的性能&#xff08;比如响应时间&#xff09;。所以&#xff0c;<strong>权衡安全性、开发成本、对系统性能的影响</strong>&#xff0c;这个方案算是比较折中、比较合理的了</p>
+<h3><a rel="noopener noreferrer" id="3__18"></a>3. 第三轮分析优化</h3>
+<p>接口鉴权逻辑就是如上分析&#xff0c;还有一个细节需要考虑就是&#xff0c;如何在微服务端存储每个授权调用方的 AppID 和密码。针对 AppID 和密码的存储&#xff0c;我们最好能灵活地支持各种不同的存储方式&#xff0c;比如 ZooKeeper、本地配置文件、自研配置中心、MySQL、Redis 等。我们不一定针对每种存储方式都去做代码实现&#xff0c;但起码<strong>要留有扩展点&#xff0c;保证系统有足够的灵活性和扩展性&#xff0c;能够在我们切换存储方式的时候&#xff0c;尽可能地减少代码的改动</strong>【<font color="red"><strong>基于接口(抽象)而非实现编程</strong>】</font></p>
+<h3><a rel="noopener noreferrer" id="4__20"></a>4. 最终确定需求</h3>
+<p>AppID 和密码的存储默认使用数据库&#xff0c;但要留有扩展点&#xff0c;整体的业务流程&#xff1a;</p>
+<ol><li>调用方进行接口请求的时候&#xff0c;将 URL、AppID、密码、时间戳拼接在一起&#xff0c;通过加密算法生成 token&#xff0c;并且将 token、AppID、时间戳拼接在 URL 中&#xff0c;一并发送到微服务端。</li><li>微服务端在接收到调用方的接口请求之后&#xff0c;从请求中拆解出 token、AppID、时间戳。</li><li>微服务端首先检查传递过来的时间戳跟当前时间&#xff0c;是否在 token 失效时间窗口内。如果已经超过失效时间&#xff0c;那就算接口调用鉴权失败&#xff0c;拒绝接口调用请求。</li><li>如果 token 验证没有过期失效&#xff0c;微服务端再从自己的存储中&#xff0c;取出 AppID 对应的密码&#xff0c;通过同样的 token 生成算法&#xff0c;生成另外一个 token&#xff0c;与调用方传递过来的 token 进行匹配&#xff1b;如果一致&#xff0c;则鉴权成功&#xff0c;允许接口调用&#xff0c;否则就拒绝接口调用。</li></ol>
+<p>这就是我们需求分析的整个思考过程&#xff0c;<strong>从最粗糙、最模糊的需求开始&#xff0c;通过“提出问题 - 解决问题”的方式&#xff0c;循序渐进地进行优化&#xff0c;最后得到一个足够清晰、可落地的需求描述</strong></p>
+<h2><a rel="noopener noreferrer" id="_29"></a>面向对象设计</h2>
+<p>面向对象分析的产出是<strong>详细的需求描述</strong>&#xff0c;那面向对象设计的产出就是<strong>类</strong>。在面向对象设计环节&#xff0c;我们将需求描述转化为具体的类的设计</p>
+<h3><a rel="noopener noreferrer" id="1__31"></a>1. 划分职责进而识别出有哪些类</h3>
+<p>根据需求描述&#xff0c;把其中涉及的功能点&#xff0c;一个一个罗列出来&#xff0c;然后再去看<strong>哪些功能点职责相近&#xff0c;操作同样的属性&#xff0c;是否应该归为同一个类</strong>&#xff0c;我们将上述的分析得出的详细需求描述进行拆解&#xff1a;</p>
+<ol><li>把 URL、AppID、密码、时间戳拼接为一个字符串&#xff0c;对字符串通过加密算法加密生成 token</li><li>将 token、AppID、时间戳拼接到 URL 中&#xff0c;形成新的 URL</li><li>解析 URL&#xff0c;得到 token、AppID、时间戳等信息</li><li>从存储中取出 AppID 和对应的密码</li><li>根据时间戳判断 token 是否过期失效</li><li>验证两个 token 是否匹配</li></ol>
+<p>从上面的功能列表中&#xff0c;我们发现&#xff0c;1、5、6 都是跟 token 有关&#xff0c;负责 token 的生成、验证&#xff1b;2、3 都是在处理 URL&#xff0c;负责 URL 的拼接、解析&#xff1b;4是操作 AppID 和密码&#xff0c;负责从存储中读取 AppID 和密码。所以&#xff0c;我们可以粗略地得到三个核心的类&#xff1a;<strong>AuthToken、Url、CredentialStorage</strong>。AuthToken 负责实现 1、5、6 这四个操作&#xff1b;Url 负责 2、3 两个操作&#xff1b;CredentialStorage 负责 5 这个操作</p>
+<h3><a rel="noopener noreferrer" id="2__43"></a>2. 定义类及其属性和方法</h3>
+<p>我们依据功能点的描述分别对各个类进行设计</p>
+<h4><a rel="noopener noreferrer" id="1_AuthToken_45"></a>1 AuthToken类</h4>
+<p>AuthToken 负责实现 1、5、6这三个操作&#xff0c;我们可以简单设计下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/125123592-02-381f8f36a2.png" loading="lazy"><br />
+从上面的类图中&#xff0c;我们可以发现这样三个小细节。</p>
+<ul><li>第一个细节&#xff1a;并不是所有出现的名词都被定义为类的属性&#xff0c;比如 URL、AppID、密码、时间戳这几个名词&#xff0c;我们把它作为了方法的参数。</li><li>第二个细节&#xff1a;我们还需要挖掘一些没有出现在功能点描述中属性&#xff0c;比如 createTime&#xff0c;expireTimeInterval&#xff0c;它们用在 isExpired() 函数中&#xff0c;用来判定 token 是否过期。</li><li>第三个细节&#xff1a;我们还给 AuthToken 类添加了一个功能点描述中没有提到的方法 getToken()&#xff0c;这是服务端用来获取token的方法</li></ul>
+<p>第一个细节告诉我们&#xff0c;<strong>从业务模型上来说&#xff0c;不应该属于这个类的属性和方法&#xff0c;不应该被放到这个类里</strong>。第二和第三个细节告诉我们&#xff0c;<strong>在设计类具有哪些属性和方法的时候&#xff0c;不能单纯地依赖当下的需求&#xff0c;还要分析这个类从业务模型上来讲&#xff0c;理应具有哪些属性和方法</strong>。这样可以一方面保证类定义的完整性&#xff0c;另一方面不仅为当下的需求还为未来的需求做些准备。</p>
+<h4><a rel="noopener noreferrer" id="2_Url_54"></a>2 Url类</h4>
+<p>虽然需求描述中&#xff0c;我们都是以 URL 来代指接口请求&#xff0c;但是&#xff0c;接口请求并不一定是以 URL 的形式来表达&#xff0c;还有可能是 Dubbo、RPC 等其他形式。为了让这个类更加通用&#xff0c;命名更加贴切&#xff0c;我们接下来把它命名为 ApiRequest<br />
+<img alt="在这里插入图片描述" src="./posts/assets/125123592-03-b11cdc8381.png" loading="lazy"><br />
+拼接URL是客户端要做的事&#xff0c;这里就不体现了</p>
+<h4><a rel="noopener noreferrer" id="3_CredentialStorage__58"></a>3 CredentialStorage 类</h4>
+<p>CredentialStorage 类非常简单&#xff0c;类图如下所示。为了做到抽象封装具体的存储方式&#xff0c;我们将 CredentialStorage 设计成了接口&#xff0c;基于接口而非具体的实现编程<br />
+<img alt="在这里插入图片描述" src="./posts/assets/125123592-04-dfee564d77.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="3__61"></a>3. 定义类与类之间的交互关系</h3>
+<p>UML 统一建模语言中定义了六种类之间的关系。它们分别是&#xff1a;泛化、实现、关联、聚合、组合、依赖。关系比较多&#xff0c;而且有些还比较相近&#xff0c;比如聚合和组合</p>
+<p><strong>泛化</strong>&#xff08;Generalization&#xff09;可以简单理解为继承关系。具体到 Java 代码就是下面这样&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">B</span> <span class="token keyword">extends</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+</code></pre>
+<p><strong>实现</strong>&#xff08;Realization&#xff09;一般是指接口和实现类之间的关系。具体到 Java 代码就是下面这样&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">B</span> <span class="token keyword">implements</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+</code></pre>
+<p><strong>聚合</strong>&#xff08;Aggregation&#xff09;是一种包含关系&#xff0c;<strong>A 类对象包含 B 类对象&#xff0c;B 类对象的生命周期可以不依赖 A 类对象的生命周期&#xff0c;B类对象是方法的参数&#xff0c;传递进来的</strong>&#xff0c;也就是说可以单独销毁 A 类对象而不影响 B 对象&#xff0c;比如课程与学生之间的关系。具体到 Java 代码就是下面这样&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">B</span> b<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token class-name">B</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>b <span class="token operator">&#61;</span> b<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>组合</strong>&#xff08;Composition&#xff09;也是一种包含关系。<strong>A 类对象包含 B 类对象&#xff0c;B 类对象的生命周期依赖 A 类对象的生命周期&#xff0c;B 类对象不可单独存在&#xff0c;B类对象是A类中创建出来的</strong>&#xff0c;比如鸟与翅膀之间的关系。具体到 Java 代码就是下面这样&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">B</span> b<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>b <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">B</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>关联</strong>&#xff08;Association&#xff09;是一种非常弱的关系&#xff0c;<strong>包含聚合、组合两种关系</strong>。具体到代码层面&#xff0c;如果 B 类对象是 A 类的成员变量&#xff0c;那 B 类和 A 类就是关联关系。具体到 Java 代码就是下面这样&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">B</span> b<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token class-name">B</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>b <span class="token operator">&#61;</span> b<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+或者
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">B</span> b<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>b <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">B</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>依赖</strong>&#xff08;Dependency&#xff09;是一种比关联关系更加弱的关系&#xff0c;包含关联关系。不管是 B 类对象是 A 类对象的成员变量&#xff0c;还是 A 类的方法使用 B 类对象作为<strong>参数或者返回值、局部变量</strong>&#xff0c;只要 B 类对象和 A 类对象有任何使用关系&#xff0c;我们都称它们有依赖关系。具体到 Java 代码就是下面这样&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">B</span> b<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token class-name">B</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>b <span class="token operator">&#61;</span> b<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+或者
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">B</span> b<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>b <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">B</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+或者
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func</span><span class="token punctuation">(</span><span class="token class-name">B</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>我从更加贴近编程的角度&#xff0c;对类与类之间的关系做了调整&#xff0c;只保留了四个关系&#xff1a;泛化、实现、组合、依赖&#xff0c;其中&#xff0c;泛化、实现、依赖的定义不变&#xff0c;组合关系替代 UML 中组合、聚合、关联三个概念&#xff0c;也就相当于<strong>重新命名关联关系为组合关系</strong>&#xff0c;并且不再区分 UML 中的组合和聚合两个概念。之所以这样重新命名&#xff0c;是为了跟我们前面讲的“多用组合少用继承”设计原则中的“组合”统一含义。只要 B 类对象是 A 类对象的成员变量&#xff0c;那我们就称&#xff0c;A 类跟 B 类是组合关系<br />
+<img alt="在这里插入图片描述" src="./posts/assets/125123592-05-bc915276da.png" loading="lazy"><br />
+再回过头来看几个核心类的关系&#xff0c;这几个关系在组装部分体现</p>
+<h3><a rel="noopener noreferrer" id="4__142"></a>4. 将类组装起来并提供执行入口</h3>
+<p>接口鉴权并不是一个独立运行的系统&#xff0c;而是一个集成在系统上运行的组件&#xff0c;所以&#xff0c;我们封装所有的实现细节&#xff0c;设计了一个最顶层的 ApiAuthenticator 接口类&#xff0c;暴露一组给外部调用者使用的 API 接口&#xff0c;作为触发执行鉴权逻辑的入口<br />
+<img alt="在这里插入图片描述" src="./posts/assets/125123592-06-c5a7a2a068.png" loading="lazy"><br />
+共用到了三种关系&#xff0c;实现、组合和依赖</p>
+<h2><a rel="noopener noreferrer" id="_146"></a>面向对象编程</h2>
+<p>面向对象设计完成之后&#xff0c;我们已经定义清晰了类、属性、方法、类之间的交互&#xff0c;并且将所有的类组装起来&#xff0c;提供了统一的执行入口。接下来&#xff0c;面向对象编程的工作&#xff0c;就是将这些设计思路翻译成代码实现</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">ApiAuthenticator</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">void</span> <span class="token function">auth</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">void</span> <span class="token function">auth</span><span class="token punctuation">(</span><span class="token class-name">ApiRequest</span> apiRequest<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DefaultApiAuthenticatorImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ApiAuthenticator</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">CredentialStorage</span> credentialStorage<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">DefaultApiAuthenticatorImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>credentialStorage <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">MysqlCredentialStorage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">DefaultApiAuthenticatorImpl</span><span class="token punctuation">(</span><span class="token class-name">CredentialStorage</span> credentialStorage<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>credentialStorage <span class="token operator">&#61;</span> credentialStorage<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">auth</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">ApiRequest</span> apiRequest <span class="token operator">&#61;</span> <span class="token class-name">ApiRequest</span><span class="token punctuation">.</span><span class="token function">buildFromUrl</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">auth</span><span class="token punctuation">(</span>apiRequest<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">auth</span><span class="token punctuation">(</span><span class="token class-name">ApiRequest</span> apiRequest<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> appId <span class="token operator">&#61;</span> apiRequest<span class="token punctuation">.</span><span class="token function">getAppId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> token <span class="token operator">&#61;</span> apiRequest<span class="token punctuation">.</span><span class="token function">getToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">long</span> timestamp <span class="token operator">&#61;</span> apiRequest<span class="token punctuation">.</span><span class="token function">getTimestamp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> originalUrl <span class="token operator">&#61;</span> apiRequest<span class="token punctuation">.</span><span class="token function">getOriginalUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">AuthToken</span> clientAuthToken <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">AuthToken</span><span class="token punctuation">(</span>token<span class="token punctuation">,</span> timestamp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>clientAuthToken<span class="token punctuation">.</span><span class="token function">isExpired</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">&#34;Token is expired.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token class-name">String</span> password <span class="token operator">&#61;</span> credentialStorage<span class="token punctuation">.</span><span class="token function">getPasswordByAppId</span><span class="token punctuation">(</span>appId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">AuthToken</span> serverAuthToken <span class="token operator">&#61;</span> <span class="token class-name">AuthToken</span><span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span>originalUrl<span class="token punctuation">,</span> appId<span class="token punctuation">,</span> password<span class="token punctuation">,</span> timestamp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>serverAuthToken<span class="token punctuation">.</span><span class="token function">match</span><span class="token punctuation">(</span>clientAuthToken<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">&#34;Token verfication failed.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_194"></a>总结一下</h2>
+<p>面向对象分析英文缩写是 OOA&#xff0c;全称是 Object Oriented Analysis&#xff1b;面向对象设计的英文缩写是 OOD&#xff0c;全称是 Object Oriented Design&#xff1b;面向对象编程的英文缩写是 OOP&#xff0c;全称是 Object Oriented Programming。OOA、OOD、OOP 三个连在一起就是面向对象分析、设计、编程&#xff08;实现&#xff09;&#xff0c;正好是面向对象软件开发要经历的三个阶段&#xff0c;想想之前为什么我们基本没有面向对象分析和设计&#xff0c;主要原因就是我们进行的都是面向过程编程&#xff0c;我们的视角是自上而下的任务处理流程&#xff0c;而非面向对象的自底向上的业务建模&#xff0c;在这个体系之下进行需求功能开发&#xff0c;当然视角就会局限在顺序流的功能拆解而非面向对象的分析设计了。正确的面向对象分析是细化模糊的需求&#xff0c;正确的面向对象设计是正确设计类及类关系&#xff0c;正确的面向对象编程则是基于面向对象分析和设计之后的代码实践&#xff0c;而非流程式的面向过程编程。</p>

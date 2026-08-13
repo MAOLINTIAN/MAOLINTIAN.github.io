@@ -1,0 +1,468 @@
+<p>MySQL是使用最广泛的数据库&#xff0c;只有理解了其底层机制&#xff0c;才能更好的写出高性能的SQL查询&#xff0c;所谓知其然&#xff0c;也要知其所以然。本篇Chat为接下来的深入理解MySQL数据原理 精华版本&#xff0c;重点知识&#xff0c;如果某个知识点不理解&#xff0c;可以再深入的看本专栏中的其它Blog内容介绍。</p>
+<ol><li><strong>MySQL架构及查询语句执行流程</strong>&#xff0c;一条SQL语句的执行流程&#xff0c;MySQL数据库的整体结构</li><li><strong>MySQL数据库存储引擎</strong>&#xff0c;InnoDB和MyISAM的区别&#xff0c;InnoDB的优势</li><li><strong>MySQL日志机制</strong>&#xff0c;MySQL的两种日志&#xff0c;日志的作用是什么</li><li><strong>MySQL数据库索引</strong>&#xff0c;索引的底层结构&#xff0c;B&#43;树的构造&#xff0c;索引的优化策略</li><li><strong>MySQL数据库事务及锁机制</strong>&#xff0c;事务的ACID&#xff0c;隔离级别&#xff0c;MVCC机制&#xff0c;锁的种类和使用</li></ol>
+<p>适合人群&#xff1a;不了解MySQL的新手&#xff0c;对MySQL的实现机制感兴趣的技术人员</p>
+<p>本文的全部内容来自我个人在深入理解【MySQL数据库原理】学习过程中整理的博客&#xff0c;是该博客专栏的精华部分。在书写过程中过滤了流程性的上下文&#xff0c;例如部署环境、配置文件、代码示例等&#xff0c;而致力于向读者讲述其中的核心部分&#xff0c;如果读者有意对过程性内容深入探究&#xff0c;可以移步专栏中的其它Blog<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-01-58e164db93.jpg" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="MySQL_13"></a>MySQL架构及查询语句执行流程</h2>
+<p>本部分回答以下几个问题&#xff0c;如果能回答正确&#xff0c;则证明本部分掌握好了。</p>
+<blockquote>
+ <p><strong>MySQL的整体架构&#xff0c;分为哪几个部分&#xff0c;使用上需要注意什么</strong><br /> <strong>一条查询语句的执行流程是什么样的</strong></p>
+</blockquote>
+<p>接下来我们看这部分的内容。</p>
+<h3><a rel="noopener noreferrer" id="MySQL_21"></a>MySQL的架构</h3>
+<p>客户端依据通信协议请求服务端&#xff0c;而MySQL这个服务器执行SQL语句命令并给出反馈&#xff0c;整体架构如下&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114715323-02-0c38717af5.png" loading="lazy"></p>
+<p>可以粗略的把MySQL服务器分为两层&#xff0c;上面的为Server层&#xff0c;主要包括<strong>连接器、查询缓存、分析器【分析器&#43;预处理器】、优化器、执行器</strong>等&#xff0c;所有跨存储引擎的功能都在这一层实现&#xff0c;比如存储过程、触发器、视图&#xff0c;函数等&#xff0c;还有一个通用的日志模块 <strong>binglog 日志模块</strong>&#xff1a;</p>
+<ul><li><strong>连接器</strong>&#xff1a; 身份认证和权限相关(登录 MySQL 的时候)&#xff0c;我们在数据库层执行SQL语句时&#xff0c;应用程序会连接到相应的数据库服务器&#xff0c;把SQL语句发送给服务器处理&#xff0c;实际上也就是通信&#xff0c;数据库里面&#xff0c;<font color="red"><strong>长连接是指连接成功后&#xff0c;如果客户端持续有请求&#xff0c;则一直使用同一个连接。短连接则是指每次执行完很少的几次查询就断开连接&#xff0c;下次查询再重新建立一个</strong></font></li><li><strong>查询缓存</strong>: 执行查询语句的时候&#xff0c;会先查询缓存&#xff08;MySQL 8.0 版本后移除&#xff0c;因为这个功能不太实用&#xff09;。在接收到查询请求后&#xff0c;并不会直接去数据库查询&#xff0c;而是在数据库的查询缓存中找是否有相对应的查询数据&#xff08;某条给定的查询语句在第一次执行时&#xff0c;服务器会缓存这条查询语句和他返回的结果。&#xff09;
+  <ul><li><strong>如果存在</strong>&#xff0c;那么在返回查询结果之前&#xff0c;MySQL会检查一次用户权限。如果权限没有问题&#xff0c;<font color="red"><strong>key 是查询的语句&#xff0c;value 是查询的结果</strong></font>。如果你的查询能够直接在这个缓存中找到 key&#xff0c;那么这个 value 就会被则直接从缓存中拿到结果返回给客户端。
+    <ul><li><strong>查询不会被解析&#xff0c;不用生成执行计划&#xff0c;不会被执行</strong>。</li><li>判断是否命中缓存是将此<strong>查询语句</strong>和缓存中的查询语句进行比对&#xff0c;如果完全相同&#xff0c;那就认为它们是相同的&#xff0c;就认为命中缓存了。</li></ul> </li><li><strong>如果不存在</strong>&#xff0c;就会继续后面的执行阶段。<strong>执行完成后&#xff0c;执行结果会被存入查询缓存中</strong></li></ul> </li><li><strong>分析器</strong>: 没有命中缓存的话&#xff0c;SQL 语句就会经过分析器&#xff0c;Mysql通过将SQL语句进行解析&#xff0c;并<strong>生成一棵对应的解析树</strong>。MySQL解析器将使用<font color="red"><strong>MySQL语法分析</strong></font>(语法规则验证)和<strong>解析查询</strong>&#xff0c;如将验证是否使用<strong>错误的关键字</strong>&#xff0c;或者<strong>关键字的顺序</strong>是否正确</li><li><strong>预处理器</strong>&#xff1a;预处理器根据一些MySQL规则进<strong>一步检查解析树是否合法</strong>&#xff0c;如<font color="red"><strong>数据表和数据列是否存在&#xff0c;解析列名和别名&#xff0c;是否有歧义</strong></font>。接下来预处理器会<strong>验证用户权限(precheck)</strong>。查看用户是否有相应的操作权限</li><li><strong>优化器</strong>&#xff1a; 按照 MySQL 认为最优的方案去执行。例如<font color="red"><strong>表里面有多个索引的时候&#xff0c;决定使用哪个索引&#xff1b;或者在一个语句有多表关联&#xff08;join&#xff09;的时候&#xff0c;决定各个表的连接顺序</strong></font>&#xff0c;将SQL语句转化成执行计划&#xff0c;一条查询可以有很多种执行方式&#xff0c;最后都返回相同的结果&#xff0c;最后找到其中最好的执行计划&#xff08;Mysql使用基于成本的优化器&#xff0c;它将尝试预测一个查询使用某种执行计划的成本&#xff0c;选择其中成本最小的一个&#xff09;</li><li><strong>执行器</strong>: Mysql根据执行计划给出的指令逐步执行。开始执行的时候&#xff0c;<font color="red"><strong>要先判断一下你对这个表有没有执行查询的权限&#xff0c;如果没有就会返回没有权限的错误</strong></font>。在此过程中&#xff0c;有大量的操作需要通过<strong>调用存储引擎实现的接口完成&#xff0c;这些接口即为“handler API”接口</strong>。查询中的每一个表由一个handler的实例表示。&#xff08;实际上&#xff0c;在优化阶段Mysql就为每一个表创建了一个handelr实例&#xff0c;优化器可以根据这些实例的接口获取表的相关信息&#xff0c;如表的所有列名、索引统计信息等&#xff09;</li></ul>
+<p>下面的一层为存储引擎&#xff0c;以及真实存储的数据&#xff0c;存储引擎又分为很多中&#xff0c;在<a href="https://tianmaolin.blog.csdn.net/article/details/77884011" rel="nofollow">【MySQL数据库基础 五】数据库存储引擎</a>这篇文章里详细的分析过MySQL的存储引擎选择。以上的分析器和预处理器也可以简化为一个分析器&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-03-bf28ce1110.png" loading="lazy"><br /> 总体而言MySQL的架构分为两层</p>
+<ul><li>Server 层包括连接器、查询缓存、分析器、优化器、执行器等&#xff0c;<strong>涵盖 MySQL 的大多数核心服务功能&#xff0c;以及所有的内置函数&#xff08;如日期、时间、数学和加密函数等&#xff09;&#xff0c;所有跨存储引擎的功能都在这一层实现&#xff0c;比如存储过程、触发器、视图等</strong>。</li><li><strong>存储引擎层负责数据的存储和提取</strong>。其架构模式是插件式的&#xff0c;支持 InnoDB、MyISAM、Memory 等多个存储引擎。现在最常用的存储引擎是 InnoDB&#xff0c;它从 MySQL 5.5.5 版本开始成为了默认存储引擎</li></ul>
+<p>这两层共同构建了MySQL&#xff0c;以上各个环节中包含如下三个注意事项&#xff1a;</p>
+<ol><li><strong>连接的权限时效</strong>&#xff0c;一个用户成功建立连接后&#xff0c;即使你用管理员账号对这个用户的权限做了修改&#xff0c;也不会影响已经存在连接的权限。<font color="red"><strong>修改完成后&#xff0c;只有再新建的连接才会使用新的权限设置</strong></font></li><li>长连接如何使用呢&#xff1f;因为创建连接比较复杂&#xff0c;所以建议使用长连接&#xff0c;但是长连接容易OOM
+  <ul><li>定期断开长连接&#xff0c;使用一段时间&#xff0c;或者程序里面判断执行过一个占用内存的大查询后&#xff0c;断开连接&#xff0c;之后要查询再重连</li><li>如果用的是 MySQL 5.7 或更新版本&#xff0c;可以在每次执行一个比较大的操作后&#xff0c;通过执行 mysql_reset_connection 来重新初始化连接资源。<strong>这个过程不需要重连和重新做权限验证&#xff0c;但是会将连接恢复到刚刚创建完时的状态</strong></li></ul> </li><li>不建议使用查询缓存&#xff0c;查询缓存的失效非常频繁&#xff0c;<font color="red"><strong>只要有对一个表的更新&#xff0c;这个表上所有的查询缓存都会被清空</strong></font>&#xff0c;8.0已经将该功能彻底移除了</li></ol>
+<p>总结而言&#xff0c;连接设置修改只影响后续连接&#xff0c;长连接虽好&#xff0c;但还是定期断开&#xff0c;否则容易OOM&#xff0c;不建议使用查询缓存。</p>
+<h3><a rel="noopener noreferrer" id="_54"></a>一条查询语句的执行流程</h3>
+<p>了解了MySQL的架构之后呢&#xff0c;正式理解下一条语句如何进行执行和优化。&#xff0c;以如下的查询语句举例分析&#xff0c;从人员库的人员信息表里拿出一条人员数据&#xff1a;</p>
+<pre><code class="prism language-java">use User
+go
+select <span class="token operator">*</span> from  UserInfo   where  name<span class="token operator">&#61;</span><span class="token string">&#39;tml&#39;</span> and age<span class="token operator">&#61;</span><span class="token string">&#39;26&#39;</span> and sex<span class="token operator">&#61;</span><span class="token string">&#39;男&#39;</span><span class="token punctuation">;</span>
+</code></pre>
+<p>分析下这个语句的执行流程&#xff1a;</p>
+<ol><li><strong>连接器</strong>&#xff1a; 连接数据库User&#xff0c;并通过输入账号密码通过连接认证【<font color="red"><strong>数据库权限check</strong></font>】</li><li><strong>查询缓存</strong>: 先执行查询缓存&#xff0c;如果命中数据&#xff0c;在返回之前先判断是否有权限【<font color="red"><strong>查询缓存check</strong></font>】&#xff0c;如果有则返回&#xff0c;没有则继续向下</li><li><strong>分析器</strong>: 若没有命中缓存&#xff0c;进行语法分析&#xff0c;提取关键字&#xff1a;<strong>use 、go、select 、from 、where 、and</strong> &#xff0c;判断关键字是否满足MySQL的语法</li><li><strong>预处理器</strong>&#xff1a;进一步获取<strong>UserInfo</strong>表名、列名&#xff1a;<strong>name、age、sex</strong>&#xff0c;判断这些元素是否都存在&#xff0c;如果都存在则验证权限【<font color="red"><strong>权限precheck</strong></font>】&#xff0c;如果权限存在继续向下</li><li><strong>优化器</strong>&#xff1a; 判断先获取哪一列&#xff0c;产生各种方案【name-&gt;age-&gt;sex、name-&gt;sex-&gt;age、age-&gt;sex-&gt;name等】&#xff0c;最终会选取最优、成本最小的方案去执行</li><li><strong>执行器</strong>: 执行前先判断是否有权限执行语句【<font color="red"><strong>表权限check</strong></font>】&#xff0c; 调用handler查询相关接口&#xff0c;从InnoDB存储引擎中获取数据&#xff0c;
+  <ul><li>调用 InnoDB 引擎接口取这个表的第一行&#xff0c;判断是否满足条件<code>name&#61;&#39;tml&#39; and age&#61;&#39;26&#39; and sex&#61;&#39;男&#39;</code>如果不是则跳过&#xff0c;如果是则将这行存在结果集中&#xff1b;</li><li>调用引擎接口取“下一行”&#xff0c;重复相同的判断逻辑&#xff0c;直到取到这个表的最后一行。</li><li>执行器将上述遍历过程中所有满足条件的行组成的记录集作为结果集返回给客户端</li></ul> </li></ol>
+<p>对于有索引的表&#xff0c;执行的逻辑也差不多。第一次调用的是“取满足条件的第一行”这个接口&#xff0c;之后循环取“满足条件的下一行”这个接口&#xff0c;这些接口都是引擎中已经定义好的。以上就是查询的执行流程</p>
+<h2><a rel="noopener noreferrer" id="MySQL_75"></a>MySQL数据库存储引擎</h2>
+<p>本部分回答以下几个问题&#xff0c;如果能回答正确&#xff0c;则证明本部分掌握好了。</p>
+<blockquote>
+ <p><strong>MySQL的存储库引擎有哪几种&#xff0c;分别有什么区别</strong></p>
+</blockquote>
+<p>接下来我们看这部分的内容。</p>
+<h3><a rel="noopener noreferrer" id="_81"></a>数据库引擎分类介绍</h3>
+<p>在MySQL中&#xff0c;存储引擎是以插件的形式运行的。支持的引擎有十几种之多&#xff0c;但我们实战常用到的&#xff0c;只有<strong>InnoDB、MyISAM和Memory</strong> &#xff0c;MySQL的默认存储引擎为<font color="red"><strong>InnoDB</strong></font>。</p>
+<h4><a rel="noopener noreferrer" id="MyISAM_83"></a>MyISAM</h4>
+<p>MyISAM表是<strong>独立于操作系统的</strong>&#xff0c;这说明可以轻松地将其从Windows服务器移植到Linux服务器&#xff1b;每当我们建立一个MyISAM引擎的表时&#xff0c;就会在本地磁盘上建立三个文件&#xff0c;文件名就是表名。</p>
+<ul><li> <p><strong>体积小&#xff0c;质量大</strong>。MyISAM的索引和数据是分开的&#xff0c;<strong>并且索引是有压缩的&#xff0c;内存使用率就对应提高了不少。同时能加载更多索引</strong>&#xff0c;建立了一个MyISAM引擎的tb_Demo表&#xff0c;那么就会生成以下三个文件&#xff1a;<font color="red"><strong>MyISAM索引数据分离&#xff0c;体积小&#xff0c;内存利用率高</strong></font></p>
+  <ul><li>tb_demo.frm&#xff0c;<strong>存储表定义</strong>&#xff1b; tb_demo.MYD&#xff0c;<strong>存储数据</strong>&#xff1b;tb_demo.MYI&#xff0c;<strong>存储索引</strong></li></ul> </li><li> <p><strong>MyISAM无法处理事务</strong>&#xff0c;这就意味着<strong>有事务处理需求的表&#xff0c;不能使用MyISAM存储引擎</strong>。</p> </li><li> <p>DELETE FROM table时&#xff0c;MyISAM会先将表结构备份到一张虚拟表中&#xff0c;然后执行drop&#xff0c;最后根据备份重建该表。</p> </li><li> <p>innodb寻址要映射到块&#xff0c;再到行&#xff0c;<strong>MYISAM 记录的直接是文件的OFFSET&#xff0c;定位比INNODB要快</strong></p> </li></ul>
+<p>MyISAM存储引擎特别适合在以下几种情况下使用&#xff1a;</p>
+<ul><li><strong>选择密集型的表</strong>&#xff0c;MyISAM存储引擎在<strong>筛选大量数据</strong>时非常迅速&#xff0c;这是它最突出的优点。</li><li><strong>插入密集型的表</strong>&#xff0c;MyISAM的并发插入特性允许<strong>同时选择和插入数据</strong>。例如&#xff1a;MyISAM存储引擎很适合<strong>管理邮件或Web服务器日志数据</strong>。不支持事务&#xff0c;自然就不支持行级锁</li><li>如果和 MyISAM 比 Insert 写操作的话&#xff0c;Innodb还达不到MyISAM的写性能&#xff0c;如果是针对基于索引的update操作&#xff0c;MyISAM会慢于InnoDB&#xff0c;<font color="red"><strong>MyISAM的insert快于Innodb&#xff0c;update慢于Innodb</strong></font></li><li><strong>select count(*) 和 order by</strong> 大概是使用最频繁的&#xff0c;大概能占了整个sql总语句的60%以上的操作&#xff0c;<strong>而这种操作Innodb其实也是会锁表的</strong>&#xff0c;很多人以为Innodb是行级锁&#xff0c;那个只是where对它主键是有效&#xff0c;非主键的还是会锁全表的&#xff0c;MyISAM表的<code>select count(*)</code> 是非常快的&#xff1b;在 MyISAM 存储引擎中&#xff0c;把表的总行数&#xff08;row&#xff09;存储在磁盘上&#xff0c;当执行 <code>select count(*) from t</code> 时&#xff0c;直接返回总数据。同样&#xff0c;当 <code>count(*)</code> 语句包含 where条件时&#xff0c;两种表的操作是一样的<font color="red"><strong>MyISAM的select count(*) 和 order by的速率快</strong></font></li><li><strong>定期提供某些表的数据时&#xff0c;MyISAM的话很方便&#xff0c;只要发给他们对应那表的&#xff08;frm.MYD,MYI&#xff09;的文件</strong>&#xff0c;让他们自己在对应版本的数据库启动就行&#xff0c;而Innodb就需要导出.sql了&#xff0c;因为光给别人文件&#xff0c;受字典数据文件的影响&#xff0c;对方是无法使用的。</li></ul>
+<p>所以综合而言MyISAM更加适合<strong>select多的&#xff0c;事务无要求</strong>的场景</p>
+<h4><a rel="noopener noreferrer" id="InnoDB_104"></a>InnoDB</h4>
+<p><strong>InnoDB是一个健壮的事务型存储引擎</strong>&#xff0c;这种存储引擎已经被很多互联网公司使用&#xff0c;为用户操作非常大的数据存储提供了一个强大的解决方案。我的电脑上安装的MySQL 5.6.13版&#xff0c;InnoDB就是作为默认的存储引擎。</p>
+<ul><li><strong>InnoDB还引入了行级锁定和外键约束</strong>&#xff0c;</li><li><strong>Innodb的索引和数据是紧密捆绑的</strong>&#xff0c;没有使用压缩从而会造成 Innodb 比 MyISAM 数据文件体积庞大很多</li><li><strong>InnoDB中存在着缓冲管理</strong>&#xff0c;通过缓冲池&#xff0c;将索引和数据全部缓存起来&#xff0c;加快查询的速度</li><li>InnoDB 表的<code>select count(*)</code> 比 MyISAM 慢很多&#xff1b;当执行 <code>select count(*) from t</code> 时&#xff0c;会先把数据读出来&#xff0c;一行一行的累加&#xff0c;最后返回总数量&#xff0c;需要注意的是&#xff0c;当count(*) 语句包含 where 条件时&#xff0c;两种表的操作是一样的&#xff0c;当<code>count(*)</code>语句包含where条件时MyISAM也需要扫描整个表</li><li>DELETE FROM table时&#xff0c;InnoDB不会重新建立表&#xff0c;而是一行一行的删除</li></ul>
+<p>在以下场合下&#xff0c;使用InnoDB是最理想的选择&#xff1a;</p>
+<ul><li><strong>更新密集</strong>的表。InnoDB存储引擎特别适合<strong>处理多重并发的更新请求</strong>。</li><li><strong>事务</strong>。InnoDB存储引擎是支持事务的标准MySQL存储引擎。默认的事务隔离级别为<strong>可重复读</strong>&#xff08;REPEATABLE-READ&#xff09;&#xff0c;通过<strong>MVCC</strong>&#xff08;并发版本控制&#xff09;来实现&#xff0c;使用的锁粒度<strong>默认为行级锁&#xff0c;可以支持更高的并发&#xff1b;当然&#xff0c;也支持表锁</strong>&#xff0c;如在一些列增删改中只要哪个出错还可以回滚还原&#xff0c;而MyISAM就不可以了</li><li><strong>支持行级锁</strong>&#xff0c;INNODB的行级锁是有条件的。在where条件没有使用主键时&#xff0c;照样会锁全表</li><li><strong>自动灾难恢复</strong>。与其它存储引擎不同&#xff0c;InnoDB表能够自动从灾难中恢复。</li><li><strong>外键约束</strong>。MySQL支持外键的存储引擎只有InnoDB。</li><li><strong>支持自动增加列AUTO_INCREMENT属性。</strong></li></ul>
+<p>一般来说&#xff0c;<strong>如果需要事务支持&#xff0c;并且有较高的并发读取频率&#xff0c;InnoDB是不错的选择</strong>。大数据量下用innodb&#xff0c;因为支持事务&#xff0c;行级锁。对于InnoDB来说&#xff0c;<strong>最大的优势在于支持事务&#xff0c;当然这是以牺牲效率为代价的</strong></p>
+<h4><a rel="noopener noreferrer" id="MEMORY_122"></a>MEMORY</h4>
+<p>使用MySQL Memory存储引擎的出发点是<strong>速度</strong>。为得到最快的响应时间&#xff0c;采用的<strong>逻辑存储介质是系统内存</strong>。</p>
+<ul><li>虽然在内存中存储表数据确实会提供很高的性能&#xff0c;但<strong>当mysqld守护进程崩溃时&#xff0c;所有的Memory数据都会丢失</strong>。</li><li><strong>要求存储在Memory数据表里的数据使用的是长度不变的格式</strong>&#xff0c;<strong>这意味着不能使用BLOB和TEXT这样的长度可变的数据类型</strong>&#xff0c;VARCHAR是一种长度可变的类型&#xff0c;但因为<strong>它在MySQL内部当做长度固定不变的CHAR类型&#xff0c;所以可以使用</strong></li><li><strong>只支持表级锁</strong>。所以&#xff0c;在访问量比较大时&#xff0c;表级锁会成为MEMORY存储引擎的瓶颈</li><li>查询的时候&#xff0c;如果有用到临时表&#xff0c;而且临时表中有BLOB&#xff0c;TEXT类型的字段&#xff0c;那么这个临时表就会转化为MyISAM类型的表&#xff0c;性能会急剧降低</li></ul>
+<p>基于以上的MEMORY的特性&#xff0c;适用场景如下&#xff1a;</p>
+<ul><li><strong>目标数据较小&#xff0c;而且被非常频繁地访问</strong>。在内存中存放数据&#xff0c;所以会造成内存的使用&#xff0c;可以通过参数max_heap_table_size控制Memory表的大小&#xff0c;设置此参数&#xff0c;就可以限制Memory表的最大大小。</li><li><strong>如果数据是临时的&#xff0c;而且要求必须立即可用</strong>&#xff0c;那么就可以存放在内存表中。</li><li><strong>存储在Memory表中的数据如果突然丢失&#xff0c;不会对应用服务产生实质的负面影响</strong>。</li></ul>
+<p>Memory同时支持<strong>散列索引和B树索引</strong>。B树索引的优于散列索引的是&#xff0c;可以使用部分查询和通配查询&#xff0c;也可以使用&lt;、&gt;和&gt;&#61;等操作符方便数据挖掘。<strong>散列索引进行“相等比较”非常快&#xff0c;但是对“范围比较”的速度就慢多了</strong>&#xff0c;因此散列索引值适合使用在**&#61;和&lt;&gt;**的操作符中&#xff0c;<strong>不适合在&lt;或&gt;操作符中</strong>&#xff0c;也同样不适合用在order by子句中。</p>
+<h3><a rel="noopener noreferrer" id="_135"></a>三种存储引擎的对比</h3>
+<p>三种存储引擎的详细对比用如下的这个表格来展示下吧&#xff1a;</p>
+<table><thead><tr><th align="left">功能特性</th><th>Innodb</th><th>MyISAM</th><th>MEMORY</th></tr></thead><tbody><tr><td align="left">是否MySQL默认引擎</td><td>是</td><td>否</td><td>否</td></tr><tr><td align="left">是否支持事务</td><td>是【原子和回滚】</td><td>否</td><td>-</td></tr><tr><td align="left">高并发下DML语句适合场景</td><td>频繁<strong>更新</strong>以及<strong>插入</strong>涉及到安全性较高操作 【读写密集型】</td><td><strong>查询</strong>【查询密集型】</td><td>-</td></tr><tr><td align="left">是否支持外键</td><td>是 【联表数据耦合高】</td><td>否</td><td>-</td></tr><tr><td align="left">是否保存表行数&#xff0c;这将增加count(*)性能</td><td>否</td><td>是</td><td>-</td></tr><tr><td align="left">是否支持自动增长列</td><td>是</td><td>否</td><td>-</td></tr><tr><td align="left">清空表时如何操作</td><td>一行一行的删除&#xff0c;效率非常慢</td><td>drop&#xff0c;然后重建表&#xff0c;效率高</td><td>-</td></tr><tr><td align="left">清空支持锁类型</td><td>行级锁【粒度更细&#xff0c;适合高并发】、表级锁</td><td>表级锁</td><td>表级锁</td></tr><tr><td align="left">占用存储空间</td><td>多</td><td>少</td><td>只在内存中运行</td></tr><tr><td align="left">占用缓存在内存的内容</td><td>索引&#43;数据【缓冲池】</td><td>索引</td><td>索引&#43;数据</td></tr><tr><td align="left">是否支持MVCC</td><td>是</td><td>否</td><td>否</td></tr></tbody></table>
+<h2><a rel="noopener noreferrer" id="MySQL_152"></a>MySQL日志机制</h2>
+<p>本部分回答以下几个问题&#xff0c;如果能回答正确&#xff0c;则证明本部分掌握好了。</p>
+<blockquote>
+ <p><strong>一条更新语句的执行流程</strong><br /> <strong>RedoLog指什么&#xff0c;BinLog指什么&#xff0c;二者的区别和作用场合分别是什么</strong><br /> <strong>WAL机制、crash-safe能力和主从备份同步</strong><br /> <strong>两阶段提交机制</strong><br /> <strong>组提交策略和延迟提交策略</strong></p>
+</blockquote>
+<p>接下来我们看这部分的内容。</p>
+<h3><a rel="noopener noreferrer" id="_163"></a>更新语句的执行流程</h3>
+<p>DML数据操作语句&#xff08;<strong>更新、删除、插入</strong>&#xff09;这些在执行的时候肯定要记录日志&#xff0c;MySQL 自带的日志模块 <strong>binlog&#xff08;归档日志&#xff09;</strong> &#xff0c;所有的存储引擎都可以使用&#xff0c;常用的 InnoDB 引擎还自带了一个日志模块 <strong>redo log&#xff08;重做日志&#xff09;</strong>&#xff0c;假如我们要更新ID为2的这条数据当前值自增1&#xff0c;其中ID为主键&#xff0c;加了索引&#xff1a;</p>
+<pre><code class="prism language-java">use User
+go
+update T set c<span class="token operator">&#61;</span>c<span class="token operator">&#43;</span><span class="token number">1</span> where ID<span class="token operator">&#61;</span><span class="token number">2</span><span class="token punctuation">;</span>
+</code></pre>
+<p>我们就以 InnoDB 模式下来探讨这个语句的执行流程。流程如下&#xff1a;</p>
+<ol><li><strong>连接器</strong>&#xff1a; 连接数据库User&#xff0c;并通过输入账号密码通过连接认证&#xff0c; <strong>查询缓存不执行&#xff0c;因为在一个表上有更新的时候&#xff0c;跟这个表有关的查询缓存会失效&#xff0c;所以这条语句就会把表 T 上所有缓存结果都清空</strong></li><li><strong>分析器</strong>: 进行语法分析&#xff0c;提取关键字&#xff1a;<strong>use 、go、update 、set 、where</strong> &#xff0c;判断关键字是否满足MySQL的语法&#xff0c; <strong>预处理器</strong>&#xff1a;进一步获取<strong>UserInfo</strong>表名、列名&#xff1a;<strong>name、age</strong>&#xff0c;判断这些元素是否都存在&#xff0c;如果都存在则验证权限&#xff0c;如果权限存在继续向下</li><li><strong>优化器</strong>&#xff1a; 定位到要更新的数据&#xff0c;<strong>查询tml这一条数据</strong>&#xff0c;然后把age改为18&#xff0c;生成一个执行计划</li><li><strong>执行器</strong>: 调用handler查询相关接口写入这一行数据
+  <ul><li><strong>执行器</strong>先找<strong>存储引擎取 ID&#61;2 这一行</strong>。ID 是主键&#xff0c;引擎直接用树搜索找到这一行。如果 ID&#61;2 这一行所在的数据页本来就在内存中&#xff0c;就直接返回给执行器&#xff1b;否则&#xff0c;需要先从磁盘读入内存&#xff0c;然后再返回</li><li><strong>执行器</strong>拿到引擎给的行数据&#xff0c;把这个值设置为18&#xff0c;得到新的一行数据&#xff0c;再调用引擎接口写入这行新数据。</li><li><strong>引擎</strong>将这行新数据更新到内存中&#xff0c;<strong>同时将这个更新操作记录到 redo log 里面</strong>&#xff0c;此时 redo log 处于 prepare 状态&#xff0c;然后告知执行器执行完成了&#xff0c;随时可以提交事务</li><li><strong>执行器收到通知后记录 binlog&#xff0c;并把 binlog 写入磁盘</strong></li><li><strong>执行器调用引擎接口&#xff0c;提交 redo log 为提交状态</strong>。</li></ul> </li></ol>
+<p>图中<strong>浅色框表示是在 InnoDB 内部</strong>执行的&#xff0c;<strong>深色框表示是在执行器</strong>中执行的<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-04-4d6443f734.png" loading="lazy"></p>
+<p>以上就是在更新数据时的一些操作&#xff0c;实际上只比查询多后半段。接下来我们从为什么需要使用开始讲起一直到日志是如何满足MySQL的安全可靠的。为了方便把前面的知识串联起来&#xff0c;我画了一个流程图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-05-a6ac21b988.png" loading="lazy"><br /> 循着这个路线正序的提取下日志部分的知识精华。</p>
+<h3><a rel="noopener noreferrer" id="_187"></a>为什么要用日志</h3>
+<p>日志有三方面的作用&#xff0c;分别是<strong>WAL机制、备份归档</strong>以及<strong>crash-safe能力</strong>。一个个来说说它的好处&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="WAL_189"></a>WAL机制</h4>
+<p>WAL 的全称是 Write-Ahead Logging&#xff0c;它的关键点就是<strong>先写日志【log file on disk】&#xff0c;再写磁盘【Page on disk】</strong>。看定义貌似跑不掉写磁盘这一步&#xff0c;因为日志文件也存储在磁盘中。为啥WAL的写磁盘就快呢&#xff1f;</p>
+<ul><li>redo log 和 binlog 都是顺序写&#xff0c;<strong>磁盘的顺序写比随机写速度要快</strong>&#xff0c;到达一定时机会将日志中涉及的数据写到磁盘中的数据库。如果每一次的更新操作都需要写进磁盘&#xff0c;然后磁盘也要找到对应的那条记录&#xff0c;然后再更新&#xff0c;整个过程 IO 成本、查找成本都很高</li><li>组提交机制&#xff0c;积累一些buffer后一次性刷盘。可以大幅度降低磁盘的 IOPS 消耗&#xff08;IOPS (Input/Output Per Second)即每秒的输入输出量(或读写次数),是衡量磁盘性能的主要指标之一。IOPS是指单位时间内系统能处理的I/O请求数量&#xff09;&#xff0c;<strong>这样其实写日志【log file on disk】的次数也会少&#xff0c;可能一次写好几个事务</strong>。</li></ul>
+<p>其中IOPS (Input/Output Per Second)即每秒的输入输出量(或读写次数)&#xff0c;是衡量磁盘性能的主要指标之一&#xff0c;数值越小&#xff0c;说明IO占用越低。</p>
+<h4><a rel="noopener noreferrer" id="crashsafe_196"></a>crash-safe能力</h4>
+<p>crash-safe能力表示&#xff0c;即使<strong>数据库</strong>发生异常重启【可能是数据库进程掉电&#xff0c;也可能是主机掉电】&#xff0c;之前<strong>提交的记录</strong>&#xff0c;都不会丢失&#xff0c;也即<strong>已经提交&#xff08;commit&#xff09;成功的事务不会被丢失</strong>&#xff0c;可以通过持久化到磁盘的日志【log file on disk】&#43;持久化到磁盘的数据【Page on disk】来恢复&#xff0c;</p>
+<pre><code class="prism language-java">
+begin<span class="token punctuation">;</span>
+insert into t1 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+insert into t2 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+commit<span class="token punctuation">;</span>
+
+</code></pre>
+<p>举个例子&#xff0c;如果仅仅只有数据库&#xff0c;掉电的时候以上的第一个insert执行完中断&#xff0c;数据库中的数据就不是我们预想的了&#xff0c;满足不了事务的ACID特性。</p>
+<h4><a rel="noopener noreferrer" id="_208"></a>备份归档</h4>
+<p>数据库的备份和恢复依赖于<strong>日志</strong>和<strong>数据库的全量备份</strong>的&#xff0c;因为我们不能频繁的进行数据库的实时的全量备份&#xff0c;成本太大而且不易实现&#xff0c;所以定期的<strong>整库备份&#43;日志</strong>才是实现数据库安全稳定的王道</p>
+<h3><a rel="noopener noreferrer" id="_211"></a>日志设计策略</h3>
+<p>Redolog和Binlog可以满足以上提到的三个日志需要的功能。</p>
+<h4><a rel="noopener noreferrer" id="RedologBinlogWAL_213"></a>Redolog和Binlog实现WAL</h4>
+<p>其实无论是Redolog还是Binlog&#xff0c;都有WAL机制&#xff0c;也就是更新记录都会<strong>先落到磁盘上的日志文件上&#xff0c;并且更新内存中的数据页&#xff0c;等到合适的时机再刷数据落盘</strong>。具体而言有如下三个步骤&#xff1a;</p>
+<ul><li><strong>创建阶段</strong>&#xff1a;事务创建一条日志&#xff0c;并添加到日志缓存</li><li><strong>日志刷盘【log file on disk】</strong>&#xff1a;<strong>日志缓存</strong>经过<strong>文件系统缓存</strong>后写入到<strong>磁盘上的日志文件</strong>&#xff0c;并更新记录到内存中的数据页&#xff0c;使其变为脏页</li><li><strong>数据刷盘【Page on disk】</strong>&#xff1a;日志对应的脏页数据写入到磁盘上的数据文件</li><li><font color="red"><strong>更新checkpoint【Redo log特有】</strong></font>&#xff0c;<strong>RedoLog在数据刷盘之后还有一个步骤就是&#xff0c;也就是说redolog中的checkpoint前进方向区域一定是数据页还没落盘的提交&#xff0c;这样我们就能确定哪些数据即使事务commit也就是日志刷盘已经成功的状态下其实数据还没有刷盘</strong></li></ul>
+<p>commit主要就是在日志刷盘阶段&#xff0c;我们主要讨论下事务从产生到日志落盘为止的过程。</p>
+<h5><a rel="noopener noreferrer" id="Redolog_221"></a>Redolog写入机制</h5>
+<p>以下这几个步骤对应于整个事务数据落盘的前两步&#xff0c;也就是<strong>日志刷盘</strong>为止。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-06-928c473a52.png" loading="lazy"><br /> redo log 可能存在三种状态&#xff0c;这三种状态是依次写入的&#xff1a;</p>
+<ol><li>事务先写到 redo log buffer 中&#xff0c;物理上是在 MySQL 进程内存中&#xff0c;就是图中的红色部分&#xff1b;日志写到 redo log buffer 是很快的</li><li>写到磁盘 (write)&#xff0c;但是没有持久化&#xff08;fsync)&#xff0c;物理上是在文件系统的 page cache 里面&#xff0c;也就是图中的黄色部分【<strong>redo log file on FS cache</strong>】&#xff0c;wirte 到 page cache 也很快</li><li>持久化到磁盘&#xff0c;对应的是 hard disk&#xff0c;也就是图中的绿色部分【<strong>binlog file on disk</strong>】&#xff0c;fsync到磁盘的速度就慢多了</li></ol>
+<p>为了控制 redo log 的写入策略&#xff0c;InnoDB 提供了 <code>innodb_flush_log_at_trx_commit</code> 参数&#xff0c;它有三种可能取值&#xff1a;</p>
+<ul><li>设置为 0 的时候&#xff0c;表示每次事务提交时都只是把 redo log 留在 redo log buffer 中 &#xff0c;<strong>不管是主机掉电还是MySQL异常重启&#xff0c;都有丢数据的风险&#xff0c;风险高</strong></li><li>设置为 2 的时候&#xff0c;表示每次事务提交时都只是把 redo log 写到 page cache&#xff0c;写入文件系统的page cache&#xff0c;<strong>主机掉电后会丢数据&#xff0c;但是MySQL异常重启不会丢数据&#xff0c;风险较低&#xff0c;写入比较快</strong></li><li>设置为 1 的时候&#xff0c;表示每次事务提交时都将 redo log 直接持久化到磁盘&#xff0c;<strong>非常安全&#xff0c;但慢</strong>。</li></ul>
+<p>InnoDB 有一个后台线程&#xff0c;每隔 1 秒&#xff0c;就会把 <strong>redo log buffer 中的日志&#xff0c;调用 write 写到文件系统的 page cache&#xff0c;然后调用 fsync 持久化到磁盘</strong>。<font color="red"><strong>可以理解为innodb_flush_log_at_trx_commit三个设置对应每次事务写入到不同级别&#xff0c;而每隔一秒就会从最不稳定状态直接刷到最稳定状态</strong></font></p>
+<h5><a rel="noopener noreferrer" id="Binlog_237"></a>Binlog写入机制</h5>
+<p>事务执行过程中&#xff0c;**先把日志写到 binlog cache&#xff0c;事务提交的时候&#xff0c;再把 binlog cache 写到 binlog 文件【文件系统缓存page cache】**中。一个事务的 binlog 是不能被拆开的&#xff0c;因此不论这个事务多大&#xff0c;也要确保一次性写入。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-07-d7287ec094.png" loading="lazy"><br /> 系统给 binlog cache 分配了一片内存&#xff0c;每个线程一个&#xff0c;参数 <code>binlog_cache_size</code> 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小&#xff0c;就要暂存到磁盘。事务提交的时候&#xff0c;执行器把 binlog cache 里的完整事务写入到 binlog 中&#xff0c;并清空 binlog cache</p>
+<ol><li>事务先写到每个线程自己的 binlog cache&#xff0c;但是共用同一份 binlog 文件。</li><li>然后write&#xff0c;指的就是指把日志写入到文件系统的 page cache&#xff0c;并没有把数据持久化到磁盘&#xff0c;所以速度比较快【binlog file on FS cache】。</li><li>最后fsync&#xff0c;才是将数据持久化到磁盘的操作【binlog file on disk】</li></ol>
+<p>一般情况下&#xff0c;我们认为 fsync 才占磁盘的 IOPS。write 和 fsync 的时机&#xff0c;是由参数 <code>sync_binlog</code> 控制的&#xff1a;</p>
+<ul><li>sync_binlog&#61;0 的时候&#xff0c;<strong>表示每次提交事务都只 write&#xff0c;不 fsync</strong>&#xff1b;实际的业务场景中&#xff0c;考虑到丢失日志量的可控性&#xff0c;一般不建议将这个参数设成 0</li><li>sync_binlog&#61;1 的时候&#xff0c;<strong>表示每次提交事务都会执行 fsync&#xff1b;</strong></li><li>sync_binlog&#61;N(N&gt;1) 的时候&#xff0c;<strong>表示每次提交事务都 write&#xff0c;但累积 N 个事务后才 fsync</strong>。比较常见的是将其设置为 100~1000 中的某个数值。但是&#xff0c;将 sync_binlog 设置为 N&#xff0c;对应的风险是&#xff1a;如果<strong>主机</strong>发生异常重启&#xff0c;会丢失最近 N 个事务的 binlog 日志&#xff0c;<strong>主机都crash了&#xff0c;文件系统缓存里的日志当然也丢了&#xff0c;没法落盘</strong></li></ul>
+<p><font color="red"><strong>可以理解为sync_binlog等于几表明每几个事务发生一次fsync</strong></font>&#xff0c;因此&#xff0c;在出现 IO 瓶颈的场景里&#xff0c;将 sync_binlog 设置成一个比较大的值&#xff0c;可以提升性能。</p>
+<h4><a rel="noopener noreferrer" id="Redologcrashsafe_253"></a>Redolog实现crash-safe</h4>
+<p>为什么Redolog可以实现crash-safe而binlog不可以&#xff0c;因为RedoLog的特殊数据结构&#xff0c;RedoLog是循环写的&#xff0c;有特有的checkpoint。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-08-8e9ed565c5.png" loading="lazy"><br /> binglog是顺序写的&#xff0c;binlog 没有能力恢复“数据页”。如果MySQL 发生了 crash需要恢复&#xff08;恢复的过程就是将未刷盘的内存中的数据脏页恢复到内存中&#xff09;</p>
+<ul><li>binlog由于没有checkpoint所以可能虽然有N个事务已经commit&#xff0c;但数据页还没有落盘&#xff0c;依据binlog没有办法判断哪些事务的commit涉及的数据没有落盘&#xff0c;也就不知道该从哪里恢复</li><li><strong>redo log是循环写的&#xff0c;有checkpoint&#xff0c;通过checkpoint的移动位置可以确定哪些事务指向的数据脏页确实被刷盘了&#xff0c;只要刷入磁盘的数据&#xff0c;都会从 redo log 中抹掉</strong>&#xff0c;数据库重启后&#xff0c;直接把 redo log 中的数据都恢复至内存就可以了</li></ul>
+<p>如果真想使用binlog来恢复的话&#xff0c;那么就要在每个commit之前&#xff0c;将更改的内存记录刷盘。刷盘之后再将这个事务改为commit状态。 这样崩溃恢复就可以在事务级去做了&#xff0c;而不用在数据页级去做了&#xff0c;<strong>但是这样显然违背WAL技术【累计多个事务修改的数据页存储内存&#xff0c;一次刷盘来减少IOPS】的初衷</strong></p>
+<h4><a rel="noopener noreferrer" id="binlog_261"></a>binlog实现备份归档</h4>
+<p><strong>redo log 是循环写的&#xff0c;空间固定会用完&#xff0c;用完后会之前的记录会被覆盖&#xff1b;binlog 是可以追加写入的</strong>。“追加写”是指 binlog 文件写到一定大小后会切换到下一个&#xff0c;并不会覆盖以前的日志&#xff0c;所以归档使用追加写的binlog。</p>
+<h3><a rel="noopener noreferrer" id="Redo_logBinglog_263"></a>Redo log和Binglog存在意义</h3>
+<p>除了上述二者各自不可替代的功能外&#xff0c;他们还有一些必须存在的历史原因</p>
+<ul><li><strong>Binlog 是 MySQL 的 Server 层实现的&#xff0c;所有引擎都可以使用</strong>。<strong>binlog 作为 MySQL 一开始就有的功能&#xff0c;被用在了很多地方</strong>。其中&#xff0c;MySQL 系统高可用的基础&#xff0c;就是 binlog 复制。还有很多公司有异构系统&#xff08;比如一些数据分析系统&#xff09;&#xff0c;这些系统就靠消费 MySQL 的 binlog 来更新自己的数据。关掉 binlog 的话&#xff0c;这些下游系统就没法输入了。总之&#xff0c;由于现在包括 MySQL 高可用在内的很多系统机制都依赖于 binlog</li><li><strong>Redo log是 InnoDB 引擎特有的</strong>&#xff0c;可以实现crash-safe&#xff0c;因为这个能力&#xff0c;后续被当做了MySQL的默认引擎</li></ul>
+<p>所以因为有了Redo log的crash-safe&#xff0c;所以没必要再去做一个出来&#xff0c;而又因为Binlog比较早期&#xff0c;除了归档还在很多生态中被广泛使用&#xff0c;所以二者都不能被取代。只能并存&#xff0c;<font color="red"><strong>那么并存就有一个问题&#xff0c;我们需要保证这两份并存的日志是一致的&#xff01;</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_269"></a>两阶段提交机制</h3>
+<p>两阶段提交的顺序如下图所示&#xff0c;那么为什么要两阶段提交呢&#xff1f;前面我们讨论了两个日志各自存在的必要性&#xff0c;表明我们不能只用其中一种日志&#xff0c;而要结合使用&#xff0c;结合使用就一定要保证它两是一致的。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-09-8f4ae9c456.png" loading="lazy"><br /> 如果不用两阶段提交&#xff0c;要么就是先写完 redo log 再写 binlog&#xff0c;或者采用反过来的顺序。</p>
+<ul><li>先写 redo log 直接提交&#xff0c;然后写 binlog&#xff0c;假设写完 redo log 后&#xff0c;机器挂了&#xff0c;<strong>binlog 日志没有被写入&#xff0c;那么机器重启后&#xff0c;这台机器会通过 redo log 恢复数据&#xff0c;但是这个时候 bingog 并没有记录该数据&#xff0c;后续进行机器备份的时候&#xff0c;就会丢失这一条数据</strong>&#xff0c;同时主从同步也会丢失这一条数据。<font color="red"><strong>binlog丢&#xff0c;无法备份</strong></font></li><li>先写 binlog&#xff0c;然后写 redo log&#xff0c;假设写完了 binlog&#xff0c;机器异常重启了&#xff0c;由于 redo log 还没写&#xff0c;崩溃恢复以后这个事务无效。本机是无法恢复这一条记录的&#xff0c;但是 binlog 又有记录&#xff0c;那么和上面同样的道理&#xff0c;就会<strong>产生数据不一致的情况</strong>。<font color="red"><strong>redolog丢&#xff0c;无法crash-safe</strong></font></li></ul>
+<p>所以如果采用 redo log 两阶段提交的方式就不一样了&#xff0c;写完 binglog 后&#xff0c;然后再提交 redo log 就会防止出现上述的问题&#xff0c;从而保证了数据的一致性。采用这种方式再验证一下&#xff1a;</p>
+<ul><li>写redo log 预提交过程中&#xff0c;机器挂了&#xff0c;则回滚事务【时刻A】</li><li>写完redo log 预提交&#xff0c;并且<strong>写binglog过程中</strong> &#xff0c;机器挂了&#xff0c;则判断【时刻B】
+  <ul><li>如果 redo log 里面的事务是完整的&#xff0c;也就是已经有了 commit 标识&#xff0c;则直接提交【说明写完binlog了】</li><li><strong>如果 redo log 只是预提交但不是 commit 状态&#xff0c;这个时候就会去判断 binlog 是否完整&#xff0c;如果完整就提交 redo log, 不完整就回滚事务</strong></li></ul> </li></ul>
+<p>这样就解决了数据一致性的问题&#xff0c;那么redo log 和 binlog 是怎么关联起来的?它们有一个共同的数据字段&#xff0c;叫 XID。崩溃恢复的时候&#xff0c;会按顺序扫描 redo log&#xff1a;</p>
+<ul><li>如果碰到既有 prepare、又有 commit 的 redo log&#xff0c;就直接提交&#xff1b;</li><li>如果碰到只有 parepare、而没有 commit 的 redo log&#xff0c;就拿着 XID 去 binlog 找对应的事务&#xff0c;binlog完整就提交&#xff0c;不完整就回滚</li></ul>
+<p>这样就能知道这条事务binlog到什么阶段了</p>
+<h3><a rel="noopener noreferrer" id="_287"></a>组提交策略</h3>
+<p>三个并发事务 (trx1, trx2, trx3) 在 prepare 阶段&#xff0c;都写完 redo log buffer&#xff0c;持久化到磁盘的过程&#xff0c;对应的 LSN 分别是 50、120 和 160<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-10-947953c1aa.png" loading="lazy"></p>
+<p>从图中可以看到&#xff1a;</p>
+<ol><li>trx1 是第一个到达的&#xff0c;会被选为这组的 leader&#xff1b;</li><li>等 trx1 要开始写盘的时候&#xff0c;这个组里面已经有了三个事务&#xff0c;这时候 LSN 也变成了 160&#xff1b;</li><li>trx1 去写盘的时候&#xff0c;带的就是 LSN&#61;160&#xff0c;因此等 trx1 返回时&#xff0c;所有 LSN 小于等于 160 的 redo log&#xff0c;都已经被持久化到磁盘&#xff1b;这时候 trx2 和 trx3 就可以直接返回了。</li></ol>
+<p>所以&#xff0c;<strong>一次组提交里面&#xff0c;组员越多&#xff0c;节约磁盘 IOPS 的效果越好</strong>。但如果只有单线程压测&#xff0c;那就只能老老实实地一个事务对应一次持久化操作了。在并发更新场景下&#xff0c;第一个事务写完 redo log buffer 以后&#xff0c;接下来这个 fsync 越晚调用&#xff0c;组员可能越多&#xff0c;节约 IOPS 的效果就越好</p>
+<h3><a rel="noopener noreferrer" id="MySQLIO_298"></a>提升MySQL的IO性能</h3>
+<p>结合以上的日志写入策略和延迟刷盘尽量组里事务多一些来谈谈MySQL的IO性能</p>
+<h4><a rel="noopener noreferrer" id="_300"></a>日志落盘参数配置</h4>
+<p>如果你的 MySQL 现在出现了性能瓶颈&#xff0c;而且瓶颈在 IO 上&#xff0c;可以通过哪些方法来提升性能呢&#xff1f;针对这个问题&#xff0c;可以考虑以下三种方法&#xff1a;</p>
+<ul><li>设置 <code>binlog_group_commit_sync_delay</code> 和 <code>binlog_group_commit_sync_no_delay_count</code> 参数&#xff0c;减少 binlog 的写盘次数。这个方法是基于“额外的故意等待”来实现的&#xff0c;因此可能会增加语句的响应时间&#xff0c;但没有丢失数据的风险。</li><li>将 <strong>sync_binlog</strong> 设置为大于 1 的值&#xff08;比较常见是 100~1000&#xff09;【事务都写到文件系统缓存】。这样做的风险是&#xff0c;主机crash掉电时会丢 binlog 日志。</li><li>将 <code>innodb_flush_log_at_trx_commit</code> 设置为 2【事务都写到文件系统缓存】。这样做的风险是&#xff0c;主机掉电的时候会丢数据。</li></ul>
+<p>不建议把 innodb_flush_log_at_trx_commit 设置成 0。因为把这个参数设置成 0&#xff0c;表示 redo log 只保存在内存中&#xff0c;这样的话 MySQL 本身异常重启也会丢数据&#xff0c;风险太大。而 redo log 写到文件系统的 page cache 的速度也是很快的&#xff0c;所以将这个参数设置成 2 跟设置成 0 其实性能差不多&#xff0c;但这样做 MySQL 异常重启时就不会丢数据了&#xff0c;相比之下风险会更小</p>
+<h4><a rel="noopener noreferrer" id="MySQL_307"></a>MySQL的延迟刷盘策略</h4>
+<p>为了让一次 fsync 带的组员更多&#xff0c;MySQL 有一个优化策略&#xff1a;拖时间。了解了两种日志的写入过程后&#xff0c;我们可以把这个过程更加的细化<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-11-390204d690.png" loading="lazy"></p>
+<p>这样做有两个好处&#xff0c;对redolog和binglog都加了组提交优化&#xff1a;</p>
+<ul><li><strong>redolog可以更好的组提交</strong>。把 redo log 做 fsync 的时间拖到了步骤 2之后&#xff0c;这样redo log做fsync 和 write的中间隔了一个binlog的write&#xff0c;所以会累计更多的事务在文件缓存中一起刷盘</li><li><strong>binlog 也可以组提交了</strong>。在执行第 4 步把 binlog fsync 到磁盘时&#xff0c;如果有多个事务的 binlog 已经写完了&#xff0c;也是一起持久化的&#xff0c;这样也可以减少 IOPS 的消耗。不过通常情况下第 3 步执行得会很快&#xff0c;所以 binlog 的 write 和 fsync 间的间隔时间短&#xff0c;导致能集合到一起持久化的 binlog 比较少&#xff0c;因此 binlog 的组提交的效果通常不如 redo log 的效果那么好</li></ul>
+<p>这就是MySQL的拖时间组提交策略&#xff0c;<strong>需注意其实组提交处理的是并发的场景&#xff0c;单线程的话在双1设置下都是每次事务完成单个刷盘的</strong>。</p>
+<h2><a rel="noopener noreferrer" id="MySQL_317"></a>MySQL数据库索引</h2>
+<p>本部分回答以下几个问题&#xff0c;如果能回答正确&#xff0c;则证明本部分掌握好了。</p>
+<blockquote>
+ <p><strong>索引建在哪些字段上比较合适&#xff0c;应用场景是什么</strong><br /> <strong>聚簇索引和非聚簇索引的区别</strong><br /> <strong>索引的常见模型有哪几种</strong><br /> <strong>InnoDB的索引模型是什么样的</strong><br /> <strong>索引的几种策略&#xff0c;覆盖索引和回表机制</strong><br /> <strong>联合索引的最佳使用方式、最左前缀原则</strong><br /> <strong>索引下推机制</strong></p>
+</blockquote>
+<p>接下来我们看这部分的内容。</p>
+<h3><a rel="noopener noreferrer" id="_328"></a>索引的使用场景</h3>
+<p><strong>索引的出现其实就是为了提高数据查询的效率</strong>&#xff0c;就像书的目录一样。一本 500 页的书&#xff0c;如果你想快速找到其中的某一个知识点&#xff0c;在不借助目录的情况下是比较难找的。同样&#xff0c;对于数据库的表而言&#xff0c;<strong>索引其实就是它的目录</strong>。数据库中如果不使用索引&#xff0c;大概率会非常慢&#xff0c;所以一定需要创建索引。索引是建立在数据库表中的某些列的上面。因此&#xff0c;在创建索引的时候&#xff0c;应该仔细考虑在哪些列上可以创建索引&#xff0c;在哪些列上不能创建索引。一般来说&#xff0c;应该在这些列 上创建索引&#xff0c;例如&#xff1a;</p>
+<ul><li>在<strong>经常需要搜索</strong>的列上&#xff0c;可以加快搜索的速度&#xff1b;</li><li>在作为<strong>主键</strong>的列上&#xff0c;<strong>强制该列的唯一性</strong>和组织表中数据的排列结构&#xff1b;</li><li>在<strong>经常用在连接</strong>的列上&#xff0c;这些列主要是一些外键&#xff0c;可以加快连接的速度&#xff1b;</li><li>在<strong>经常需要根据范围进行搜索</strong>的列上创建索引&#xff0c;因为索引已经排序&#xff0c;其指定的范围是连续的&#xff1b;</li><li>在<strong>经常需要排序的列上</strong>创建索引&#xff0c;因为索引已经排序&#xff0c;这样查询可以利用索引的排序&#xff0c;加快排序查询时间&#xff1b;</li><li>在<strong>经常使用在WHERE子句</strong>中的列上面创建索引&#xff0c;加快条件的判断速度。</li></ul>
+<p>总之就是在进行一些常用的<strong>查询</strong>和<strong>排序</strong>的过程中使用索引的场景比较多。因为如果不建立索引的话只能全表扫描了。</p>
+<h3><a rel="noopener noreferrer" id="_339"></a>聚簇索引和非聚簇索引</h3>
+<p>聚簇索引和非聚簇索引是mysql数据库中两种主要的索引方式</p>
+<ul><li><font color="blue"><strong>聚簇索引</strong></font>&#xff0c;该索引中<strong>键值的逻辑顺序决定了表中相应行的物理顺序</strong>。聚簇索引与字典相同&#xff0c;字典按字母顺序排列数据。由于聚集索引规定数据在表中的物理存储顺序&#xff0c;因此<strong>一个表只能包含一个聚集索引</strong>&#xff0c;<strong>我们把这种正文内容本身就是一种按照一定规则排列的目录称为聚集索引</strong></li><li><font color="blue"><strong>非聚簇索引</strong></font>&#xff0c;<strong>该索引中索引的逻辑顺序与磁盘上行的物理存储顺序不同</strong>&#xff0c;<strong>我们把这种目录纯粹是目录&#xff0c;正文纯粹是正文的排序方式称为非聚集索引</strong>。</li></ul>
+<p>二者的详细对比如下&#xff0c;我们可以这么理解&#xff1a;<strong>聚簇索引索引的叶节点就是数据节点。而非聚簇索引的叶节点仍然是索引节点&#xff0c;只不过节点上存储一个指向对应的数据块的指针</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-12-b39afd5836.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_346"></a>索引常见模型</h3>
+<p>索引的出现是为了提高查询效率&#xff0c;但是实现索引的方式却有很多种&#xff0c;所以这里也就引入了索引模型的概念。可以用于提高读写效率的数据结构很多&#xff0c;这里介绍三种常见、也比较简单的数据结构&#xff0c;它们分别是<strong>哈希表、有序数组</strong>和<strong>搜索树</strong></p>
+<h4><a rel="noopener noreferrer" id="_348"></a>哈希表</h4>
+<p>哈希表是一种以键 - 值&#xff08;key-value&#xff09;存储数据的结构&#xff0c;只要输入待查找的键即 key&#xff0c;就可以找到其对应的值即 Value。哈希的思路很简单&#xff0c;把值放在数组里&#xff0c;用一个哈希函数把 key 换算成一个确定的位置&#xff0c;然后把 value 放在数组的这个位置。不可避免地&#xff0c;多个 key 值经过哈希函数的换算&#xff0c;会出现同一个值的情况。处理这种情况的一种方法是&#xff0c;拉出一个<strong>链表</strong>。以下是一个按照身份证号查名字的示例&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-13-737fce7822.png" loading="lazy"><br /> 需要注意的是&#xff0c;图中四个 ID_card_n 的值并不是递增的&#xff0c;而且同一个链表上的User2也不会与User4比较就直接追加到链表尾部&#xff0c;这样做的好处是<strong>增加新的 User 时速度会很快</strong>&#xff0c;只需要往后追加。但缺点是&#xff0c;因为不是有序的&#xff0c;所以<strong>哈希索引做区间查询的速度是很慢的</strong>。所以哈希表这种结构适用于只有<strong>等值查询</strong>的场景</p>
+<p>这种模型使用场景较少&#xff0c;其优点和应用场景如下&#xff1a;</p>
+<ul><li><strong>优点</strong>&#xff1a;Hash 索引结构的特殊性&#xff0c;其<strong>检索效率非常高&#xff0c;索引的检索可以一次定位</strong>&#xff0c;不像B&#43;Tree 索引需要从根节点到枝节点&#xff0c;最后才能访问到页节点这样多次的IO访问&#xff0c;所以 Hash 索引的查询效率要远高于B&#43;Tree 索引。时间复杂度是<strong>O(1)</strong></li><li><strong>应用场合&#xff1a;<strong>依赖于这种</strong>单值查找</strong>的系统被称为 键-值存储&#xff1b;对于这种系统&#xff0c;尽可能地使用 hash 索引</li></ul>
+<p>缺点不言而喻&#xff0c;应用场合太小了&#xff0c;只有做等值查询时候才有意义&#xff0c;区间查询时效率极差。</p>
+<h4><a rel="noopener noreferrer" id="_359"></a>有序数组</h4>
+<p>有序数组在等值查询和范围查询场景中的性能就都非常优秀。还是上面这个根据身份证号查名字的例子&#xff0c;如果我们使用有序数组来实现的话&#xff0c;示意图如下所示<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-14-80f8cf6ab1.png" loading="lazy"><br /> 这里我们假设身份证号没有重复&#xff0c;这个数组就是<strong>按照身份证号递增的顺序</strong>保存的。</p>
+<ul><li><strong>等值查询</strong>&#xff0c;这时候如果你要查 ID_card_n2 对应的名字&#xff0c;用二分法就可以快速得到&#xff0c;这个时间复杂度是 <strong>O(log(N))</strong></li><li><strong>区间查询</strong>&#xff0c;要查身份证号在[ID_card_X, ID_card_Y]区间的 User&#xff0c;可以先用二分法找到 ID_card_X&#xff08;如果不存在 ID_card_X&#xff0c;就找到大于 ID_card_X 的第一个 User&#xff09;&#xff0c;然后向右遍历&#xff0c;直到查到第一个大于 ID_card_Y 的身份证号&#xff0c;退出循环</li></ul>
+<p>如果仅仅看查询效率&#xff0c;有序数组就是最好的数据结构了。但是&#xff0c;在需要更新数据的时候就麻烦了&#xff0c;你往中间插入一个记录就必须得挪动后面所有的记录&#xff0c;成本太高&#xff08;需要<strong>O(n)的时间复杂度</strong>&#xff09;&#xff0c;所以&#xff0c;有序数组索引只适用于<strong>静态存储引擎</strong>&#xff0c;比如你要保存的是 2017 年某个城市的所有人口信息&#xff0c;这类不会再修改的数据</p>
+<h4><a rel="noopener noreferrer" id="_368"></a>搜索树</h4>
+<p>二叉搜索树也是经典数据结构了&#xff0c;这里简单回顾下。Binary Sort Tree&#xff0c;二叉搜索树或者是一棵空树&#xff0c;或者是具有下列性质的二叉树&#xff1a;</p>
+<ul><li>若它的左子树不空&#xff0c;则左子树上所有结点的值均小于它的根结点的值&#xff1b;</li><li>若它的右子树不空&#xff0c;则右子树上所有结点的值均大于或等于它的根结点的值&#xff1b;</li><li>它的左、右子树也分别为二叉排序树。</li><li>没有键值相等的节点。</li></ul>
+<p>二叉搜索树是按照关键升序排列&#xff0c;<strong>对每一个节点来说&#xff0c;比它节点值高的节点是它的中序后继</strong>&#xff0c;所以对二叉查找树进行中序遍历&#xff08;左根右&#xff09;&#xff0c;即可得到有序的数列。它和二分查找一样&#xff0c;插入和查找的时间复杂度均为<strong>O(logn)</strong>&#xff0c;但是在最坏的情况下仍然会有O(n)的时间复杂度。原因在于插入和删除元素的时候&#xff0c;树没有保持平衡&#xff0c;所以我们这里也需要数是平衡的&#xff0c;也就是二叉搜索平衡树。</p>
+<h5><a rel="noopener noreferrer" id="_376"></a>二叉搜索平衡树</h5>
+<p>为了保证插入效率&#xff0c;使用了平衡树&#xff0c;平衡二叉树&#xff08;Self-balancing binary search tree&#xff09;又被称为AVL树&#xff08;有别于AVL算法&#xff09;&#xff0c;且具有以下性质&#xff1a;它是一 棵空树或它的左右两个子树的高度差的绝对值不超过1&#xff0c;并且左右两个子树都是一棵平衡二叉树</p>
+<p>还是上面根据身份证号查名字的例子&#xff0c;如果我们用二叉搜索树来实现的话&#xff0c;示意图如下所示<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-15-6d96be7561.png" loading="lazy"><br /> 这样如果你要查 ID_card_n2 的话&#xff0c;按照图中的搜索顺序就是按照 <strong>UserA -&gt; UserC -&gt; UserF -&gt; User2</strong> 这个路径得到。这个时间复杂度是 <strong>O(log(N))</strong>&#xff0c;当然为了维持 O(log(N)) 的查询复杂度&#xff0c;你就需要保持这棵树是平衡二叉树。为了做这个保证&#xff0c;更新的时间复杂度也是 <strong>O(log(N))</strong></p>
+<h5><a rel="noopener noreferrer" id="_382"></a>多叉搜索树</h5>
+<p>树可以有二叉&#xff0c;也可以有多叉。多叉树就是每个节点有多个儿子&#xff0c;儿子之间的大小保证从左到右递增。二叉树是搜索效率最高的&#xff0c;但是实际上大多数的数据库存储却并不使用二叉树。其原因是&#xff0c;<strong>索引不止存在内存中&#xff0c;还要写到磁盘上&#xff0c;因为二叉树树高过高&#xff0c;每次查询都需要访问过多节点&#xff0c;即访问数据块过多&#xff0c;而从磁盘随机读取数据块过于耗时</strong></p>
+<p>为了让一个查询尽量少地读磁盘&#xff0c;就必须让查询过程访问尽量少的数据块&#xff0c;那么&#xff0c;我们就不应该使用二叉树&#xff0c;而是要使用N叉树。</p>
+<p>以 InnoDB 的一个整数字段索引为例&#xff0c;这个 N 差不多是 1200。这棵树高是 4 的时候&#xff0c;就可以存 1200 的 3 次方个值&#xff0c;这已经 17 亿了。考虑到<strong>树根的数据块总是在内存中的</strong>&#xff0c;一个 10 亿行的表上一个整数字段的索引&#xff0c;查找一个值最多只需要访问 3 次磁盘。其实&#xff0c;树的第二层也有很大概率在内存中&#xff0c;那么访问磁盘的平均次数就更少了</p>
+<h3><a rel="noopener noreferrer" id="InnoDB_389"></a>InnoDB索引模型</h3>
+<p>在 InnoDB 中&#xff0c;表都是根据主键顺序以索引的形式存放的&#xff0c;这种存储方式的表称为索引组织表。又因为前面我们提到的&#xff0c;InnoDB 使用了 B&#43; 树索引模型&#xff0c;所以<strong>数据都是存储在 B&#43; 树中的&#xff0c;每一个索引在 InnoDB 里面对应一棵 B&#43; 树</strong></p>
+<h4><a rel="noopener noreferrer" id="B_391"></a>B&#43;树结构</h4>
+<p>一个m阶的B&#43;树具有如下几个特征&#xff1a;</p>
+<ol><li>有k个子树的中间节点包含有k个元素&#xff08;B树中是k-1个元素&#xff09;&#xff0c;<strong>每个元素不保存数据&#xff0c;只用来索引&#xff0c;所有数据都保存在叶子节点</strong>。</li><li>所有的叶子结点中包含了全部元素的信息&#xff0c;及指向含这些元素记录的指针&#xff0c;且<strong>叶子结点本身依关键字的大小自小而大顺序链接</strong>。</li><li>所有的中间节点元素都同时存在于子节点&#xff0c;在子节点元素中是最大&#xff08;或最小&#xff09;元素</li></ol>
+<p>下图为一个B&#43;树的结构&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-16-f057f11e83.png" loading="lazy"><br /> 在等值查询的时候&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-17-e215ec8480.png" loading="lazy"><br /> 区间查询&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-18-c318e87fe7.png" loading="lazy"><br /> B&#43;树的优势显而易见&#xff1a;</p>
+<ol><li>单一节点存储更多的元素&#xff0c;使得查询的IO次数更少。</li><li>所有查询都要查找到叶子节点&#xff0c;查询性能稳定。</li><li>所有叶子节点形成有序链表&#xff0c;便于范围查询。</li></ol>
+<p>需要注意数据库的聚集索引&#xff08;Clustered Index&#xff09;中&#xff0c;叶子节点直接包含卫星数据。在非聚集索引&#xff08;NonClustered Index&#xff09;中&#xff0c;叶子节点带有指向卫星数据的指针&#xff0c;这部分再下文中讲到</p>
+<h4><a rel="noopener noreferrer" id="BTree_411"></a>B&#43;Tree适用场景</h4>
+<p>我们这里比较下Hash索引和B&#43;树的区别&#xff0c;有序数组暂不讨论。由于 Hash 索引比较的是进行 Hash 运算之后的 Hash 值&#xff0c;所以它只能用于等值的过滤&#xff0c;不能用于基于范围的过滤&#xff0c;因为经过相应的 Hash 算法处理之后的 Hash 值的大小关系&#xff0c;并不能保证和Hash运算前完全一样。 Hash 索引不能够用于诸如 <strong>&lt;</strong> 等用于查找一个范围值的比较运算符&#xff0c;Hash 索引仅仅能满足<code>”&#61;”,”IN”和”&lt;&#61;&gt;”&#xff08;等价于&#xff09;</code>查询</p>
+<ul><li>Hash 索引不能够用于范围查询&#xff0c;<strong>B&#43;Tree可以进行范围查询</strong></li><li>Hash 索引无法被用来数据的排序操作&#xff0c;<strong>B&#43;Tree可以进行排序操作</strong>&#xff0c;由于 Hash 索引中存放的是经过 Hash 计算之后的 Hash 值&#xff0c;而且Hash值的大小关系并不一定和 Hash 运算前的键值完全一样&#xff0c;所以数据库无法利用索引的数据来避免任何排序运算&#xff1b;<strong>优化器不能够使用 hash 索引来加速 ORDER BY 操作。这种类型的索引不能够用于按照顺序查找下一个条目。</strong></li><li><strong>Hash 索引不能利用部分索引键查询。B&#43;Tree可以</strong>&#xff0c;对于组合索引&#xff0c;Hash 索引在计算 Hash 值的时候是组合索引键合并后再一起计算 Hash 值&#xff0c;而不是单独计算 Hash 值&#xff0c;所以通过组合索引的前面一个或几个索引键进行查询的时候&#xff0c;Hash 索引也无法被利用。<strong>查找某行记录必须进行全键匹配。而 B&#43;Tree 索引&#xff0c;任何该键的左前缀都可用以查找记录。</strong></li><li><strong>Hash 索引在任何时候都不能避免表扫描</strong>。前面已经知道&#xff0c;Hash 索引是将索引键通过 Hash 运算之后&#xff0c;将 Hash运算结果的 Hash 值和所对应的行指针信息存放于一个 Hash 表中&#xff0c;由于不同索引键存在相同 Hash 值&#xff0c;所以即使取满足某个 Hash 键值的数据的记录条数&#xff0c;也无法从 Hash 索引中直接完成查询&#xff0c;还是要通过访问表中的实际数据进行相应的比较&#xff0c;并得到相应的结果。</li><li><strong>Hash 索引遇到大量Hash值相等的情况后性能并不一定就会比B&#43;Tree索引高</strong>&#xff0c;对于选择性比较低的索引键&#xff0c;如果创建 Hash 索引&#xff0c;那么将会存在大量记录指针信息存于同一个 Hash 值相关联。这样要定位某一条记录时就会非常麻烦&#xff0c;会浪费多次表数据的访问&#xff0c;而造成整体性能低下。</li></ul>
+<p>总而言之&#xff0c;还是B&#43;树的应用场景较多</p>
+<h4><a rel="noopener noreferrer" id="_421"></a>主键与非主键索引</h4>
+<p>假设&#xff0c;我们有一个主键列为 ID 的表&#xff0c;表中有字段 k&#xff0c;并且在 k 上有索引</p>
+<pre><code class="prism language-java">mysql<span class="token operator">&gt;</span> create table <span class="token function">T</span><span class="token punctuation">(</span>
+    id <span class="token keyword">int</span> primary key<span class="token punctuation">,</span>
+    k <span class="token keyword">int</span> not null<span class="token punctuation">,</span>
+    name <span class="token function">varchar</span><span class="token punctuation">(</span><span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    index <span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">)</span>engine<span class="token operator">&#61;</span>InnoDB<span class="token punctuation">;</span>
+</code></pre>
+<p>表中 R1~R5 的 (ID,k) 值分别为 (100,1)、(200,2)、(300,3)、(500,5) 和 (600,6)&#xff0c;两棵树的示例示意图如下<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-19-10ac945c56.png" loading="lazy"><br /> 可以看到表里创建了两个索引&#xff0c;一个是默认给主键创建的&#xff0c;一个是我们手动给k创建的&#xff1a;</p>
+<ul><li>主键索引的叶子节点存的是整行数据。在 InnoDB 里&#xff0c;主键索引也被称为聚簇索引&#xff08;clustered index&#xff09;</li><li>非主键索引的叶子节点内容是主键的值。在 InnoDB 里&#xff0c;非主键索引也被称为二级索引(非聚簇索引)&#xff08;secondary index&#xff09;</li></ul>
+<p>主键索引&#xff1a; key:主键的值&#xff0c;value:整行数据。 普通列索引&#xff1a; key&#xff1a;索引列的值&#xff0c; value:主键的值。</p>
+<p>根据上面的索引结构说明&#xff0c;我们来讨论一个问题&#xff1a;基于主键索引和普通索引的查询有什么区别&#xff1f;</p>
+<ul><li>如果语句是 <code>select * from T where ID&#61;500</code>&#xff0c;即主键查询方式&#xff0c;则只需要搜索 ID 这棵 B&#43; 树&#xff1b;</li><li>如果语句是 <code>select * from T where k&#61;5</code>&#xff0c;即普通索引查询方式&#xff0c;则需要先搜索 k 索引树&#xff0c;得到 ID 的值为 500&#xff0c;再到 ID 索引树搜索一次。这个过程称为<strong>回表</strong>。</li></ul>
+<p>也就是说&#xff0c;基于非主键索引的查询需要多扫描一棵索引树。因此&#xff0c;我们在应用中应该<strong>尽量使用主键查询</strong></p>
+<h4><a rel="noopener noreferrer" id="_445"></a>索引维护</h4>
+<p>B&#43; 树为了维护索引有序性&#xff0c;在插入新值的时候需要做必要的维护。以上图为例</p>
+<ul><li>如果插入新的行 ID 值为 700&#xff0c;则只需要在 R5 的记录后面插入一个新记录。</li><li>如果新插入的 ID 值为 400&#xff0c;就相对麻烦了&#xff0c;需要逻辑上挪动后面的数据空出位置。</li></ul>
+<p>以上情况维护起来就比较麻烦了。</p>
+<h5><a rel="noopener noreferrer" id="_451"></a>页分裂和页合并</h5>
+<p>而更糟的情况是&#xff0c;如果 R5 所在的数据页已经满了&#xff0c;根据 B&#43; 树的算法&#xff0c;这时候需要申请一个新的数据页&#xff0c;然后挪动部分数据过去。这个过程称为<strong>页分裂</strong>。在这种情况下&#xff0c;性能自然会受影响。除了性能外&#xff0c;页分裂操作还影响数据页的利用率。原本放在一个页的数据&#xff0c;现在分到两个页中&#xff0c;整体空间利用率降低大约 50%。当然有分裂就有合并。当相邻两个页由于删除了数据&#xff0c;利用率很低之后&#xff0c;会将数据页做合并。<strong>页合并</strong>的过程&#xff0c;可以认为是分裂过程的逆过程</p>
+<h5><a rel="noopener noreferrer" id="_453"></a>自增主键</h5>
+<p>自增主键是指自增列上定义的主键&#xff0c;在建表语句中一般是这么定义的&#xff1a; <code>NOT NULL PRIMARY KEY AUTO_INCREMENT</code>。插入新记录的时候可以不指定 ID 的值&#xff0c;系统会获取当前 ID 最大值加 1 作为下一条记录的 ID 值</p>
+<ul><li><strong>自增主键的插入数据模式&#xff0c;正符合了我们前面提到的递增插入的场景。每次插入一条新记录&#xff0c;都是追加操作&#xff0c;都不涉及到挪动其他记录&#xff0c;也不会触发叶子节点的分裂</strong>。</li><li>业务逻辑的字段做主键&#xff0c;则往往不容易保证有序插入&#xff0c;这样写数据成本相对较高</li></ul>
+<p>除了考虑性能外&#xff0c;我们还可以从存储空间的角度来看。假设你的表中确实有一个唯一字段&#xff0c;比如字符串类型的身份证号&#xff0c;那应该用身份证号做主键&#xff0c;还是用自增字段做主键呢&#xff1f;由于每个非主键索引的叶子节点上都是主键的值。如果用身份证号做主键&#xff0c;那么每个二级索引的叶子节点占用约 20 个字节&#xff0c;而如果用整型做主键&#xff0c;则只要 4 个字节&#xff0c;如果是长整型&#xff08;bigint&#xff09;则是 8 个字节。显然&#xff0c;主键长度越小&#xff0c;普通索引的叶子节点就越小&#xff0c;普通索引占用的空间也就越小。所以&#xff0c;从性能和存储空间方面考量&#xff0c;自增主键往往是更合理的选择</p>
+<h5><a rel="noopener noreferrer" id="_461"></a>业务主键</h5>
+<p>有没有什么场景适合用业务字段直接做主键的呢&#xff1f;还是有的。比如&#xff0c;有些业务的场景需求是这样的&#xff1a;<strong>只有一个索引&#xff1b;该索引必须是唯一索引</strong>。这就是典型的 KV 场景。由于没有其他索引&#xff0c;所以也就不用考虑其他索引的叶子节点大小的问题。这时候我们就要优先考虑上一段提到的“<strong>尽量使用主键查询</strong>”原则&#xff0c;直接将这个索引设置为主键&#xff0c;可以<strong>避免每次查询需要搜索两棵树</strong></p>
+<h3><a rel="noopener noreferrer" id="MyISAMInnoDB_464"></a>MyISAM和InnoDB的索引实现对比</h3>
+<p>上文我们了解了InnoDB的索引结构。MySQL的BTree索引使⽤的是B树中的B&#43;Tree&#xff0c;但对于主要的两种存储引擎的实现⽅式是不同的。</p>
+<ul><li><strong>MyISAM: B&#43;Tree叶节点的data域存放的是数据记录的地址</strong>。在索引检索的时候&#xff0c;⾸先按照B&#43;Tree搜索算法搜索索引&#xff0c;如果指定的Key存在&#xff0c;则取出其 data 域的值&#xff0c;然后以 data 域的值为地址读取相应的数据记录。<strong>⾮聚簇索引</strong></li><li><strong>InnoDB: 其数据⽂件本身就是索引⽂件</strong>。相⽐MyISAM&#xff0c;索引⽂件和数据⽂件是分离的&#xff0c;其表数据⽂件本身就是按B&#43;Tree组织的⼀个索引结构&#xff0c;树的叶节点data域保存了完整的数据记录。这个索引的key是数据表的主键&#xff0c;因此InnoDB表数据⽂件本身就是主索引。<strong>聚簇索引</strong>。⽽其余的索引都作为辅助索引&#xff0c;辅助索引的data域存储相应记录主键的值⽽不是地址&#xff0c;这也是MyISAM不同的地⽅。在根据主索引搜索时&#xff0c;直接找到key所在的节点即可取出数据&#xff1b;在根据辅助索引查找时&#xff0c;则需要先取出主键的值&#xff0c;再⾛⼀遍主索引。</li></ul>
+<p>在设计表的时候&#xff0c;不建议使⽤过⻓的字段作为主键&#xff0c;也不建议使⽤⾮单调的字段作为主键&#xff0c;这样会造成主索引频繁分裂</p>
+<h3><a rel="noopener noreferrer" id="_470"></a>索引策略</h3>
+<p>理解了InnoDB索引实现的方式之后&#xff0c;我们再来看看索引在具体的使用过程中有哪些执行策略和优化方式。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-20-e988e89aed.png" loading="lazy"><br /> 我们来看下<code>select * from T where k between 3 and 5</code>SQL 查询语句的执行流程&#xff0c;注意取3和取5因为叶子节点单链表链接&#xff0c;所以从根节点搜索行为仅执行一次。</p>
+<ol><li>在 k 索引树上找到 k&#61;3 的记录&#xff0c;取得 ID &#61; 300&#xff1b;再到 ID 索引树查到 ID&#61;300 对应的 R3&#xff1b;<font color="red"><strong>回表</strong></font></li><li>在 k 索引树取下一个值 k&#61;5&#xff0c;取得 ID&#61;500&#xff1b;再回到 ID 索引树查到 ID&#61;500 对应的 R4&#xff1b;<font color="red"><strong>回表</strong></font></li><li>在 k 索引树取下一个值 k&#61;6&#xff0c;不满足条件&#xff0c;循环结束。</li></ol>
+<p>在这个过程中&#xff0c;回到主键索引树搜索的过程&#xff0c;我们称为回表。可以看到&#xff0c;这个查询过程读了 k 索引树的 3 条记录&#xff0c;回表了两次。在这个例子中&#xff0c;由于查询结果所需要的数据只在主键索引上有&#xff0c;所以不得不回表。那么&#xff0c;有没有可能经过索引优化&#xff0c;避免回表过程呢&#xff1f;</p>
+<h4><a rel="noopener noreferrer" id="_481"></a>覆盖索引</h4>
+<p>如果执行的语句是 <code>select ID from T where k between 3 and 5</code>&#xff0c;这时只需要查 ID 的值&#xff0c;<strong>而 ID 的值已经在 k 索引树上了&#xff0c;因此可以直接提供查询结果&#xff0c;不需要回表</strong>。也就是说&#xff0c;在这个查询里面&#xff0c;索引 k 已经覆盖了我们的查询需求&#xff0c;我们称为<strong>覆盖索引</strong></p>
+<p>需要注意的是&#xff0c;在引擎内部使用覆盖索引在索引 k 上其实读了三个记录&#xff0c;ID3、ID4、ID5&#xff08;对应的索引 k 上的记录项&#xff09;&#xff0c;但是对于 MySQL 的 Server 层来说&#xff0c;它就是找引擎拿到了两条记录&#xff0c;因此 MySQL 认为扫描行数是 2。</p>
+<p>由于覆盖索引可以减少树的搜索次数&#xff0c;显著提升查询性能&#xff0c;所以使用覆盖索引是一个常用的性能优化手段&#xff0c;基于上面覆盖索引的说明&#xff0c;我们来讨论一个问题&#xff1a;在一个市民信息表上&#xff0c;是否有必要将<strong>身份证号和名字建立联合索引</strong>&#xff1f;</p>
+<pre><code class="prism language-java">CREATE TABLE &#96;tuser&#96; <span class="token punctuation">(</span>
+  &#96;id&#96; <span class="token keyword">int</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">)</span> NOT NULL<span class="token punctuation">,</span>
+  &#96;id_card&#96; <span class="token function">varchar</span><span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">)</span> DEFAULT NULL<span class="token punctuation">,</span>
+  &#96;name&#96; <span class="token function">varchar</span><span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">)</span> DEFAULT NULL<span class="token punctuation">,</span>
+  &#96;age&#96; <span class="token keyword">int</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">)</span> DEFAULT NULL<span class="token punctuation">,</span>
+  &#96;ismale&#96; <span class="token function">tinyint</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> DEFAULT NULL<span class="token punctuation">,</span>
+  PRIMARY KEY <span class="token punctuation">(</span>&#96;id&#96;<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  KEY &#96;id_card&#96; <span class="token punctuation">(</span>&#96;id_card&#96;<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  KEY &#96;name_age&#96; <span class="token punctuation">(</span>&#96;name&#96;<span class="token punctuation">,</span>&#96;age&#96;<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  KEY &#96;id_card_name&#96; <span class="token punctuation">(</span>&#96;id_card&#96;<span class="token punctuation">,</span>&#96;name&#96;<span class="token punctuation">)</span>   <span class="token comment">//联合索引</span>
+<span class="token punctuation">)</span> ENGINE<span class="token operator">&#61;</span>InnoDB
+</code></pre>
+<p>我们知道&#xff0c;身份证号是市民的唯一标识。也就是说&#xff0c;如果有根据身份证号查询市民信息的需求&#xff0c;我们只要在身份证号字段上建立索引就够了。而再建立一个&#xff08;身份证号、姓名&#xff09;的联合索引&#xff0c;是不是浪费空间&#xff1f;</p>
+<p>如果现在有一个高频请求&#xff0c;要根据市民的身份证号查询他的姓名&#xff0c;这个联合索引就有意义了。例如这个sql&#xff1a;<code>select name from T where id_card &#61;500</code></p>
+<p>它可以在这个高频请求上用到覆盖索引&#xff0c;不再需要回表查整行记录&#xff0c;减少语句的执行时间。<strong>给id_card 和 name建立联合索引后&#xff0c;name的值也会被保存在id_card索引树的节点上&#xff0c;这样根据给定id_card的值找到的对应行时&#xff0c;就可以直接获取到name了&#xff0c;而不需要拿着对应的主键再进行回表操作</strong>。</p>
+<p>需要注意&#xff0c;<strong>覆盖索引不能只覆盖要查询的列&#xff0c;同时必须将WHERE后面的查询条件的列都覆盖</strong>&#xff0c;也就是这个联合索引要包含查询条件和返回的查询列。</p>
+<h4><a rel="noopener noreferrer" id="_508"></a>联合索引</h4>
+<p>比较简单的是单列索引。遇到多条件查询时&#xff0c;不可避免会使用到多列索引。联合索引又叫<strong>联合索引</strong>&#xff0c;对于联合索引&#xff08;多列b&#43;tree&#xff0c;使用多列值组合而成的b&#43;tree索引&#xff09;。遵循最左侧原则&#xff0c;从左到右的使用索引中的字段&#xff0c;一个查询可以只使用索引中的一部份&#xff0c;但只能是最左侧部分。例如索引是<code>key index (a,b,c)</code>。可以支持<code>a &#xff0c;a,b &#xff0c;a,b,c</code> 这3种组合进行查找&#xff0c;但<code>不支持 b,c</code>进行查找。当<strong>使用最左侧字段时&#xff0c;索引就十分有效</strong>&#xff0c;也就是我们创建了三个索引&#xff1a;<code>(a)、&#xff08;a,b&#xff09;&#xff08;a,b,c&#xff09;</code></p>
+<ul><li>当(<code>a&#61;? and b&#61;? and c&#61;?</code>)这样的数据来检索的时候&#xff0c;b&#43;树会优先比较a列来确定下一步的所搜方向&#xff0c;如果a列相同再依次比较b列和c列&#xff0c;最后得到检索的数据&#xff1b;<font color="red"><strong>顺序最优&#xff0c;联合发挥效力&#xff0c;最少回表次数</strong></font></li><li>当(<code>b&#61;? and c&#61;?</code>)这样的没有a列的数据来的时候&#xff0c;b&#43;树就不知道下一步该查哪个节点&#xff0c;因为建立搜索树的时候a列就是第一个比较因子&#xff0c;必须要先根据a列来搜索才能知道下一步去哪里查询。<font color="red"><strong>无法利用联合索引查询</strong></font></li><li>当<code>(a&#61;? and c&#61;?</code>)这样的数据来检索时&#xff0c;b&#43;树可以用a列来指定搜索方向&#xff0c;但下一个字段b列的缺失&#xff0c;所以只能把a列的数据找到&#xff0c;然后再匹配c列的数据了 <font color="red"><strong>只能用a的查询&#xff0c;依据c做匹配&#xff08;索引下推&#xff09;&#xff0c;减少回表次数</strong></font></li></ul>
+<p>这个是非常重要的性质&#xff0c;即索引的最左匹配特性&#xff0c;where后的查询顺序与索引创建顺序一致。需要注意&#xff0c;<strong>联合索引是首先使用多列索引的第一列构建的索引树</strong>&#xff0c;用上面<code>key index (a,b,c)</code>的例子就是优先使用a列构建&#xff0c;当a列值相等时再以b列排序&#xff0c;若b列的值也相等则以c列排序<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-21-c0cbee23ff.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_518"></a>最左前缀原则</h4>
+<p>如果为每一种查询都设计一个索引&#xff0c;索引是不是太多了。如果我现在要按照市民的身份证号去查他的家庭地址呢&#xff1f;虽然这个查询需求在业务中出现的概率不高&#xff0c;但总不能单独为一个不频繁的请求创建一个<code>&#xff08;身份证号&#xff0c;地址&#xff09;</code>的索引吧&#xff0c;应该怎么做呢&#xff1f;</p>
+<p>B&#43; 树这种索引结构&#xff0c;可以利用索引的<strong>最左前缀</strong>来定位记录。为了直观地说明这个概念&#xff0c;我们用&#xff08;name&#xff0c;age&#xff09;这个联合索引来分析<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-22-a2375cd228.png" loading="lazy"><br /> 可以看到&#xff0c;索引项是按照<strong>索引定义里面出现的字段顺序排序</strong>的</p>
+<ul><li>当你的逻辑需求是查到所有名字是“张三”的人时&#xff0c;可以快速定位到 ID4&#xff0c;然后向后遍历得到所有需要的结果。</li><li>如果你要查的是所有名字第一个字是“张”的人&#xff0c;你的 SQL 语句的条件是&#34;where name like ‘张 %’&#34;。这时&#xff0c;你也能够用上这个索引&#xff0c;查找到第一个符合条件的记录是 ID3&#xff0c;然后向后遍历&#xff0c;直到不满足条件为止。可以看到&#xff0c;不只是索引的全部定义&#xff0c;只要满足最左前缀&#xff0c;就可以利用索引来加速检索。</li></ul>
+<p>这个最左前缀可以是<strong>联合索引的最左 N 个字段</strong>&#xff0c;也可以是<strong>字符串索引的最左 M 个字符</strong>&#xff0c;那么既然最左边的字段这么重要&#xff0c;我们该怎么安排联合索引的顺序呢&#xff1f;</p>
+<ul><li>第一原则是&#xff0c;<strong>如果通过调整顺序&#xff0c;可以少维护一个索引</strong>&#xff0c;那么这个顺序往往就是需要优先考虑采用的。这段开头的问题里&#xff0c;我们要为高频请求创建 (身份证号&#xff0c;姓名&#xff09;这个联合索引&#xff0c;并用这个索引支持“根据身份证号查询地址”的需求【查地址时回表查询】&#xff0c;这样不用创建多余索引</li><li><strong>第二原则是节省空间</strong>&#xff0c;如果既有联合查询&#xff0c;又有基于 a、b 各自的查询呢&#xff1f;查询条件里面只有 b 的语句&#xff0c;是无法使用 (a,b) 这个联合索引的&#xff0c;这时候你不得不维护另外一个索引&#xff0c;也就是说你需要同时维护 (a,b)、(b) 这两个索引&#xff0c;比如上面这个市民表的情况&#xff0c;name 字段是比 age 字段大的 &#xff0c;那我就建议你创建一个&#xff08;name,age) 的联合索引和一个 (age) 的单字段索引。</li></ul>
+<p>基于以上的方式进行联合索引的创建。需要注意&#xff0c;</p>
+<h4><a rel="noopener noreferrer" id="_533"></a>索引下推</h4>
+<p>我们还是以市民表的联合索引&#xff08;name, age&#xff09;为例。如果现在有一个需求&#xff1a;检索出表中<code>“名字第一个字是张&#xff0c;而且年龄是 10 岁</code>的所有男孩”。那么&#xff0c;SQL 语句是这么写的&#xff1a;</p>
+<pre><code class="prism language-java">mysql<span class="token operator">&gt;</span> select <span class="token operator">*</span> from tuser where name like <span class="token string">&#39;张%&#39;</span> and age<span class="token operator">&#61;</span><span class="token number">10</span> and ismale<span class="token operator">&#61;</span><span class="token number">1</span><span class="token punctuation">;</span>
+</code></pre>
+<p>因为最左前缀索引规则&#xff0c;所以这个语句在搜索索引树的时候&#xff0c;只能用 “张”&#xff0c;找到第一个满足条件的记录 ID3。当然&#xff0c;这还不错&#xff0c;总比全表扫描要好&#xff0c;在 MySQL 5.6 之前&#xff0c;<strong>只能从 ID3 开始一个个回表。到主键索引上找出数据行&#xff0c;再对比字段值</strong>&#xff0c;为什么age联合索引不生效呢&#xff1f;因为查询条件里面 name 字段的查询值后面是 % &#xff0c;导致 age 条件无法和 name 一次进行联合索引的查询&#xff0c;所以 age 查询值是用不上的&#xff0c;存储引擎在(name,age)索引树以&#34;张&#34;进行前缀匹配的数搜索。所以查询顺序并不是 name-&gt;age&#xff0c;只有<strong>name</strong>&#xff0c;也就是<strong>因为 name 列使用了 like &#xff0c;导致后面的索引无法再以组合索引生效</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-23-b367a33db9.png" loading="lazy"></p>
+<p>而 MySQL 5.6 引入的索引下推优化&#xff08;index condition pushdown)&#xff0c; 可以在索引遍历过程中&#xff0c;<strong>对索引中包含的字段先做判断&#xff0c;直接过滤掉不满足条件的记录&#xff0c;减少回表次数</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-24-aa6a7d38bb.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="MySQL_545"></a>MySQL数据库事务及锁机制</h2>
+<p>本部分回答以下几个问题&#xff0c;如果能回答正确&#xff0c;则证明本部分掌握好了。</p>
+<blockquote>
+ <p><strong>MySQL中事务的四大特性&#xff0c;分别如何保证</strong><br /> <strong>并发事务的隔离问题有哪几种</strong><br /> <strong>事务有哪几种隔离级别应对并发隔离问题</strong><br /> <strong>MySQL有哪几种锁&#xff0c;分别有什么作用</strong><br /> <strong>隔离机制的实现方式</strong></p>
+</blockquote>
+<p>接下来我们看这部分的内容。事务&#xff08;Transaction&#xff09;是并发控制的单位&#xff0c;<strong>是用户定义的一个操作序列。这些操作要么都做&#xff0c;要么都不做&#xff0c;是一个不可分割的工作单位</strong>事务体现出整体的概念&#xff0c;<strong>要么事务中的操作全部成功&#xff0c;要么全部失败</strong>体现在数据库sql里就是逻辑上相互依赖的一组sql语句<img alt="在这里插入图片描述" src="./posts/assets/114715323-25-f9c95e17d6.png" loading="lazy">在 MySQL 中&#xff0c;事务支持是在引擎层实现的。MySQL 是一个支持多引擎的系统&#xff0c;但并不是所有的引擎都支持事务。比如 MySQL 原生的 MyISAM 引擎就不支持事务&#xff0c;这也是 MyISAM 被 <strong>InnoDB</strong> 取代的重要原因之一</p>
+<h3><a rel="noopener noreferrer" id="_554"></a>事务的四大特性</h3>
+<p>事务最经典也经常被拿出来说例⼦就是转账了。假如⼩明要给⼩红转账1000元&#xff0c;这个转账会涉及到两个关键操作就是&#xff1a;将⼩明的余额减少1000元&#xff0c;将⼩红的余额增加1000元。万⼀在这两个操作之间突然出现错误⽐如银⾏系统崩溃&#xff0c;导致⼩明余额减少⽽⼩红的余额没有增加&#xff0c;这样就不对了。<strong>事务就是保证这两个关键操作要么都成功&#xff0c;要么都要失败</strong></p>
+<p>事务的四大特性就是ACID&#xff0c;也就是<strong>原子性、一致性、隔离性</strong>以及<strong>持久性</strong></p>
+<ul><li><strong>原子性&#xff08;Atomicity&#xff09;</strong>&#xff0c;事务是最⼩的执⾏单位&#xff0c;不允许分割。<strong>事务包含的所有操作要么全部成功&#xff0c;要么全部失败回滚</strong>&#xff0c;因此事务的操作<strong>如果成功就必须要完全应用到数据库&#xff0c;如果操作失败则不能对数据库有任何影响</strong>。</li><li><strong>一致性&#xff08;Consistency&#xff09;</strong>&#xff0c;是指事务必须使数据库<strong>从一个一致性状态变换到另一个一致性状态</strong>&#xff0c;也就是说一个事务执行之前和执行之后都必须处于一致性状态。拿转账来说&#xff0c;假设用户A和用户B两者的钱加起来一共是5000&#xff0c;那么不管A和B之间如何转账&#xff0c;转几次账&#xff0c;事务结束后两个用户的钱相加起来应该还得是5000&#xff0c;这就是事务的一致性。</li><li><strong>隔离性&#xff08;Isolation&#xff09;</strong>&#xff0c;是当多个用户并发访问数据库时&#xff0c;比如操作同一张表时&#xff0c;<strong>数据库为每一个用户开启的事务&#xff0c;不能被其他事务的操作所干扰&#xff0c;多个并发事务之间要相互隔离</strong>&#xff0c;要串行执行。即要达到这么一种效果&#xff1a;对于任意两个并发的事务T1和T2&#xff0c;在事务T1看来&#xff0c;<strong>T2要么在T1开始之前就已经结束&#xff0c;要么在T1结束之后才开始</strong>&#xff0c;这样每个事务都感觉不到有其他事务在并发地执行。关于事务的隔离性数据库提供了多种隔离级别&#xff0c;稍后会介绍到。</li><li><strong>持久性&#xff08;Durability&#xff09;</strong>&#xff0c;是指一个事务<strong>一旦被提交了&#xff0c;那么对数据库中的数据的改变就是永久性的</strong>&#xff0c;即便是在数据库系统遇到故障的情况下也不会丢失提交事务的操作。例如我们在使用JDBC操作数据库时&#xff0c;在提交事务方法后&#xff0c;提示用户事务操作完成&#xff0c;当我们程序执行完成直到看到提示后&#xff0c;就可以认定事务以及正确提交&#xff0c;<strong>即使这时候数据库出现了问题&#xff0c;也必须要将我们的事务完全执行完成</strong>&#xff0c;否则就会造成我们看到提示事务处理完毕&#xff0c;导致数据库因为故障而没有执行事务的重大错误。</li></ul>
+<p>只有满足这四大特性&#xff0c;才能说这是一个标准的事务。原子性、一致性和持久性由MySQL的日志机制通过<strong>两阶段提交、crash-safe能力以及备份能力</strong>来满足&#xff0c;在<a href="https://tianmaolin.blog.csdn.net/article/details/112385362" rel="nofollow">日志机制</a>这篇Blog里我详细的讨论过&#xff0c;那么我们当前最需要关注的其实就是事务的<strong>隔离性</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_564"></a>并发事务的隔离问题</h3>
+<p>当多个线程都开启事务操作数据库中的数据时&#xff0c;数据库系统要能进行隔离操作&#xff0c;以保证各个线程获取数据的准确性&#xff0c;我们先看看如果不考虑事务的隔离性&#xff0c;会发生的几种问题&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_567"></a>脏读</h4>
+<p>脏读&#xff08;dirty reads&#xff09;&#xff0c;是指在<strong>一个事务处理过程里读取了另一个未提交的事务中的数据</strong>。当⼀个事务正在访问数据并且对数据进⾏了修改&#xff0c;⽽这种修改还没有提交到数据库中&#xff0c;这时另外⼀个事务也访问了这个数据&#xff0c;然后使⽤了这个数据。因为这个数据是还没有提交的数据&#xff0c;那么另外⼀个事务读到的这个数据是“脏数据”&#xff0c;依据“脏数据”所做的操作可能是不正确的</p>
+<pre><code class="prism language-java">用户A向用户B转账<span class="token number">100</span>元&#xff0c;对应SQL命令如下&#xff1a;
+update account set money<span class="token operator">&#61;</span>money<span class="token operator">&#43;</span><span class="token number">100</span> where name<span class="token operator">&#61;</span>’B’<span class="token punctuation">;</span>  <span class="token punctuation">(</span>此时A通知B<span class="token punctuation">)</span>
+update account set money<span class="token operator">&#61;</span>money <span class="token operator">-</span> <span class="token number">100</span> where name<span class="token operator">&#61;</span>’A’<span class="token punctuation">;</span>
+</code></pre>
+<ul><li>当只执行第一条SQL时&#xff0c;A通知B查看账户&#xff0c;B发现确实钱已到账&#xff08;此时即发生了脏读&#xff09;</li><li>无论第二条SQL是否执行&#xff0c;只要该事务不提交&#xff0c;则所有操作都将回滚</li><li>当B以后再次查看账户时就会发现钱其实并没有转</li></ul>
+<p>也就是脏读一般针对修改数据而言&#xff0c;Transaction 1 修改了一行数据&#xff0c;然后 Transaction 2 在 Transaction 1 还未提交修改操作之前读取了被修改的行。如果 Transaction 1 回滚了修改操作&#xff0c;那么Transaction 2读取的数据就可以看作是从未存在过的 <font color="red"><strong>A未提交的修改被B读了</strong></font><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-26-6fbe36ff7f.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_581"></a>不可重复读</h4>
+<p>不可重复读&#xff08;non-repeatable reads&#xff09;&#xff0c;<strong>针对修改</strong>&#xff0c;是指在<strong>对于数据库中的某个数据&#xff0c;一个事务范围内多次查询却返回了不同的数据值&#xff0c;这是由于在查询间隔&#xff0c;被另一个事务修改并提交了。</strong><font color="red"><strong>A已提交的修改被B读了</strong></font></p>
+<pre><code class="prism language-java">A向B转账<span class="token number">100</span>并且提交&#xff0c;B收到读到<span class="token number">100</span>&#xff0c;这时候A又向B转<span class="token number">100</span>并提交&#xff0c;B读到<span class="token number">200</span>
+</code></pre>
+<ul><li><strong>在某些情况下&#xff0c;不可重复读并不是问题&#xff0c;比如我们多次查询某个数据当然以最后查询得到的结果为主</strong></li><li><strong>不可重复读和脏读的区别是&#xff0c;脏读是某一事务读取了另一个事务未提交的脏数据&#xff0c;而不可重复读则是读取了前一事务提交的数据</strong></li></ul>
+<p>Transaction 1 读取一行数据&#xff0c;然后 Transaction 2 修改或删除该行并提交修改操作。当 Transaction 1 试图重新读取该行时&#xff0c;它就会得到不同的数据值&#xff08;如果该行被更新&#xff09;或发现该行不再存在&#xff08;如果该行被删除&#xff09;</p>
+<h4><a rel="noopener noreferrer" id="_591"></a>幻读</h4>
+<p>幻读&#xff08;phantom read&#xff09;是<strong>事务非独立执行时发生的一种现象</strong>。<strong>针对插入</strong>。</p>
+<ul><li>事务T1对一个表中所有的行的某个数据项做了从1修改为2的操作</li><li>这时事务T2又对这个表中插入了一行数据项&#xff0c;而这个数据项的数值还是为1并且提交给数据库。</li><li><strong>而操作事务T1的用户如果再查看刚刚修改的数据&#xff0c;会发现还有一行没有修改&#xff0c;其实这行是从事务T2中添加的&#xff0c;就好像产生幻觉一样&#xff0c;这就是发生了幻读。</strong></li></ul>
+<p>幻读和不可重复读都是读取了另一条已经提交的事务&#xff08;这点就脏读不同&#xff09;&#xff0c;所不同的是<strong>不可重复读查询的都是同一个数据项&#xff08;修改&#xff09;&#xff0c;而幻读针对的是一批数据整体&#xff08;插入或删除&#xff09;。</strong><font color="red"><strong>A已提交的新增删除数据被B读了</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_599"></a>综合举例</h4>
+<p>对于同一个银行帐户A内有200元&#xff0c;甲进行提款操作100元&#xff0c;乙进行转帐操作100元到B帐户。如果事务没有进行隔离可能会并发如下问题&#xff1a;</p>
+<ul><li><strong>脏读</strong>&#xff1a;甲先取款100元未提交&#xff0c;乙进行转帐查到帐户内剩有100元&#xff0c;这时甲放弃操作回滚&#xff0c;乙正常操作转账至B账户提交&#xff0c;帐户内最终更新为0元&#xff0c;乙读取了甲的脏数据&#xff0c;客户损失100元。<br /> <strong>不可重复读</strong>&#xff1a;甲乙同时开始都查到帐户内为200元&#xff0c;甲先开始取款100元提交&#xff0c;这时乙在准备最后更新的时候又进行了一次查询&#xff0c;发现结果是100元&#xff0c;这时乙就会很困惑&#xff0c;不知道转账后该将帐户改为100还是0&#xff0c;如果按照正常操作乙会将账户A更新为0&#xff0c;正确执行&#xff0c;所以说一般不可重复读不一定会有问题。</li><li><strong>幻读</strong>&#xff1a;银行会计甲对所有账户的金额单位更新为美元&#xff0c;这时银行会计乙又插入了两条金额单位为人民币的数据&#xff0c;银行会计甲更新完后查数据发现有几条还是人民币&#xff0c;于是以为自己产生了幻觉</li></ul>
+<p>以上就是事务并发时会产生的问题。</p>
+<h3><a rel="noopener noreferrer" id="_606"></a>事务的隔离级别</h3>
+<p>针对以上的四个常见的并发事务的问题&#xff0c;数据库设置了四种隔离级别来应对&#xff1a;</p>
+<ul><li><strong>Read uncommitted (读未提交)</strong>&#xff1a;<strong>最低级别</strong>&#xff0c;最低的隔离级别&#xff0c;允许读取尚未提交的数据变更&#xff0c;可能会导致<strong>脏读、幻读或不可重复读</strong></li><li><strong>Read committed (读已提交)</strong>&#xff1a;允许读取并发事务已经提交的数据&#xff0c;可以阻⽌脏读&#xff0c;但是幻读或不可重复读仍有可能发⽣</li><li><strong>Repeatable read (可重复读)</strong>&#xff1a;对同⼀字段的多次读取结果都是⼀致的&#xff0c;除⾮数据是被本身事务⾃⼰所修改&#xff0c;可以<strong>阻⽌脏读和不可重复读&#xff0c;但幻读仍有可能发⽣</strong></li><li><strong>Serializable (串行化)</strong>&#xff1a; <strong>最⾼的隔离级别</strong>&#xff0c;完全服从ACID的隔离级别。<strong>所有的事务依次逐个执⾏</strong>&#xff0c;这样事务之间就完全不可能产⽣⼲扰&#xff0c;也就是说&#xff0c;该级别可以防⽌<strong>脏读、不可重复读以及幻读</strong>&#xff0c;对于同一行记录&#xff0c;<strong>写会加写锁</strong>&#xff0c;<strong>读会加读锁</strong>。当出现读写锁冲突的时候&#xff0c;后访问的事务必须等前一个事务执行完成&#xff0c;才能继续执行</li></ul>
+<p>当然&#xff0c;随着隔离级别的增高&#xff0c;并发性能也会逐渐下降。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-27-795d002a74.png" loading="lazy"></p>
+<p>结合隔离问题和隔离机制举例说明&#xff0c;在这样一个事务流程下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-28-c1cb887735.png" loading="lazy"><br /> 我们来看看在不同的隔离级别下&#xff0c;事务 A 会有哪些不同的返回结果&#xff0c;也就是图里面 V1、V2、V3 的返回值分别是什么。</p>
+<ul><li>若隔离级别是<strong>读未提交</strong>&#xff0c; 则 V1 的值就是 2。这时候事务 B 虽然还没有提交&#xff0c;但是结果已经被 A 看到了。因此&#xff0c;V2、V3 也都是 2。</li><li>若隔离级别是<strong>读提交</strong>&#xff0c;则 V1 是 1&#xff0c;V2 的值是 2。事务 B 的更新在提交后才能被 A 看到。所以&#xff0c; V3 的值也是 2。</li><li>若隔离级别是<strong>可重复读</strong>&#xff0c;则 V1、V2 是 1&#xff0c;V3 是 2。之所以 V2 还是 1&#xff0c;遵循的就是这个要求&#xff1a;事务在执行期间看到的数据前后必须是一致的。</li><li>若隔离级别是<strong>串行化</strong>&#xff0c;则在事务 B 执行“将 1 改成 2”的时候&#xff0c;会被锁住。直到事务 A 提交后&#xff0c;事务 B 才可以继续执行。所以从 A 的角度看&#xff0c; V1、V2 值是 1&#xff0c;V3 的值是 2。</li></ul>
+<p>在实现上&#xff0c;数据库里面会创建一个视图&#xff0c;访问的时候以视图的逻辑结果为准。</p>
+<ul><li><strong>读未提交隔离级别</strong>下直接返回记录上的最新值&#xff0c;没有视图概念&#xff1b;</li><li><strong>读提交隔离级别</strong>下&#xff0c;这个视图是在每个 SQL 语句开始执行的时候创建的&#xff0c;所以会在执行sql时发生变动&#xff08;需要判断事务是否已提交&#xff0c;提交后才变动&#xff09;</li><li><strong>可重复读隔离级别</strong>下&#xff0c;这个视图是在事务启动时创建的&#xff0c;整个事务存在期间都用这个视图。假设你在管理一个个人银行账户表。一个表存了账户余额&#xff0c;一个表存了账单明细。到了月底你要做数据校对&#xff0c;也就是判断上个月的余额和当前余额的差额&#xff0c;是否与本月的账单明细一致。你一定希望在校对过程中&#xff0c;即使有用户发生了一笔新的交易&#xff0c;也不影响你的校对结果。这时候使用“可重复读”隔离级别就很方便。事务启动时的视图可以认为是静态的&#xff0c;不受其他事务更新的影响</li><li><strong>串行化隔离级别</strong>下直接用加<strong>读写锁</strong>的方式来避免并行访问</li></ul>
+<p>我们可以看到在不同的隔离级别下&#xff0c;数据库行为是有所不同的。MySQL InnoDB 存储引擎的默认⽀持的隔离级别是 <strong>REPEATABLE-READ&#xff08;可重读&#xff09;</strong>&#xff0c;与 SQL 标准不同的地⽅在于</p>
+<ul><li>InnoDB 存储引擎在 REPEATABLE-READ&#xff08;可重读&#xff09; 事务隔离级别下使⽤的是<strong>Next-Key Lock</strong> 锁算法&#xff0c;因此可以避免幻读的产⽣&#xff0c;这与其他数据库系统(如SQL Server) 是不同的。</li><li><strong>InnoDB 存储引擎的默认⽀持的隔离级别是 REPEATABLE-READ&#xff08;可重读&#xff09; 已经可以完全保证事务的隔离性要求&#xff0c;即达到了 SQL标准的 SERIALIZABLE(可串⾏化) 隔离级别</strong>。</li><li>因为隔离级别越低&#xff0c;事务请求的锁越少&#xff0c;所以⼤部分数据库系统的隔离级别都是 READ-COMMITTED(读取提交内容) &#xff0c;但是你要知道的是InnoDB 存储引擎默认使⽤REPEATABLE-READ&#xff08;可重读&#xff09;并不会有任何性能损失。</li></ul>
+<p>InnoDB 存储引擎在<strong>分布式事务 的情况下⼀般会⽤到 SERIALIZABLE(可串⾏化) 隔离级别</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-29-69dcde1dff.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_638"></a>隔离机制的实现</h3>
+<p>理解了事务的隔离级别&#xff0c;我们再来看看事务隔离具体是怎么实现的。<strong>视图可以理解为数据副本&#xff0c;每次创建视图时&#xff0c;将当前『已持久化的数据』创建副本&#xff0c;后续直接从副本读取&#xff0c;从而达到数据隔离效果</strong>&#xff0c;存在视图的 2 种隔离级别&#xff1a;</p>
+<ol><li>读提交&#xff0c;在每一条 SQL 开始执行时创建视图&#xff0c;隔离作用域仅限该条 SQL 语句。</li><li>可重复读&#xff0c;事务启动时创建视图&#xff0c;因此&#xff0c;在事务任意时刻&#xff0c;对记录读取的值都是一样的。</li></ol>
+<p>其他 2 种无视图的隔离级别&#xff1a;</p>
+<ol><li>读未提交&#xff0c;直接返回记录最新值。</li><li>串行化&#xff0c;串行化通过<strong>读写锁</strong>来避免并行访问&#xff0c;读-读&#xff1a;允许并发执行&#xff0c;读-写&#xff1a;只能串行&#xff0c;写-写&#xff1a;只能串行</li></ol>
+<p>这里我们展开说明<strong>可重复读</strong>。在 MySQL 中&#xff0c;实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值&#xff0c;通过回滚操作&#xff0c;都可以得到前一个状态的值。假设一个值从 1 被按顺序改成了 2、3、4&#xff0c;在回滚日志里面就会有类似下面的记录<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-30-1457d90ac4.png" loading="lazy"><br /> 当前值是 4&#xff0c;但是在查询这条记录的时候&#xff0c;不同时刻启动的事务会有不同的 read-view。如图中看到的&#xff0c;在视图 A、B、C 里面&#xff0c;这一个记录的值分别是 1、2、4&#xff0c;同一条记录在系统中可以存在多个版本&#xff0c;就是<strong>数据库的多版本并发控制&#xff08;MVCC&#xff09;</strong>。对于 read-view A&#xff0c;要得到 1&#xff0c;就必须将当前值依次执行图中所有的回滚操作得到。</p>
+<h4><a rel="noopener noreferrer" id="_650"></a>回滚日志</h4>
+<p>回滚日志记录在<strong>undo log</strong>&#xff0c;undo log记录的是逆过程流&#xff0c;比如对表进行了一次insert&#xff0c;对应的就是delete&#xff1b;对字段a进行一次&#43;1操作&#xff0c;那undo log就是一次-1操作</p>
+<p>回滚日志总不能一直保留吧&#xff0c;什么时候删除呢&#xff1f;答案是&#xff0c;在不需要的时候才删除。也就是说&#xff0c;系统会判断&#xff0c;当没有事务再需要用到这些回滚日志时&#xff0c;回滚日志会被删除。什么时候才不需要了呢&#xff1f;就是<strong>当一个查询事务开启以后&#xff0c;在这个时刻之后&#xff0c;事务提交/回滚之前&#xff0c;所有更新产生的undo log都不能被删除</strong></p>
+<h4><a rel="noopener noreferrer" id="_655"></a>长事务的问题</h4>
+<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据&#xff0c;所以<strong>这个事务提交之前&#xff0c;数据库里面它可能用到的回滚记录都必须保留</strong>&#xff0c;这就会导致大量占用存储空间。在 MySQL 5.5 及以前的版本&#xff0c;回滚日志是跟数据字典一起放在 ibdata 文件里的&#xff0c;即使长事务最终提交&#xff0c;回滚段被清理&#xff0c;文件也不会变小&#xff08;<strong>逻辑清理</strong>&#xff09;。最终只好为了清理回滚段&#xff0c;重建整个库&#xff08;<strong>物理清理</strong>&#xff09;。除了对回滚段的影响&#xff0c;<strong>长事务还占用锁资源&#xff0c;也可能拖垮整个库</strong></p>
+<h3><a rel="noopener noreferrer" id="_658"></a>事务的启动方式</h3>
+<p>事务启动方式有两种&#xff0c;一种是显式提交&#xff0c;另一种是通过设置禁止自动提交。</p>
+<ul><li><strong>显式启动事务语句</strong>&#xff0c; begin 或 start transaction。配套的提交语句是 commit&#xff0c;回滚语句是 rollback。</li><li>set autocommit&#61;0&#xff0c;这个命令会将这个线程的自动提交关掉。意味着如果你<strong>只执行一个 select 语句&#xff0c;这个事务就启动了&#xff0c;而且并不会自动提交</strong>。这个事务持续存在直到你主动执行 commit 或 rollback 语句&#xff0c;或者断开连接。有些客户端连接框架会默认连接成功后先执行一个 set autocommit&#61;0 的命令。这就导致接下来的查询都在事务中&#xff0c;如果是长连接&#xff0c;就导致了意外的长事务。因此&#xff0c;我会建议你总是使用 set autocommit&#61;1, 通过显式语句的方式来启动事务。</li></ul>
+<p>有的开发同学会纠结“多一次交互”的问题。对于一个需要频繁使用事务的业务&#xff0c;第二种方式每个事务在开始时都不需要主动执行一次 “begin”&#xff0c;减少了语句的交互次数。建议使用 commit work and chain 语法。在 autocommit 为 1 的情况下&#xff0c;用 begin 显式启动的事务&#xff0c;如果执行 commit 则提交事务。如果执行 <strong>commit work and chain&#xff0c;则是提交事务并自动启动下一个事务&#xff0c;这样也省去了再次执行 begin 语句的开销</strong>。同时带来的好处是从程序开发的角度明确地知道每个语句是否处于事务中</p>
+<h3><a rel="noopener noreferrer" id="MySQL_665"></a>MySQL的锁机制</h3>
+<p>数据库锁设计的初衷是处理并发问题。作为多用户共享的资源&#xff0c;当出现并发访问的时候&#xff0c;数据库需要合理地控制资源的访问规则。而锁就是用来实现这些访问规则的重要数据结构针对不同的分类尺度进行分类&#xff0c;根据加锁的范围&#xff0c;MySQL 里面的锁大致可以分成<strong>全局锁、表级锁和行锁</strong>三类&#xff0c;同时依据锁是否可以被共享又有<strong>读写锁</strong>的区别&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_667"></a>读写锁</h4>
+<p>表级锁和行级锁可以进一步划分为共享锁&#xff08;s&#xff09;和排他锁&#xff08;X&#xff09;&#xff0c;在另一个维度上交叉组合&#xff1a;</p>
+<ul><li><strong>共享锁&#xff08;s&#xff09;</strong>&#xff0c;又被称为<strong>读锁</strong>&#xff0c;<strong>其他用户可以并发读取数据&#xff0c;但任何事务都不能获取数据上的排他锁&#xff0c;直到已释放所有共享锁</strong>。共享锁(S锁)又称为读锁&#xff0c;若事务T对数据对象A加上S锁&#xff0c;则事务T只能读A&#xff1b;其他事务只能再对A加S锁&#xff0c;而不能加X锁&#xff0c;直到T释放A上的S锁。这就保证了其他事务可以读A&#xff0c;但在T释放A上的S锁之前不能对A做任何修改。<code>本线程和其它线程都只能读</code></li><li><strong>排他锁&#xff08;X&#xff09;</strong>&#xff1a;又称为<strong>写锁</strong>&#xff0c;若事务T对数据对象A加上X锁&#xff0c;<strong>则只允许T读取和修改A&#xff0c;其它任何事务都不能再对A加任何类型的锁&#xff0c;直到T释放A上的锁</strong>。它防止任何其它事务获取资源上的锁&#xff0c;直到在事务的末尾将资源上的原始锁释放为止。在更新操作(INSERT、UPDATE 或 DELETE)过程中始终应用排它锁。<code>本线程能读写&#xff0c;其它线程不能读写</code></li></ul>
+<p>两者之间的区别&#xff1a;</p>
+<ul><li><strong>共享锁&#xff08;S锁&#xff09;</strong>&#xff1a;如果事务T对数据A加上共享锁后&#xff0c;则其他事务只能对A再加共享锁&#xff0c;不能加排他锁。<strong>获取共享锁的事务只能读数据&#xff0c;不能修改数据</strong>。</li><li><strong>排他锁&#xff08;X锁&#xff09;</strong>&#xff1a;如果事务T对数据A加上排他锁后&#xff0c;则其他事务不能再对A加任任何类型的封锁。<strong>获取排他锁的事务既能读数据&#xff0c;又能修改数据</strong>。</li></ul>
+<p>当一个事务需要给自己需要的某个资源加锁的时候&#xff0c;如果遇到一个共享锁正锁定着自己需要的资源的时候&#xff0c;自己可以再加一个共享锁&#xff0c;不过不能加排他锁。但是&#xff0c;<strong>如果遇到自己需要锁定的资源已经被一个排他锁占有之后&#xff0c;则只能等待该锁定释放资源之后自己才能获取锁定资源并添加自己的锁定</strong></p>
+<h4><a rel="noopener noreferrer" id="_677"></a>全局锁/表级锁/行级锁</h4>
+<p>根据加锁的范围&#xff0c;MySQL 里面的锁大致可以分成<strong>全局锁、表级锁和行锁</strong>三类。</p>
+<h5><a rel="noopener noreferrer" id="_679"></a>全局锁</h5>
+<p>顾名思义&#xff0c;全局锁就是对整个数据库实例加锁。MySQL 提供了一个<code>加全局读锁</code>的方法&#xff0c;命令是 <code>Flush tables with read lock (FTWRL)</code>。当你需要<strong>让整个库处于只读状态</strong>的时候&#xff0c;可以使用这个命令&#xff0c;之后其他线程的以下语句会被阻塞&#xff1a;<strong>数据更新语句&#xff08;数据的增删改&#xff09;、数据定义语句&#xff08;包括建表、修改表结构等&#xff09;和更新类事务的提交语句</strong>。</p>
+<p>全局锁的典型使用场景是&#xff0c;做<strong>全库逻辑备份</strong>。也就是把整库每个表都 select 出来存成文本。让整库都只读&#xff0c;听上去就很危险&#xff1a;</p>
+<ul><li>如果你在主库上备份&#xff0c;那么在备份期间都不能执行更新&#xff0c;业务基本上就得停摆</li><li>如果你在从库上备份&#xff0c;那么备份期间从库不能执行主库同步过来的 binlog&#xff0c;会导致主从延迟。</li></ul>
+<p>看来加全局锁不太好。但是细想一下&#xff0c;备份为什么要加锁呢&#xff1f;我们来看一下不加锁会有什么问题</p>
+<h6><a rel="noopener noreferrer" id="_687"></a>备份不加锁的问题</h6>
+<p>现在发起一个逻辑备份。假设备份期间&#xff0c;有一个用户&#xff0c;他购买了一门课程&#xff0c;业务逻辑里就要扣掉他的余额&#xff0c;然后往已购课程里面加上一门课。如果时间顺序上是先备份账户余额表 (u_account)&#xff0c;然后用户购买&#xff0c;然后备份用户课程表 (u_course)&#xff0c;会怎么样呢&#xff1f;你可以看一下这个图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-31-d16b36a465.png" loading="lazy"><br /> 可以看到&#xff0c;这个备份结果里&#xff0c;用户 A 的数据状态是“账户余额没扣&#xff0c;但是用户课程表里面已经多了一门课”。如果后面用这个备份来恢复数据的话&#xff0c;用户 A 就发现&#xff0c;自己赚了&#xff0c;也就是说&#xff0c;不加锁的话&#xff0c;<strong>备份系统备份的得到的库不是一个逻辑时间点&#xff0c;这个视图是逻辑不一致的</strong></p>
+<h6><a rel="noopener noreferrer" id="_691"></a>一致性读</h6>
+<p>前面讲事务隔离的时候&#xff0c;有一个方法能够拿到一致性视图的&#xff0c;就是在可重复读隔离级别下开启一个事务&#xff0c;官方自带的逻辑备份工具是 mysqldump。当 mysqldump 使用参数–single-transaction 的时候&#xff0c;导数据之前就会启动一个事务&#xff0c;来确保拿到一致性视图。<strong>而由于 MVCC 的支持&#xff0c;这个过程中数据是可以正常更新的</strong>&#xff0c;一致性读是好&#xff0c;但<strong>前提是引擎要支持这个隔离级别</strong>&#xff0c;<strong>InnoDB支持而 MyISAM不支持</strong></p>
+<h5><a rel="noopener noreferrer" id="_693"></a>表级锁</h5>
+<p>MySQL 里面表级别的锁有两种&#xff1a;一种是<strong>表锁</strong>&#xff0c;一种是<strong>元数据锁&#xff08;meta data lock&#xff0c;MDL)</strong></p>
+<h6><a rel="noopener noreferrer" id="_695"></a>表锁</h6>
+<p>表锁的语法是 <code>lock tables … read/write</code>。与 FTWRL 类似&#xff0c;可以用 <code>unlock tables</code> 主动释放锁&#xff0c;也可以在客户端断开的时候自动释放。需要注意&#xff0c;<code>lock tables 语法除了会限制别的线程的读写外&#xff0c;也限定了本线程接下来的操作对象</code>。</p>
+<p>举个例子, 如果在某个线程 A 中执行 <code>lock tables t1 read, t2 write;</code> 这个语句&#xff0c;</p>
+<ul><li>其他线程<strong>写 t1、读写 t2</strong> 的语句都会被阻塞。</li><li>线程 A 在执行 unlock tables 之前&#xff0c;<strong>也只能执行读 t1、读写 t2 的操作</strong>。连写 t1 都不允许&#xff0c;自然也不能访问其他表。</li></ul>
+<p><strong>加上读锁&#xff0c;不会限制别的线程读&#xff0c;但会限制别的线程写。加上写锁&#xff0c;会限制别的线程读写</strong>&#xff0c;在还没有出现更细粒度的锁的时候&#xff0c;表锁是最常用的处理并发的方式。而对于 InnoDB 这种支持行锁的引擎&#xff0c;一般不使用 lock tables 命令来控制并发&#xff0c;毕竟锁住整个表的影响面还是太大</p>
+<h6><a rel="noopener noreferrer" id="MDL_703"></a>MDL锁</h6>
+<p>MDL 不需要显式使用&#xff0c;在访问一个表的时候会被自动加上。<strong>MDL 的作用是&#xff0c;保证读写的正确性</strong>。你可以想象一下&#xff0c;如果一个查询正在遍历一个表中的数据&#xff0c;而执行期间另一个线程对这个表结构做变更&#xff0c;删了一列&#xff0c;那么查询线程拿到的结果跟表结构对不上&#xff0c;肯定是不行的。因此&#xff0c;在 MySQL 5.5 版本中引入了 MDL&#xff0c;<strong>当对一个表做增删改查操作的时候&#xff0c;加 MDL 读锁&#xff1b;当要对表做结构变更操作的时候&#xff0c;加 MDL 写锁</strong></p>
+<ul><li>读锁之间不互斥&#xff0c;因此你可以有多个线程同时对一张表增删改查。</li><li>读写锁之间、写锁之间是互斥的&#xff0c;<strong>用来保证变更表结构操作的安全性</strong>。因此&#xff0c;如果有两个线程要同时给一个表加字段&#xff0c;其中一个要等另一个执行完才能开始执行</li></ul>
+<h6><a rel="noopener noreferrer" id="_708"></a>小表问题</h6>
+<p>给一个表<strong>加字段&#xff0c;或者修改字段&#xff0c;或者加索引</strong>&#xff0c;需要扫描全表的数据。这往往会导致不可预知的问题&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114715323-32-7ca08299f2.png" loading="lazy">我们可以看到 session A 先启动&#xff0c;这时候会对表 t 加一个 MDL 读锁。</p>
+<ol><li>由于 session B 需要的也是 MDL 读锁(<strong>因为读锁是共享锁</strong>)&#xff0c;因此可以正常执行。</li><li>之后 session C 会被 blocked&#xff0c;是因为 session A 的 MDL 读锁还没有释放&#xff0c;而 session C 需要 MDL 写锁&#xff0c;因此只能被阻塞</li><li>之后所有要在表 t 上新申请 MDL 读锁的请求也会被 session C 阻塞。mysql server 端对于sessionC,D有一个队列决定谁先执行</li></ol>
+<p>前面我们说了&#xff0c;所有对表的增删改查操作都需要先申请 MDL 读锁&#xff0c;就都被锁住&#xff0c;等于这个表现在完全不可读写了。如果某个表上的查询语句频繁&#xff0c;而且客户端有重试机制&#xff0c;也就是说超时后会再起一个新 session 再请求的话&#xff0c;这个库的线程很快就会爆满。</p>
+<p>事务中的 MDL 锁&#xff0c;在语句执行开始时申请&#xff0c;但是语句结束后并不会马上释放&#xff0c;而会等到整个事务提交后再释放&#xff0c;梦幻联动到我们对长事务的探索&#xff0c;长事务坏处&#xff1a;1、导致undo log过多&#xff0c;占用存储空间 2、<strong>获取的锁要等到事务结束才释放&#xff0c;有可能会阻塞请求或者线程爆满</strong></p>
+<p>比较理想的机制是&#xff0c;在 alter table 语句里面设定等待时间&#xff0c;如果在这个指定的等待时间里面能够拿到 MDL 写锁最好&#xff0c;拿不到也不要阻塞后面的业务语句&#xff0c;先放弃。之后开发人员或者 DBA 再通过重试命令重复这个过程&#xff0c;其实就是我们在并发中学到的<strong>RetreenedLock等待可中断、超时放弃锁的机制&#xff0c;所以其实机制一通百通</strong></p>
+<h6><a rel="noopener noreferrer" id="_723"></a>其它表级锁【意向共享锁&amp;意向排他锁】</h6>
+<p>意向锁的作用就是当一个事务在需要获取资源锁定的时候&#xff0c;<strong>如果遇到自己需要的资源已经被排他锁占用的时候&#xff0c;该事务可以需要锁定行的表上面添加一个合适的意向锁</strong>。</p>
+<ul><li>如果自己需要一个共享锁&#xff0c;那么就在表上面添加一个意向共享锁。</li><li>而如果自己需要的是某行&#xff08;或者某些行&#xff09;上面添加一个排他锁的话&#xff0c;则先在表上面添加一个意向排他锁。</li><li>这里的意向锁是表级锁&#xff0c;<strong>表示的是一种意向&#xff0c;仅仅表示事务正在读或写某一行记录&#xff0c;在真正加行锁时才会判断是否冲突</strong>。意向锁是InnoDB自动加的&#xff0c;不需要用户干预</li></ul>
+<p><strong>意向共享锁可以同时并存多个&#xff0c;但是意向排他锁同时只能有一个存在</strong></p>
+<ul><li><strong>意向共享锁&#xff08;IS&#xff09;</strong>&#xff1a; 表示事务准备给数据行记入共享锁&#xff0c;事务在一个数据行加共享锁前必须先取得该表的IS锁</li><li><strong>意向排他锁&#xff08;IX&#xff09;</strong>&#xff1a; 表示事务准备给数据行加入排他锁&#xff0c;事务在一个数据行加排他锁前必须先取得该表的IX锁。</li></ul>
+<p>当一个事务请求的锁模式与当前的锁兼容&#xff0c;InnoDB就将请求的锁授予该事务&#xff1b;反之如果请求不兼容&#xff0c;则该事物就等待锁释放</p>
+<h5><a rel="noopener noreferrer" id="_735"></a>行级锁</h5>
+<p>MySQL 的行锁是在引擎层由各个引擎自己实现的。但并不是所有的引擎都支持行锁&#xff0c;比如 <strong>MyISAM 引擎就不支持行锁</strong>。不支持行锁意味着并发控制只能使用表锁&#xff0c;对于这种引擎的表&#xff0c;同一张表上任何时刻只能有一个更新在执行&#xff0c;这就会影响到业务并发度。InnoDB 是支持行锁的&#xff0c;这也是 MyISAM 被 InnoDB 替代的重要原因之一</p>
+<p>顾名思义&#xff0c;行锁就是针对数据表中行记录的锁。这很好理解&#xff0c;比如事务 A 更新了一行&#xff0c;而这时候事务 B 也要更新同一行&#xff0c;则必须等事务 A 的操作完成后才能进行更新</p>
+<h6><a rel="noopener noreferrer" id="_740"></a>两阶段锁</h6>
+<p>在下面的操作序列中&#xff0c;事务 B 的 update 语句执行时会是什么现象呢&#xff1f;假设字段 id 是表 t 的主键<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-33-8b4e17a4b5.png" loading="lazy"><br /> 这个问题的结论取决于事务 A 在执行完两条 update 语句后&#xff0c;持有哪些锁&#xff0c;以及在什么时候释放。可以验证一下&#xff1a;<strong>实际上事务 B 的 update 语句会被阻塞&#xff0c;直到事务 A 执行 commit 之后&#xff0c;事务 B 才能继续执行</strong>&#xff0c;其实<strong>事务 A 持有的两个记录的行锁&#xff0c;都是在 commit 的时候才释放的</strong></p>
+<p>在 InnoDB 事务中&#xff0c;<strong>行锁是在需要的时候才加上的&#xff0c;但并不是不需要了就立刻释放&#xff0c;而是要等到事务结束时才释放</strong>。这个就是两阶段锁协议&#xff0c;所以<strong>如果事务中需要锁多个行&#xff0c;要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放</strong>&#xff0c;假设顾客A、C要在电影院B买票。</p>
+<ol><li>从顾客 A 账户余额中扣除电影票价&#xff1b;</li><li>给影院 B 的账户余额增加这张电影票价&#xff1b;</li><li>记录一条交易日志。</li></ol>
+<p>也就是说&#xff0c;要完成这个交易&#xff0c;我们需要 update 两条记录&#xff0c;并 insert 一条记录。当然&#xff0c;为了保证交易的原子性&#xff0c;我们要把这三个操作放在一个事务中。</p>
+<p>那么&#xff0c;你会怎样安排这三个语句在事务中的顺序呢&#xff1f;试想如果同时有另外一个顾客 C 要在影院 B 买票&#xff0c;那么这两个事务冲突的部分就是语句 2 了。因为它们要更新同一个影院账户的余额&#xff0c;需要修改同一行数据。根据两阶段锁协议&#xff0c;不论你怎样安排语句顺序&#xff0c;所有的操作需要的行锁都是在事务提交的时候才释放的。所以&#xff0c;如果把语句 2 安排在最后&#xff0c;<strong>比如按照 3、1、2 这样的顺序&#xff0c;那么影院账户余额这一行的锁时间就最少。这就最大程度地减少了事务之间的锁等待&#xff0c;提升了并发度</strong>。</p>
+<h6><a rel="noopener noreferrer" id="_755"></a>死锁的检测与避免</h6>
+<p>当并发系统中不同线程出现循环资源依赖&#xff0c;涉及的线程都在等待别的线程释放资源时&#xff0c;就会导致这几个线程都进入无限等待的状态&#xff0c;称为死锁&#xff0c;InnoDB的行级锁是<strong>基于索引实现的</strong>&#xff0c;如果查询语句未命中任何索引&#xff0c;那么<strong>InnoDB会使用表级锁</strong>. 此外&#xff0c;InnoDB的行级锁是针对索引加的锁&#xff0c;不针对数据记录&#xff0c;<strong>因此即使访问不同行的记录&#xff0c;如果使用了相同的索引键仍然会出现锁冲突</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-34-e685d8d9a3.png" loading="lazy"><br /> 这时候&#xff0c;事务 A 在等待事务 B 释放 id&#61;2 的行锁&#xff0c;而事务 B 在等待事务 A 释放 id&#61;1 的行锁。 事务 A 和事务 B 在互相等待对方的资源释放&#xff0c;就是进入了死锁状态。当出现死锁以后&#xff0c;有两种策略&#xff1a;</p>
+<ul><li>一种策略是&#xff0c;<strong>直接进入等待&#xff0c;直到超时</strong>。这个超时时间可以通过参数 <code>innodb_lock_wait_timeout</code> 来设置。</li><li>一种策略是&#xff0c;<strong>主动发起死锁检测</strong>&#xff0c;发现死锁后**&#xff0c;主动回滚死锁链条中的某一个事务&#xff0c;让其他事务得以继续执行**&#xff0c;其实就是破坏不可抢占条件。将参数 innodb_deadlock_detect 设置为 on&#xff0c;表示开启这个逻辑。</li></ul>
+<p>在 InnoDB 中&#xff0c;<code>innodb_lock_wait_timeout</code> 的默认值是 50s&#xff0c;意味着如果采用第一个策略&#xff0c;当出现死锁以后&#xff0c;第一个被锁住的线程要过 50s 才会超时退出&#xff0c;然后其他线程才有可能继续执行。对于在线服务来说&#xff0c;这个等待时间往往是无法接受的。但是&#xff0c;我们又不可能直接把这个时间设置成一个很小的值&#xff0c;比如 1s。这样当出现死锁的时候&#xff0c;确实很快就可以解开&#xff0c;但如果不是死锁&#xff0c;而是简单的锁等待呢&#xff1f;所以&#xff0c;超时时间设置太短的话&#xff0c;会出现很多误伤。所以&#xff0c;正常情况下我们还是要采用第二种策略&#xff0c;即<strong>主动死锁检测</strong>&#xff0c;而且 innodb_deadlock_detect 的默认值本身就是 on。主动死锁检测在发生死锁的时候&#xff0c;是能够快速发现并进行处理的&#xff0c;但是它也是有额外负担的</p>
+<blockquote>
+ <p><strong>主动检测的问题</strong></p>
+</blockquote>
+<p>每个新来的被堵住的线程&#xff0c;都要判断会不会由于自己的加入导致了死锁&#xff0c;这是一个时间复杂度是 O(n) 的操作。假设有 1000 个并发线程要同时更新同一行&#xff0c;那么死锁检测操作就是 100 万这个量级的。虽然最终检测的结果是没有死锁&#xff0c;但是这期间要消耗大量的 CPU 资源。因此&#xff0c;你就会看到 CPU 利用率很高&#xff0c;但是每秒却执行不了几个事务</p>
+<blockquote>
+ <p><strong>如何避免死锁</strong></p>
+</blockquote>
+<p>发生死锁后&#xff0c;InnoDB一般都可以检测到&#xff0c;并使一个事务释放锁回退&#xff0c;另一个则可以获取锁完成事务&#xff0c;我们可以采取以上方式避免死锁&#xff1a;</p>
+<ul><li>通过<strong>表级锁</strong>来减少死锁产生的概率&#xff1b;</li><li>多个程序尽量约定<strong>以相同的顺序访问表</strong></li><li>同一个事务尽可能做到<strong>一次锁定所需要的所有资源</strong></li></ul>
+<p>以上关于死锁</p>
+<h5><a rel="noopener noreferrer" id="_777"></a>表级锁&amp;行级锁总结</h5>
+<p>MyISAM和InnoDB存储引擎使⽤的锁&#xff1a;<strong>MyISAM采⽤表级锁</strong>(table-level locking)。<strong>InnoDB⽀持⾏级锁(row-level locking)和表级锁,默认为⾏级锁</strong>,表级锁和⾏级锁对⽐&#xff1a;</p>
+<ul><li><strong>表级锁</strong>&#xff1a; MySQL中锁定粒度较大的⼀种锁&#xff0c;对当前操作的整张表加锁&#xff0c;<strong>实现简单&#xff0c;资源消耗也⽐较少&#xff0c;加锁快&#xff0c;不会出现死锁</strong>。其锁定粒度最⼤&#xff0c;<strong>触发锁冲突的概率最高&#xff0c;并发度最低</strong>&#xff0c;MyISAM和 InnoDB引擎都⽀持表级锁。</li><li><strong>⾏级锁</strong>&#xff1a; MySQL中锁定 粒度最⼩的⼀种锁&#xff0c;只针对当前操作的⾏进⾏加锁。 ⾏级锁能<strong>⼤⼤减少数据库操作的冲突</strong>。其加锁<strong>粒度最⼩&#xff0c;并发度⾼</strong>&#xff0c;<strong>但加锁的开销也最⼤&#xff0c;加锁慢&#xff0c;会出现死锁</strong>。</li></ul>
+<p>InnoDB行级锁支持的算法有如下三种算法</p>
+<ul><li><strong>Record Lock</strong>: 对索引项加锁&#xff0c;锁定符合条件的行。其他事务不能修改和删除加锁项</li><li><strong>Gap Lock</strong>: 对索引项之间的“间隙”加锁&#xff0c;锁定记录的范围&#xff08;对第一条记录前的间隙或最后一条将记录后的间隙加锁&#xff09;&#xff0c;不包含索引项本身。其他事务不能在锁范围内插入数据&#xff0c;这样就防止了别的事务新增幻影行。Gap锁设计的⽬的是为了阻⽌多个事务将记录插⼊到同⼀范围内&#xff0c;⽽这会导致幻读问题的产⽣&#xff1b;除了<strong>外键约束和唯⼀性检查</strong>外&#xff0c;其余情况关闭Gap&#xff0c;仅使⽤record</li><li><strong>Next-key Lock</strong>&#xff1a; 锁定索引项本身和索引范围。即Record Lock和Gap Lock的结合。Innodb对于⾏的查询使⽤next-key lock&#xff1b;<strong>当查询的索引含有唯⼀属性时&#xff0c;将next-key lock降级为record key</strong></li></ul>
+<p>虽然使用行级索具有粒度小、并发度高等特点&#xff0c;但是表级锁有时候也是非常必要的&#xff1a;</p>
+<ul><li>事务<strong>更新大表中的大部分数据</strong>直接使用表级锁效率更高&#xff1b;</li><li>事务比较复杂**&#xff0c;使用行级索很可能引起死锁导致回滚**</li></ul>
+<p>Next-key Lock的设计其实就是为了解决幻读问题&#xff0c;这样&#xff0c;Innodb就可以在<strong>可重复读</strong>的隔离级别基础之上实现<strong>串行</strong>隔离级别</p>
+<h3><a rel="noopener noreferrer" id="_793"></a>锁与事务的实现</h3>
+<p>上文我们花大量的篇幅介绍了事务的实现和锁的机制&#xff0c;这部分我们来把他们联系起来&#xff0c;即锁是如何在事务的实现中发挥作用&#xff0c;我们知道读未提交不需要做任何控制&#xff0c;所以不讨论&#xff0c;<strong>串行化是指对数据加了读写锁</strong>&#xff0c;而且由于事务提交后才会释放锁&#xff0c;且其它线程不能对数据再加任何锁&#xff0c;也即数据对其它线程不可见&#xff0c;实现机制比较明确&#xff0c;这里也不多做讨论。</p>
+<h4><a rel="noopener noreferrer" id="_796"></a>提出问题</h4>
+<p>可重复读级别下&#xff0c;事务中读取的数据在整个事务过程中都是一致的&#xff0c;那么别的事务更新了数据&#xff0c;当前事务再去更新数据的时候&#xff0c;看到的是更新后的&#xff0c;还是更新前的&#xff1f;举个例子&#xff0c;初始插入值为<code>insert into t(id, k) values(1,1),(2,2);</code><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-35-08f838dad4.png" loading="lazy"><br /> 需要注意&#xff0c;begin/start transaction 命令并不是一个事务的起点&#xff0c;在执行到它们之后的第一个操作 InnoDB 表的语句&#xff0c;事务才真正启动。如果你想要马上启动一个事务&#xff0c;可以使用 <code>start transaction with consistent snapshot</code> 这个命令</p>
+<ol><li>事务 C 没有显式地使用 begin/commit&#xff0c;表示这个 update 语句本身就是一个事务&#xff0c;语句完成的时候会自动提交&#xff0c;因为事务C本来就只有一条执行语句。</li><li>事务 B 在更新了行之后查询</li><li>事务 A 在一个只读事务中查询&#xff0c;并且时间顺序上是在事务 B 的查询之后&#xff0c;接着提交</li><li>事务 B 提交</li></ol>
+<p>在这里&#xff0c;事务 B 查到的 k 的值是 3&#xff0c;而事务 A 查到的 k 的值是 1&#xff0c;我们需要知道为什么结果是这样</p>
+<h4><a rel="noopener noreferrer" id="MVCC_807"></a>MVCC机制</h4>
+<p>这部分详细讲解下MVCC机制&#xff0c;包括<strong>快照和事务ID</strong></p>
+<h5><a rel="noopener noreferrer" id="_809"></a>快照</h5>
+<p>在 MySQL 里&#xff0c;有两个视图的概念&#xff0c;这两个视图分别用于不同的场景。</p>
+<ul><li>一个是 view。它是一个用查询语句定义的虚拟表&#xff0c;在调用的时候执行查询语句并生成结果。创建视图的语法是 create view … &#xff0c;而它的查询方法与表一样。</li><li>一个是 InnoDB 在实现 MVCC 时用到的一致性读视图&#xff0c;即 <strong>consistent read view</strong>&#xff0c;用于支持 RC&#xff08;Read Committed&#xff0c;读提交&#xff09;和 RR&#xff08;Repeatable Read&#xff0c;可重复读&#xff09;隔离级别的实现。它没有物理结构&#xff0c;作用是事务执行期间用来定义“我能看到什么数据”</li></ul>
+<p>第二种视图更像是一种快照。<strong>在可重复读隔离级别下&#xff0c;事务在启动的时候就“拍了个快照”。注意&#xff0c;这个快照是基于整库的</strong>。</p>
+<h5><a rel="noopener noreferrer" id="ID_816"></a>事务ID</h5>
+<p>InnoDB 里面每个事务有一个唯一的事务 ID&#xff0c;叫作 transaction id。它是在事务开始的时候向 InnoDB 的事务系统申请的&#xff0c;是按申请顺序严格递增的。而每行数据也都是有多个版本的。每次事务更新数据的时候&#xff0c;都会生成一个新的数据版本&#xff0c;并且把 transaction id 赋值给这个数据版本的事务 ID&#xff0c;记为 row trx_id。同时&#xff0c;旧的数据版本要保留&#xff0c;并且在新的数据版本中&#xff0c;能够有信息可以直接拿到它。也就是说&#xff0c;<strong>数据表中的一行记录&#xff0c;其实可能有多个版本 (row)&#xff0c;每个版本有自己的 row trx_id</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-36-4de8fbc578.png" loading="lazy"><br /> 比如&#xff0c;如果有一个事务&#xff0c;它的<strong>低水位事务ID</strong>是 18&#xff0c;那么当它访问这一行数据时&#xff0c;就会从 V4 通过 U3 计算出 V3&#xff0c;<strong>所以在它看来&#xff0c;这一行的值是 11</strong></p>
+<h5><a rel="noopener noreferrer" id="undo_log_820"></a>undo log</h5>
+<p>undo log 在哪呢&#xff1f;实际上&#xff0c;上图的三个虚线箭头&#xff0c;就是 undo log&#xff1b;<strong>而 V1、V2、V3 并不是物理上真实存在的&#xff0c;而是每次需要的时候根据当前版本和 undo log 计算出来的</strong>。比如&#xff0c;需要 V2 的时候&#xff0c;就是通过 V4 依次执行 U3、U2 算出来&#xff0c;返回过来看<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-30-1457d90ac4.png" loading="lazy"><br /> 回滚段是真实存在的&#xff0c;而视图也就是快照是一种逻辑形态&#xff0c;是计算出来的。</p>
+<h4><a rel="noopener noreferrer" id="MVCC_824"></a>MVCC实现</h4>
+<p>按照可重复读的定义&#xff0c;一个事务启动的时候&#xff0c;能够看到所有已经提交的事务结果。但是之后&#xff0c;这个事务执行期间&#xff0c;其他事务的更新对它不可见。因此&#xff0c;一个事务只需要在启动的时候声明说&#xff0c;</p>
+<ul><li>“以我启动的时刻为准&#xff0c;如果一个数据版本是在我启动之前生成的&#xff0c;就认&#xff1b;</li><li>如果是我启动以后才生成的&#xff0c;我就不认&#xff0c;我必须要找到它的上一个版本”。</li></ul>
+<p>当然&#xff0c;如果“上一个版本”也不可见&#xff0c;那就得继续往前找。还有&#xff0c;<strong>如果是这个事务自己更新的数据&#xff0c;它自己还是要认的</strong></p>
+<p>在实现上&#xff0c; InnoDB <strong>为每个事务构造了一个数组</strong>&#xff0c;用来保存这个事务启动瞬间&#xff0c;当前正在“活跃”的所有事务 ID。<strong>“活跃”指的就是&#xff0c;启动了但还没提交</strong>。数组里面<strong>事务 ID 的最小值记为低水位</strong>&#xff0c;<strong>当前系统里面已经创建过的事务 ID 的最大值加 1 记为高水位</strong>。这个视图数组和高水位&#xff0c;就组成了当前事务的一致性视图&#xff08;read-view&#xff09;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-37-c2d8adea6d.png" loading="lazy"></p>
+<p>这样&#xff0c;对于当前事务的启动瞬间来说&#xff0c;一个数据版本的 row trx_id&#xff08;对一个数据的操作ID&#xff09;&#xff0c;有以下几种可能&#xff1a;</p>
+<ol><li>如果落在绿色部分&#xff0c;表示这个版本是<strong>已提交的事务或者是当前事务自己生成的&#xff0c;这个数据是可见的</strong>&#xff1b;</li><li>如果落在黄色部分&#xff0c;那就包括两种情况
+  <ul><li>a. 若 row trx_id 在活跃数组中&#xff0c;表示这个版本是由还没提交的事务生成的&#xff0c;不可见&#xff1b;</li><li>b. 若 row trx_id 不在活跃数组中&#xff0c;表示这个版本是已经提交了的事务生成的&#xff0c;可见。</li></ul> </li><li>如果落在红色部分&#xff0c;表示这个版本是<strong>由将来启动的事务生成的&#xff0c;是肯定不可见的</strong>&#xff1b;事务ID一定大于当前。</li></ol>
+<p>我们举个例子&#xff0c;假如事务ID从【90,100】&#xff0c;其中<strong>90,91,93,95,98,99,100已提交</strong>&#xff0c;则<strong>活跃事务ID数组</strong>为【92,96,97】&#xff0c;<strong>低水位为92&#xff0c;当前事务为94&#xff0c;高水位为101</strong>。则可以进行如下划分&#xff1a;</p>
+<ul><li>绿色区域&#xff0c;低水位之前已提交的事务ID&#xff0c;<strong>90,91</strong>可见。包括当前事务虽然未提交刚开启&#xff0c;但是自身可见&#xff0c;94可见</li><li>黄色区域&#xff0c;低水位到高水位之间&#xff0c;剩下的【92,100】&#xff0c;这一系列事务ID&#xff0c;分为两类
+  <ul><li>a. 若 row trx_id 在活跃数组中&#xff0c;【92,96,97】不可见。</li><li>b. 若 row trx_id 不在活跃数组中&#xff0c;93,95,98,99,100均可见</li></ul> </li><li>红色区域&#xff0c;未开始的事务<strong>101及以后</strong>的事务ID都不可见</li></ul>
+<p>以上就是一致性视图的使用规范。对于上边的行数据版本链问题&#xff0c;低水位是18&#xff0c;<strong>则在所有版本的数据中&#xff0c;trx_id低于18的版本都可见&#xff0c;所以值为11肯定是可见的</strong>&#xff0c;有了这个声明后&#xff0c;系统里面随后发生的更新&#xff0c;是不是就跟这个事务看到的内容无关了呢&#xff1f;因为之后的更新&#xff0c;生成的版本一定属于上面的 3或者 2(a) 的情况&#xff0c;而对它来说&#xff0c;这些新的数据版本是不存在的&#xff0c;所以这个事务的快照&#xff0c;就是“静态”的了</p>
+<h4><a rel="noopener noreferrer" id="_850"></a>解决问题</h4>
+<p>接下来&#xff0c;我们继续看一下开始提出问题的三个事务&#xff0c;分析下事务 A 的语句返回的结果&#xff0c;为什么是 k&#61;1。这里&#xff0c;我们不妨做如下假设&#xff1a;</p>
+<ul><li>事务 A 开始前&#xff0c;系统里面只有一个活跃事务 ID 是 99&#xff1b;</li><li>事务 A、B、C 的版本号分别是 100、101、102&#xff0c;且当前系统里只有这四个事务&#xff1b;</li></ul>
+<p>三个事务开始前&#xff0c;(1,1&#xff09;这一行数据的 row trx_id 是 90。这样&#xff0c;事务 A 的视图数组就是**[99,100]<strong>, 事务 B 的视图数组是</strong>[99,100,101]<strong>, 事务 C 的视图数组是</strong>[99,100,101,102]**。为了简化分析&#xff0c;我先把其他干扰语句去掉&#xff0c;只画出跟事务 A 查询逻辑有关的操作&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-38-969003fb1a.png" loading="lazy"></p>
+<ul><li>从图中可以看到&#xff0c;第一个有效更新是事务 C&#xff0c;把数据从 (1,1) 改成了 (1,2)。这时候&#xff0c;<strong>这个数据的最新版本的 row trx_id 是 102&#xff0c;而 90 这个版本已经成为了历史版本</strong></li><li>第二个有效更新是事务 B&#xff0c;把数据从 (1,2) 改成了 (1,3)。这时候&#xff0c;<strong>这个数据的最新版本&#xff08;即 row trx_id&#xff09;是 101&#xff0c;而 102 又成为了历史版本</strong></li></ul>
+<p>在事务 A 查询的时候&#xff0c;其实事务 B 还没有提交&#xff0c;但是它生成的 (1,3) 这个版本已经变成当前版本了。但这个版本对事务 A 必须是不可见的&#xff0c;否则就变成脏读了</p>
+<h5><a rel="noopener noreferrer" id="_861"></a>读取逻辑</h5>
+<p>好&#xff0c;现在事务 A 要来读数据了&#xff0c;它的视图数组是[99,100]。当然了&#xff0c;读数据都是从当前版本读起的。所以&#xff0c;事务 A 查询语句的读数据流程是这样的&#xff1a;</p>
+<ol><li>找到 (1,3) 的时候&#xff0c;判断出 row trx_id&#61;101&#xff0c;比高水位大&#xff0c;处于红色区域&#xff0c;不可见&#xff1b;</li><li>接着&#xff0c;找到上一个历史版本&#xff0c;一看 row trx_id&#61;102&#xff0c;比高水位大&#xff0c;处于红色区域&#xff0c;不可见&#xff1b;</li><li>再往前找&#xff0c;终于找到了&#xff08;1,1)&#xff0c;它的 row trx_id&#61;90&#xff0c;比低水位小&#xff0c;处于绿色区域&#xff0c;可见。</li></ol>
+<p>这样执行下来&#xff0c;虽然期间这一行数据被修改过&#xff0c;但是事务 A 不论在什么时候查询&#xff0c;看到这行数据的结果都是一致的&#xff0c;所以我们称之为<strong>一致性读</strong>&#xff0c;一个数据版本&#xff0c;对于一个事务视图来说&#xff0c;除了<strong>自己的更新总是可见以外</strong>&#xff0c;有三种情况&#xff1a;</p>
+<ul><li>版本未提交&#xff0c;不可见&#xff1b;</li><li>版本已提交&#xff0c;但是是在视图创建后提交的&#xff0c;不可见&#xff1b;</li><li>版本已提交&#xff0c;而且是在视图创建前提交的&#xff0c;可见。</li></ul>
+<p>现在&#xff0c;我们用这个规则来判断查询结果</p>
+<ol><li>事务 A 的查询语句的视图数组是在事务 A 启动的时候生成的&#xff0c;这时候&#xff1a;(1,3) 还没提交&#xff0c;属于情况 1&#xff0c;不可见&#xff1b;</li><li>(1,2) 虽然提交了&#xff0c;但是是在视图数组创建之后提交的&#xff0c;属于情况 2&#xff0c;不可见</li><li>(1,1) 是在视图数组创建之前提交的&#xff0c;可见。</li></ol>
+<p>去掉数字对比后&#xff0c;只用时间先后顺序来判断&#xff0c;分析起来是不是轻松多了。所以&#xff0c;后面我们就都用这个规则来分析</p>
+<h5><a rel="noopener noreferrer" id="_883"></a>更新逻辑</h5>
+<p>事务 B 的 update 语句&#xff0c;如果按照一致性读&#xff0c;好像结果不对&#xff1f;事务 B 的视图数组是先生成的&#xff0c;之后事务 C 才提交&#xff0c;不是应该看不见 (1,2) 吗&#xff0c;怎么能算出 (1,3) 来<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-39-c17b06d9f4.png" loading="lazy"><br /> 是的&#xff0c;如果事务 B 在更新之前查询一次数据&#xff0c;<strong>这个查询返回的 k 的值确实是 1</strong></p>
+<p>但是&#xff0c;当它要去更新数据的时候&#xff0c;就不能再在历史版本上更新了&#xff0c;否则事务 C 的更新就丢失了。因此&#xff0c;事务 B 此时的 <code>set k&#61;k&#43;1</code> 是在&#xff08;1,2&#xff09;的基础上进行的操作。所以&#xff0c;这里就用到了这样一条规则&#xff1a;<strong>更新数据都是先读后写的&#xff0c;而这个读&#xff0c;只能读当前的值</strong>&#xff0c;称为<code>当前读&#xff08;current read&#xff09;</code></p>
+<p>因此&#xff0c;在更新的时候&#xff0c;当前读拿到的数据是 (1,2)&#xff0c;更新后生成了新版本的数据 (1,3)&#xff0c;这个新版本的 row trx_id 是 <strong>101</strong>。所以&#xff0c;在执行事务 B 查询语句的时候&#xff0c;一看自己的版本号是 101&#xff0c;最新数据的版本号也是 101&#xff0c;是自己的更新&#xff0c;可以直接使用&#xff0c;所以查询得到的 k 的值是 3。<strong>有点像Java的volatile机制</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_891"></a>当前读</h5>
+<p>这里我们提到了一个概念&#xff0c;叫作当前读。其实&#xff0c;<strong>除了 update 语句外&#xff0c;select 语句如果加锁&#xff0c;也是当前读</strong>。所以&#xff0c;如果把事务 A 的查询语句 <code>select * from t where id&#61;1</code> 修改一下&#xff0c;加上 <code>lock in share mode</code> 或 <code>for update</code>&#xff0c;也都可以读到版本号是 101 的数据&#xff0c;返回的 k 的值是 3。下面这两个 select 语句&#xff0c;就是分别加了读锁&#xff08;S 锁&#xff0c;共享锁&#xff09;和写锁&#xff08;X 锁&#xff0c;排他锁&#xff09;</p>
+<pre><code class="prism language-java">
+mysql<span class="token operator">&gt;</span> select k from t where id<span class="token operator">&#61;</span><span class="token number">1</span> lock in share mode<span class="token punctuation">;</span>
+mysql<span class="token operator">&gt;</span> select k from t where id<span class="token operator">&#61;</span><span class="token number">1</span> <span class="token keyword">for</span> update<span class="token punctuation">;</span>
+</code></pre>
+<p>言归正传&#xff0c;假设事务 C 不是马上提交的&#xff0c;而是变成了下面的事务 C’&#xff0c;会怎么样呢&#xff1f;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-40-e22bcc7556.png" loading="lazy"><br /> 事务 C’的不同是&#xff0c;更新后并没有马上提交&#xff0c;在它提交前&#xff0c;事务 B 的更新语句先发起了。前面说过了&#xff0c;虽然事务 C’还没提交&#xff0c;但是 (1,2) 这个版本也已经生成了&#xff0c;并且是当前的最新版本。那么&#xff0c;事务 B 的更新语句会怎么处理呢&#xff1f;</p>
+<p>事务 C’没提交&#xff0c;<strong>也就是说 (1,2) 这个版本上的写锁还没释放</strong>。而事务 B更新时 是当前读&#xff0c;必须要读最新版本&#xff0c;而且必须加锁&#xff0c;因此就被锁住了&#xff0c;必须等到事务 C’释放这个锁&#xff0c;才能继续它的当前读<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-41-380b1a4e40.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="_906"></a>可重复读和读提交的实现</h5>
+<p>到这里&#xff0c;我们把<strong>一致性读、当前读和行锁</strong>就串起来了。那么事务的可重复读的能力是怎么实现的&#xff1f;</p>
+<ul><li><strong>可重复读</strong>的核心就是一致性读&#xff08;consistent read&#xff09;&#xff1b;<strong>事务更新数据的时候&#xff0c;只能用当前读。如果当前的记录的行锁被其他事务占用的话&#xff0c;就需要进入锁等待</strong>。</li><li><strong>读提交</strong>的逻辑和可重复读的逻辑类似&#xff0c;它们最主要的区别是&#xff1a;在可重复读隔离级别下&#xff0c;只需要在事务开始的时候创建一致性视图&#xff0c;之后事务里的其他查询都共用这个一致性视图&#xff1b;在读提交隔离级别下&#xff0c;每一个语句执行前都会重新算出一个新的视图。</li></ul>
+<p>那么&#xff0c;我们再看一下&#xff0c;在<strong>读提交隔离级别下&#xff0c;事务 A 和事务 B 的查询语句查到的 k</strong>&#xff0c;分别应该是多少呢&#xff1f;这里需要说明一下&#xff0c;“start transaction with consistent snapshot; ”的意思是从这个语句开始&#xff0c;创建一个持续整个事务的一致性快照。所以&#xff0c;在读提交隔离级别下&#xff0c;这个用法就没意义了&#xff0c;等效于普通的 start transaction。下面是读提交时的状态图&#xff0c;可以看到这两个查询语句的创建视图数组的时机发生了变化&#xff0c;就是图中的 read view 框。&#xff08;注意&#xff1a;这里&#xff0c;我们用的还是事务 C 的逻辑直接提交&#xff0c;而不是事务 C’&#xff09;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114715323-42-da8a496e5b.png" loading="lazy"><br /> 这时&#xff0c;事务 A 的查询语句的视图数组是在执行这个语句的时候创建的&#xff0c;时序上 (1,2)、(1,3) 的生成时间都在创建这个视图数组的时刻之前。但是&#xff0c;在这个时刻&#xff1a;</p>
+<ul><li>(1,3) 事务B还没提交&#xff0c;属于情况 1&#xff0c;不可见&#xff1b;</li><li>(1,2) 事务C提交了&#xff0c;属于情况 3&#xff0c;可见。</li></ul>
+<p>所以&#xff0c;这时候事务 A 查询语句返回的是 k&#61;2。显然地&#xff0c;事务 B 查询结果 k&#61;3&#xff0c;因为B的视图里&#xff0c;C已经提交了。自己状态又可见&#xff0c;直接加2次。</p>
+<h3><a rel="noopener noreferrer" id="_919"></a>隔离级别与行锁</h3>
+<p>Innodb对于行级锁&#xff0c;行文至此&#xff0c;我们最终探讨一次四种隔离级别是如何产生效果的呢&#xff1f;是依据MVCC机制和行级别的锁来实现的&#xff0c;针对每种隔离级别分别介绍一下&#xff1a;</p>
+<ul><li><strong>读未提交</strong>&#xff0c;<font color="red"><strong>不创建视图&#xff0c;所有语句不加任何锁</strong></font>&#xff0c;有<strong>脏读问题</strong>。解决办法就是下面的读已提交</li><li><strong>读已提交</strong>&#xff0c;<font color="red"><strong>执行sql时创建一致性视图&#xff0c;SELECT语句是一致性读&#xff0c;一致性读会根据 row trx_id 和一致性视图确定数据版本的可见性&#xff0c;且SELECT不加锁&#xff0c;更新语句使用当前读机制&#43;两阶段行锁&#xff08;Record Lock排它锁&#xff09;机制</strong></font>&#xff0c;存在的问题不可重复读。即在一次事务之间&#xff0c;进行了两次读取&#xff0c;但是结果不一样&#xff0c;<strong>不可重复读问题</strong></li><li><strong>可重复读</strong>&#xff0c;<font color="red"><strong>事务开始时创建一致性视图&#xff0c;查询语句是一致性读&#xff0c;一致性读会根据 row trx_id 和一致性视图确定数据版本的可见性&#xff0c;且SELECT不加锁&#xff0c;更新语句使用当前读机制&#43;两阶段行锁&#xff08;Record Lock排它锁&#xff09;机制</strong></font>&#xff0c;可重复读阻止的写事务包括update&#xff08;只给存在的数据行加上了锁&#xff09;&#xff0c;但是不包括insert、delete&#xff08;新行不存在&#xff0c;所以没有办法加锁&#xff09;</li><li><strong>串行化</strong>&#xff0c;<font color="red"><strong>不创建视图&#xff0c;读加读锁&#xff0c;写加跨行级别Next-key Lock排他锁</strong></font>。<strong>阻止其它读写事务</strong> &#xff0c;基本上就是一个个执行事务&#xff0c;所以叫串行化。</li></ul>
+<p>整体的隔离机制介绍如上&#xff0c;可算是对事务和锁的实现有了一个全盘的掌握了。</p>

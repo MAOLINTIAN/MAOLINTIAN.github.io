@@ -1,0 +1,69 @@
+<p>数据链路层在物理层提供的服务的基础上向网络层提供服务&#xff0c;<strong>其最基本的服务是将源自网络层来的数据可靠地传输到相邻节点的目标机网络层</strong>。为达到这一目的&#xff0c;数据链路必须具备一系列相应的功能&#xff0c;主要有&#xff1a;</p>
+<ul><li><strong>如何将数据组合成数据块</strong>&#xff0c;在数据链路层中称这种数据块为<strong>帧&#xff08;frame&#xff09;</strong>&#xff0c;帧是数据链路层的传送单位&#xff1b;</li><li><strong>如何控制帧在物理信道上的传输</strong>&#xff0c;包括如何处理传输差错&#xff0c;如何调节发送速率以使与接收方相匹配&#xff1b;</li><li><strong>如何在两个网络实体之间提供数据链路通路的建立、维持和释放的管理</strong>。数据链路层在不可靠的物理介质上提供可靠的传输。</li></ul>
+<p>以下为数据链路层的传输示意&#xff1a;<img alt="在这里插入图片描述" src="./posts/assets/77768804-01-44cd31b912.png" loading="lazy"></p>
+<p><font color="red"><strong>数据链路层的作用</strong></font>&#xff1a;<strong>物理地址寻址、数据的成帧、流量控制、数据的检错、重发等</strong>。数据链路层为网络层提供可靠的数据传输<br />
+<font color="red"><strong>数据链路层的协议</strong></font>&#xff1a;<strong>PPP&#xff08;点对点协议&#xff09;</strong>、FR、HDLC、VLAN、MAC<br />
+<font color="red"><strong>数据链路层的设备</strong></font>&#xff1a;<strong>网桥&#xff0c;交换机</strong></p>
+<h3><a rel="noopener noreferrer" id="_13"></a>数据帧</h3>
+<p>数据帧是数据链路层的<strong>协议数据单位</strong>。它包括三部分&#xff1a;<strong>帧头&#xff0c;数据部分&#xff0c;帧尾</strong>。</p>
+<ul><li><strong>帧头和帧尾</strong>包含一些必要的控制信息&#xff0c;比如同步信息、地址信息、差错控制信息等</li><li><strong>数据部分</strong>则包含网络层传下来的数据&#xff0c;比如IP数据包。</li></ul>
+<p>在发送端&#xff0c;数据链路层把网络层传下来得数据封装成帧&#xff0c;然后发送到链路上去&#xff1b;在接收端&#xff0c;数据链路层把收到的帧中的数据取出并交给网络层。<strong>不同的数据链路层协议对应着不同的帧</strong>&#xff0c;所以&#xff0c;帧有多种&#xff0c;比如PPP帧、MAC帧等&#xff0c;其具体格式也不尽相同</p>
+<h3><a rel="noopener noreferrer" id="_19"></a>数据链路层主要功能</h3>
+<p>数据链路层协议有许多种&#xff0c;但有三个基本问题则是共同的。这三个基本问题是&#xff1a;<strong>封装成帧、透明传输和差错检测</strong></p>
+<h4><a rel="noopener noreferrer" id="_21"></a>封装成帧</h4>
+<p><strong>封装成帧(framing)就是在一段数据的前后分别添加首部和尾部</strong>&#xff0c;这样就构成了一个帧。接收端在收到物理层上交的比特流后&#xff0c;就能根据首部和尾部的标记&#xff0c;从收到的比特流中识别帧的开始和结束</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/77768804-02-ad7fcfd129.png" loading="lazy"></p>
+<p>注意一个概念&#xff1a;MTU&#xff08;最大传送单元&#xff09;&#xff0c;MTU也就是IP数据包的长度上限。<strong>一个帧的帧长等于帧的数据部分长度加上帧首部和帧尾部的长度</strong>。</p>
+<ul><li>首部和尾部的一个重要作用就是进行<strong>帧定界</strong>(即确定帧的界限)。当数据是由可打印的ASCII码组成的文本文件时&#xff0c;帧定界可以使用特殊的帧定界符。我们知道&#xff0c;ASCII码是7位编码&#xff0c;一共可组合成128个不同的ASCII码&#xff0c;其中可打印的有95个&#xff0c;而不可打印的控制字符有33个。下图的例子可说明帧定界的概念。控制字符<strong>SOH</strong> (Start Of Header)放在一帧的最前面&#xff0c;表示帧的首部开始。另一个控制字符<strong>EOT</strong> (End Of Transmission)表示帧的结束。请注意&#xff0c;SOH和EOT都是控制字符的名称。它们的十六进制编码分别是01(二进制是00000001)和04(二进制是00000100)。SOH(或EOT)并不是S, O, H(或E, O, T)三个字符。</li></ul>
+<p>由于<font color="red"><strong>使用了帧定界符&#xff0c;接收端就知道前面收到的数据是否是个不完整的帧&#xff0c;进而判定是否丢</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-03-f5d59d2cb1.png" loading="lazy"><br />
+</font></p>
+<h3><a rel="noopener noreferrer" id="_32"></a>透明传输</h3>
+<p>透明是一个很重要的术语。它表示:某<strong>一个实际存在的事物看起来却好像不存在一样</strong>(例如&#xff0c;你看不见在你前面有块100%透明的玻璃的存在)。<font color="red"><strong>在数据链路层透明传送数据表示无论什么样的比特组合的数据&#xff0c;都能够按照原样没有差错地通过这个数据链路层</strong></font>。因此&#xff0c;对所传送的数据来说&#xff0c;这些数据就“看不见”数据链路层有什么妨碍数据传输的东西。或者说&#xff0c;数据链路层对这些数据来说是透明的</p>
+<p>当帧的数据部分是<strong>非ASCII码的文本文件时(如二进制代码的计算机程序或图像等)</strong>&#xff0c;情况就不同了。<strong>如果数据中的某个字节的二进制代码恰好和SOH或EOT这种控制字符一样&#xff0c;数据链路层就会错误地“找到帧的边界”</strong>&#xff0c;把部分帧收下(误认为是个完整的帧)&#xff0c;而把剩下的那部分数据丢弃&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-04-b328006680.png" loading="lazy"></p>
+<p>为了解决透明传输的问题&#xff0c;可以使用字符填充或者字节填充&#xff0c;:</p>
+<ul><li>发送端的数据链路层在数据中出现控制字符SOH或EOT的前面<strong>插入一个转义字符ESC</strong>(其十六进制编码是1B&#xff0c;二进制是00011011)</li><li>接收端的数据链路层在<strong>把数据送往网络层之前删除这个插入的转义字符</strong></li></ul>
+<p>这种方法称为<strong>字节填充(byte stuffing)或字符填充(character stuffing)</strong>。如果转义字符也出现在数据当中&#xff0c;那么解决方法仍然是在转义字符的前面插入一个转义字符。因此&#xff0c;当接收端收到连续的两个转义字符时&#xff0c;就删除其中前面的一个<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-05-8395872c69.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_46"></a>差错检测</h3>
+<p>现实的通信链路都不会是理想的。这就是说&#xff0c;比特在传输过程中可能会产生差错1可能会变成0&#xff0c;而0也可能变成1。这就叫做<strong>比特差错</strong>。比特差错是传输差错中的一种。在一段时间内&#xff0c;传输错误的比特占所传输比特总数的比率称为<strong>误码率BER</strong> (Bit Error Rate)。例如&#xff0c;误码率1000时&#xff0c;每1000个比特就会出现一个比特的差错。误码率与信噪比有很大的关系。如果设法<strong>提高信噪比&#xff0c;就可以使误码率减小</strong>。实际的通信链路并非是理想的&#xff0c;它不可能使误码率下降到零。因此&#xff0c;为了保证数据传输的可靠性&#xff0c;在计算机网络传输数据时&#xff0c;必须采用各种差错检测措施。目前在数据链路层广泛使用了循<strong>环冗余检验CR</strong>C (Cyclic Redundancy Check)的检错技术&#xff0c;帧内的差错检测和传输过程中帧出现的帧丢失&#xff0c;帧重复&#xff0c;帧失序。为了防止出现传输差错&#xff0c;增加了&#xff1a;<strong>帧编号&#xff0c;确认和重传机制</strong>。</p>
+<h3><a rel="noopener noreferrer" id="PPP_49"></a>点对点PPP传输协议</h3>
+<p>点到点协议&#xff08;Point to Point Protocol&#xff0c;PPP&#xff09;是为在<strong>同等单元之间传输数据包这样的简单链路设计的链路层协议</strong>。  这种链路<strong>提供全双工操作&#xff0c;并按照顺序传递数据包</strong>。设计目的主要是用来通过拨号或专线方式建立点对点连接发送数据&#xff0c;使其成为各种主机、网桥和路由器之间简单连接的一种共通的解决方案</p>
+<h4><a rel="noopener noreferrer" id="PPP_52"></a>PPP协议功能</h4>
+<p>因为PPP是数据链路层的主要实现协议&#xff0c;所以一定要满足数据链路层的需求&#xff0c;包括上边提到的三个基本需求&#xff1a;</p>
+<ul><li><strong>简单</strong>&#xff0c;数据链路层没有必要提供比IP协议更多的功能&#xff0c;IETF把“简单”作为首要的需求。协议非常简单:接收方每收到一个帧&#xff0c;就进行CRC检验。如CRC检验正确&#xff0c;就收下这个帧;反之&#xff0c;就丢弃这个帧&#xff0c;其他什么也不做。</li><li><strong>封装成帧</strong></li><li><strong>透明传输</strong></li><li><strong>支持多种网络层协议</strong>&#xff1a;PPP协议必须能够在在同一条物理链路上<strong>同时支持多种网络层协议</strong>(如IP和IPX等)的运行。当点对点链路所连接的是局域网或路由器时&#xff0c;PPP协议必须同时支持在链路所连接的局域网或路由器上运行的各种网络层协议。<font color="red"><strong>向上管理</strong></font></li><li><strong>多种类型链路</strong>&#xff0c;除了要支持多种网络层的协议外&#xff0c;PPP还必须能够在多种类型的链路上运行。例如&#xff0c;串行的(一次只发送一个比特)或并行的(一次并行地发送多个比特)&#xff0c;同步的或异步的&#xff0c;低速的或高速的&#xff0c;电的或光的&#xff0c;交换的(动态的)或非交换的(静态的)点对点链路。<font color="red"><strong>向下管理</strong></font></li><li><strong>差错检测</strong></li><li><strong>检测连接状态</strong>&#xff0c;PPP协议必须具有一种机制能够及时(不超过几分钟)自动检测出链路是否处于正常工作状态。</li><li><strong>最大传送单元</strong>&#xff0c;PPP协议必须<strong>对每一种类型的点对点链路设置最大传送单元MTU的标准默认值</strong>。这样做是为了促进各种实现之间的互操作性。如果高层协议发送的分组过长并超过MTU的数值&#xff0c;PPP就要丢弃这样的帧&#xff0c;并返回差错。需要强调的是&#xff0c;MTU是数据链路层的帧可以载荷的数据部分的最大长度&#xff0c;而不是帧的总长度。</li><li><strong>网络层地址协商</strong>&#xff0c;PPP协议必须提供一种机制<strong>使通信的两个网络层(例如&#xff0c;两个IP层)的实体能够通过协商知道或能够配置彼此的网络层地址</strong>。协商的算法应尽可能简单&#xff0c;并且能够在所有的情况下得出协商结果。这对拨号连接的链路特别重要&#xff0c;因为如果仅仅在链路层建立了连接而不知道对方网络层地址&#xff0c;则还不能够保证网络层可以传送分组。</li><li><strong>数据压缩协商</strong>&#xff0c;PPP协议必须提供一种方法来协商使用数据压缩算法。但PPP协议并不要求将数据压缩算法进行标准化。</li></ul>
+<p>只有具备了以上特征&#xff0c;才能稳定的为数据链路层服务。</p>
+<h4><a rel="noopener noreferrer" id="PPP_67"></a>PPP协议的组成部分</h4>
+<p>PPP协议由以下三部分组成&#xff1a;</p>
+<ul><li><strong>一个将IP数据报封装到串行链路的方法</strong>。PPP既支持异步链路(无奇偶检验的8比特数据)&#xff0c;也支持面向比特的同步链路。IP数据报在PPP帧中就是其信息部分。这个信息部分的长度受最大传送单元MTU的限制。</li><li><strong>一个用来建立、配置和测试数据链路连接的链路控制协议LCP</strong> (Link Control Protocol)。通信的双方可协商一些选项。在RFC 1661中定义了11种类型的LCP分组。</li><li><strong>一套网络控制协议NCP</strong> (Network Control Protocol)。其中的每一个协议支持不同的网络层协议&#xff0c;如IP, OSI的网络层、DECnet&#xff0c;以及AppleTalk等。</li></ul>
+<p>第一个是为了满足传输的基础特性&#xff0c;向下管理【针对物理层】&#xff0c;第二个是为了能很好的管理链路&#xff0c;水平管理【针对本层】&#xff0c;第三个是为了能很好的向上管理【针对网络层】。</p>
+<h4><a rel="noopener noreferrer" id="PPP_74"></a>PPP帧的格式</h4>
+<p><img alt="在这里插入图片描述" src="./posts/assets/77768804-06-c224b9c7a1.png" loading="lazy"><br />
+还是分为首部、尾部和可变长度来分别描述&#xff1a;</p>
+<ul><li>首部中的<strong>标志字段</strong> F(Flag) &#xff0c;规定为0x7E(符号0x表示它后面的字符是用十六进制表示的。十六进制的7E的二进制表示是01111110)&#xff0c;<strong>标志字段表示一个帧的开始</strong>。</li><li>首部中的<strong>地址字段</strong> A规定为0xFF(即11111111)。</li><li>首部中的<strong>控制字段</strong> C规定为0x03(即00000011)。</li></ul>
+<p>首部中的2字节的协议字段&#xff1a;</p>
+<ul><li>当协议字段为0x0021时&#xff0c;PPP帧的信息字段就是<strong>IP数据报。</strong></li><li>当协议字段为0xC021时&#xff0c;PPP帧的信息字段就是<strong>PPP链路控制协议LCP的数据</strong>。</li><li>当协议字段为0x8021时&#xff0c;PPP帧的信息字段就是<strong>网络层的控制数据</strong>。</li></ul>
+<p>尾部中的<strong>第一个字段(2字节)是使用CRC的帧检验序列FCS</strong> 。同样&#xff0c;尾部中的<strong>标志字段</strong> F(Flag) 就是帧结束的标志。</p>
+<h5><a rel="noopener noreferrer" id="_88"></a>字节填充</h5>
+<p>当<strong>信息字段中出现和标志字段一样的比特(0x7E)组合时&#xff0c;就必须采取一些措施使这种形式上和标志字段一样的比特组合不出现在信息字段中</strong>。当PPP使用异步传输时&#xff0c;它把转义符定义为0x7D(即01111101)&#xff0c;并使用字节填充&#xff0c;</p>
+<ul><li>把信息字段中出现的每一个0x7E字节转变成为2字节序列(0x7D,0x5E) 。</li><li>若信息字段中出现一个0x7D的字节(即出现了和转义字符一样的比特组合)&#xff0c;则把0x7D转变成为2字节序列(0x7D, 0x5D)。</li><li>若信息字段中出现ASCII码的控制字符(即数值小于0x20的字符)&#xff0c;则在该字符前面要加入一个0x7D字节&#xff0c;同时将该字符的编码加以改变。例如&#xff0c;出现0x03(在控制字符中是“传输结束”ETX)就要把它转变为2字节序列(0x7D, 0x23) 。</li></ul>
+<p>由于在发送端进行了字节填充&#xff0c;因此在链路上传送的信息字节数就超过了原来的信息字节数。但接收端在收到数据后再进行与发送端字节填充相反的变换&#xff0c;就可以正确地恢复出原来的信息。</p>
+<h5><a rel="noopener noreferrer" id="_96"></a>零比特填充</h5>
+<p>PPP协议用在SONET/SDH链路时&#xff0c;使用同步传输(一连串的比特连续传送)而不是异步传输(逐个字符地传送)。在这种情况下&#xff0c;PPP协议采用零比特填充方法来实现透明传输。如下图&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-07-bf9ccb277e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_100"></a>工作流程</h3>
+<p>PPP协议下的数据链路层整体工作方式为&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-08-39d051456c.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_103"></a>局域网</h3>
+<p>局域网最主要的特点是&#xff1a;网络为一个单位所拥有&#xff0c;且地理范围和站点数目均有限。局域网目前均使用<strong>以太网技术</strong>。局域网工作的层次跨越了<strong>数据链路层和物理层</strong>&#xff0c;计算机与局域网通信方式如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-09-2b281914b4.png" loading="lazy"></p>
+<p>其实这里提到的<strong>适配器</strong>就是网卡。由于现在计算机主板上都己经嵌入了这种适配器&#xff0c;不再使用单独的网卡了&#xff0c;因此使用适配器这个更准确的术语。适配器是工作在数据链路层的网络组件&#xff0c;是局域网中连接计算机和传输介质的接口&#xff0c;不仅能<strong>实现与局域网传输介质之间的物理连接和电信号匹配&#xff0c;还涉及帧的发送与接收、帧的封装与拆封、介质访问控制、数据的编码与解码以及数据缓存的功能等</strong></p>
+<h4><a rel="noopener noreferrer" id="MAC_110"></a>以太网的MAC层</h4>
+<p>在局域网中&#xff0c;硬<strong>件地址又称为物理地址或MAC地址(因为这种地址用在MAC帧中)</strong>。大家知道&#xff0c;在所有计算机系统的设计中&#xff0c;标识系统(identification system)都是一个核心问题。在标识系统中&#xff0c;地址就是识别某个系统的一个非常重要的标识符<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77768804-10-f5a6482e0a.png" loading="lazy"><br />
+IEEE 802标准为局域网规定了一种48位的全球地址(一般都简称为“地址”)&#xff0c;是指<strong>局域网上的每一台计算机中固化在适配器的ROM中的地址</strong></p>
+<h3><a rel="noopener noreferrer" id="_116"></a>网桥和交换机</h3>
+<p><strong>网桥</strong>&#xff08;Bridge)也称为桥接器&#xff0c;是<strong>连接两个局域网的存储转发设备&#xff0c;用它可以使完全具有相同或相似体系结构网络系统的连接&#xff0c;这样不但能扩展网络的距离或范围&#xff0c;而且可提高网络的性能、可靠性和安全性</strong>。网桥工作在OSI参考模型的数据链路层&#xff08;第二层&#xff09;&#xff0c;将两个LAN连起来&#xff0c;<font color="red"><strong>根据MAC地址来转发帧&#xff0c;可以看作一个“低层的路由器”</strong></font>&#xff08;路由器工作在网络层&#xff0c;根据网络地址如IP地址进行转发&#xff09;。</p>
+<p><strong>交换机</strong>是<strong>主导网络系统的集线设备</strong>&#xff0c;大部分交换机是在OSI参考模型的数据链路层&#xff08;第二层&#xff09;操作。</p>
+<p>如果把集线器看成一条内置的以太网总线&#xff0c;<strong>交换机就可以看做由多条总线构成交换矩阵的互联系统</strong>。每一个交换机端口对应着一条高出一个数量级的背板带宽总线&#xff08;Core Bus)&#xff0c;背板总线与一个交换引擎&#xff08;Switch Engining)相连接。不同端口间的数据包经背板总线进入交换引擎&#xff0c;通过存储转发、直通转发和准直通转发模式进行交换</p>

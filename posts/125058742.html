@@ -1,0 +1,133 @@
+<p>抽象类和接口经常在面试中被拿来对比&#xff0c;面试官通常要求你讲出二者的区别&#xff0c;由此我们往往会将注意力都集中在区别之中&#xff0c;而对这两个概念为什么出现&#xff0c;面向对象为什么会设计这两个概念认知的深度其实不够&#xff0c;我之前的一篇Blog&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/73089516" rel="nofollow"><strong>【Java SE基础 四】封装、继承、多态</strong></a>&#xff0c;里面从粗浅的角度提到了一些区别和联系&#xff0c;今天再次深入的厘清接口和抽象类为什么会有&#xff0c;分别应该在什么场景下使用。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>接口和抽象类定义</h2>
+<p>面向对象编程中&#xff0c;抽象类和接口是两个经常被用到的语法概念&#xff0c;<strong>是面向对象四大特性&#xff0c;以及很多设计模式、设计思想、设计原则编程实现的基础</strong>。比如&#xff0c;我们可以使用接口来实现面向对象的<font color="red"><strong>抽象特性、多态特性</strong></font>和基于接口而非实现的设计原则&#xff0c;使用抽象类来实现面向对象的<font color="red"><strong>继承特性、抽象特性</strong></font>和模板设计模式</p>
+<h3><a rel="noopener noreferrer" id="_4"></a>什么是抽象类</h3>
+<p>下面这段代码是一个比较典型的抽象类的使用场景&#xff08;模板设计模式&#xff09;。Logger 是一个记录日志的抽象类&#xff0c;FileLogger 和 MessageQueueLogger 继承 Logger&#xff0c;分别实现两种不同的日志记录方式&#xff1a;记录日志到文件中和记录日志到消息队列中。FileLogger 和 MessageQueueLogger 两个子类复用了父类 Logger 中的 name、enabled、minPermittedLevel 属性和 log() 方法&#xff0c;但因为这两个子类写日志的方式不同&#xff0c;它们又各自重写了父类中的 doLog() 方法</p>
+<pre><code class="prism language-java">
+<span class="token comment">// 抽象类</span>
+<span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">Logger</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token keyword">boolean</span> enabled<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token class-name">Level</span> minPermittedLevel<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Logger</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">,</span> <span class="token keyword">boolean</span> enabled<span class="token punctuation">,</span> <span class="token class-name">Level</span> minPermittedLevel<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>enabled <span class="token operator">&#61;</span> enabled<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>minPermittedLevel <span class="token operator">&#61;</span> minPermittedLevel<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">log</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">boolean</span> loggable <span class="token operator">&#61;</span> enabled <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>minPermittedLevel<span class="token punctuation">.</span><span class="token function">intValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;&#61;</span> level<span class="token punctuation">.</span><span class="token function">intValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>loggable<span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token function">doLog</span><span class="token punctuation">(</span>level<span class="token punctuation">,</span> message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">protected</span> <span class="token keyword">abstract</span> <span class="token keyword">void</span> <span class="token function">doLog</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 抽象类的子类&#xff1a;输出日志到文件</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FileLogger</span> <span class="token keyword">extends</span> <span class="token class-name">Logger</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">Writer</span> fileWriter<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">FileLogger</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">,</span> <span class="token keyword">boolean</span> enabled<span class="token punctuation">,</span> <span class="token class-name">Level</span> minPermittedLevel<span class="token punctuation">,</span> <span class="token class-name">String</span> filepath<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">super</span><span class="token punctuation">(</span>name<span class="token punctuation">,</span> enabled<span class="token punctuation">,</span> minPermittedLevel<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>fileWriter <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">FileWriter</span><span class="token punctuation">(</span>filepath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doLog</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> mesage<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 格式化level和message,输出到日志文件</span>
+    fileWriter<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 抽象类的子类: 输出日志到消息中间件(比如kafka)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageQueueLogger</span> <span class="token keyword">extends</span> <span class="token class-name">Logger</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">MessageQueueClient</span> msgQueueClient<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">MessageQueueLogger</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">,</span> <span class="token keyword">boolean</span> enabled<span class="token punctuation">,</span> <span class="token class-name">Level</span> minPermittedLevel<span class="token punctuation">,</span> <span class="token class-name">MessageQueueClient</span> msgQueueClient<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">super</span><span class="token punctuation">(</span>name<span class="token punctuation">,</span> enabled<span class="token punctuation">,</span> minPermittedLevel<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>msgQueueClient <span class="token operator">&#61;</span> msgQueueClient<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doLog</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> mesage<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 格式化level和message,输出到消息中间件</span>
+    msgQueueClient<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>通过上面的这个例子&#xff0c;我们来看一下&#xff0c;抽象类具有哪些特性。</p>
+<ul><li><strong>抽象类不允许被实例化&#xff0c;只能被继承</strong>。也就是说&#xff0c;你不能 new 一个抽象类的对象出来&#xff08;<code>Logger logger &#61; new Logger(...);</code> 会报编译错误&#xff09;</li><li><strong>抽象类可以包含属性和方法</strong>。方法既可以包含代码实现&#xff08;比如 Logger 中的 log() 方法&#xff09;&#xff0c;也可以不包含代码实现&#xff08;比如 Logger 中的 doLog() 方法&#xff09;。不包含代码实现的方法叫作抽象方法。</li><li><strong>非抽象子类继承抽象类&#xff0c;必须实现抽象类中的所有抽象方法</strong>。对应到例子代码中就是&#xff0c;所有继承 Logger 抽象类的子类&#xff0c;都必须重写 doLog() 方法。</li></ul>
+<p>以上是抽象类的核心特性&#xff0c;具体的一些修饰符设置可以参照之前的这篇blog&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/73089516" rel="nofollow"><strong>【Java SE基础 四】封装、继承、多态</strong></a></p>
+<h3><a rel="noopener noreferrer" id="_66"></a>什么是接口</h3>
+<p>再举一个例子&#xff0c;我们通过 Java 中的 interface 关键字定义一个 Filter 接口。AuthencationFilter 和 RateLimitFilter 是接口的两个实现类&#xff0c;分别实现了对 RPC 请求鉴权和限流的过滤功能</p>
+<pre><code class="prism language-java">
+<span class="token comment">// 接口</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">RpcRequest</span> req<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">RpcException</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 接口实现类&#xff1a;鉴权过滤器</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AuthencationFilter</span> <span class="token keyword">implements</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">RpcRequest</span> req<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">RpcException</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...鉴权逻辑..</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 接口实现类&#xff1a;限流过滤器</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RateLimitFilter</span> <span class="token keyword">implements</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">RpcRequest</span> req<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">RpcException</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...限流逻辑...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 过滤器使用Demo</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Application</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// filters.add(new AuthencationFilter());</span>
+  <span class="token comment">// filters.add(new RateLimitFilter());</span>
+  <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Filter</span><span class="token punctuation">&gt;</span></span> filters <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">handleRpcRequest</span><span class="token punctuation">(</span><span class="token class-name">RpcRequest</span> req<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Filter</span> filter <span class="token operator">:</span> filters<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        filter<span class="token punctuation">.</span><span class="token function">doFilter</span><span class="token punctuation">(</span>req<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">RpcException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token comment">// ...处理过滤结果...</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// ...省略其他处理逻辑...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这里也总结一下接口的三个核心特性&#xff1a;</p>
+<ul><li><strong>接口不能包含属性&#xff08;也就是成员变量&#xff09;</strong>&#xff0c;只能有类变量public static final&#xff0c;但一般也不使用</li><li><strong>接口只能声明方法&#xff0c;方法不能包含代码实现</strong>。即使1.8之后有默认方法default&#xff0c;但也并非接口设计的本意&#xff0c;只是为了兼容考虑</li><li><strong>类实现接口的时候&#xff0c;必须实现接口中声明的所有方法</strong>。</li></ul>
+<p>那么接口和抽象类的区别是什么呢&#xff1f;</p>
+<h3><a rel="noopener noreferrer" id="_113"></a>抽象类和接口的区别</h3>
+<p>接口和抽象类的区别语法层面上可以参照&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/73089516" rel="nofollow"><strong>【Java SE基础 四】封装、继承、多态</strong></a>&#xff0c;这里想说的重点是从它们产生的设计角度来看&#xff1a;抽象类实际上就是类&#xff0c;只不过是一种特殊的类&#xff0c;这种类不能被实例化为对象&#xff0c;只能被子类继承。我们知道&#xff0c;<font color="red"><strong>继承关系是一种 is-a 的关系&#xff0c;那抽象类既然属于类&#xff0c;也表示一种 is-a 的关系。相对于抽象类的 is-a 关系来说&#xff0c;接口表示一种 has-a 关系&#xff0c;表示具有某些功能。对于接口&#xff0c;有一个更加形象的叫法&#xff0c;那就是协议&#xff08;contract&#xff09;</strong></font>&#xff0c;这个层面的区分才是接口和抽象类的本质区别</p>
+<h2><a rel="noopener noreferrer" id="_116"></a>抽象类和接口存在的意义</h2>
+<p>我们追更溯源&#xff0c;从它们存在的意义来探究。</p>
+<h3><a rel="noopener noreferrer" id="_118"></a>为什么需要抽象类</h3>
+<p>我们先来看看如果没有抽象类用普通类实现Logger会有什么问题&#xff0c;我们不再把doLog方法定义为抽象方法&#xff0c;而是一个空实现的成员方法。这样依然可以实现代码复用和多态特性</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Logger</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ...省略部分代码...</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doLog</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> mesage<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token comment">// do nothing... }</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FileLogger</span> <span class="token keyword">extends</span> <span class="token class-name">Logger</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ...省略部分代码...</span>
+  <span class="token annotation punctuation">&#64;Override</span>  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doLog</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> mesage<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 格式化level和message,输出到日志文件    fileWriter.write(...);  }</span>
+  <span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageQueueLogger</span> <span class="token keyword">extends</span> <span class="token class-name">Logger</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ...省略部分代码...</span>
+   <span class="token annotation punctuation">&#64;Override</span>  <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doLog</span><span class="token punctuation">(</span><span class="token class-name">Level</span> level<span class="token punctuation">,</span> <span class="token class-name">String</span> mesage<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+   <span class="token comment">// 格式化level和message,输出到消息中间件    msgQueueClient.send(...);  }</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>但是存在以下问题&#xff1a;</p>
+<ul><li>在 Logger 中定义一个空的方法&#xff0c;会影响代码的可读性。如果我们不熟悉 Logger 背后的设计思想&#xff0c;代码注释又不怎么给力&#xff0c;我们在阅读 Logger 代码的时候&#xff0c;就可能对为什么定义一个空的 doLog() 方法而感到疑惑&#xff0c;需要查看 Logger、FileLogger、MessageQueueLogger 之间的继承关系&#xff0c;才能弄明白其设计意图。</li><li>当创建一个新的子类继承 Logger 父类的时候&#xff0c;我们有可能会忘记重新实现 doLog() 方法。之前基于抽象类的设计思路&#xff0c;编译器会强制要求子类重写 doLog() 方法&#xff0c;否则会报编译错误。你可能会说&#xff0c;我既然要定义一个新的 Logger 子类&#xff0c;怎么会忘记重新实现 log() 方法呢&#xff1f;我们举的例子比较简单&#xff0c;Logger 中的方法不多&#xff0c;代码行数也很少。但是&#xff0c;如果 Logger 有几百行&#xff0c;有 n 多方法&#xff0c;除非你对 Logger 的设计非常熟悉&#xff0c;否则忘记重新实现 log() 方法&#xff0c;也不是不可能的。</li><li>Logger 可以被实例化&#xff0c;换句话说&#xff0c;我们可以 new 一个 Logger 出来&#xff0c;并且调用空的 doLog() 方法。这也增加了类被误用的风险。当然&#xff0c;这个问题可以通过设置私有的构造函数的方式来解决。不过&#xff0c;显然没有通过抽象类来的优雅。</li></ul>
+<p>基于以上原因&#xff0c;抽象类其实是有区别与普通类它独特的作用的&#xff0c;<strong>去掉无意义的方法实现、优雅的实现多态&#xff0c;以及保留继承的代码复用能力</strong>。总的来说抽象类是一种特殊的类&#xff0c;所以类具备的特性它都具备&#xff0c;这个就不详细展开&#xff0c;我们为什么要设计抽象类呢&#xff1f;结合抽象类的特性&#xff0c;它必须被子类继承才能实例化&#xff0c;所以要想使用抽象类一定会用到<font color="red"><strong>继承的特性&#xff0c;也就是解决代码复用的问题</strong></font>&#xff1b;子类要想实例化必须实现抽象方法&#xff0c;这样其实就起到一个强制子类都实现抽象方法的作用&#xff0c;如果某个类想管理强制所有子类都实现某个方法&#xff0c;那么这个类定义成抽象类&#xff0c;方法定义为抽象方法就能很方便的起到这个强制实现的作用&#xff0c;<strong>防止编写子类代码时忘记实现这个方法</strong>&#xff0c;而且还顺便实现了<strong>多态的特性</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_144"></a>为什么需要接口</h3>
+<p>抽象类更多的是为了代码复用&#xff0c;而接口就更侧重于<font color="red"><strong>解耦</strong></font>。接口是对行为的一种抽象&#xff0c;相当于一组协议或者契约&#xff0c;你可以联想类比一下 API 接口。调用者只需要关注抽象的接口&#xff0c;不需要了解具体的实现&#xff0c;具体的实现代码对调用者透明。<strong>接口实现了约定和实现相分离&#xff0c;可以降低代码间的耦合性&#xff0c;提高代码的可扩展性</strong></p>
+<h3><a rel="noopener noreferrer" id="_146"></a>抽象类和接口的应用场景</h3>
+<p>在要优雅实现多态的前提下&#xff0c;如果要表示一种 is-a 的关系&#xff0c;并且是为了解决代码复用问题&#xff0c;我们就用抽象类&#xff1b;如果要表示一种 has-a 关系&#xff0c;并且是为了解决抽象而非代码复用问题&#xff0c;那我们就用接口</p>
+<h2><a rel="noopener noreferrer" id="_148"></a>总结一下</h2>
+<p>抽象类是对成员变量和方法的抽象&#xff0c;是一种 is-a 关系&#xff0c;是为了解决代码复用问题。接口仅仅是对方法的抽象&#xff0c;是一种 has-a 关系&#xff0c;表示具有某一组行为特性&#xff0c;是为了解决解耦问题&#xff0c;隔离接口和具体的实现&#xff0c;提高代码的扩展性。如果要表示一种 is-a 的关系&#xff0c;并且是为了解决代码复用问题&#xff0c;我们就用抽象类&#xff1b;如果要表示一种 has-a 关系&#xff0c;并且是为了解决抽象而非代码复用问题&#xff0c;那我们就用接口。总的来看&#xff0c;抽象类更像是介于普通类和接口直接&#xff0c;既可以代码复用&#xff0c;又可以优雅的实现多态。</p>

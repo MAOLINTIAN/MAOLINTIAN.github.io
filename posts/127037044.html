@@ -1,0 +1,110 @@
+<p>最近趁着学习劲头足&#xff0c;如饥似渴的把代码重构部分也学习完了&#xff0c;可以说9月份属实非常充实&#xff0c;貌似也只有学习才能导致生活没有那么无聊。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>代码重构博客目录</h2>
+<table><thead><tr><th>序号</th><th align="left">文章列表</th></tr></thead><tbody><tr><td>1</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126942535?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 规范与重构】 一 重构的目的、内容、时机、方法</strong></a></td></tr><tr><td>2</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126965540?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 规范与重构】 二 重构的保障&#xff1a;单元测试&#xff0c;以及如何提高代码可测试性</strong></a></td></tr><tr><td>3</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/127001149?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 规范与重构】 三 大型重构的手段&#xff1a;高内聚&#xff0c;低耦合</strong></a></td></tr><tr><td>4</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/127024008?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 规范与重构】 四 小型重构的手段&#xff1a;规范的十五条军规</strong></a></td></tr><tr><td>5</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/127027308?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 规范与重构】 五 重构实战&#xff1a;基于ID生成器case</strong></a></td></tr></tbody></table>
+<p>文章的结构如下<br /> <img alt="在这里插入图片描述" src="./posts/assets/127037044-01-e051079e86.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_12"></a>代码重构重点内容</h2>
+<p>对这部分的学习内容做个小结</p>
+<h3><a rel="noopener noreferrer" id="_14"></a>重构的目的、内容、时机、方法</h3>
+<blockquote>
+ <p><strong>什么是重构</strong></p>
+</blockquote>
+<p><font color="red"><strong>重构是一种对软件内部结构的改善&#xff0c;目的是在不改变软件的可见行为的情况下&#xff0c;使其更易理解&#xff0c;修改成本更低</strong></font>&#xff0c;这段定义可以理解为<font color="red"><strong>在保持功能不变的前提下&#xff0c;利用设计思想、原则、模式、编程规范等理论来优化代码&#xff0c;修改设计上的不足&#xff0c;提高代码质量</strong></font>&#xff0c;其中提高代码质量也就是提高代码的 <font color="red"><strong>可读性、可扩展性、可维护性、可重复性、简洁性、灵活性、可测试性</strong></font></p>
+<blockquote>
+ <p><strong>重构的目的&#xff0c;为什么重构</strong></p>
+</blockquote>
+<ul><li>对于项目来言&#xff0c;重构可以<strong>保持代码质量持续处于一个可控状态</strong>&#xff0c;不至于腐化到无可救药的地步。</li><li>对于个人而言&#xff0c;重构非常<strong>锻炼一个人的代码能力</strong>&#xff0c;并且是一件非常有成就感的事情。它是经典设计思想、原则、模式、编程规范等理论知识的练兵场</li></ul>
+<blockquote>
+ <p><strong>重构的内容</strong></p>
+</blockquote>
+<p>根据重构的规模&#xff0c;可以笼统地分为<strong>大规模高层次重构</strong>&#xff08;以下简称为“大型重构”&#xff09;和<strong>小规模低层次的重构</strong>&#xff08;以下简称为“小型重构”&#xff09;</p>
+<ul><li>大型重构指的是<strong>对顶层代码设计的重构</strong>&#xff0c;包括&#xff1a;<font color="red"><strong>系统、模块、代码结构、类与类之间的关系等的重构</strong></font>&#xff0c;这类重构涉及的代码改动会比较多&#xff0c;影响面会比较大&#xff0c;所以难度也较大&#xff0c;耗时会比较长&#xff0c;引入 bug 的风险也会相对比较大
+  <ul><li>重构的手段&#xff1a;<strong>分层、模块化、解耦、抽象可复用组件</strong>等等。</li><li>重构的工具: <strong>设计思想、设计原则和设计模式</strong>。</li></ul> </li><li>小型重构指的是<strong>对代码细节的重构</strong>&#xff0c;包括<font color="red"><strong>类、函数、变量等代码级别的重构&#xff0c;比如规范命名、规范注释、消除超大类或函数、提取重复代码</strong></font>等等。这类重构要修改的地方比较集中&#xff0c;比较简单&#xff0c;可操作性较强&#xff0c;耗时会比较短&#xff0c;引入 bug 的风险相对来说也会比较小
+  <ul><li>重构的手段&#xff1a;<strong>编码规范</strong>。</li></ul> </li></ul>
+<p>大型重构需要系统化的解决&#xff0c;小型重构自己平时随见随改</p>
+<blockquote>
+ <p><strong>重构的时机</strong></p>
+</blockquote>
+<p>建立<font color="red"><strong>持续重构意识&#xff0c;把重构作为开发必不可少的部分&#xff0c;融入到日常开发中</strong></font></p>
+<blockquote>
+ <p><strong>重构的方法</strong></p>
+</blockquote>
+<p>大规模高层次的重构难度比较大&#xff0c;需要有组织、有计划地进行&#xff0c;分阶段地小步快跑&#xff0c;时刻保持代码处于一个可运行的状态。而小规模低层次的重构&#xff0c;因为影响范围小&#xff0c;改动耗时短&#xff0c;所以&#xff0c;只要愿意并且有时间&#xff0c;随时随地都可以去做</p>
+<h3><a rel="noopener noreferrer" id="_41"></a>重构的保障&#xff1a;单元测试&#xff0c;以及如何提高代码可测试性</h3>
+<p>关于单元测试和代码可测试性的核心内容</p>
+<blockquote>
+ <p><strong>什么是单元测试</strong></p>
+</blockquote>
+<p>单元测试是代码层面的测试&#xff0c;用于测试编写的代码的逻辑正确性。单元测试的测试对象是<strong>类或者函数&#xff0c;用来测试一个类和函数是否都按照预期的逻辑执行。这是代码层级的测试</strong></p>
+<blockquote>
+ <p><strong>写单元测试的好处</strong></p>
+</blockquote>
+<p>单元测试能<strong>有效地发现代码中的 Bug、代码设计上的问题</strong>。写单元测试的过程本身就是代码重构的过程。单元测试是对集成测试的有力补充&#xff0c;能帮助我们快速熟悉代码&#xff0c;是 TDD 可落地执行的折中方案</p>
+<blockquote>
+ <p><strong>如何编写单元测试</strong></p>
+</blockquote>
+<p>写单元测试就是针对代码设计覆盖各种输入、异常、边界条件的测试用例&#xff0c;并将其翻译成代码的过程。可以利用一些测试框架来简化测试代码的编写。对于单元测试需要建立以下正确的认知&#xff1a;</p>
+<ul><li>编写单元测试尽管繁琐&#xff0c;但并不是太耗时&#xff1b;</li><li>可以稍微放低单元测试的质量要求&#xff1b;</li><li>覆盖率作为衡量单元测试好坏的唯一标准是不合理的&#xff1b;</li><li>写单元测试一般不需要了解代码的实现逻辑&#xff1b;</li><li>单元测试框架无法测试多半是代码的可测试性不好。</li></ul>
+<blockquote>
+ <p><strong>单元测试为何难落地执行</strong></p>
+</blockquote>
+<ul><li>写单元测试本身比较繁琐&#xff0c;技术挑战不大&#xff0c;很多程序员不愿意去写。</li><li>研发比较偏向“快糙猛”&#xff0c;容易因为开发进度紧&#xff0c;导致单元测试的执行虎头蛇尾</li><li>没有建立对单元测试的正确认识&#xff0c;觉得可有可无&#xff0c;单靠督促很难执行得很好。</li></ul>
+<blockquote>
+ <p><strong>什么是代码的可测试性</strong></p>
+</blockquote>
+<p>粗略地讲&#xff0c;所谓<strong>代码的可测试性&#xff0c;就是针对代码编写单元测试的难易程度</strong>。对于一段代码&#xff0c;如果很难为其编写单元测试&#xff0c;或者单元测试写起来很费劲&#xff0c;需要依靠单元测试框架很高级的特性&#xff0c;那往往就意味着代码设计得不够合理&#xff0c;代码的可测试性不好</p>
+<blockquote>
+ <p><strong>编写可测试性代码的最有效手段</strong></p>
+</blockquote>
+<p><strong>依赖注入是编写可测试性代码的最有效手段</strong>。通过依赖注入编写单元测试代码的时候&#xff0c;可以通过 mock 的方法将不可控的依赖变得可控&#xff0c;这也是编写单元测试的过程中最有技术挑战的地方。除了 mock 方式&#xff0c;还可以利用二次封装来解决某些代码行为不可控的情况。</p>
+<blockquote>
+ <p><strong>典型的、常见的测试不友好的代码</strong></p>
+</blockquote>
+<p><strong>代码中包含未决行为逻辑&#xff1b;滥用可变全局变量&#xff1b;滥用静态方法&#xff1b;使用复杂的继承关系&#xff1b;高度耦合的代码</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_79"></a>大型重构的手段&#xff1a;高内聚&#xff0c;低耦合</h3>
+<p>关于解耦的相关核心内容</p>
+<blockquote>
+ <p><strong>解耦为何如此重要</strong></p>
+</blockquote>
+<p><strong>过于复杂的代码往往在可读性、可维护性上都不友好。解耦&#xff0c;保证代码松耦合、高内聚&#xff0c;是控制代码复杂度的有效手段</strong>。如果代码高内聚、松耦合&#xff0c;也就是意味着&#xff0c;代码结构清晰、分层、模块化合理、依赖关系简单、模块或类之间的耦合小&#xff0c;那代码整体的质量就不会差。</p>
+<blockquote>
+ <p><strong>代码是否需要解耦</strong></p>
+</blockquote>
+<ul><li>间接的衡量标准有很多&#xff0c;比如&#xff1a;改动一个模块或类的代码受影响的模块或类是否有很多、改动一个模块或者类的代码依赖的模块或者类是否需要改动、代码的可测试性是否好等等。</li><li>直接的衡量标准是<strong>把模块与模块之间及其类与类之间的依赖关系画出来</strong>&#xff0c;根据依赖关系图的复杂性来判断是否需要解耦重构</li></ul>
+<blockquote>
+ <p><strong>如何给代码解耦</strong></p>
+</blockquote>
+<p>给代码解耦的方法有&#xff1a;<strong>封装与抽象、中间层、模块化&#xff0c;以及一些其他的设计思想与原则和设计模式</strong>&#xff0c;比如&#xff1a;<strong>单一职责原则、基于接口而非实现编程、依赖注入、多用组合少用继承、迪米特法则</strong>。设计模式比如<strong>观察者模式</strong></p>
+<h3><a rel="noopener noreferrer" id="_95"></a>小型重构的手段&#xff1a;规范的十五条军规</h3>
+<p>关于编程规范的核心内容</p>
+<blockquote>
+ <p><strong>命名与注释</strong></p>
+</blockquote>
+<ol><li><strong>命名的关键是能准确的达意</strong>。对于不同作用域的命名&#xff0c;可以适当的选择不同的长度&#xff0c;作用域小的命名&#xff0c;比如临时变量等&#xff0c;可以适当的选择短一些的命名方式。除此之外&#xff0c;命名中个也可以使用一些耳熟能详的缩写。</li><li><strong>借助类的信息来简化属性、函数的命名&#xff0c;利用函数的信息来简化函数参数的命名</strong>。</li><li><strong>命名要可读、可搜索</strong>。不要使用生僻的、不好读的英文单词来命名。除此之外&#xff0c;命名要符合项目的统一规范&#xff0c;也不要用些反直觉的命名。</li><li><strong>接口有两种命名方式</strong>。一种是在接口中带前缀&#34;I&#34;&#xff0c;另一种是在接口的实现类中带后缀“Impl”。两种命名方式都可以&#xff0c;关键是要在项目中统一。对于抽象类的命名&#xff0c;更倾向于带有前缀“Abstract”。</li><li><strong>注释的目的就是让代码更容易看懂</strong>&#xff0c;只要符合这个要求&#xff0c;你就可以写。总结一下的话&#xff0c;注释主要包含这样三个方面的内容&#xff1a;<strong>做什么、为什么、怎么做</strong>。对于一些复杂的类和接口&#xff0c;可能还需要写明“<strong>如何用</strong>”。</li><li><strong>注释本身有一定的维护成本&#xff0c;所以并非越多越好</strong>。类和函数一定要写注释&#xff0c;而且要写的尽可能全面详细些&#xff0c;而函数内部的注释会相对少一些&#xff0c;一般都是靠<strong>好的命名和提炼函数、解释性变量、总结性注释来做到代码易读。</strong></li></ol>
+<blockquote>
+ <p><strong>代码风格</strong></p>
+</blockquote>
+<p>代码风格都没有对错和优劣之分&#xff0c;不同的编程语言风格都不太一样&#xff0c;只要能在团队、项目中统一即可</p>
+<ol><li><strong>类、函数多大才合适</strong>&#xff1a;对于函数代码行数的最大限制&#xff1a;最好不要超过50行&#xff1b;对于类的代码行数的最大限制&#xff1a;<font color="red"><strong>当一个类的代码读起来让你感觉头大了&#xff0c;实现某个功能时不知道该用哪个函数了&#xff0c;想用哪个函数翻半天都找不到了&#xff0c;只用到类的一个小功能要引入整个类&#xff08;类中包含很多无关此功能实现的函数&#xff09;的时候</strong></font>&#xff0c;这就说明类的行数过多了</li><li><strong>一行代码多长最合适</strong>&#xff0c;<font color="red"><strong>一行代码最长不能超过 IDE 显示的宽度</strong></font>。需要滚动鼠标才能查看一行的全部代码&#xff0c;显然不利于代码的阅读</li><li><strong>善用空行分割单元块</strong>&#xff0c;对于比较长的函数&#xff0c;<strong>如果逻辑上可以分为几个独立的代码块&#xff0c;在不方便将这些独立的代码块抽取成小函数的情况下&#xff0c;为了让逻辑更加清晰</strong>&#xff0c;除了<font color="red"><strong>用总结性注释的方法之外&#xff0c;还可以使用空行来分割各个代码块</strong></font></li><li><strong>类中成员的排列顺序</strong>&#xff0c;常用的排序规则如下&#xff1a;
+  <ul><li>在类中&#xff0c;成员变量排在函数的前面。</li><li>成员变量之间或函数之间&#xff0c;都是按照<font color="red"><strong>先静态&#xff08;静态函数或静态成员变量&#xff09;、后普通&#xff08;非静态函数或非静态成员变量</strong></font>的方式来排列</li><li>成员变量之间或函数之间&#xff0c;还会<font color="red"><strong>按照作用域范围从大到小的顺序来排列</strong></font>&#xff0c;先写 public 成员变量或函数&#xff0c;然后是 protected 的&#xff0c;最后是 private 的</li></ul> </li></ol>
+<blockquote>
+ <p><strong>编程技巧</strong></p>
+</blockquote>
+<p>掌握一些使用的编程技巧</p>
+<ol><li> <p><strong>把代码分割成更小的单元块</strong>&#xff0c;大段的代码逻辑会让阅读代码的人不至于迷失在细节中&#xff0c;要善于将代码拆分&#xff0c;需要注意</p>
+  <ul><li><strong>写代码时要有模块化和抽象思维</strong>&#xff0c;善于将大块的复杂逻辑提炼成类或者函数&#xff0c;屏蔽掉细节&#xff0c;这样能极大地提高代码的可读性。</li><li><font color="red"><strong>只有代码逻辑比较复杂的时候&#xff0c;才建议提炼类或者函数</strong></font>。毕竟如果提炼出的函数只包含两三行代码&#xff0c;在阅读代码的时候&#xff0c;还得跳过去看一下&#xff0c;这样反倒增加了阅读成本。我就非常容易在这里矫枉过正。</li></ul> </li><li> <p><strong>避免函数参数过多</strong>&#xff0c;函数包含 4 个以内参数的时候还是能接受的&#xff0c;大于等于 5 个的时候&#xff0c;会影响到代码的可读性&#xff0c;解决方法有两种</p>
+  <ul><li><font color="red"><strong>考虑函数是否职责单一&#xff0c;是否能通过拆分成多个函数的方式来减少参数</strong></font></li><li><strong>将函数的参数封装成对象</strong>&#xff0c;这样可以动态添加参数&#xff0c;如果函数是对外暴露的远程接口&#xff0c;将参数封装成对象&#xff0c;还可以提高接口的兼容性&#xff0c;不需要改接口定义&#xff0c;只改对应参数</li></ul> </li><li> <p><strong>勿用函数参数来控制逻辑</strong>&#xff0c;<font color="red"><strong>不要在函数中使用【布尔类型的标识参数】或者【根据参数是否为 null】</strong></font>来控制内部逻辑&#xff0c;true 的时候走这块逻辑&#xff0c;false 的时候走另一块逻辑&#xff0c;这明显违背了单一职责原则和接口隔离原则。建议将其拆成<strong>两个函数</strong>&#xff0c;拆分之后的函数职责更明确&#xff0c;不容易用错&#xff0c;可读性上也要更好。</p>
+  <ul><li>鉴于大多数场景使用标识是因为可能按照标识拆分后的两个函数大多数代码会重复&#xff0c;所以可以将这部分重复逻辑抽取为一个单独的函数&#xff0c;这种解决方式比标识更好一些。</li></ul> </li><li> <p><strong>函数设计要职责单一</strong>&#xff0c;SRP针对的是类、模块这样的应用对象。实际上&#xff0c;对于函数的设计来说&#xff0c;更要满足单一职责原则。相对于类和模块&#xff0c;函数的粒度比较小&#xff0c;代码行数少&#xff0c;所以在应用单一职责原则的时候&#xff0c;没有像应用到类或者模块那样模棱两可&#xff0c;<strong>能多单一就多单一</strong></p> </li><li> <p><strong>移除过深的嵌套层次</strong>&#xff0c;嵌套最好不超过两层&#xff0c;超过两层之后就要思考一下是否可以减少嵌套。过深的嵌套本身理解起来就比较费劲</p>
+  <ul><li>解决嵌套问题最好的方式就是<font color="red"><strong>校验前置&#xff0c;也就是防卫式编程&#xff0c;使用编程语言提供的 continue、break、return 关键字&#xff0c;在不满足条件时退出&#xff0c;而不是满足条件时继续</strong></font></li></ul> </li><li> <p><strong>学会使用解释性变量</strong>&#xff0c;例如<font color="red"><strong>常量取代魔法数字&#xff1b;解释性变量来解释复杂表达式</strong></font>&#xff0c;也就是把复杂判断条件总结为带有判断目的命名的变量</p> </li></ol>
+<h3><a rel="noopener noreferrer" id="_136"></a>如何进行代码重构</h3>
+<p>代码重构的关键知识&#xff0c;重构主要是先进行代码诊断再进行代码重构&#xff0c;重点关注诊断List</p>
+<blockquote>
+ <p><strong>常规CheckList</strong></p>
+</blockquote>
+<ol><li><strong>目录设置是否合理、模块划分是否清晰、代码结构是否合理</strong>&#xff0c;<font color="red"><strong>整体结构考虑OK么</strong>&#xff1f;</font></li><li><strong>是否遵循经典的设计原则&#xff08;SOLID、DRY、KISS、YAGNI、LOD&#xff09;、设计思想&#xff08;封装、继承、抽象、多态、控制反转、高内聚-松耦合、基于接口而非实现编程&#xff0c;多用组合少用继承&#xff09;</strong>&#xff0c;<strong>设计模式是否应用得当&#xff0c;是否有过度设计</strong>&#xff0c;<font color="red"><strong>有明显违反理论的地方么</strong>&#xff1f;</font></li><li><strong>代码是否容易扩展&#xff0c;如果要添加新功能&#xff0c;是否容易实现</strong>&#xff0c;<font color="red"><strong>好改么&#xff0c;好加功能么</strong>&#xff1f;</font></li><li><strong>代码是否可以复用&#xff0c;是否可以复用已有的项目代码或类库&#xff1f;是否有重复造轮子&#xff08;违反DRY&#xff09;</strong>&#xff0c;<font color="red"><strong>能抽出来么&#xff0c;通用么</strong>&#xff1f;</font></li><li><strong>代码是否容易测试&#xff0c;单元测试是否全面覆盖了各种正常和异常的情况</strong>&#xff0c;<font color="red"><strong>好测试么&#xff0c;mock难度高么</strong>&#xff1f;</font></li><li><strong>代码是否易读&#xff0c;是否符合编码规范&#xff08;比如命名和注释是否恰当、代码风格是否一致等&#xff09;</strong>&#xff0c;<font color="red"><strong>命名注释ok么&#xff0c;代码风格和编码技巧ok么</strong>&#xff1f;</font></li></ol>
+<blockquote>
+ <p><strong>业务CheckList</strong></p>
+</blockquote>
+<ol><li>代码是否实现了预期的业务需求&#xff0c;<font color="red"><strong>功能满足么</strong>&#xff1f;</font></li><li>逻辑是否正确&#xff0c;是否处理了各种异常情况&#xff0c;<font color="red"><strong>异常情况都hold住么&#xff0c;异常抛出方式合理么</strong>&#xff1f;</font></li><li>日志打印是否得当&#xff0c;是否方便 debug 排查问题&#xff0c;<font color="red"><strong>好查问题么</strong>&#xff1f;</font></li><li>接口是否易用&#xff0c;是否支持幂等、事务等&#xff0c;<font color="red"><strong>简明稳定么&#xff0c;可以重复调用么</strong>&#xff1f;</font></li><li>代码是否存在并发问题&#xff0c;是否线程安全&#xff0c;<font color="red"><strong>高并发下扛的住么</strong>&#xff1f;</font></li><li>性能是否有优化空间&#xff0c;比如&#xff0c;SQL、算法是否可以优化&#xff0c;<font color="red"><strong>性能还能更好么</strong>&#xff1f;</font></li><li>是否有安全漏洞&#xff0c;比如输入输出校验是否全面&#xff1f;<font color="red"><strong>质量高么&#xff0c;容易出错么</strong>&#xff1f;</font></li></ol>
+<p>有了诊断结果&#xff0c;就能对症下药&#xff0c;多轮重构&#xff0c;小步快跑搞定</p>
+<h2><a rel="noopener noreferrer" id="_159"></a>总结一下</h2>
+<p>代码重构实际上是设计思想、设计原则、设计模式、编程规范的一个练兵场&#xff0c;通过掌握这些知识&#xff0c;对代码存在的问题进行诊断&#xff0c;依据诊断结果进行重构&#xff0c;才能保证写出高质量有活力的代码&#xff01;</p>

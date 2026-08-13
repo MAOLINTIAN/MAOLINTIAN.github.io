@@ -1,0 +1,70 @@
+<p>基于前两篇blog对<a href="https://tianmaolin.blog.csdn.net/article/details/112210179" rel="nofollow">【MySQL数据库原理 二】MySQL日志系统与事务</a>和<a href="https://tianmaolin.blog.csdn.net/article/details/112341430" rel="nofollow">【MySQL数据库原理 三】MySQL如何保证数据安全可靠</a>对日志系统做一个串联性的描述&#xff0c;从为什么需要使用开始讲起一直到日志是如何满足MySQL的安全可靠的。为了方便把前面的知识串联起来&#xff0c;我画了一个流程图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-01-a6ac21b988.png" loading="lazy"><br /> 循着这个路线正序的提取下日志部分的知识精华。</p>
+<h3><a rel="noopener noreferrer" id="_4"></a>为什么要用日志</h3>
+<p>日志有三方面的作用&#xff0c;分别是<strong>WAL机制、备份归档</strong>以及<strong>crash-safe能力</strong>。一个个来说说它的好处&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="WAL_6"></a>WAL机制</h4>
+<p>WAL 的全称是 Write-Ahead Logging&#xff0c;它的关键点就是<strong>先写日志【log file on disk】&#xff0c;再写磁盘【Page on disk】</strong>。看定义貌似跑不掉写磁盘这一步&#xff0c;因为日志文件也存储在磁盘中。为啥WAL的写磁盘就快呢&#xff1f;</p>
+<ul><li>redo log 和 binlog 都是顺序写&#xff0c;<strong>磁盘的顺序写比随机写速度要快</strong>&#xff0c;到达一定时机会将日志中涉及的数据写到磁盘中的数据库。如果每一次的更新操作都需要写进磁盘&#xff0c;然后磁盘也要找到对应的那条记录&#xff0c;然后再更新&#xff0c;整个过程 IO 成本、查找成本都很高</li><li>组提交机制&#xff0c;积累一些buffer后一次性刷盘。可以大幅度降低磁盘的 IOPS 消耗&#xff08;IOPS (Input/Output Per Second)即每秒的输入输出量(或读写次数),是衡量磁盘性能的主要指标之一。IOPS是指单位时间内系统能处理的I/O请求数量&#xff09;&#xff0c;<strong>这样其实写日志【log file on disk】的次数也会少&#xff0c;可能一次写好几个事务</strong>。</li></ul>
+<p>其中IOPS (Input/Output Per Second)即每秒的输入输出量(或读写次数)&#xff0c;是衡量磁盘性能的主要指标之一&#xff0c;数值越小&#xff0c;说明IO占用越低。</p>
+<h4><a rel="noopener noreferrer" id="crashsafe_13"></a>crash-safe能力</h4>
+<p>crash-safe能力表示&#xff0c;即使<strong>数据库</strong>发生异常重启【可能是数据库进程掉电&#xff0c;也可能是主机掉电】&#xff0c;之前<strong>提交的记录</strong>&#xff0c;都不会丢失&#xff0c;也即<strong>已经提交&#xff08;commit&#xff09;成功的事务不会被丢失</strong>&#xff0c;可以通过持久化到磁盘的日志【log file on disk】&#43;持久化到磁盘的数据【Page on disk】来恢复&#xff0c;</p>
+<pre><code class="prism language-java">
+begin<span class="token punctuation">;</span>
+insert into t1 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+insert into t2 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+commit<span class="token punctuation">;</span>
+
+</code></pre>
+<p>举个例子&#xff0c;如果仅仅只有数据库&#xff0c;掉电的时候以上的第一个insert执行完中断&#xff0c;数据库中的数据就不是我们预想的了&#xff0c;满足不了事务的ACID特性。</p>
+<h4><a rel="noopener noreferrer" id="_25"></a>备份归档</h4>
+<p>数据库的备份和恢复依赖于<strong>日志</strong>和<strong>数据库的全量备份</strong>的&#xff0c;因为我们不能频繁的进行数据库的实时的全量备份&#xff0c;成本太大而且不易实现&#xff0c;所以定期的<strong>整库备份&#43;日志</strong>才是实现数据库安全稳定的王道</p>
+<h3><a rel="noopener noreferrer" id="_29"></a>日志如何满足</h3>
+<p>Redolog和Binlog可以满足以上提到的三个日志需要的功能。</p>
+<h4><a rel="noopener noreferrer" id="RedologBinlogWAL_31"></a>Redolog和Binlog实现WAL</h4>
+<p>其实无论是Redolog还是Binlog&#xff0c;都有WAL机制&#xff0c;也就是更新记录都会<strong>先落到磁盘上的日志文件上&#xff0c;并且更新内存中的数据页&#xff0c;等到合适的时机再刷数据落盘</strong>。具体而言有如下三个步骤&#xff1a;</p>
+<ul><li><strong>创建阶段</strong>&#xff1a;事务创建一条日志&#xff0c;并添加到日志缓存</li><li><strong>日志刷盘【log file on disk】</strong>&#xff1a;<strong>日志缓存</strong>经过<strong>文件系统缓存</strong>后写入到<strong>磁盘上的日志文件</strong>&#xff0c;并更新记录到内存中的数据页&#xff0c;使其变为脏页</li><li><strong>数据刷盘【Page on disk】</strong>&#xff1a;日志对应的脏页数据写入到磁盘上的数据文件</li><li><font color="red"><strong>更新checkpoint【Redo log特有】</strong></font>&#xff0c;<strong>RedoLog在数据刷盘之后还有一个步骤就是&#xff0c;也就是说redolog中的checkpoint前进方向区域一定是数据页还没落盘的提交&#xff0c;这样我们就能确定哪些数据即使事务commit也就是日志刷盘已经成功的状态下其实数据还没有刷盘</strong></li></ul>
+<p>commit主要就是在日志刷盘阶段&#xff0c;我们主要讨论下事务到产生到日志落盘为止的过程。</p>
+<h5><a rel="noopener noreferrer" id="Redolog_39"></a>Redolog写入机制</h5>
+<p>以下这几个步骤对应于整个事务数据落盘的前两步&#xff0c;也就是<strong>日志刷盘</strong>为止。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-02-928c473a52.png" loading="lazy"><br /> redo log 可能存在三种状态&#xff0c;这三种状态是依次写入的&#xff1a;</p>
+<ol><li>事务先写到 redo log buffer 中&#xff0c;物理上是在 MySQL 进程内存中&#xff0c;就是图中的红色部分&#xff1b;日志写到 redo log buffer 是很快的</li><li>写到磁盘 (write)&#xff0c;但是没有持久化&#xff08;fsync)&#xff0c;物理上是在文件系统的 page cache 里面&#xff0c;也就是图中的黄色部分【<strong>redo log file on FS cache</strong>】&#xff0c;wirte 到 page cache 也很快</li><li>持久化到磁盘&#xff0c;对应的是 hard disk&#xff0c;也就是图中的绿色部分【<strong>binlog file on disk</strong>】&#xff0c;fsync到磁盘的速度就慢多了</li></ol>
+<p>为了控制 redo log 的写入策略&#xff0c;InnoDB 提供了 <code>innodb_flush_log_at_trx_commit</code> 参数&#xff0c;它有三种可能取值&#xff1a;</p>
+<ul><li>设置为 0 的时候&#xff0c;表示每次事务提交时都只是把 redo log 留在 redo log buffer 中 &#xff0c;<strong>不管是主机掉电还是MySQL异常重启&#xff0c;都有丢数据的风险&#xff0c;风险高</strong></li><li>设置为 2 的时候&#xff0c;表示每次事务提交时都只是把 redo log 写到 page cache&#xff0c;写入文件系统的page cache&#xff0c;<strong>主机掉电后会丢数据&#xff0c;但是MySQL异常重启不会丢数据&#xff0c;风险较低&#xff0c;写入比较快</strong></li><li>设置为 1 的时候&#xff0c;表示每次事务提交时都将 redo log 直接持久化到磁盘&#xff0c;<strong>非常安全&#xff0c;但慢</strong>。</li></ul>
+<p>InnoDB 有一个后台线程&#xff0c;每隔 1 秒&#xff0c;就会把 <strong>redo log buffer 中的日志&#xff0c;调用 write 写到文件系统的 page cache&#xff0c;然后调用 fsync 持久化到磁盘</strong>。<font color="red"><strong>可以理解为innodb_flush_log_at_trx_commit三个设置对应每次事务写入到不同级别&#xff0c;而每隔一秒就会从最不稳定状态直接刷到最稳定状态</strong></font></p>
+<h5><a rel="noopener noreferrer" id="Binlog_55"></a>Binlog写入机制</h5>
+<p>事务执行过程中&#xff0c;<strong>先把日志写到 binlog cache&#xff0c;事务提交的时候&#xff0c;再把 binlog cache 写到 binlog 文件【文件系统缓存page cache】中</strong>。一个事务的 binlog 是不能被拆开的&#xff0c;因此不论这个事务多大&#xff0c;也要确保一次性写入。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-03-d7287ec094.png" loading="lazy"><br /> 系统给 binlog cache 分配了一片内存&#xff0c;每个线程一个&#xff0c;参数 <code>binlog_cache_size</code> 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小&#xff0c;就要暂存到磁盘。事务提交的时候&#xff0c;执行器把 binlog cache 里的完整事务写入到 binlog 中&#xff0c;并清空 binlog cache</p>
+<ol><li>事务先写到每个线程自己的 binlog cache&#xff0c;但是共用同一份 binlog 文件。</li><li>然后write&#xff0c;指的就是指把日志写入到文件系统的 page cache&#xff0c;并没有把数据持久化到磁盘&#xff0c;所以速度比较快【binlog file on FS cache】。</li><li>最后fsync&#xff0c;才是将数据持久化到磁盘的操作【binlog file on disk】</li></ol>
+<p>一般情况下&#xff0c;我们认为 fsync 才占磁盘的 IOPS。write 和 fsync 的时机&#xff0c;是由参数 <code>sync_binlog</code> 控制的&#xff1a;</p>
+<ul><li>sync_binlog&#61;0 的时候&#xff0c;<strong>表示每次提交事务都只 write&#xff0c;不 fsync</strong>&#xff1b;实际的业务场景中&#xff0c;考虑到丢失日志量的可控性&#xff0c;一般不建议将这个参数设成 0</li><li>sync_binlog&#61;1 的时候&#xff0c;<strong>表示每次提交事务都会执行 fsync&#xff1b;</strong></li><li>sync_binlog&#61;N(N&gt;1) 的时候&#xff0c;<strong>表示每次提交事务都 write&#xff0c;但累积 N 个事务后才 fsync</strong>。比较常见的是将其设置为 100~1000 中的某个数值。但是&#xff0c;将 sync_binlog 设置为 N&#xff0c;对应的风险是&#xff1a;如果<strong>主机</strong>发生异常重启&#xff0c;会丢失最近 N 个事务的 binlog 日志&#xff0c;<strong>主机都crash了&#xff0c;文件系统缓存里的日志当然也丢了&#xff0c;没法落盘</strong></li></ul>
+<p><font color="red"><strong>可以理解为sync_binlog等于几表明每几个事务发生一次fsync</strong></font>&#xff0c;因此&#xff0c;在出现 IO 瓶颈的场景里&#xff0c;将 sync_binlog 设置成一个比较大的值&#xff0c;可以提升性能。</p>
+<h4><a rel="noopener noreferrer" id="Redologcrashsafe_71"></a>Redolog实现crash-safe</h4>
+<p>为什么Redolog可以实现crash-safe而binlog不可以&#xff0c;因为RedoLog的特殊数据结构&#xff0c;RedoLog是循环写的&#xff0c;有特有的checkpoint。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-04-8e9ed565c5.png" loading="lazy"><br /> binglog是顺序写的&#xff0c;binlog 没有能力恢复“数据页”。如果MySQL 发生了 crash需要恢复&#xff08;恢复的过程就是将未刷盘的内存中的数据脏页恢复到内存中&#xff09;</p>
+<ul><li>binlog由于没有checkpoint所以可能虽然有N个事务已经commit&#xff0c;但数据页还没有落盘&#xff0c;依据binlog没有办法判断哪些事务的commit涉及的数据没有落盘&#xff0c;也就不知道该从哪里恢复</li><li><strong>redo log是循环写的&#xff0c;有checkpoint&#xff0c;通过checkpoint的移动位置可以确定哪些事务指向的数据脏页确实被刷盘了&#xff0c;只要刷入磁盘的数据&#xff0c;都会从 redo log 中抹掉</strong>&#xff0c;数据库重启后&#xff0c;直接把 redo log 中的数据都恢复至内存就可以了</li></ul>
+<p>如果真想使用binlog来恢复的话&#xff0c;那么就要在每个commit之前&#xff0c;将更改的内存记录刷盘。刷盘之后再将这个事务改为commit状态。 这样崩溃恢复就可以在事务级去做了&#xff0c;而不用在数据页级去做了&#xff0c;<strong>但是这样显然违背WAL技术【累计多个事务修改的数据页存储内存&#xff0c;一次刷盘来减少IOPS】的初衷</strong></p>
+<h4><a rel="noopener noreferrer" id="binlog_79"></a>binlog实现备份归档</h4>
+<p><strong>redo log 是循环写的&#xff0c;空间固定会用完&#xff0c;用完后会之前的记录会被覆盖&#xff1b;binlog 是可以追加写入的</strong>。“追加写”是指 binlog 文件写到一定大小后会切换到下一个&#xff0c;并不会覆盖以前的日志&#xff0c;所以归档使用追加写的binlog。</p>
+<h3><a rel="noopener noreferrer" id="Redo_logBinglog_82"></a>Redo log和Binglog存在意义</h3>
+<p>除了上述二者各自不可替代的功能外&#xff0c;他们还有一些必须存在的历史原因</p>
+<ul><li><strong>Binlog 是 MySQL 的 Server 层实现的&#xff0c;所有引擎都可以使用</strong>。<strong>binlog 作为 MySQL 一开始就有的功能&#xff0c;被用在了很多地方</strong>。其中&#xff0c;MySQL 系统高可用的基础&#xff0c;就是 binlog 复制。还有很多公司有异构系统&#xff08;比如一些数据分析系统&#xff09;&#xff0c;这些系统就靠消费 MySQL 的 binlog 来更新自己的数据。关掉 binlog 的话&#xff0c;这些下游系统就没法输入了。总之&#xff0c;由于现在包括 MySQL 高可用在内的很多系统机制都依赖于 binlog</li><li><strong>Redo log是 InnoDB 引擎特有的</strong>&#xff0c;可以实现crash-safe&#xff0c;因为这个能力&#xff0c;后续被当做了MySQL的默认引擎</li></ul>
+<p>所以因为有了Redo log的crash-safe&#xff0c;所以没必要再去做一个出来&#xff0c;而又因为Binlog比较早期&#xff0c;除了归档还在很多生态中被广泛使用&#xff0c;所以二者都不能被取代。只能并存&#xff0c;<font color="red"><strong>那么并存就有一个问题&#xff0c;我们需要保证这两份并存的日志是一致的&#xff01;</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_88"></a>两阶段提交机制</h3>
+<p>两阶段提交的顺序如下图所示&#xff0c;那么为什么要两阶段提交呢&#xff1f;前面我们讨论了两个日志各自存在的必要性&#xff0c;表明我们不能只用其中一种日志&#xff0c;而要结合使用&#xff0c;结合使用就一定要保证它两是一致的。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-05-8f4ae9c456.png" loading="lazy"><br /> 如果不用两阶段提交&#xff0c;要么就是先写完 redo log 再写 binlog&#xff0c;或者采用反过来的顺序。</p>
+<ul><li>先写 redo log 直接提交&#xff0c;然后写 binlog&#xff0c;假设写完 redo log 后&#xff0c;机器挂了&#xff0c;<strong>binlog 日志没有被写入&#xff0c;那么机器重启后&#xff0c;这台机器会通过 redo log 恢复数据&#xff0c;但是这个时候 binlog 并没有记录该数据&#xff0c;后续进行机器备份的时候&#xff0c;就会丢失这一条数据</strong>&#xff0c;同时主从同步也会丢失这一条数据。<font color="red"><strong>binlog丢&#xff0c;无法备份</strong></font></li><li>先写 binlog&#xff0c;然后写 redo log&#xff0c;假设写完了 binlog&#xff0c;机器异常重启了&#xff0c;由于 redo log 还没写&#xff0c;崩溃恢复以后这个事务无效。本机是无法恢复这一条记录的&#xff0c;但是 binlog 又有记录&#xff0c;那么和上面同样的道理&#xff0c;就会<strong>产生数据不一致的情况</strong>。<font color="red"><strong>binlog多一条事务执行记录&#xff0c;备份归档或主从同步时产生脏事务</strong></font></li></ul>
+<p>所以如果采用 redo log 两阶段提交的方式就不一样了&#xff0c;写完 binglog 后&#xff0c;然后再提交 redo log 就会防止出现上述的问题&#xff0c;从而保证了数据的一致性。采用这种方式再验证一下&#xff1a;</p>
+<ul><li>写redo log 预提交过程中&#xff0c;机器挂了&#xff0c;则回滚事务【时刻A】</li><li>写完redo log 预提交&#xff0c;并且<strong>写binglog过程中</strong> &#xff0c;机器挂了&#xff0c;则判断【时刻B】
+  <ul><li>如果 redo log 里面的事务是完整的&#xff0c;也就是已经有了 commit 标识&#xff0c;则直接提交【说明写完binlog了】</li><li><strong>如果 redo log 只是预提交但不是 commit 状态&#xff0c;这个时候就会去判断 binlog 是否完整&#xff0c;如果完整就提交 redo log, 不完整就回滚事务</strong></li></ul> </li></ul>
+<p>这样就解决了数据一致性的问题</p>
+<h3><a rel="noopener noreferrer" id="_102"></a>组提交策略</h3>
+<p>三个并发事务 (trx1, trx2, trx3) 在 prepare 阶段&#xff0c;都写完 redo log buffer&#xff0c;持久化到磁盘的过程&#xff0c;对应的 LSN 分别是 50、120 和 160<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-06-947953c1aa.png" loading="lazy"></p>
+<p>从图中可以看到&#xff1a;</p>
+<ol><li>trx1 是第一个到达的&#xff0c;会被选为这组的 leader&#xff1b;</li><li>等 trx1 要开始写盘的时候&#xff0c;这个组里面已经有了三个事务&#xff0c;这时候 LSN 也变成了 160&#xff1b;</li><li>trx1 去写盘的时候&#xff0c;带的就是 LSN&#61;160&#xff0c;因此等 trx1 返回时&#xff0c;所有 LSN 小于等于 160 的 redo log&#xff0c;都已经被持久化到磁盘&#xff1b;这时候 trx2 和 trx3 就可以直接返回了。</li></ol>
+<p>所以&#xff0c;<strong>一次组提交里面&#xff0c;组员越多&#xff0c;节约磁盘 IOPS 的效果越好</strong>。但如果只有单线程压测&#xff0c;那就只能老老实实地一个事务对应一次持久化操作了。在并发更新场景下&#xff0c;第一个事务写完 redo log buffer 以后&#xff0c;接下来这个 fsync 越晚调用&#xff0c;组员可能越多&#xff0c;节约 IOPS 的效果就越好</p>
+<h3><a rel="noopener noreferrer" id="MySQLIO_113"></a>提升MySQL的IO性能</h3>
+<p>结合以上的日志写入策略和延迟刷盘尽量组里事务多一些来谈谈MySQL的IO性能</p>
+<h4><a rel="noopener noreferrer" id="_115"></a>日志落盘参数配置</h4>
+<p>如果你的 MySQL 现在出现了性能瓶颈&#xff0c;而且瓶颈在 IO 上&#xff0c;可以通过哪些方法来提升性能呢&#xff1f;针对这个问题&#xff0c;可以考虑以下三种方法&#xff1a;</p>
+<ul><li>设置 <code>binlog_group_commit_sync_delay</code> 和 <code>binlog_group_commit_sync_no_delay_count</code> 参数&#xff0c;减少 binlog 的写盘次数。这个方法是基于“额外的故意等待”来实现的&#xff0c;因此可能会增加语句的响应时间&#xff0c;但没有丢失数据的风险。</li><li>将 <strong>sync_binlog</strong> 设置为大于 1 的值&#xff08;比较常见是 100~1000&#xff09;【事务都写到文件系统缓存】。这样做的风险是&#xff0c;主机crash掉电时会丢 binlog 日志。</li><li>将 <code>innodb_flush_log_at_trx_commit</code> 设置为 2【事务都写到文件系统缓存】。这样做的风险是&#xff0c;主机掉电的时候会丢数据。</li></ul>
+<p>不建议把 innodb_flush_log_at_trx_commit 设置成 0。因为把这个参数设置成 0&#xff0c;表示 redo log 只保存在内存中&#xff0c;这样的话 MySQL 本身异常重启也会丢数据&#xff0c;风险太大。而 redo log 写到文件系统的 page cache 的速度也是很快的&#xff0c;所以将这个参数设置成 2 跟设置成 0 其实性能差不多&#xff0c;但这样做 MySQL 异常重启时就不会丢数据了&#xff0c;相比之下风险会更小</p>
+<h4><a rel="noopener noreferrer" id="MySQL_122"></a>MySQL的延迟刷盘策略</h4>
+<p>为了让一次 fsync 带的组员更多&#xff0c;MySQL 有一个优化策略&#xff1a;拖时间。了解了两种日志的写入过程后&#xff0c;我们可以把这个过程更加的细化<br /> <img alt="在这里插入图片描述" src="./posts/assets/112385362-07-390204d690.png" loading="lazy"></p>
+<p>这样做有两个好处&#xff0c;对redolog和binglog都加了组提交优化&#xff1a;</p>
+<ul><li><strong>redolog可以更好的组提交</strong>。把 redo log 做 fsync 的时间拖到了步骤 2之后&#xff0c;这样redo log做fsync 和 write的中间隔了一个binlog的write&#xff0c;所以会累计更多的事务在文件缓存中一起刷盘</li><li><strong>binlog 也可以组提交了</strong>。在执行第 4 步把 binlog fsync 到磁盘时&#xff0c;如果有多个事务的 binlog 已经写完了&#xff0c;也是一起持久化的&#xff0c;这样也可以减少 IOPS 的消耗。不过通常情况下第 3 步执行得会很快&#xff0c;所以 binlog 的 write 和 fsync 间的间隔时间短&#xff0c;导致能集合到一起持久化的 binlog 比较少&#xff0c;因此 binlog 的组提交的效果通常不如 redo log 的效果那么好</li></ul>
+<p>这就是MySQL的拖时间组提交策略&#xff0c;<strong>需注意其实组提交处理的是并发的场景&#xff0c;单线程的话在双1设置下都是每次事务完成单个刷盘的</strong>。</p>

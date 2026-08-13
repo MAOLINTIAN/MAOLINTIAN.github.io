@@ -1,0 +1,85 @@
+<div id="content_views" class="markdown_views prism-tomorrow-night-eighties">
+
+                    <p>废话不多说，喊一句号子鼓励自己：程序员永不失业，程序员走向架构！本篇Blog的主题是【单调队列】，使用【队列】这个基本的数据结构来实现，这个高频题的站点是：<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>，筛选条件为：<font color="red"><strong>目标公司+最近一年+出现频率排序</strong></font>，由高到低的去<a href="https://www.nowcoder.com/exam/oj?page=1&amp;tab=%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId=295" rel="nofollow"><strong>牛客TOP101</strong></a>去找，只有两个地方都出现过才做这道题（CodeTop本身汇聚了LeetCode的来源），确保刷的题都是高频要面试考的题。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133754255-01-8bb71887f7.png" loading="lazy"></p>
+<p>名曲目标题后，附上题目链接，后期可以依据解题思路反复快速练习，<font color="red"><strong>题目按照题干的基本数据结构分类，且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="HARD_6" href="https://blog.csdn.net/sinat_33087001/article/details/133754255"></a>滑动窗口最大值【HARD】</h2>
+<p>还是一道经典应用题</p>
+<h3><a rel="noopener noreferrer" id="_8" href="https://blog.csdn.net/sinat_33087001/article/details/133754255"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133754255-02-d75459efc5.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_12" href="https://blog.csdn.net/sinat_33087001/article/details/133754255"></a>解题思路</h3>
+<p>对于每个滑动窗口，我们可以使用 O(k)的时间遍历其中的每一个元素，找出其中的最大值。对于长度为 n的数组nums 而言，窗口的数量为 <code>n−k+1</code>，因此该算法的时间复杂度为 <code>O((n−k+1)k)=O(nk)</code>，会超出时间限制，因此我们需要进行一些优化。我们可以想到，对于两个相邻（只差了一个位置）的滑动窗口，它们共用着 <code>k−1</code> 个元素，而只有 <code>1</code> 个元素是变化的。我们可以根据这个特点进行优化</p>
+<ul><li> <p>在上述滑动窗口形成及移动的过程中，我们注意到<strong>元素是从窗口的右侧进入的，然后由于窗口大小是固定的，因此多余的元素是从窗口左侧移除的。 一端进入，另一端移除，这不就是队列的性质吗</strong>？所以，该题目可以借助队列来求解</p> </li><li> <p>设置<strong>双端队列为单调递减队列</strong></p> </li><li> <p><strong>当窗口未形成时</strong>，每次拿新的元素与队尾元素比较，如果大于队尾元素，则原队尾元素从尾部出队</p> </li><li> <p><strong>当窗口形成时</strong>，队首元素就是最大元素，将其从队列头部出队，并加入结果集</p> </li><li> <p><strong>当窗口形成后并继续滑动时</strong>，队首元素也要从队列头部出队，下一个最大值结果将出现在下一个滑动窗口中</p> </li></ul>
+<p>该题目的求解思路就清晰了，具体如下：</p>
+<ol><li>遍历给定数组中的元素，如果队列不为空且当前考察元素大于等于队尾元素，则将队尾元素移除。直到，<strong>队列为空或当前考察元素小于新的队尾元素</strong>；</li><li>由于数组下标从0开始，因此当窗口右边界<strong>right+1大于等于窗口大小k时</strong>，意味着窗口形成。此时，队首元素就是该窗口内的最大值。</li><li>当<strong>队首元素的下标小于滑动窗口左侧边界left</strong>时，表示队首元素已经不再滑动窗口内，因此将其从队首移除。</li></ol>
+<p>由此思路可以写代码了</p>
+<h3><a rel="noopener noreferrer" id="_28" href="https://blog.csdn.net/sinat_33087001/article/details/133754255"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>：<font color="red"><strong>数组</strong></font><br> <strong>辅助数据结构</strong>：<font color="red"><strong>单调队列</strong></font><br> <strong>算法</strong>：<font color="red"><strong>无</strong></font><br> <strong>技巧</strong>：<font color="red"><strong>双指针、滑动窗口</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自：</p>
+<ul><li>10 个数据结构：<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法：<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧：<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定，请勿修改，直接返回方法规定的值即可
+     *
+     *
+     * @param num int整型一维数组
+     * @param size int整型
+     * @return int整型ArrayList
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> maxInWindows <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> num<span class="token punctuation">,</span> <span class="token keyword">int</span> size<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 如果数组为空或者size小于1则返回空集合</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>num<span class="token punctuation">.</span>length <span class="token operator">&lt;</span> <span class="token number">1</span> <span class="token operator">||</span> size <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义结果集并及双端单调队列，双端队列存储元素下标</span>
+        <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> singleQueue <span class="token operator">=</span> <span class="token keyword">new</span>  <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 开启窗口滑动</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> right <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> right <span class="token operator">&lt;</span> num<span class="token punctuation">.</span>length<span class="token punctuation">;</span> right<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 3-1 如果单调队列不为空且队尾元素小于当前值，则出队</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>singleQueue<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> num<span class="token punctuation">[</span>singleQueue<span class="token punctuation">.</span><span class="token function">peekLast</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">&lt;=</span> num<span class="token punctuation">[</span>right<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                singleQueue<span class="token punctuation">.</span><span class="token function">pollLast</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 当前元素下标入队</span>
+            singleQueue<span class="token punctuation">.</span><span class="token function">offerLast</span><span class="token punctuation">(</span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 3-2 计算队首元素左边界，因为窗口固定大小，所以right向右移动时，left也向右移动</span>
+            <span class="token keyword">int</span> left <span class="token operator">=</span> right <span class="token operator">-</span> size <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>left <span class="token operator">&gt;</span> singleQueue<span class="token punctuation">.</span><span class="token function">peekFirst</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 如果当前队列中最大值的索引已不在窗口中，则弹出队列</span>
+                singleQueue<span class="token punctuation">.</span><span class="token function">pollFirst</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token comment">// 3-3 如果right + 1 &gt;= size,则意味着窗口形成，则队首元素即为窗口最大值，首次窗口形成后此判断条件一直成立</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>right <span class="token operator">+</span> <span class="token number">1</span> <span class="token operator">&gt;=</span> size<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>num<span class="token punctuation">[</span>singleQueue<span class="token punctuation">.</span><span class="token function">peekFirst</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>因为单调队列不限制大小，所以每次获取最大值前要先进行判断，当前队首元素还在不在窗口内，不在窗口内要移出去，防止用例过不去<br> <img alt="在这里插入图片描述" src="./posts/assets/133754255-03-88bb14f7e3.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_95" href="https://blog.csdn.net/sinat_33087001/article/details/133754255"></a>复杂度分析</h3>
+<p>时间复杂度：<br> 空间复杂度：</p>
+<h2><a rel="noopener noreferrer" id="_98" href="https://blog.csdn.net/sinat_33087001/article/details/133754255"></a>拓展知识：普通队列、单调队列、优先队列、双向队列</h2>
+<p>普通队列、单调队列、优先队列和双向队列都是队列数据结构，但它们在性质和用途上有一些区别：</p>
+<ol><li> <p><strong>普通队列（Normal Queue）</strong>：</p>
+  <ul><li>普通队列是一种基本的队列数据结构，按照先进先出（FIFO）的原则工作。这意味着最早进入队列的元素最早被移出队列。</li><li>普通队列通常用于广泛的应用，例如任务调度、BFS（广度优先搜索）算法等，其中重要的是按照元素的到达顺序进行处理。</li></ul> </li><li> <p><strong>单调队列（Monotonic Queue）</strong>：</p>
+  <ul><li>单调队列是一种特殊类型的队列，它通常用于维护队列中元素的单调性，可以是单调递增或单调递减。这意味着元素按照一定的顺序排列。</li><li>单调队列通常用于解决一些需要寻找局部最大或最小值的问题，例如在滑动窗口问题中，找到滑动窗口中的最大值或最小值。</li><li>单调队列可以通过维护单调性，提高一些特定问题的求解效率。</li></ul> </li><li> <p><strong>优先队列（Priority Queue）</strong>：</p>
+  <ul><li>优先队列是一种队列数据结构，它根据元素的优先级（或权重）来确定元素的顺序。具有较高优先级的元素在队列中排在前面。</li><li>优先队列通常用于解决需要按照优先级处理任务的问题，例如Dijkstra算法、最小堆和最大堆等数据结构都可以用来实现优先队列。</li></ul> </li><li> <p><strong>双向队列（Double-Ended Queue，Deque）</strong>：</p>
+  <ul><li>双向队列是一种允许在队列两端进行插入和删除操作的数据结构，可以在队头和队尾同时进行入队和出队操作。</li><li>双向队列通常用于一些需要在队列两端进行高效操作的场景，例如实现队列、栈、滑动窗口等。</li></ul> </li></ol>
+<p>总结：</p>
+<ul><li>普通队列按照FIFO原则工作，适用于广泛的应用。</li><li>单调队列用于维护队列中元素的单调性，以解决一些特定问题。</li><li>优先队列用于按照元素的优先级来处理任务或元素，适用于需要根据权重或优先级来排序的场景。</li><li>双向队列允许在队列两端进行高效的插入和删除操作，适用于<strong>需要在队头和队尾同时操作的场景</strong>。</li></ul>
+                </div>

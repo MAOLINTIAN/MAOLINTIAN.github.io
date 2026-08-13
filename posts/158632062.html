@@ -1,0 +1,207 @@
+<p>在Java并发编程中，集合类的安全性与性能一直是开发者关注的核心。从早期的<code>Hashtable</code>到<code>ConcurrentHashMap</code>的演进，从<code>synchronized</code>到<code>ReentrantLock</code>的多样化锁机制，背后都贯穿着一个共同的目标：<strong>在保证线程安全的前提下，最大化压榨CPU和内存资源，减少无谓的等待与管理开销</strong>。</p>
+<p>本文将沿着这条主线，深入剖析：</p>
+<ul>
+ <li><code>HashMap</code>在1.7和1.8中的数据结构变化与并发问题</li>
+ <li><code>ConcurrentHashMap</code>从分段锁到桶锁的演进</li>
+ <li><code>ReentrantLock</code>的核心特性（可重入、公平性、可中断、条件变量）及其在AQS中的实现</li>
+ <li>CAS无锁机制的原理与应用</li>
+</ul>
+<p>通过这篇文章，你将理解这些技术背后的设计思想，以及它们是如何围绕“减少等待、减少管理性操作”这一核心思想展开的。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="HashMap_12"></a>一、HashMap的演进：从死循环到红黑树</h2>
+<h3><a rel="noopener noreferrer" id="11_JDK_17_14"></a>1.1 JDK 1.7：数组+链表，头插法埋下隐患</h3>
+<p>在JDK 1.7中，<code>HashMap</code>采用<strong>数组+链表</strong>的结构存储键值对。当多个key映射到同一数组下标时，以链表形式存储，插入新节点采用<strong>头插法</strong>（新节点插入链表头部）。</p>
+<p><strong>扩容机制</strong>：当元素数量超过阈值时，数组容量翻倍，并对所有元素重新哈希（rehash），迁移到新数组。迁移过程中，头插法会导致链表<strong>反转</strong>——原链表顺序A→B→C在新数组中变为C→B→A。<br> <img alt="在这里插入图片描述" src="./posts/assets/158632062-01-d973198c12.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="12__21"></a>1.2 并发下的死循环问题</h3>
+<p>在多线程并发执行<code>put</code>操作并触发扩容时，头插法的反转特性与线程交叉执行结合，可能形成<strong>环形链表</strong>，导致后续<code>get</code>操作陷入无限循环，CPU飙升到100%。</p>
+<p><strong>死循环的形成原理</strong>（简化版）：</p>
+<ol>
+ <li>线程一执行到<code>Entry&lt;K,V&gt; next = e.next;</code>后挂起，此时<code>e</code>指向节点A，<code>next</code>指向B。</li>
+ <li>线程二完成扩容，将原链表A→B迁移为新链表B→A（头插法反转）。</li>
+ <li>线程一恢复执行，按自己保存的引用操作，导致A的<code>next</code>指向B，而B的<code>next</code>已指向A，形成循环。</li>
+ <li>此后任何查找该链表上不存在的key时，线程将永远在环中循环。</li>
+</ol>
+<p><strong>资源开销视角</strong>：这不是普通的性能损耗，而是<strong>逻辑错误导致CPU时间被无限吞噬</strong>，比任何管理性开销都更致命。</p>
+<h3><a rel="noopener noreferrer" id="13_JDK_18___33"></a>1.3 JDK 1.8的改进：尾插法 + 红黑树</h3>
+<ul>
+ <li><strong>尾插法</strong>：扩容迁移时按原顺序将节点插入新链表尾部，<strong>保持链表顺序不变</strong>。这从根本上避免了多线程并发扩容时形成环形链表的可能性（但注意：<code>HashMap</code>依然非线程安全，并发下仍会数据覆盖，只是不再死循环）。</li>
+ <li><strong>红黑树化</strong>：当链表长度超过阈值（默认8）且数组容量≥64时，链表转换为<strong>红黑树</strong>，将最坏情况下的查找效率从O(n)提升到O(log n)。当树节点数小于6时，又会退化为链表，避免树结构占用过多内存。</li>
+</ul>
+<p><strong>资源开销视角</strong>：尾插法消除了死循环这一“CPU黑洞”；红黑树化<strong>用额外的内存维护树结构，换取查询时的CPU节省</strong>，是典型的空间换时间。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="_ConcurrentHashMap_42"></a>二 ConcurrentHashMap的演进：从分段锁到桶锁</h2>
+<h3><a rel="noopener noreferrer" id="21_JDK_17Segment_44"></a>2.1 JDK 1.7：分段锁（Segment）</h3>
+<p><strong>设计思想</strong>：将整个哈希表分成多个<strong>Segment</strong>（默认16个），每个<code>Segment</code>继承自<code>ReentrantLock</code>，独立管理一小段<code>HashEntry</code>数组。<code>put</code>操作时，先定位到具体<code>Segment</code>，然后<strong>只锁住该Segment</strong>，其他Segment的数据仍可被其他线程并发访问。</p>
+<p><strong>优点</strong>：并发度从1提升到Segment数量（默认16），读写性能远优于<code>Hashtable</code>；<code>get</code>操作不加锁（通过<code>volatile</code>保证可见性），读性能极高。</p>
+<p><strong>缺点</strong>：并发度固定，无法随CPU核心数动态调整；结构复杂，内存占用较高。<br> <img alt="在这里插入图片描述" src="./posts/assets/158632062-02-aebb7d25fd.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="22_JDK_18CAS__synchronized_____53"></a>2.2 JDK 1.8：CAS + synchronized + 桶锁 + 红黑树</h3>
+<p><strong>设计思想</strong>：放弃<code>Segment</code>，采用与<code>HashMap</code>1.8一致的数据结构（数组+链表/红黑树），通过<strong>CAS + synchronized</strong>实现线程安全。</p>
+<ul>
+ <li><strong>CAS无锁插入</strong>：若定位到的桶位为<code>null</code>，则通过CAS直接插入，无需加锁。</li>
+ <li><strong>synchronized桶锁</strong>：若桶位不为空，则对<strong>桶位头节点</strong>加<code>synchronized</code>锁，然后操作链表或红黑树。只有同一桶位的操作才会被锁住，不同桶位完全并发。</li>
+ <li><strong>红黑树化</strong>：与<code>HashMap</code>1.8一致，链表过长时转为红黑树。</li>
+ <li><strong>多线程协助扩容</strong>：触发扩容时，多个线程可共同参与数据迁移，每个线程负责一部分桶位，通过<code>ForwardingNode</code>指引，大幅缩短扩容阻塞时间。</li>
+</ul>
+<p><strong>优点</strong>：锁粒度从“分段”细化为“桶位”，并发度随数组长度动态增加；读操作多数无锁，写操作只在桶头加锁，竞争极小；扩容并行化；红黑树化提升最坏情况查询性能。<br> <img alt="在这里插入图片描述" src="./posts/assets/158632062-03-edb655e08a.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="23__65"></a>2.3 对比总结</h3>
+<table>
+ <thead>
+  <tr>
+   <th>特性</th>
+   <th>JDK 1.7</th>
+   <th>JDK 1.8</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td>数据结构</td>
+   <td>Segment + HashEntry</td>
+   <td>Node + 链表/红黑树</td>
+  </tr>
+  <tr>
+   <td>锁机制</td>
+   <td>ReentrantLock（分段锁）</td>
+   <td>CAS + synchronized（桶锁）</td>
+  </tr>
+  <tr>
+   <td>锁粒度</td>
+   <td>Segment级（默认16个）</td>
+   <td>桶位级（随数组长度动态）</td>
+  </tr>
+  <tr>
+   <td>并发度</td>
+   <td>固定为Segment数量</td>
+   <td>接近数组长度（可扩容）</td>
+  </tr>
+  <tr>
+   <td>扩容</td>
+   <td>单Segment内独立扩容</td>
+   <td>多线程协作扩容</td>
+  </tr>
+  <tr>
+   <td>查询效率</td>
+   <td>链表O(n)</td>
+   <td>链表O(n) / 红黑树O(log n)</td>
+  </tr>
+ </tbody>
+</table>
+<hr>
+<h2><a rel="noopener noreferrer" id="_synchronized__ReentrantLock__78"></a>三 锁的分类：synchronized 与 ReentrantLock 的全面对比</h2>
+<p>在Java并发编程中，<code>synchronized</code>和<code>ReentrantLock</code>是两种最常用的锁机制。它们都提供线程安全性，但在设计理念、功能特性、实现原理和适用场景上存在显著差异。理解这些差异，能帮助你在实际开发中做出更合适的选择。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="1__85"></a>1 基础对比一览表</h3>
+<table>
+ <thead>
+  <tr>
+   <th>对比维度</th>
+   <th>synchronized</th>
+   <th>ReentrantLock</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><strong>存在形式</strong></td>
+   <td>JVM内置关键字，自动加锁解锁</td>
+   <td>Java类，需手动加锁解锁</td>
+  </tr>
+  <tr>
+   <td><strong>可重入性</strong></td>
+   <td>支持（同一线程可重复获取）</td>
+   <td>支持（基于AQS state计数）</td>
+  </tr>
+  <tr>
+   <td><strong>公平性</strong></td>
+   <td>非公平（无法选择公平模式）</td>
+   <td>可设置为公平或非公平（默认非公平）</td>
+  </tr>
+  <tr>
+   <td><strong>可中断性</strong></td>
+   <td>不支持（线程获取锁时不可中断）</td>
+   <td>支持（<code>lockInterruptibly()</code>方法）</td>
+  </tr>
+  <tr>
+   <td><strong>超时获取锁</strong></td>
+   <td>不支持</td>
+   <td>支持（<code>tryLock(timeout, unit)</code>）</td>
+  </tr>
+  <tr>
+   <td><strong>条件变量</strong></td>
+   <td>每个对象只有一个条件队列（<code>wait/notify</code>）</td>
+   <td>一个锁可创建多个Condition条件队列</td>
+  </tr>
+  <tr>
+   <td><strong>锁的释放</strong></td>
+   <td>自动释放（退出同步块或方法）</td>
+   <td>必须显式调用<code>unlock()</code>（通常在finally块）</td>
+  </tr>
+  <tr>
+   <td><strong>实现原理</strong></td>
+   <td>基于monitor对象（ObjectMonitor），有锁升级机制</td>
+   <td>基于AQS（AbstractQueuedSynchronizer）</td>
+  </tr>
+  <tr>
+   <td><strong>性能</strong></td>
+   <td>JDK 1.6后引入锁升级，低竞争时性能很好</td>
+   <td>高竞争时吞吐量优于synchronized（尤其公平锁）</td>
+  </tr>
+  <tr>
+   <td><strong>适用场景</strong></td>
+   <td>简单同步需求，代码简洁，不易出错</td>
+   <td>需要高级功能（公平性、可中断、多条件等）</td>
+  </tr>
+ </tbody>
+</table>
+<hr>
+<h3><a rel="noopener noreferrer" id="2__102"></a>2 各维度详细解析</h3>
+<h4><a rel="noopener noreferrer" id="1__104"></a>1. 可重入性</h4>
+<ul>
+ <li><strong>相同点</strong>：两者都支持可重入。同一个线程可以多次获取同一把锁，避免死锁。</li>
+ <li><strong>实现差异</strong>：
+  <ul>
+   <li><code>synchronized</code>：JVM在monitor对象中记录锁的持有线程和计数器，每次进入加1，退出减1。</li>
+   <li><code>ReentrantLock</code>：基于AQS的<code>state</code>计数，同一线程每次<code>lock()</code>将<code>state</code>加1，每次<code>unlock()</code>减1，<code>state</code>为0时锁释放。</li>
+  </ul> </li>
+</ul>
+<h4><a rel="noopener noreferrer" id="2__111"></a>2. 公平性</h4>
+<ul>
+ <li><strong>synchronized</strong>：只支持<strong>非公平锁</strong>。线程获取锁的顺序不保证，可能发生“饥饿”（某个线程长期得不到锁）。</li>
+ <li><strong>ReentrantLock</strong>：构造函数可指定公平性：
+  <ul>
+   <li><code>new ReentrantLock(true)</code>：公平锁，线程按照请求顺序获取锁（FIFO）。</li>
+   <li><code>new ReentrantLock(false)</code>（默认）：非公平锁，允许插队，吞吐量更高。</li>
+  </ul> </li>
+</ul>
+<p><strong>为什么需要公平锁？</strong> 某些场景下（如任务调度）要求线程按顺序执行，避免优先级反转或长时间等待。</p>
+<h4><a rel="noopener noreferrer" id="3__120"></a>3. 可中断性</h4>
+<ul>
+ <li><strong>synchronized</strong>：线程在等待锁时不可中断。如果线程被阻塞在<code>synchronized</code>上，调用<code>interrupt()</code>不会唤醒它，只会设置中断标志；线程只有获取锁后，才能检测到中断。</li>
+ <li><strong>ReentrantLock</strong>：提供<code>lockInterruptibly()</code>方法，允许线程在等待锁时响应中断。如果线程被中断，会抛出<code>InterruptedException</code>并停止等待。</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<pre><code class="prism language-java"><span class="token comment">// synchronized无法响应中断</span>
+<span class="token class-name">Thread</span> t <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token punctuation">{
+
+   <!-- --></span>
+    <span class="token keyword">synchronized</span><span class="token punctuation">(</span>lock<span class="token punctuation">)</span> <span class="token punctuation">{
+
+   <!-- --></span> <span class="token comment">// 如果锁被占用，这里一直阻塞，无法响应中断</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+t<span class="token punctuation">.</span><span class="token function">interrupt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 无效</span>
+
+<span class="token comment">// ReentrantLock可中断</span>
+<span class="token keyword">try</span> <span class="token punctuation">{
+
+   <!-- --></span>
+    lock<span class="token punctuation">.</span><span class="token function">lockInterruptibly</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 等待锁时如果被中断，立即抛出异常</span>
+<span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{
+
+   <!-- --></span>
+    <span class="token comment">// 处理中断</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="4__143"></a>4. 超时获取锁</h4>
+<ul>
+ <li><strong>synchronized</strong>：不支持。线程只能无限期等待。&lt;</li>
+</ul>

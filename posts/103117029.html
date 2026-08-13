@@ -1,0 +1,287 @@
+<p>在项目实战中就会发现&#xff0c;其实不管是微服务也好&#xff0c;DDD也好&#xff0c;都是为了履行设计原则里的<strong>低耦合、高内聚</strong>而无论是RabbitMQ还是Kafka&#xff0c;都是通过消息队列的方式对系统进行解耦&#xff0c;在<strong>从入门到放弃</strong>系列里我详细介绍过其使用背景以及模型等&#xff0c;由于最近的项目用到了RabbitMQ和Kafka&#xff0c;所以索性搭建一个简单的生产者消费者模型。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103117029-01-23a4b1279d.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_2"></a>生产者端</h3>
+<p>在生产者端&#xff0c;生产者不停的生产消息并发送到kafka的服务器集群上&#xff0c;依据自己的topic和partition:<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103117029-02-99bd1f1cee.png" loading="lazy"><br />
+我们发送Kafka消息的时候&#xff0c;外层的封装方法如下&#xff0c;需要传递<strong>一个Kafka的topic、一个用来计算Partition的标识tenantId以及需要传递的消息</strong>。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">SendKafkaExportData</span><span class="token punctuation">(</span>
+      <span class="token keyword">string</span> appName<span class="token punctuation">,</span>
+      <span class="token keyword">int</span> tenantId<span class="token punctuation">,</span>
+      <span class="token keyword">int</span> userId<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> metaObjName<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> viewName<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> exportFileName<span class="token punctuation">,</span>
+      <span class="token class-name">SearchCondition</span> condition<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> version <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+      <span class="token keyword">int</span> total <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span>
+      <span class="token class-name">ExportFileType</span> fileType <span class="token operator">&#61;</span> ExportFileType<span class="token punctuation">.</span>Xlsx<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> applicationContext <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+      <span class="token keyword">string</span> msgTemplate <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>appName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>appName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>metaObjName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>metaObjName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>viewName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>viewName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>exportFileName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>exportFileName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>tenantId<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>userId<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>userId<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">AssertNotNull</span><span class="token punctuation">&lt;</span><span class="token class-name">SearchCondition</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>condition<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">bool</span> flag <span class="token operator">&#61;</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ExportRequestDataModel</span> exportRequestData <span class="token operator">&#61;</span> ExportRequestDataModel<span class="token punctuation">.</span><span class="token function">GetExportRequestData</span><span class="token punctuation">(</span>appName<span class="token punctuation">,</span> tenantId<span class="token punctuation">,</span> userId<span class="token punctuation">,</span> metaObjName<span class="token punctuation">,</span> viewName<span class="token punctuation">,</span> exportFileName<span class="token punctuation">,</span> condition<span class="token punctuation">,</span> version<span class="token punctuation">,</span> total<span class="token punctuation">,</span> fileType<span class="token punctuation">,</span> applicationContext<span class="token punctuation">,</span> msgTemplate<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">long</span> num <span class="token operator">&#61;</span> KafkaProducer<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Send</span><span class="token punctuation">&lt;</span><span class="token class-name">ExportRequestDataModel</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token string">&#34;TMLSent&#34;</span><span class="token punctuation">,</span> tenantId<span class="token punctuation">,</span> exportRequestData<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ExportRequestDataModel<span class="token punctuation">.</span>logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> <span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;{0}-{1}-{2}发送Kafka消息{3}成功&#34;</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> appName<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> tenantId<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> userId<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> num<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        ExportRequestDataModel<span class="token punctuation">.</span>logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> <span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;{0}-{1}-{2}发送Kafka消息异常&#34;</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> appName<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> tenantId<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> userId<span class="token punctuation">)</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        flag <span class="token operator">&#61;</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">return</span> flag<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>而其中的核心方法&#xff1a; <code>long num &#61; KafkaProducer.Send&lt;ExportRequestDataModel&gt;(&#34;TMLSent&#34;, tenantId, exportRequestData);</code>的实现逻辑如下&#xff0c;将kafka携带的消息序列化为二进制数组&#xff1a;</p>
+<pre><code class="prism language-csharp">    <span class="token comment">/// &lt;summary&gt;Send a message to a topic.&lt;/summary&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;topic&#34;&gt;The name of the topic to send the message to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;tenant&#34;&gt;The id of the tenant the message belongs to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;value&#34;&gt;The message content.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;returns&gt;The offset of the message.&lt;/returns&gt;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token generic-method"><span class="token function">Send</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token keyword">string</span> topic<span class="token punctuation">,</span> <span class="token keyword">int</span> tenant<span class="token punctuation">,</span> <span class="token class-name">T</span> <span class="token keyword">value</span><span class="token punctuation">)</span> <span class="token keyword">where</span> T <span class="token punctuation">:</span> IBinarySerializable
+    <span class="token punctuation">{<!-- --></span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>tenant<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>tenant<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span> KafkaProducer<span class="token punctuation">.</span><span class="token function">Send</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> <span class="token keyword">value</span> <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> <span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token keyword">null</span> <span class="token punctuation">:</span> BigEndianEncoder<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Encode</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>消息发送机制如下&#xff0c;获取到需要的topic&#xff0c;用于计算Partition的标识tenantId以及序列化后可以直接发送的二进制字符串消息&#xff1a;</p>
+<pre><code class="prism language-csharp">    <span class="token comment">/// &lt;summary&gt;Send a message to a topic.&lt;/summary&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;topic&#34;&gt;The name of the topic to send the message to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;tenant&#34;&gt;The id of the tenant the message belongs to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;value&#34;&gt;The message content.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;returns&gt;The offset of the message.&lt;/returns&gt;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token function">Send</span><span class="token punctuation">(</span><span class="token keyword">string</span> topic<span class="token punctuation">,</span> <span class="token keyword">int</span> tenant<span class="token punctuation">,</span> <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token keyword">value</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>tenant<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>tenant<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">Produce</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">ConnectionPoolException</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">Produce</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">KafkaException</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>ex<span class="token punctuation">.</span>Error <span class="token operator">&#61;&#61;</span> ErrorCode<span class="token punctuation">.</span>NotLeaderForPartition <span class="token operator">||</span> ex<span class="token punctuation">.</span>Error <span class="token operator">&#61;&#61;</span> ErrorCode<span class="token punctuation">.</span>LeaderNotAvailable<span class="token punctuation">)</span>
+          <span class="token keyword">return</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">Produce</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">throw</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>核心的发送方法为&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token function">Produce</span><span class="token punctuation">(</span><span class="token keyword">string</span> topic<span class="token punctuation">,</span> <span class="token keyword">int</span> tenant<span class="token punctuation">,</span> <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token keyword">value</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">TopicConfig</span> topicConfig <span class="token operator">&#61;</span> BaseConfig<span class="token operator">&lt;</span>KafkaMapping<span class="token operator">&gt;</span><span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">GetTopicConfig</span><span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">int</span> num <span class="token operator">&#61;</span> tenant <span class="token operator">%</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">GetTopicPartitionCount</span><span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//计算</span>
+      <span class="token keyword">int</span> partitionLeader <span class="token operator">&#61;</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">GetPartitionLeader</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> num<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//设置leader</span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token class-name">KafkaSession</span> kafkaSession <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">KafkaSession</span><span class="token punctuation">(</span>topicConfig<span class="token punctuation">.</span>Cluster<span class="token punctuation">,</span> partitionLeader<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//创建一个kafka消息发送实例</span>
+        <span class="token punctuation">{<!-- --></span>
+          <span class="token class-name">Message</span> message <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Message</span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">,</span> TimeUtil<span class="token punctuation">.</span>CurrentTimestamp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token class-name">ProduceRequest</span> request <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ProduceRequest</span><span class="token punctuation">(</span><span class="token punctuation">(</span>IDictionary<span class="token operator">&lt;</span>TopicAndPartition<span class="token punctuation">,</span> MessageSet<span class="token operator">&gt;</span><span class="token punctuation">)</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">Dictionary</span><span class="token punctuation">&lt;</span><span class="token class-name">TopicAndPartition</span><span class="token punctuation">,</span> <span class="token class-name">MessageSet</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">{<!-- --></span>
+              <span class="token keyword">new</span> <span class="token class-name">TopicAndPartition</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> num<span class="token punctuation">)</span><span class="token punctuation">,</span>   <span class="token comment">//设置topic和partition</span>
+              <span class="token keyword">new</span> <span class="token class-name">MessageSet</span><span class="token punctuation">(</span>topicConfig<span class="token punctuation">.</span>Codecs<span class="token punctuation">,</span> <span class="token punctuation">(</span>IList<span class="token operator">&lt;</span>Message<span class="token operator">&gt;</span><span class="token punctuation">)</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Message</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+              <span class="token punctuation">{<!-- --></span>
+                message
+              <span class="token punctuation">}</span><span class="token punctuation">)</span>
+            <span class="token punctuation">}</span>
+          <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//设置要发送的消息</span>
+          <span class="token class-name">ProduceResponse</span> produceResponse <span class="token operator">&#61;</span> kafkaSession<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Issue</span><span class="token punctuation">&lt;</span><span class="token class-name">ProduceRequest</span><span class="token punctuation">,</span> <span class="token class-name">ProduceResponse</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//发送Kafka消息并</span>
+          KafkaProtocol<span class="token punctuation">.</span><span class="token function">CheckErrorCode</span><span class="token punctuation">(</span>produceResponse<span class="token punctuation">.</span>Error<span class="token punctuation">,</span> topic<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token operator">?</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token operator">?</span><span class="token punctuation">(</span>tenant<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">return</span> produceResponse<span class="token punctuation">.</span>Offset<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        KafkaProtocol<span class="token punctuation">.</span><span class="token function">RefreshPartitionMetadata</span><span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">throw</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>这样一个我们需要传递的消息就发送到对应的topic和对应的partition上了&#xff08;不同的partition可以存放在不同 的机器上&#xff0c;这样取同样余数的租户的数据会被放置到相同分区&#xff09;&#xff0c;无需再自己封装消息分发。</p>
+<h3><a rel="noopener noreferrer" id="_123"></a>消费者端</h3>
+<p>在消费者端&#xff0c;提供消费者集群进行分区消费&#xff0c;需要注意的是&#xff1a;对于一个group而言&#xff0c;消费者的数量不应该多于分区的数量&#xff0c;<strong>因为在一个group中&#xff0c;每个分区至多只能绑定到一个消费者上&#xff0c;即一个消费者可以消费多个分区&#xff0c;一个分区只能给一个消费者消费&#xff08;保证了一个分区里的消息在一个Group里不会被消费者争夺执行&#xff09;</strong>&#xff0c;因此&#xff0c;若一个group中的消费者数量大于分区数量的话&#xff0c;多余的消费者将不会收到任何消息<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103117029-03-06f878e5af.png" loading="lazy"><br />
+在消费者端&#xff0c;机器需要预热并开启消息消费服务&#xff0c;当然也要有关闭消息服务的方法&#xff0c;开启消费服务意味着开启消息接收和开启消息处理线程&#xff0c;关闭消息服务同理表示关闭消息接收和关闭消息处理线程。</p>
+<pre><code class="prism language-csharp">  <span class="token comment">/// &lt;summary&gt;</span>
+  <span class="token comment">/// 接收导出消息的服务</span>
+  <span class="token comment">/// &lt;/summary&gt;</span>
+  <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ReceiveMsgProvider</span> <span class="token punctuation">:</span> <span class="token class-name">IReceiveMsgProvider</span>
+  <span class="token punctuation">{<!-- --></span>
+      <span class="token preprocessor property">#<span class="token directive keyword">region</span> 日志、构造方法以及单例</span>
+
+      <span class="token keyword">protected</span> <span class="token keyword">static</span> <span class="token keyword">readonly</span> <span class="token class-name">LogWrapper</span> Logger <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LogWrapper</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token keyword">private</span> <span class="token function">ReceiveMsgProvider</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">ReceiveMsgProvider</span> Instance <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ReceiveMsgProvider</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> 日志、构造方法以及单例</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">region</span> 开启消息接收服务</span>
+
+      <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">_ActivateService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token comment">// 预热</span>
+         Cloud<span class="token punctuation">.</span>Plugins<span class="token punctuation">.</span>Helper<span class="token punctuation">.</span>ESBProxy<span class="token punctuation">.</span><span class="token function">WarmUp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token comment">//开启消息接收服务</span>
+          <span class="token function">StartMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token comment">//开始处理ExportQueue队列中的消息</span>
+          ExportConsumer<span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">BeginImportData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          Logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;_ActivateService was called.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">StartMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">try</span>
+          <span class="token punctuation">{<!-- --></span>
+              <span class="token comment">//开始消费消息</span>
+              ExportConsumer<span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+          <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+              Logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> 开启消息接收服务</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">region</span> 关闭消息接收服务</span>
+
+      <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">_UnActivateService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token comment">//关闭消息接收服务</span>
+          <span class="token function">StopMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token comment">//关闭处理queue的线程</span>
+          ExportConsumer<span class="token punctuation">.</span><span class="token function">CloseQueueThreads</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          Logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;_UnActivateService was called.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">StopMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">try</span>
+          <span class="token punctuation">{<!-- --></span>
+              <span class="token comment">//停止消费消息</span>
+              ExportConsumer<span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">Stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+          <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+              Logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+
+
+  <span class="token punctuation">}</span>
+</code></pre>
+<p>其中&#xff0c;开启和关闭消息接收服务的核心方法如下&#xff1a;</p>
+<pre><code class="prism language-csharp">
+       <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// ESB服务调用入口:启动</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+             _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;ESB服务调用入口:启动&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            _consumer <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">KafkaGroupConsumer</span><span class="token punctuation">(</span>ExportKafkaConst<span class="token punctuation">.</span>ExportKafkaConsumerGroup<span class="token punctuation">,</span> ExportKafkaConst<span class="token punctuation">.</span>ExportKafkaTopic<span class="token punctuation">,</span> OnMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//OnMessage即是处理消费逻辑的方法</span>
+            _consumer <span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// ESB服务调用入口:停止</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;ESB服务调用入口:停止&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>_consumer  <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> _consumer <span class="token punctuation">.</span>IsRunning<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                _consumer <span class="token punctuation">.</span><span class="token function">Stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>当然这一套生产消费体系搭建起来后最重要的就是<strong>接收和消费消息</strong>啦&#xff1a;</p>
+<pre><code class="prism language-csharp">       <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 接收导出消息并放置到缓存队列里</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;context&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">OnMessage</span><span class="token punctuation">(</span><span class="token class-name">Message</span> context<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+
+            logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;接收到消息&#xff1a;{0}&#34;</span><span class="token punctuation">,</span> Newtonsoft<span class="token punctuation">.</span>Json<span class="token punctuation">.</span>JsonConvert<span class="token punctuation">.</span><span class="token function">SerializeObject</span><span class="token punctuation">(</span>context<span class="token punctuation">.</span>Value<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">ExportRequestDataModel</span> data <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//读取消息内容</span>
+                data <span class="token operator">&#61;</span> BigEndianEncoder<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Decode</span><span class="token punctuation">&lt;</span><span class="token class-name">ExportRequestDataModel</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>context<span class="token punctuation">.</span>Value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> data<span class="token punctuation">.</span>MsgType <span class="token operator">!&#61;</span> ExportMessageType<span class="token punctuation">.</span>Export<span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">//无消息需要处理</span>
+                    <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">else</span>
+                <span class="token punctuation">{<!-- --></span>
+                    logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;成功取到数据&#xff1a;{0}&#34;</span><span class="token punctuation">,</span> Newtonsoft<span class="token punctuation">.</span>Json<span class="token punctuation">.</span>JsonConvert<span class="token punctuation">.</span><span class="token function">SerializeObject</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+
+                <span class="token keyword">bool</span> enQueueResult <span class="token operator">&#61;</span> ExportQueue<span class="token punctuation">.</span><span class="token function">En_Queue</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> ApplicationContext<span class="token punctuation">.</span>Current<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>enQueueResult<span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token string">&#34;导出数据 In_Queue失败:userId:&#34;</span> <span class="token operator">&#43;</span> ApplicationContext<span class="token punctuation">.</span>Current<span class="token punctuation">.</span>UserId <span class="token operator">&#43;</span> <span class="token string">&#34; tenantId:&#34;</span> <span class="token operator">&#43;</span> ApplicationContext<span class="token punctuation">.</span>Current<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">var</span> contextInfo <span class="token operator">&#61;</span> JsonConvert<span class="token punctuation">.</span><span class="token function">SerializeObject</span><span class="token punctuation">(</span>context<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;导出写入队列失败&#xff0c;接收到的消息为&#xff1a;{contextInfo} &#xff0c;信息异常信息&#xff1a;&#34;</span> <span class="token operator">&#43;</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>消息一个个入队后当然接下来就要使用我们启动的一批线程去消费啦&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 开始对ExportQueue队列中的数据进行梳理</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">BeginImportData</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+
+            <span class="token comment">///初始化线程List</span>
+            ExportQueue<span class="token punctuation">.</span><span class="token function">InstanceExportThreadsList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">int</span> count <span class="token operator">&#61;</span> ExportQueue<span class="token punctuation">.</span>ExportThreadsList<span class="token punctuation">.</span>Count<span class="token punctuation">;</span>
+
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;开启线程th_&#34;</span> <span class="token operator">&#43;</span> i <span class="token operator">&#43;</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                ExportQueue<span class="token punctuation">.</span>ExportThreadsList<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>Thread</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>ParameterizedThreadStart</span><span class="token punctuation">(</span>DealExportDataInQueue<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                ExportQueue<span class="token punctuation">.</span>ExportThreadsList<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 处理小队列</span>
+            ExportQueue<span class="token punctuation">.</span>ExportSmallThread <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>Thread</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>ParameterizedThreadStart</span><span class="token punctuation">(</span>DealExportDataInQueue<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            ExportQueue<span class="token punctuation">.</span>ExportSmallThread<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span>ExportQueue<span class="token punctuation">.</span>SmallIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>使用Kafka实现生产者消费者系统的整体流程就是这样&#xff0c;说实话我还是对某些实现细节一知半解&#xff0c;但总体而言知道了全套流程是怎么跑通的&#xff0c;至于一些更高阶的认知&#xff0c;期望从之后更深入的学习中来了解到。</p>

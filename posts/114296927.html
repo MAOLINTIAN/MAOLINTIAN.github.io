@@ -1,0 +1,243 @@
+<p>atomic 是指一个操作是不可中断的。即使是在多个线程一起执行的时候&#xff0c;一个操作一旦开始&#xff0c;就不会被其他线程干扰&#xff0c;所以&#xff0c;所谓原子类说简单点就是具有原子操作特征的类&#xff0c;原子操作类提供了一些修改数据的方法&#xff0c;这些方法都是原子操作的&#xff0c;在多线程情况下可以确保被修改数据的正确性&#xff0c;我们在前边的Java并发机制底层实现中了解到&#xff0c;通过<strong>CAS操作</strong>可以实现原子操作&#xff0c;整体分类如下<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114296927-01-a634a2a4ba.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_2"></a>基本原子类</h2>
+<p>基本原子类型包含三种&#xff0c;都比较简单&#xff0c;这里我们以AtomicInteger为例进行介绍&#xff1a;</p>
+<pre><code class="prism language-java">AtomicInteger&#xff1a;<span class="token keyword">int</span> 类型原子类
+AtomicLong&#xff1a;<span class="token keyword">long</span> 类型原子类
+AtomicBoolean &#xff1a;<span class="token keyword">boolean</span>类型原子类
+</code></pre>
+<p>AtomicInteger的常用方法如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">//获取当前的值</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndSet</span><span class="token punctuation">(</span><span class="token keyword">int</span> newValue<span class="token punctuation">)</span><span class="token comment">//获取当前的值&#xff0c;并设置新的值</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndIncrement</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token comment">//获取当前的值&#xff0c;并自增</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndDecrement</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">//获取当前的值&#xff0c;并自减</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndAdd</span><span class="token punctuation">(</span><span class="token keyword">int</span> delta<span class="token punctuation">)</span> <span class="token comment">//获取当前的值&#xff0c;并加上预期的值</span>
+<span class="token comment">//如果输入的数值等于预期值&#xff0c;则以原子方式将该值设置为输入值&#xff08;update&#xff09;</span>
+<span class="token keyword">boolean</span> <span class="token function">compareAndSet</span><span class="token punctuation">(</span><span class="token keyword">int</span> expect<span class="token punctuation">,</span> <span class="token keyword">int</span> update<span class="token punctuation">)</span>
+<span class="token comment">//最终设置为newValue,使用 lazySet 设置之后可能导致其他线程在之后的一小段时间内还是可以读到旧的值。</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">lazySet</span><span class="token punctuation">(</span><span class="token keyword">int</span> newValue<span class="token punctuation">)</span>
+</code></pre>
+<p>我们从其实现的源码中可以看出&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> Unsafe unsafe <span class="token operator">&#61;</span> Unsafe<span class="token punctuation">.</span><span class="token function">getUnsafe</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">//value属性在AtomicInteger中的偏移量&#xff0c;通过这个偏移量可以快速定位到value字段&#xff0c;这个是实现AtomicInteger的关键</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">long</span> valueOffset<span class="token punctuation">;</span>
+
+<span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+        valueOffset <span class="token operator">&#61;</span> unsafe<span class="token punctuation">.</span>objectFieldOffset
+            <span class="token punctuation">(</span>AtomicInteger<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">.</span><span class="token function">getDeclaredField</span><span class="token punctuation">(</span><span class="token string">&#34;value&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span>ex<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">private</span> <span class="token keyword">volatile</span> <span class="token keyword">int</span> value<span class="token punctuation">;</span> <span class="token comment">//使用volatile修饰&#xff0c;可以确保value在多线程中的可见性。</span>
+
+</code></pre>
+<p>可以通过一个方法的源码来看其调用方式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndIncrement</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> unsafe<span class="token punctuation">.</span><span class="token function">getAndAddInt</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> valueOffset<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndAddInt</span><span class="token punctuation">(</span>Object var1<span class="token punctuation">,</span> <span class="token keyword">long</span> var2<span class="token punctuation">,</span> <span class="token keyword">int</span> var4<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> var5<span class="token punctuation">;</span>
+    <span class="token keyword">do</span> <span class="token punctuation">{<!-- --></span>
+        var5 <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getIntVolatile</span><span class="token punctuation">(</span>var1<span class="token punctuation">,</span> var2<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//可以确保从主内存中获取变量最新的值</span>
+    <span class="token punctuation">}</span> <span class="token keyword">while</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">compareAndSwapInt</span><span class="token punctuation">(</span>var1<span class="token punctuation">,</span> var2<span class="token punctuation">,</span> var5<span class="token punctuation">,</span> var5 <span class="token operator">&#43;</span> var4<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//CAS自旋等待,多线程情况下安全</span>
+
+    <span class="token keyword">return</span> var5<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">boolean</span> <span class="token function">compareAndSet</span><span class="token punctuation">(</span><span class="token keyword">int</span> expect<span class="token punctuation">,</span> <span class="token keyword">int</span> update<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> unsafe<span class="token punctuation">.</span><span class="token function">compareAndSwapInt</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> valueOffset<span class="token punctuation">,</span> expect<span class="token punctuation">,</span> update<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>getAndAddInt操作相当于线程安全的count&#43;&#43;操作</p>
+<pre><code class="prism language-java"><span class="token function">synchronize</span><span class="token punctuation">(</span>lock<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+   count<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>synchronize的方式会导致占时无法获取锁的线程处于阻塞状态&#xff0c;性能比较低。CAS的性能比synchronize要快很多</p>
+<h2><a rel="noopener noreferrer" id="_69"></a>数组原子类</h2>
+<p>使用原子的方式更新数组里的某个元素&#xff0c;可以确保修改数组中数据的线程安全性</p>
+<pre><code class="prism language-java">AtomicIntegerArray&#xff1a;整形数组原子操作类
+AtomicLongArray&#xff1a;长整形数组原子操作类
+AtomicReferenceArray &#xff1a;引用类型数组原子操作类
+</code></pre>
+<p>上面三个类提供的方法几乎相同&#xff0c;所以我们这里以 AtomicIntegerArray 为例子来介绍</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">get</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span> <span class="token comment">//获取 index&#61;i 位置元素的值</span>
+<span class="token comment">//返回 index&#61;i 位置的当前的值&#xff0c;并将其设置为新值&#xff1a;newValue</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndSet</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">,</span> <span class="token keyword">int</span> newValue<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndIncrement</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span><span class="token comment">//获取 index&#61;i 位置元素的值&#xff0c;并让该位置的元素自增</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndDecrement</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span> <span class="token comment">//获取 index&#61;i 位置元素的值&#xff0c;并让该位置的元素自减</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">int</span> <span class="token function">getAndAdd</span><span class="token punctuation">(</span><span class="token keyword">int</span> delta<span class="token punctuation">)</span> <span class="token comment">//获取 index&#61;i 位置元素的值&#xff0c;并加上预期的值</span>
+<span class="token comment">//如果输入的数值等于预期值&#xff0c;则以原子方式将 index&#61;i 位置的元素值设置为输入值&#xff08;update&#xff09;</span>
+<span class="token keyword">boolean</span> <span class="token function">compareAndSet</span><span class="token punctuation">(</span><span class="token keyword">int</span> expect<span class="token punctuation">,</span> <span class="token keyword">int</span> update<span class="token punctuation">)</span>
+<span class="token comment">//最终 将index&#61;i 位置的元素设置为newValue,</span>
+<span class="token comment">//使用 lazySet 设置之后可能导致其他线程在之后的一小段时间内还是可以读到旧的值。</span>
+<span class="token keyword">public</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">lazySet</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">,</span> <span class="token keyword">int</span> newValue<span class="token punctuation">)</span>
+</code></pre>
+<p>示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThreadTest</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">static</span> AtomicIntegerArray pageRequest <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">AtomicIntegerArray</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">int</span><span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">request</span><span class="token punctuation">(</span><span class="token keyword">int</span> page<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//模拟耗时5毫秒</span>
+        TimeUnit<span class="token punctuation">.</span>MILLISECONDS<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//pageCountIndex为pageCount数组的下标&#xff0c;表示页面对应数组中的位置</span>
+        <span class="token keyword">int</span> pageCountIndex <span class="token operator">&#61;</span> page <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        pageRequest<span class="token punctuation">.</span><span class="token function">incrementAndGet</span><span class="token punctuation">(</span>pageCountIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">long</span> starTime <span class="token operator">&#61;</span> System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> threadSize <span class="token operator">&#61;</span> <span class="token number">100</span><span class="token punctuation">;</span>
+        CountDownLatch countDownLatch <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">CountDownLatch</span><span class="token punctuation">(</span>threadSize<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> threadSize<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            Thread thread <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+
+                    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> page <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> page <span class="token operator">&lt;&#61;</span> <span class="token number">10</span><span class="token punctuation">;</span> page<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> <span class="token number">10</span><span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                            <span class="token function">request</span><span class="token punctuation">(</span>page<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{<!-- --></span>
+                    countDownLatch<span class="token punctuation">.</span><span class="token function">countDown</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            thread<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        countDownLatch<span class="token punctuation">.</span><span class="token function">await</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">long</span> endTime <span class="token operator">&#61;</span> System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&#xff0c;耗时&#xff1a;&#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>endTime <span class="token operator">-</span> starTime<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> pageIndex <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> pageIndex <span class="token operator">&lt;</span> <span class="token number">10</span><span class="token punctuation">;</span> pageIndex<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;索引值为&#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>pageIndex <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34; 被累加次数为&#34;</span> <span class="token operator">&#43;</span> pageRequest<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>pageIndex<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>执行结果为&#xff1a;</p>
+<pre><code class="prism language-java">main&#xff0c;耗时&#xff1a;<span class="token number">650</span>
+索引值为<span class="token number">1</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">2</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">3</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">4</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">5</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">6</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">7</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">8</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">9</span> 被累加次数为<span class="token number">1000</span>
+索引值为<span class="token number">10</span> 被累加次数为<span class="token number">1000</span>
+</code></pre>
+<p>其实其底层也是调用了普通原子类实现</p>
+<h2><a rel="noopener noreferrer" id="_155"></a>引用原子类</h2>
+<p>基本类型原子类只能更新一个变量&#xff0c;如果需要原子更新多个变量&#xff0c;需要使用 引用类型原子类</p>
+<pre><code class="prism language-java">AtomicReference&#xff1a;引用类型原子类
+AtomicStampedRerence&#xff1a;原子更新引用类型里的字段原子类  <span class="token comment">//可以用时间戳解决ABA问题</span>
+AtomicMarkableReference &#xff1a;原子更新带有标记位的引用类型
+</code></pre>
+<h3><a rel="noopener noreferrer" id="ABA_163"></a>ABA问题</h3>
+<p>普通情况下ABA问题没有危害&#xff0c;不过可以看一种特殊场景&#xff0c;场景是用链表来实现一个栈&#xff0c;初始化向栈中压入B、A两个元素&#xff0c;栈顶head指向A元素。<code>head(A)-&gt;B</code></p>
+<pre><code class="prism language-java">Thread thread1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span>
+    <span class="token operator">-</span><span class="token operator">&gt;</span><span class="token punctuation">{<!-- --></span>
+          oldValue <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+          <span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">3</span>秒<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token comment">//thread2切换执行</span>
+          <span class="token function">compareAndSet</span><span class="token punctuation">(</span>oldValue<span class="token punctuation">,</span> B<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+Thread thread2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span>
+    <span class="token operator">-</span><span class="token operator">&gt;</span><span class="token punctuation">{<!-- --></span>
+          <span class="token comment">// 弹出A</span>
+          newHead <span class="token operator">&#61;</span> head<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+          head<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> null<span class="token punctuation">;</span> <span class="token comment">//即A.next &#61; null;</span>
+          head <span class="token operator">&#61;</span> newHead<span class="token punctuation">;</span>
+          <span class="token comment">// 弹出B</span>
+          newHead <span class="token operator">&#61;</span> head<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+          head<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> null<span class="token punctuation">;</span> <span class="token comment">// 即B.next &#61; null;</span>
+          head <span class="token operator">&#61;</span> newHead<span class="token punctuation">;</span> <span class="token comment">// 此时head为null</span>
+
+          <span class="token comment">// 压入C</span>
+          head <span class="token operator">&#61;</span> C<span class="token punctuation">;</span>
+          <span class="token comment">// 压入D</span>
+          D<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+          head <span class="token operator">&#61;</span> D<span class="token punctuation">;</span>
+          <span class="token comment">// 压入A</span>
+          A<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> D<span class="token punctuation">;</span>
+          head <span class="token operator">&#61;</span> A<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+thread1<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+thread2<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<ol><li>线程1试图将栈顶换成B&#xff0c;但它获取栈顶的oldValue&#xff08;head&#xff0c;也就是A&#xff09;后&#xff0c;被线程2中断了。</li><li>线程2依次将A、B弹出&#xff0c;然后压入C、D、A。<code>head(A)-&gt;D-&gt;C</code></li><li>然后换线程1继续运行&#xff0c;线程1执行compareAndSet发现head指向的元素确实与oldValue一致&#xff0c;都是A&#xff0c;所以就将head指向B了。<code>head(B)</code></li></ol>
+<p>但是&#xff0c;线程2在弹出B的时候&#xff0c;将B的next置为null了&#xff0c;因此在线程1将head指向B后&#xff0c;栈中只剩元素B。但按预期来说&#xff0c;栈中应该放的是B → A → D → C</p>
+<p><code>AtomicStampedRerence</code>可以解决ABA问题&#xff0c;他内部不仅维护了对象的值&#xff0c;还维护了一个时间戳&#xff08;我们这里把他称为时间戳&#xff0c;实际上它可以使用任何一个整形来表示状态值&#xff09;&#xff0c;当<code>AtomicStampedRerence</code>对应的数值被修改时&#xff0c;除了更新数据本身外&#xff0c;还必须要更新时间戳。当<code>AtomicStampedRerence</code>设置对象值时&#xff0c;对象值及时间戳都必须满足期望值&#xff0c;写入才会成功。因此&#xff0c;即使对象值被反复读写&#xff0c;写回原值&#xff0c;只要时间戳发生变量&#xff0c;就能防止不恰当的写入</p>
+<h2><a rel="noopener noreferrer" id="_211"></a>更新原子类</h2>
+<p>如果需要原子更新某个类里的某个字段时&#xff0c;需要用到对象的属性修改原子类</p>
+<pre><code class="prism language-java">AtomicIntegerFieldUpdater&#xff1a;原子更新整形字段的值
+AtomicLongFieldUpdater&#xff1a;原子更新长整形字段的值
+AtomicReferenceFieldUpdater &#xff1a;原子更新引用类型字段的值
+</code></pre>
+<p>要想原子地更新对象的属性需要两步&#xff1a;</p>
+<ol><li>因为对象的属性修改类型原子类都是抽象类&#xff0c;所以每次使用都必须使用静态方法 newUpdater()创建一个更新器&#xff0c;并且需要设置想要更新的类和属性。</li><li>更新的对象属性必须使用 public volatile 修饰符。</li></ol>
+<p>上面三个类提供的方法几乎相同&#xff0c;所以我们这里以AtomicReferenceFieldUpdater为例子来介绍。</p>
+<p>调用AtomicReferenceFieldUpdater静态方法newUpdater创建AtomicReferenceFieldUpdater对象</p>
+<pre><code class="prism language-java"><span class="token comment">//tclass&#xff1a;需要操作的字段所在的类,vclass&#xff1a;操作字段的类型,fieldName&#xff1a;字段名称</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token generics function"><span class="token punctuation">&lt;</span>U<span class="token punctuation">,</span> W<span class="token punctuation">&gt;</span></span> AtomicReferenceFieldUpdater<span class="token generics function"><span class="token punctuation">&lt;</span>U<span class="token punctuation">,</span> W<span class="token punctuation">&gt;</span></span>
+         <span class="token function">newUpdater</span><span class="token punctuation">(</span>Class<span class="token generics function"><span class="token punctuation">&lt;</span>U<span class="token punctuation">&gt;</span></span> tclass<span class="token punctuation">,</span> Class<span class="token generics function"><span class="token punctuation">&lt;</span>W<span class="token punctuation">&gt;</span></span> vclass<span class="token punctuation">,</span> String fieldName<span class="token punctuation">)</span>
+</code></pre>
+<p>多线程并发调用一个类的初始化方法&#xff0c;如果未被初始化过&#xff0c;将执行初始化工作&#xff0c;要求只能初始化一次</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Demo5</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">static</span> Demo5 demo5 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Demo5</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//isInit用来标注是否被初始化过</span>
+    <span class="token keyword">volatile</span> Boolean isInit <span class="token operator">&#61;</span> Boolean<span class="token punctuation">.</span>FALSE<span class="token punctuation">;</span>
+    AtomicReferenceFieldUpdater<span class="token generics function"><span class="token punctuation">&lt;</span>Demo5<span class="token punctuation">,</span> Boolean<span class="token punctuation">&gt;</span></span> updater <span class="token operator">&#61;</span> AtomicReferenceFieldUpdater<span class="token punctuation">.</span><span class="token function">newUpdater</span><span class="token punctuation">(</span>Demo5<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> Boolean<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token string">&#34;isInit&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//isInit为false的时候&#xff0c;才进行初始化&#xff0c;并将isInit采用原子操作置为true</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>updater<span class="token punctuation">.</span><span class="token function">compareAndSet</span><span class="token punctuation">(</span>demo5<span class="token punctuation">,</span> Boolean<span class="token punctuation">.</span>FALSE<span class="token punctuation">,</span> Boolean<span class="token punctuation">.</span>TRUE<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;,&#34;</span> <span class="token operator">&#43;</span> Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&#xff0c;开始初始化!&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//模拟休眠3秒</span>
+            TimeUnit<span class="token punctuation">.</span>SECONDS<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;,&#34;</span> <span class="token operator">&#43;</span> Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&#xff0c;初始化完毕!&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;,&#34;</span> <span class="token operator">&#43;</span> Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&#xff0c;有其他线程已经执行了初始化!&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">5</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                    demo5<span class="token punctuation">.</span><span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">1565159962098</span><span class="token punctuation">,</span>Thread<span class="token operator">-</span><span class="token number">0</span>&#xff0c;开始初始化<span class="token operator">!</span>
+<span class="token number">1565159962098</span><span class="token punctuation">,</span>Thread<span class="token operator">-</span><span class="token number">3</span>&#xff0c;有其他线程已经执行了初始化<span class="token operator">!</span>
+<span class="token number">1565159962098</span><span class="token punctuation">,</span>Thread<span class="token operator">-</span><span class="token number">4</span>&#xff0c;有其他线程已经执行了初始化<span class="token operator">!</span>
+<span class="token number">1565159962098</span><span class="token punctuation">,</span>Thread<span class="token operator">-</span><span class="token number">2</span>&#xff0c;有其他线程已经执行了初始化<span class="token operator">!</span>
+<span class="token number">1565159962098</span><span class="token punctuation">,</span>Thread<span class="token operator">-</span><span class="token number">1</span>&#xff0c;有其他线程已经执行了初始化<span class="token operator">!</span>
+<span class="token number">1565159965100</span><span class="token punctuation">,</span>Thread<span class="token operator">-</span><span class="token number">0</span>&#xff0c;初始化完毕<span class="token operator">!</span>
+</code></pre>
+<p>可以看出多线程同时执行init()方法&#xff0c;只有一个线程执行了初始化的操作&#xff0c;其他线程跳过了。多个线程同时到达updater.compareAndSet&#xff0c;只有一个会成功</p>
+<h2><a rel="noopener noreferrer" id="_283"></a>增强原子类</h2>
+<p>原子类的基本实现机制&#xff0c;它们都是在一个死循环内&#xff0c;不断尝试修改目标值&#xff0c;知道修改成功。如果竞争不激烈&#xff0c;那么修改成功的概率就很高&#xff0c;否则&#xff0c;修改失败的概率就很高。<strong>在大量修改失败时&#xff0c;这些原子操作就会进行多次循环尝试&#xff0c;因此性能会受到影响</strong>。</p>
+<p>当竞争激烈的时候&#xff0c;为了进一步提高系统的性能&#xff0c;一种基本方案就是可以使用热点分离&#xff0c;将竞争的数据进行分解&#xff0c;基于这个思路&#xff0c;可以想到一种对传统AtomicInteger等原子类的改进方法。虽然在CAS操作中没有锁&#xff0c;但是像减小锁粒度这种分离热点的思想依然可以使用。一种可行的方案就是仿造ConcurrentHashMap&#xff0c;将热点数据分离。比如&#xff0c;可以将AtomicInteger的内部核心数据value分离成一个数组&#xff0c;每个线程访问时&#xff0c;通过哈希等算法映射到其中一个数字进行计算&#xff0c;而最终的计算结果&#xff0c;则为这个数组的求和累加。热点value被分离成多个单元cell&#xff0c;每个cell独自维护内部的值&#xff0c;当前对象的实际值由所有的cell累计合成&#xff0c;这样&#xff0c;热点就进行了有效的分离&#xff0c;提高了并行度。增强原子类正是利用了这种原理实现&#xff0c;这里不详细介绍了。</p>

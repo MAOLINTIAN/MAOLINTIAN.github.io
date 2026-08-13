@@ -1,0 +1,299 @@
+<p>Java 注解&#xff08;Annotation&#xff09;又称 Java 标注&#xff0c;是 JDK5.0 引入的一种注释机制。Java 语言中的<strong>类、方法、变量、参数和包等都可以被标注</strong>。</p>
+<ul><li>注解和 Javadoc 不同&#xff0c;<strong>Java 标注可以通过反射获取标注内容</strong>。在编译器生成类文件时&#xff0c;标注可以被嵌入到字节码中。Java 虚拟机可以保留标注内容&#xff0c;在运行时可以获取到标注内容 。</li><li>注解也支持自定义&#xff0c;即自定义Java标注。</li></ul>
+<p>通俗的说注解就是给所标注的对象打标签&#xff0c;对所标注对象进行<strong>描述、限制、验证</strong>等一系列操作。</p>
+<h2><a rel="noopener noreferrer" id="_6"></a>注解基本概念</h2>
+<p>日常开发中新建Java类&#xff0c;我们使用class、interface比较多&#xff0c;而注解和它们一样&#xff0c;也是一种类的类型&#xff0c;修饰符为 <code>&#64;interface</code>。</p>
+<h3><a rel="noopener noreferrer" id="_8"></a>创建注解</h3>
+<p>我们通过IDEA创建一个注解&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118914128-01-f7d46f9767.png" loading="lazy"><br />
+这样一个注解就被创建出来了&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_20"></a>注解属性</h3>
+<p>注解的属性也叫做成员变量。注解只有成员变量&#xff0c;没有方法。注解的成员变量在注解的定义中以<code>无形参的方法</code>形式来声明&#xff0c;其方法名定义了该成员变量的名字&#xff0c;其返回值定义了该成员变量的类型。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">id</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">msg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;hello Annotation&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>当然注解属性也可以拥有默认值&#xff0c;这种情况下&#xff0c;在使用注解时可以不用显式赋值。</p>
+<h3><a rel="noopener noreferrer" id="_31"></a>使用注解</h3>
+<p>使用注解也十分简单&#xff0c;我们在要使用的位置直接打注解即可&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;MyFirstAnnotation</span><span class="token punctuation">(</span>id<span class="token operator">&#61;</span><span class="token number">1</span><span class="token punctuation">,</span>msg<span class="token operator">&#61;</span><span class="token string">&#34;MyFirstAnnotation&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AnnotationFather</span> <span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>当然此时注解内没有任何逻辑&#xff0c;没有作用效果&#xff0c;需要我们添加逻辑。这里先简单介绍下创建语法&#xff0c;然后聊聊注解相关的概念我们再去实际的去写一段逻辑。</p>
+<h3><a rel="noopener noreferrer" id="_41"></a>注解的本质</h3>
+<p>注解的本质就是一个Annotation接口&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">/**Annotation接口源码*/</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">Annotation</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">boolean</span> <span class="token function">equals</span><span class="token punctuation">(</span><span class="token class-name">Object</span> obj<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">int</span> <span class="token function">hashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Annotation</span><span class="token punctuation">&gt;</span></span> <span class="token function">annotationType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>通过以上源码&#xff0c;我们知道<strong>注解本身就是Annotation接口的子接口</strong>&#xff0c;也就是说注解中其实是可以有属性和方法&#xff0c;但是接口中的属性都是static final的&#xff0c;对于注解来说没什么意义&#xff0c;而<strong>我们定义接口的方法就相当于注解的属性&#xff0c;也就对应了前面说的为什么注解只有属性成员变量&#xff0c;其实他就是接口的方法&#xff0c;这就是为什么成员变量会有括号</strong>&#xff0c;不同于接口我们可以在注解的括号中给成员变量赋值</p>
+<h2><a rel="noopener noreferrer" id="_58"></a>元注解</h2>
+<p>元注解顾名思义我们可以理解为<strong>注解的注解</strong>&#xff0c;它是作用在注解中&#xff0c;方便我们使用注解实现想要的功能。元注解分别有<code>&#64;Retention、 &#64;Target、 &#64;Document、 &#64;Inherited和&#64;Repeatable</code>&#xff08;JDK1.8加入&#xff09;五种</p>
+<h3><a rel="noopener noreferrer" id="Retention_60"></a>Retention</h3>
+<p>Retention 的英文意为保留期的意思。当 <code>&#64;Retention</code> 应用到一个注解上的时候&#xff0c;它解释说明了这个注解的的存活时间&#xff0c;它的取值如下&#xff1a;</p>
+<ul><li><strong>RetentionPolicy.SOURCE</strong> &#xff1a;注解只在源码阶段保留&#xff0c;在编译器进行编译时它将被丢弃忽视。</li><li><strong>RetentionPolicy.CLASS</strong> &#xff1a;注解只被保留到编译进行的时候&#xff0c;它并不会被加载到 JVM 中。</li><li><strong>RetentionPolicy.RUNTIME</strong> &#xff1a;注解可以保留到程序运行的时候&#xff0c;它会被加载进入到 JVM 中&#xff0c;所以在程序运行时可以获取到它们。</li></ul>
+<p>Retention其实明确了该注解的作用域&#xff0c;在什么时候才能得到使用。这里我们让我们的注解一直可以被保留到运行时&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">id</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">msg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;hello Annotation&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Documented_75"></a>Documented</h3>
+<p>顾名思义&#xff0c;这个元注解肯定是和文档有关。它的作用是能够将注解中的元素包含到 Javadoc 中去&#xff0c;我们也将这个元注解增加到我们的注解中去&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">id</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">msg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;hello Annotation&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Target_86"></a>Target</h3>
+<p>Target 是目标的意思&#xff0c;<code>&#64;Target</code> 指定了注解运用的地方。当一个注解被 <code>&#64;Target</code> 注解时&#xff0c;这个注解就被限定了运用的场景。类比到标签&#xff0c;原本标签是你想张贴到哪个地方就到哪个地方&#xff0c;但是因为 <code>&#64;Target</code> 的存在&#xff0c;它张贴的地方就非常具体了&#xff0c;比如只能张贴到方法上、类上、方法参数上等等。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118914128-02-142feaef55.png" loading="lazy"></p>
+<p>一般比较常用的是ElementType.TYPE类型&#xff0c;这里我们给我们的注解也加上限定注释目标的元注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">id</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">msg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;hello Annotation&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Inherited_102"></a>Inherited</h3>
+<p>Inherited的英文意思是继承&#xff0c;但是这个继承和我们平时理解的继承大同小异&#xff0c;一个被<code>&#64;Inherited</code>注解了的注解修饰了一个父类&#xff0c;如果他的子类没有被其他注解修饰&#xff0c;则它的子类也继承了父类的注解。我们给自己的注解加上这个元注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Inherited</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">id</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">msg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;hello Annotation&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>可以理解为&#xff0c;父类Father注解了MyFirstAnnotation&#xff0c;那么Son继承Father也自动继承了它的注解。</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;MyFirstAnnotation</span><span class="token punctuation">(</span>id<span class="token operator">&#61;</span><span class="token number">1</span><span class="token punctuation">,</span>msg<span class="token operator">&#61;</span><span class="token string">&#34;MyFirstAnnotation&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AnnotationFather</span> <span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>AnnotationChildren 继承了AnnotationFather类</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AnnotationChildren</span> <span class="token keyword">extends</span> <span class="token class-name">AnnotationFather</span><span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">//获取Son的class对象</span>
+        <span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">AnnotationChildren</span><span class="token punctuation">&gt;</span></span> sonClass <span class="token operator">&#61;</span> <span class="token class-name">AnnotationChildren</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取Son类上的注解MyTestAnnotation可以执行成功</span>
+        <span class="token class-name">MyFirstAnnotation</span> annotation <span class="token operator">&#61;</span> sonClass<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span><span class="token class-name">MyFirstAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>annotation<span class="token punctuation">.</span><span class="token function">annotationType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>我们看下打印结果&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118914128-03-0eca520972.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Repeatable_140"></a>Repeatable</h3>
+<p>Repeatable的英文意思是可重复的。顾名思义说明被这个元注解修饰的注解可以同时作用一个对象多次&#xff0c;但是每次作用注解又可以代表不同的含义。多次注解的方法依赖容器注解的使用&#xff0c;首先定义一个容器注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">;</span>
+
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Inherited</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">Volume</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">MyFirstAnnotation</span><span class="token punctuation">[</span><span class="token punctuation">]</span>  <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//注解的属性</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>按照规定&#xff0c;它里面必须要有一个 value 的属性&#xff0c;属性类型是一个被 <code>&#64;Repeatable 注</code>解过的注解数组&#xff0c;也就是我们的自定义注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Inherited</span>
+<span class="token annotation punctuation">&#64;Repeatable</span><span class="token punctuation">(</span><span class="token class-name">Volume</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">MyFirstAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">id</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">msg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;hello Annotation&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>我们的自定义注解的Repeatable元注解正是使用了容器注解&#xff1a;<code>&#64;Repeatable(Volume.class)</code>&#xff0c;使用的时候可以这样&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;MyFirstAnnotation</span><span class="token punctuation">(</span>id<span class="token operator">&#61;</span><span class="token number">1</span><span class="token punctuation">,</span>msg<span class="token operator">&#61;</span><span class="token string">&#34;MyFirstAnnotation&#34;</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;MyFirstAnnotation</span><span class="token punctuation">(</span>id<span class="token operator">&#61;</span><span class="token number">2</span><span class="token punctuation">,</span>msg<span class="token operator">&#61;</span><span class="token string">&#34;MyFirstAnnotation2&#34;</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;MyFirstAnnotation</span><span class="token punctuation">(</span>id<span class="token operator">&#61;</span><span class="token number">3</span><span class="token punctuation">,</span>msg<span class="token operator">&#61;</span><span class="token string">&#34;MyFirstAnnotation3&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AnnotationFather</span> <span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>我们可以这么理解&#xff0c;AnnotationFather 想使用不同属性值的MyFirstAnnotation注解&#xff0c;但是一次只能用一个&#xff0c;所以它求助于Repeatable&#xff0c;通过引入容器注解解决它的需求。</p>
+<h2><a rel="noopener noreferrer" id="Java_184"></a>Java预置注解</h2>
+<p>通过以上内容我们大致定义了一个没有任何实现的注解&#xff0c;其实Java内部已经预定义好了各种注解可以直接使用&#xff1a;</p>
+<ul><li><code>&#64;Deprecated</code>  &#xff1a;<code>&#64;Deprecated</code> 所标注内容&#xff0c;不再被建议使用。</li><li><code>&#64;Override</code>   &#xff1a;<code>&#64;Override</code> 只能标注方法&#xff0c;表示该方法覆盖父类中的方法。</li><li><code>&#64;SuppressWarnings</code> &#xff1a; <code>&#64;SuppressWarnings</code> 所标注内容产生的警告&#xff0c;编译器会对这些警告保持静默。</li></ul>
+<p>这些预置注解都是可以直接使用的&#xff0c;当然引入第三方依赖以及框架依赖后预置可使用的注解数量会大大增多。</p>
+<h2><a rel="noopener noreferrer" id="_194"></a>自定义注解的使用</h2>
+<p>当我们自定义一个注解的之后&#xff0c;不光是把注解的标签打到目标的类或方法或其它元素上&#xff0c;我们还期望在运行时获取到它的属性值来进行相应的操作&#xff0c;这才是一个完整的闭环。</p>
+<h3><a rel="noopener noreferrer" id="_196"></a>定义注解</h3>
+<p>定义注解的部分其实从上边的流程我们已经处理的比较清晰了&#xff0c;这里我们定义一个简单的人员注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Inherited</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">PersonAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> <span class="token function">name</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> <span class="token function">age</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">;</span>
+    <span class="token class-name">String</span> <span class="token function">sex</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>再定义一个给属性使用的注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>FIELD<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Inherited</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">NameAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>以及一个给方法使用的注解&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>METHOD<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Inherited</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">PlayGameAnnotation</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_249"></a>标注注解</h3>
+<p>定义好后&#xff0c;我们给AnnotationFather进行注解标记&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>javabean<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>NameAnnotation<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>PersonAnnotation<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>PlayGameAnnotation<span class="token punctuation">;</span>
+
+
+<span class="token annotation punctuation">&#64;PersonAnnotation</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">,</span>age<span class="token operator">&#61;</span><span class="token number">27</span><span class="token punctuation">,</span>sex <span class="token operator">&#61;</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AnnotationFather</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;NameAnnotation</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token operator">&#61;</span><span class="token string">&#34;张三&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> age<span class="token operator">&#61;</span><span class="token number">20</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> sex<span class="token operator">&#61;</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;PlayGameAnnotation</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">playGame</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_275"></a>提取注解</h3>
+<p>使用注解&#xff0c;也就是提取注解的方法如下&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token comment">/**是否存在对应 Annotation 对象*/</span>
+  <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">isAnnotationPresent</span><span class="token punctuation">(</span><span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Annotation</span><span class="token punctuation">&gt;</span></span> annotationClass<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token class-name">GenericDeclaration</span><span class="token punctuation">.</span><span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">isAnnotationPresent</span><span class="token punctuation">(</span>annotationClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+ <span class="token comment">/**获取 Annotation 对象*/</span>
+    <span class="token keyword">public</span> <span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">A</span> <span class="token keyword">extends</span> <span class="token class-name">Annotation</span><span class="token punctuation">&gt;</span></span> <span class="token class-name">A</span> <span class="token function">getAnnotation</span><span class="token punctuation">(</span><span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">A</span><span class="token punctuation">&gt;</span></span> annotationClass<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">Objects</span><span class="token punctuation">.</span><span class="token function">requireNonNull</span><span class="token punctuation">(</span>annotationClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token class-name">A</span><span class="token punctuation">)</span> <span class="token function">annotationData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>annotations<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>annotationClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+ <span class="token comment">/**获取所有 Annotation 对象数组*/</span>
+ <span class="token keyword">public</span> <span class="token class-name">Annotation</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">getAnnotations</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token class-name">AnnotationParser</span><span class="token punctuation">.</span><span class="token function">toArray</span><span class="token punctuation">(</span><span class="token function">annotationData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>annotations<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>提取注解的方式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>javabean<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>NameAnnotation<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>PersonAnnotation<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>PlayGameAnnotation<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>reflect<span class="token punctuation">.</span></span><span class="token class-name">Field</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>reflect<span class="token punctuation">.</span></span><span class="token class-name">Method</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Test</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">NoSuchMethodException</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">/**
+         * 获取类注解属性
+         */</span>
+        <span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">AnnotationFather</span><span class="token punctuation">&gt;</span></span> fatherClass <span class="token operator">&#61;</span> <span class="token class-name">AnnotationFather</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">;</span>
+        <span class="token keyword">boolean</span> annotationPresent <span class="token operator">&#61;</span> fatherClass<span class="token punctuation">.</span><span class="token function">isAnnotationPresent</span><span class="token punctuation">(</span><span class="token class-name">PersonAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>annotationPresent<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">PersonAnnotation</span> annotation <span class="token operator">&#61;</span> fatherClass<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span><span class="token class-name">PersonAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>annotation<span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>annotation<span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>annotation<span class="token punctuation">.</span><span class="token function">sex</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/**
+         * 获取属性和方法注解
+         */</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Field</span> name <span class="token operator">&#61;</span> fatherClass<span class="token punctuation">.</span><span class="token function">getDeclaredField</span><span class="token punctuation">(</span><span class="token string">&#34;name&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> annotationPresent1 <span class="token operator">&#61;</span> name<span class="token punctuation">.</span><span class="token function">isAnnotationPresent</span><span class="token punctuation">(</span><span class="token class-name">NameAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>annotationPresent1<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                <span class="token class-name">NameAnnotation</span> annotation <span class="token operator">&#61;</span> name<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span><span class="token class-name">NameAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>annotation<span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token class-name">Method</span> play <span class="token operator">&#61;</span> <span class="token class-name">AnnotationFather</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">.</span><span class="token function">getDeclaredMethod</span><span class="token punctuation">(</span><span class="token string">&#34;playGame&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> annotationPresent2 <span class="token operator">&#61;</span> play<span class="token punctuation">.</span><span class="token function">isAnnotationPresent</span><span class="token punctuation">(</span><span class="token class-name">PlayGameAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>annotationPresent2<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                <span class="token class-name">PlayGameAnnotation</span> annotation <span class="token operator">&#61;</span> play<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span><span class="token class-name">PlayGameAnnotation</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>annotation<span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">NoSuchFieldException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>打印的结果如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118914128-04-3eb3ba1ffb.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="APT_348"></a>注解处理【APT】</h3>
+<p>和提取注解类似&#xff0c;提取注解后可以使用一些业务代码逻辑来进行处理。之后在应用到这些的时候详细说说这方面内容。说白了处理逻辑都是可以自定义的&#xff0c;所以注解具体是什么取决于你怎么使用它。</p>
+<h2><a rel="noopener noreferrer" id="_350"></a>注解的应用</h2>
+<p>注解主要针对的是编译器和其它工具软件(SoftWare tool)。&#xff0c;注解一般有如下的用途&#xff1a;</p>
+<ul><li><strong>编译检查</strong>&#xff1a; 编译器可以利用注解来检测出错误或者警告信息&#xff0c;打印出日志。</li><li><strong>编译自动处理【插入式注解】</strong>&#xff1a; 软件工具可以用来利用注解信息来自动生成代码、文档或者做其它相应的自动处理&#xff0c;例如loombook,</li><li><strong>运行时处理【反射】</strong>&#xff1a; 某些注解可以在程序运行的时候接受代码的提取&#xff0c;自动做相应的操作&#xff0c;例如<strong>使用注解进行参数化的配置</strong></li><li><strong>生成帮助文档</strong>&#xff1a;通过给 Annotation 注解加上 &#64;Documented 标签&#xff0c;能使该 Annotation 标签出现在 javadoc 中</li></ul>
+<p>当开发者使用了Annotation 修饰了类、方法、Field 等成员之后&#xff0c;这些 Annotation 不会自己生效&#xff0c;必须由开发者提供相应的代码来提取并处理 Annotation 信息。这些处理提取和处理 Annotation 的代码统称为 <strong>APT&#xff08;Annotation Processing Tool)</strong></p>
+<h2><a rel="noopener noreferrer" id="_359"></a>总结一下</h2>
+<p>注解是什么&#xff1f;注解就类似一个标签&#xff0c;打在类、方法或者属性上。描述、验证以及限制这些目标&#xff0c;在运行时可以通过反射获取注解的属性值&#xff0c;又能有动态配置的感觉。而其在编译阶段的作用又有编译检查和自动生成代码的作用&#xff0c;最后还有生成帮助文档的作用。总而言之注解就是方便我们编码的工具&#xff0c;有了注解很多固定逻辑可以被反复复用&#xff0c;例如一个属性值的最大、最小范围等都可以用注解标识&#xff0c;而免去了大量的逻辑代码。注解的大量使用在Spring&#xff0c;那个时候估计还要拿出来深入研究一番</p>

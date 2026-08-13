@@ -1,0 +1,400 @@
+<p>上一篇主要学习了基础语法和进阶的一些语法 <a href="https://tianmaolin.blog.csdn.net/article/details/161157004?spm&#61;1001.2014.3001.5502" rel="nofollow"><strong>【GO语言开发实践】一 GO 语法快速上手</strong></a>&#xff0c;这一篇主要学习一下Go的核心并发&#xff0c;深入理解下Go一直以来比较有优势的点&#xff1a;协程。还是使用「对比总结&#43;带完整注释对照代码」模式学习完&#xff0c;主要学习内容&#xff1a;<strong>Goroutine协程、sync.WaitGroup等待组、sync.Mutex互斥锁、Channel通道、并发实战</strong></p>
+<hr />
+<h2><a rel="noopener noreferrer" id="GO__3"></a>GO 协程的设计思想</h2>
+<p>以下内容整理自与DeepSeek多轮对话&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="1__GoroutineGo__5"></a>1. 什么是 Goroutine&#xff1a;Go 的轻量级协程</h3>
+<p>Goroutine 是 Go 语言中实现并发的核心单元&#xff0c;是一种<strong>用户态的轻量级协程</strong>。与传统操作系统线程相比&#xff0c;它的创建成本极低&#xff08;初始栈仅 2KB 且可动态伸缩&#xff09;&#xff0c;由 Go 运行时自行调度&#xff0c;而不是由操作系统内核管理。</p>
+<p>一个典型的 goroutine 创建只需在函数前加上 <code>go</code> 关键字&#xff1a;</p>
+<pre><code class="prism language-go"><span class="token keyword">go</span> <span class="token function">myFunction</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<p>这行代码会创建一个独立的、并发执行的“任务”&#xff0c;它会在某个可用的操作系统线程上被调度执行。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="2_Goroutine_GMP__17"></a>2. Goroutine 底层是如何实现的&#xff1a;GMP 调度模型</h3>
+<p>Go 的调度器实现了著名的 <strong>GMP 模型</strong>&#xff0c;完全在用户态运行&#xff0c;不依赖操作系统内核的线程调度。</p>
+<h4><a rel="noopener noreferrer" id="21_GMP__21"></a>2.1 GMP 中的三个核心角色</h4>
+<ul><li> <p><strong>G&#xff08;Goroutine&#xff09;</strong><br /> 代表一个 goroutine&#xff0c;包含栈、指令指针、寄存器等信息。每个 G 有独立的状态&#xff08;如就绪、运行、等待等&#xff09;。</p> </li><li> <p><strong>M&#xff08;Machine&#xff09;</strong><br /> 代表一个操作系统线程&#xff08;内核线程&#xff09;。M 负责真正执行 G 的代码。M 的数量由 Go 运行时控制&#xff0c;通常等于 CPU 核心数&#xff08;<code>GOMAXPROCS</code>&#xff09;&#xff0c;但在阻塞系统调用时会临时增加。</p> </li><li> <p><strong>P&#xff08;Processor&#xff09;</strong><br /> 代表一个逻辑处理器&#xff0c;是 M 的“调度助理”。每个 P 维护一个本地 goroutine 任务队列。P 的数量默认等于 <code>GOMAXPROCS</code>。M 必须绑定一个 P 才能执行 G。</p> </li></ul>
+<h4><a rel="noopener noreferrer" id="22_GMP__32"></a>2.2 调度流程的时间线图&#xff08;GMP 视角&#xff09;</h4>
+<p>下面用 Mermaid 序列图展示一个典型的调度流程&#xff0c;包含创建、执行、阻塞、唤醒、结束等阶段&#xff1a;</p>
+<div class="mermaid mermaid-newversion mermaid-sequence">
+
+</div>
+<blockquote>
+ <p>该图清晰展示了&#xff1a;<strong>同一个 M 可以在不同 G 之间快速切换&#xff0c;而切换过程完全在用户态完成&#xff08;除了真正的阻塞系统调用&#xff09;。</strong></p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="3_Goroutine__71"></a>3. Goroutine 的生命周期与核心状态</h3>
+<p>Goroutine 拥有与线程类似的状态机&#xff0c;定义在 <code>runtime/runtime2.go</code> 中。</p>
+<h4><a rel="noopener noreferrer" id="31_Goroutine__75"></a>3.1 Goroutine 核心状态说明</h4>
+<table><thead><tr><th>状态</th><th>含义</th><th>典型转换</th></tr></thead><tbody><tr><td><strong>_Grunnable</strong></td><td>就绪&#xff0c;等待被调度执行</td><td>新建的 G 或从等待中唤醒的 G 进入此状态</td></tr><tr><td><strong>_Grunning</strong></td><td>正在某个 M 上执行</td><td>调度器从队列中取出 G 后运行</td></tr><tr><td><strong>_Gwaiting</strong></td><td>等待某条件&#xff08;如 channel、锁、time.Sleep&#xff09;</td><td>执行阻塞操作时进入&#xff1b;条件满足后转为 _Grunnable</td></tr><tr><td><strong>_Gsyscall</strong></td><td>正在执行阻塞的系统调用</td><td>发起系统调用时进入&#xff1b;完成后转为 _Grunnable</td></tr><tr><td><strong>_Gdead</strong></td><td>已结束</td><td>执行完毕或从未被使用</td></tr></tbody></table>
+<p>对于网络 I/O&#xff0c;<strong>Go 使用非阻塞 socket &#43; netpoller&#xff08;epoll/kqueue&#xff09;&#xff0c;当数据未就绪时&#xff0c;goroutine 被挂起&#xff0c;线程不会进入内核阻塞态&#xff0c;而是去执行其他 goroutine</strong>。这里并没有“线程进入内核态等待”&#xff0c;只有 epoll 等待系统调用会短暂进入内核&#xff0c;但线程本身不阻塞。</p>
+<p>对于真正的<strong>阻塞系统调用&#xff08;如文件 I/O、time.Sleep&#xff09;&#xff0c;线程会进入内核阻塞态&#xff0c;此时 Go 会临时新建线程来替代</strong>。</p>
+<h4><a rel="noopener noreferrer" id="32_Goroutine__88"></a>3.2 Goroutine 状态切换图</h4>
+<div class="mermaid mermaid-newversion">
+
+</div>
+<blockquote>
+ <p>调度器使用<strong>协作式&#43;抢占式</strong>混合调度&#xff1a;goroutine 会主动让出&#xff08;如 channel 操作&#xff09;&#xff0c;但长时间运行的 G 也会被<strong>异步抢占</strong>&#xff08;Go 1.14 起&#xff09;&#xff0c;防止“饿死”其他 G。</p>
+</blockquote>
+<h3><a rel="noopener noreferrer" id="4__109"></a>4. 协程的本质&#xff1a;操作系统看不到的执行单元</h3>
+<p>一个关键的本质问题&#xff1a;<strong>操作系统在物理/内核层面根本没有“协程”这个概念</strong>。协程完全是<strong>用户态的运行时&#xff08;语言、库、或虚拟机&#xff09;自己模拟出来的轻量级执行流</strong>。</p>
+<h4><a rel="noopener noreferrer" id="41__113"></a>4.1 操作系统只知道内核线程</h4>
+<p>操作系统&#xff08;Linux、Windows 等&#xff09;的最小调度单元是<strong>内核线程</strong>&#xff08;或进程&#xff09;。每个线程拥有独立的寄存器上下文、栈&#xff0c;切换必须通过系统调用陷入内核&#xff0c;由内核调度器完成。</p>
+<h4><a rel="noopener noreferrer" id="42__117"></a>4.2 协程是如何“活”起来的&#xff1f;</h4>
+<p>协程只存在于用户态&#xff0c;其核心机制是&#xff1a;</p>
+<ul><li><strong>保存/恢复寄存器</strong>&#xff1a;每个协程维护一组寄存器快照&#xff08;PC、SP、通用寄存器等&#xff09;。</li><li><strong>用户态切换</strong>&#xff1a;从一个协程切换到另一个时&#xff0c;运行时执行一段汇编代码&#xff0c;将当前寄存器保存到旧协程的上下文中&#xff0c;再从新协程的上下文中恢复寄存器&#xff0c;然后跳转到新协程的代码继续执行。</li><li><strong>完全不需要操作系统参与</strong>&#xff0c;就像一次函数调用 &#43; 切换栈。</li></ul>
+<p>因此&#xff0c;<strong>一个内核线程可以在用户态时分复用成千上万个协程</strong>。不是把线程“拆碎”&#xff0c;而是让同一个线程不断换活干。</p>
+<h4><a rel="noopener noreferrer" id="43__127"></a>4.3 临时增多的内核线程是怎么回事&#xff1f;</h4>
+<p>虽然 Go 通常保持内核线程数 ≈ <code>GOMAXPROCS</code>&#xff0c;但当 goroutine 执行<strong>阻塞的系统调用</strong>&#xff08;如读文件&#xff09;时&#xff0c;该线程会陷入内核阻塞&#xff0c;Go 运行时会<strong>临时新建一个内核线程</strong>来接管被释放的 P&#xff0c;继续执行其他 G。系统调用返回后&#xff0c;临时线程会被回收或休眠。</p>
+<p>这些临时线程的阻塞和唤醒机制<strong>与 Java 传统线程完全一样</strong>&#xff08;都是内核线程&#xff09;。区别在于&#xff1a;</p>
+<ul><li>Java 中每个任务往往独占一个线程 → 阻塞成本高&#xff0c;且数量受限。</li><li>Go 中临时线程极少出现&#xff08;只发生在真正阻塞的系统调用&#xff09;&#xff0c;且不影响用户创建百万级 goroutine 的能力。</li></ul>
+<hr />
+<h4><a rel="noopener noreferrer" id="44___138"></a>4.4 为什么操作系统不直接支持协程&#xff1f;</h4>
+<p>这是一个非常深刻的底层问题。答案的核心是&#xff1a;<strong>操作系统的最小调度单元是内核线程&#xff0c;协程完全是用户态模拟出来的概念&#xff0c;操作系统“看不到”也“不需要”看到协程。</strong></p>
+<h5><a rel="noopener noreferrer" id="441__142"></a>4.4.1 操作系统的设计边界</h5>
+<p>操作系统的核心职责是管理<strong>物理资源</strong>&#xff1a;CPU 时间、内存、磁盘、网络等。为了公平且安全地分配 CPU 时间&#xff0c;内核必须能够<strong>强制抢占</strong>执行中的程序。这个抢占的单位就是<strong>内核线程</strong>&#xff08;或进程&#xff09;。内核线程拥有&#xff1a;</p>
+<ul><li>独立的硬件上下文&#xff08;寄存器、栈指针、PC&#xff09;</li><li>内核栈和用户栈</li><li>属于某个进程&#xff0c;享有独立的地址空间</li></ul>
+<p>操作系统提供了线程的创建、销毁、切换、同步等系统调用&#xff0c;但<strong>它不关心用户态程序如何在单个线程内实现“多任务”</strong>。这就像高速公路管理者只关心车道和车辆&#xff08;线程&#xff09;&#xff0c;不关心一辆车里坐了多少人&#xff08;协程&#xff09;。</p>
+<h5><a rel="noopener noreferrer" id="442__152"></a>4.4.2 如果操作系统支持协程会怎样&#xff1f;</h5>
+<p>理论上&#xff0c;内核也可以提供类似 <code>clone(CLONE_VM | CLONE_SYSCALL)</code> 的轻量级执行单元&#xff0c;称为“用户线程”或“协程”。但实际上&#xff0c;这样做会带来几个严重问题&#xff1a;</p>
+<ol><li> <p><strong>调度复杂性爆炸</strong> 内核既要调度线程&#xff0c;又要调度协程&#xff0c;调度器复杂度骤增。而且协程的切换成本极低&#xff0c;如果每次切换都要陷入内核&#xff0c;这个优势就荡然无存了。所以协程必须在用户态完成切换才快。</p> </li><li> <p><strong>阻塞语义混乱</strong> 如果内核知道协程的存在&#xff0c;那么当一个协程做阻塞 I/O 时&#xff0c;内核应该阻塞整个线程还是只阻塞这个协程&#xff1f;如果只阻塞协程而让同线程的其他协程继续跑&#xff0c;那就需要内核支持<strong>可增长的栈</strong>、<strong>用户态上下文保存</strong>等&#xff0c;这基本等于把整个 Go 运行时的功能搬到内核里&#xff0c;违背了“内核保持精简”的设计哲学。</p> </li><li> <p><strong>可移植性问题</strong> 不同的操作系统对协程的支持程度不同&#xff08;比如 Windows 的纤程 Fibers 一直半死不活&#xff0c;Linux 的 <code>ucontext</code> 已被标记为废弃&#xff09;。如果语言依赖内核提供的协程&#xff0c;就会失去跨平台一致性。</p> </li></ol>
+<h5><a rel="noopener noreferrer" id="443__162"></a>4.4.3 正确的关系</h5>
+<p><strong>操作系统提供内核线程&#xff1b;用户态运行时&#xff08;如 Go、Java 虚拟线程、Rust tokio&#xff09;在内核线程之上模拟出协程/虚拟线程。</strong></p>
+<blockquote>
+ <p>协程的调度在用户态完成&#xff0c;只有涉及真实的 I/O 阻塞或时间片耗尽时&#xff0c;才需要内核介入&#xff08;而且介入的粒度是线程&#xff0c;不是协程&#xff09;。</p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="5_Go_Goroutine_vs_Redis__AIO__169"></a>5. Go Goroutine vs. Redis 单线程 AIO 模型</h3>
+<p>Go 的 goroutine 是否像 Redis 的单线程事件循环&#xff1f;答案是&#xff1a;<strong>底层机制有本质不同&#xff0c;但在“用少量线程支撑大量并发任务”这个目标上殊途同归。</strong></p>
+<h4><a rel="noopener noreferrer" id="51_Redis____IO___173"></a>5.1 Redis 模型&#xff1a;单线程 &#43; 非阻塞 I/O &#43; 事件循环</h4>
+<ul><li><strong>单线程</strong>&#xff1a;整个 Redis 服务器只有一个主线程处理所有网络请求。</li><li><strong>非阻塞 I/O</strong>&#xff1a;socket 设置为非阻塞&#xff0c;使用 <code>epoll</code>&#xff08;Linux&#xff09;/ <code>kqueue</code>&#xff08;BSD&#xff09;同时监听大量文件描述符。</li><li><strong>事件循环</strong>&#xff1a;主线程循环调用 <code>epoll_wait</code>&#xff0c;一旦有事件就绪&#xff0c;依次执行对应的命令处理函数&#xff08;如 <code>get</code>、<code>set</code>&#xff09;。</li><li><strong>禁止阻塞</strong>&#xff1a;任何阻塞操作&#xff08;如 <code>sleep</code>、磁盘 I/O&#xff09;都会卡住整个 Redis。</li></ul>
+<h4><a rel="noopener noreferrer" id="52_Go_Goroutine______180"></a>5.2 Go Goroutine 模型&#xff1a;多线程 &#43; 阻塞式编程 &#43; 用户态调度</h4>
+<ul><li><strong>多线程</strong>&#xff1a;默认有 <code>GOMAXPROCS</code> 个内核线程&#xff08;M&#xff09;&#xff0c;每个线程都可以执行 goroutine。</li><li><strong>阻塞式编程</strong>&#xff1a;开发者可以用同步风格写网络 I/O&#xff08;如 <code>conn.Read</code>&#xff09;&#xff0c;看起来像阻塞&#xff0c;实际由 netpoller 转化为非阻塞。</li><li><strong>用户态调度</strong>&#xff1a;当 goroutine 阻塞时&#xff0c;调度器自动挂起它&#xff0c;让同线程的其他 goroutine 继续跑。</li><li><strong>可混合阻塞</strong>&#xff1a;真正的系统调用&#xff08;如文件 I/O&#xff09;会临时增加 M&#xff0c;但不会阻塞所有 goroutine。</li></ul>
+<h4><a rel="noopener noreferrer" id="53_Redis___Go_Goroutine__187"></a>5.3 Redis 单线程模型 与 Go Goroutine 模型对比</h4>
+<table><thead><tr><th>维度</th><th><strong>Redis 单线程模型</strong></th><th><strong>Go Goroutine 模型</strong></th></tr></thead><tbody><tr><td>线程数量</td><td>1 个&#xff08;严格单线程&#xff09;</td><td>多个&#xff08;默认 &#61; CPU 核心数&#xff09;</td></tr><tr><td>编程模型</td><td>异步/回调&#xff08;或响应式&#xff09;</td><td>同步阻塞风格&#xff08;但自动切换&#xff09;</td></tr><tr><td>阻塞操作容忍度</td><td>零容忍&#xff08;任何阻塞都会挂起整个服务&#xff09;</td><td>高容忍&#xff08;调度器自动切换&#xff0c;或临时加线程&#xff09;</td></tr><tr><td>上下文切换成本</td><td>无&#xff08;单线程&#xff0c;顺序执行&#xff09;</td><td>极低&#xff08;用户态切换&#xff0c;纳秒级&#xff09;</td></tr><tr><td>底层 I/O 多路复用</td><td>是&#xff0c;使用 epoll/kqueue</td><td>是&#xff0c;netpoller 封装了 epoll/kqueue/IOCP</td></tr><tr><td>是否支持 CPU 密集型任务</td><td>不适合&#xff08;会阻塞事件循环&#xff09;</td><td>适合&#xff08;多线程并行执行&#xff09;</td></tr></tbody></table>
+<ul><li><strong>相同点</strong>&#xff1a;都依赖 <strong>I/O 多路复用</strong>&#xff08;epoll/kqueue&#xff09;来高效管理大量网络连接&#xff0c;都试图用有限的线程处理海量连接。</li><li><strong>不同点</strong>&#xff1a;Redis 是“单线程 &#43; 显式非阻塞”&#xff0c;开发者必须避免任何阻塞&#xff1b;Go 是“多线程 &#43; 隐式非阻塞”&#xff0c;开发者写同步代码&#xff0c;运行时自动做异步切换。</li></ul>
+<p><strong>Go 的 netpoller &#43; 调度器本质上是一个“多线程版的 Redis 事件循环”&#xff0c;但每个 goroutine 对开发者来说是一个独立的任务。</strong></p>
+<hr />
+<h3><a rel="noopener noreferrer" id="6_Java__Go__206"></a>6. Java 为什么不用 Go 这种协程模型&#xff1f;</h3>
+<p>这是由<strong>历史包袱、设计哲学和演进路径</strong>共同决定的。</p>
+<h4><a rel="noopener noreferrer" id="61_Java__210"></a>6.1 历史原因&#xff1a;Java 的线程模型早已固化</h4>
+<p>Java 1.0&#xff08;1995 年&#xff09;就选择了 <strong>1:1 映射到操作系统线程</strong> 的模型。这个选择在当时很合理&#xff1a;跨平台、简单可靠。随后 20 多年里&#xff0c;整个 Java 生态&#xff08;应用服务器、JDBC、事务管理器、各种框架&#xff09;都深度绑定在这个模型上。要彻底改成用户态协程&#xff0c;相当于要推倒重来&#xff0c;代价不可接受。</p>
+<h4><a rel="noopener noreferrer" id="62__vs__214"></a>6.2 设计哲学&#xff1a;显式控制 vs. 隐式托管</h4>
+<ul><li><strong>Go</strong> 倾向于提供“一体化”的并发方案&#xff1a;运行时自动调度 goroutine&#xff0c;开发者写同步代码即可&#xff0c;不需要关心底层线程数量。</li><li><strong>Java</strong> 偏向提供“可组合的底层构件”&#xff1a;<code>Thread</code>、<code>ExecutorService</code>、<code>Lock</code>、<code>BlockingQueue</code> 等&#xff0c;允许开发者精细控制并发行为。内置一个固定的调度器可能会限制灵活性。</li></ul>
+<h4><a rel="noopener noreferrer" id="63_Java__219"></a>6.3 时代变了&#xff1a;Java 也引入了虚拟线程</h4>
+<p>从 <strong>JDK 21</strong> 开始&#xff0c;Java 正式推出了<strong>虚拟线程</strong>&#xff08;Virtual Threads&#xff09;。它是一种<strong>用户态轻量级线程</strong>&#xff0c;由 JVM 调度&#xff0c;挂在少量平台线程&#xff08;载体线程&#xff09;上运行。虚拟线程与 Go goroutine 在核心思想上<strong>殊途同归</strong>&#xff1a;</p>
+<ul><li>创建成本极低&#xff0c;可以创建数百万个</li><li>阻塞操作&#xff08;如 <code>Thread.sleep</code>、锁、网络 I/O&#xff09;会自动挂起虚拟线程&#xff0c;释放底层平台线程</li><li>编程模型依然是同步风格&#xff0c;无需学习异步 API</li></ul>
+<p>两者的差异在于实现细节&#xff08;例如虚拟线程基于 <code>Continuation</code>&#xff0c;goroutine 基于内置调度器&#xff09;&#xff0c;但已不再是“Java 没有协程”的格局。</p>
+<hr />
+<h4><a rel="noopener noreferrer" id="64_Goroutine_vs_Java__231"></a>6.4 Goroutine vs. Java 线程模型&#xff1a;核心区别一览</h4>
+<table><thead><tr><th>特性</th><th><strong>Java 平台线程 (pre-JDK21)</strong></th><th><strong>Go Goroutine</strong></th><th><strong>Java 虚拟线程 (JDK21&#43;)</strong></th></tr></thead><tbody><tr><td><strong>映射模型</strong></td><td>1:1&#xff08;Java 线程 &#61; 内核线程&#xff09;</td><td>M:N&#xff08;多个 G 跑在少量 M 上&#xff09;</td><td>M:N&#xff08;多个虚拟线程跑在少量平台线程上&#xff09;</td></tr><tr><td><strong>创建/切换成本</strong></td><td>高&#xff08;内核态切换&#xff0c;微秒级&#xff09;</td><td>极低&#xff08;用户态切换&#xff0c;纳秒级&#xff09;</td><td>极低&#xff08;用户态切换&#xff0c;纳秒级&#xff09;</td></tr><tr><td><strong>初始栈大小</strong></td><td>~1MB&#xff08;固定&#xff09;</td><td>~2KB&#xff08;动态伸缩&#xff09;</td><td>~KB 级别&#xff08;由 JVM 实现决定&#xff09;</td></tr><tr><td><strong>阻塞处理</strong></td><td>阻塞内核线程&#xff0c;造成资源浪费</td><td>挂起 G&#xff0c;释放 M 去运行其他 G</td><td>挂起虚拟线程&#xff0c;释放载体线程</td></tr><tr><td><strong>并发能力</strong></td><td>数千 ~ 数万个</td><td>数百万个</td><td>数百万个</td></tr><tr><td><strong>调度者</strong></td><td>操作系统内核</td><td>Go 运行时</td><td>JVM&#xff08;用户态&#xff09;</td></tr></tbody></table>
+<p>Go 的 goroutine 之所以快&#xff0c;是因为它<strong>绕开了操作系统内核的线程调度</strong>&#xff0c;在用户态完成几乎所有并发控制&#xff0c;让一个内核线程可以复用给海量任务。Java 传统线程模型受限于 1:1 映射&#xff0c;但并没有坐以待毙——虚拟线程的引入标志着两套模型在核心思想上走向<strong>趋同进化</strong>。</p>
+<hr />
+<h2><a rel="noopener noreferrer" id="GO__248"></a>GO 并发的相关操作</h2>
+<p>了解了Go 协程相关的概念后&#xff0c;接下来继续探索Go的协程在并发中的使用</p>
+<h3><a rel="noopener noreferrer" id="1Goroutine__250"></a>知识点1&#xff1a;Goroutine 协程</h3>
+<p>Java 底层是<strong>操作系统原生线程&#xff0c;占用资源大、创建成本高、并发数量受限</strong>&#xff0c;关于Java的线程和操作系统线程映射的导致CPU和内存资源浪费的可以参照之前写的一篇<a href="https://tianmaolin.blog.csdn.net/article/details/158624606?spm&#61;1001.2014.3001.5502" rel="nofollow"><strong>【系统架构设计 服务高性能设计】从内核态到锁升级&#xff0c;一篇文章深入理解计算机高性能关键</strong></a>&#xff1b;Go 的 Goroutine 是<strong>用户态</strong>轻量级协程&#xff0c;由Go运行时调度&#xff0c;占用内存极小&#xff0c;创建成本极低&#xff0c;轻松支持数十万级并发&#xff0c;仅需<code>go</code>关键字即可快速启动执行。</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;fmt&#34;</span>
+	<span class="token string">&#34;time&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// 自定义执行任务</span>
+<span class="token keyword">func</span> <span class="token function">runTask</span><span class="token punctuation">(</span>num <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;当前执行协程任务&#xff1a;%d\n&#34;</span><span class="token punctuation">,</span> num<span class="token punctuation">)</span>
+	<span class="token comment">// 模拟业务耗时操作</span>
+	time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">500</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Millisecond<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 普通函数调用&#xff1a;串行顺序执行</span>
+	<span class="token comment">// runTask(1)</span>
+	<span class="token comment">// runTask(2)</span>
+
+	<span class="token comment">// go 关键字启动Goroutine协程&#xff0c;异步并发执行</span>
+	<span class="token keyword">go</span> <span class="token function">runTask</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+	<span class="token keyword">go</span> <span class="token function">runTask</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span>
+
+	<span class="token comment">/*
+	Java对应&#xff1a;new Thread().start() 开启线程
+	区别&#xff1a;
+	1. Java线程依赖系统内核&#xff0c;数量上限低&#xff1b;Goroutine轻量&#xff0c;并发量级大
+	2. Go启动协程语法极简&#xff0c;仅加go关键字&#xff0c;无需创建线程对象
+	3. 主线程执行完毕会直接退出&#xff0c;不会等待子协程执行完成
+	*/</span>
+
+	<span class="token comment">// 主线程休眠&#xff0c;等待子协程执行完成</span>
+	time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Second<span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;主程序执行结束&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161168189-01-4275aef133.png" loading="lazy"><br /> 执行的顺序也是争用的<br /> <img alt="在这里插入图片描述" src="./posts/assets/161168189-02-2ffe4e61b5.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="2syncWaitGroup__296"></a>知识点2&#xff1a;sync.WaitGroup 等待组</h3>
+<p>Java 实现线程等待常用<code>CountDownLatch</code>&#xff0c;Go中<code>sync.WaitGroup</code>作用完全一致&#xff0c;专门用于让主线程等待所有子协程全部执行完毕后&#xff0c;再结束程序&#xff0c;替代休眠等待&#xff0c;代码更加严谨规范。</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;fmt&#34;</span>
+	<span class="token string">&#34;sync&#34;</span>
+	<span class="token string">&#34;time&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// 定义全局等待组</span>
+<span class="token keyword">var</span> wg sync<span class="token punctuation">.</span>WaitGroup
+
+<span class="token keyword">func</span> <span class="token function">task</span><span class="token punctuation">(</span>index <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 协程执行完毕&#xff0c;计数器减一</span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;协程 %d 开始执行\n&#34;</span><span class="token punctuation">,</span> index<span class="token punctuation">)</span>
+	time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">600</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Millisecond<span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;协程 %d 执行完成\n&#34;</span><span class="token punctuation">,</span> index<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 设置等待协程数量&#xff0c;计数器累加</span>
+	wg<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 批量启动协程</span>
+	<span class="token keyword">for</span> i <span class="token operator">:&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span> <span class="token punctuation">{<!-- --></span>
+		<span class="token keyword">go</span> <span class="token function">task</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+
+	<span class="token comment">// 阻塞主线程&#xff0c;等待所有协程计数器归零</span>
+	wg<span class="token punctuation">.</span><span class="token function">Wait</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token comment">/*
+	Java等价&#xff1a;CountDownLatch.await()
+	核心用法&#xff1a;
+	1. Add(n)&#xff1a;确定需要等待的协程数量
+	2. Done()&#xff1a;单个协程结束&#xff0c;计数-1
+	3. Wait()&#xff1a;阻塞等待全部完成
+	*/</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;所有协程全部执行完毕&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Java中的实现是通过信号量来实现的&#xff0c;本质上是锁来实现的&#xff0c;go的sync.WaitGroup内置实现了这个功能</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161168189-03-1c7a4e7da3.png" loading="lazy"></p>
+<hr />
+<h3><a rel="noopener noreferrer" id="3syncMutex__346"></a>知识点3&#xff1a;sync.Mutex 互斥锁</h3>
+<p>多协程同时操作同一个共享变量时&#xff0c;会出现数据竞争、数据错乱问题&#xff1b;Java使用<code>synchronized</code>、<code>ReentrantLock</code>解决&#xff0c;Go使用<code>sync.Mutex</code>互斥锁&#xff0c;通过加锁、解锁保证同一时间仅有一个协程操作共享数据&#xff0c;保障并发数据安全。</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;fmt&#34;</span>
+	<span class="token string">&#34;sync&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// 共享全局变量</span>
+<span class="token keyword">var</span> totalNum <span class="token builtin">int</span>
+<span class="token comment">// 定义互斥锁</span>
+<span class="token keyword">var</span> mutex sync<span class="token punctuation">.</span>Mutex
+<span class="token keyword">var</span> wg sync<span class="token punctuation">.</span>WaitGroup
+
+<span class="token comment">// 累加任务</span>
+<span class="token keyword">func</span> <span class="token function">addNum</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token comment">// 上锁&#xff1a;锁住共享资源</span>
+	mutex<span class="token punctuation">.</span><span class="token function">Lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	totalNum<span class="token operator">&#43;&#43;</span>
+	<span class="token comment">// 解锁&#xff1a;释放资源</span>
+	mutex<span class="token punctuation">.</span><span class="token function">Unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token comment">/*
+	Java对应&#xff1a;synchronized 代码块 / 手动锁
+	区别&#xff1a;Go锁语法更简洁&#xff0c;手动控制加锁解锁范围&#xff0c;精准控制临界区
+	*/</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	wg<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">)</span>
+	<span class="token comment">// 启动1000个协程累加</span>
+	<span class="token keyword">for</span> i <span class="token operator">:&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">1000</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span> <span class="token punctuation">{<!-- --></span>
+		<span class="token keyword">go</span> <span class="token function">addNum</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+	wg<span class="token punctuation">.</span><span class="token function">Wait</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token comment">// 加锁后结果固定为1000&#xff0c;无锁会出现数据错乱</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;最终累加结果&#xff1a;&#34;</span><span class="token punctuation">,</span> totalNum<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161168189-04-ad2595acbe.png" loading="lazy"><br /> 如果这里没有锁&#xff0c;那么累加会出现共享变量的争用&#xff0c;例如注销掉锁的调用</p>
+<pre><code class="prism language-go">
+<span class="token comment">// 累加任务</span>
+<span class="token keyword">func</span> <span class="token function">addNum</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token comment">// 上锁&#xff1a;锁住共享资源</span>
+	<span class="token comment">//mutex.Lock()</span>
+	totalNum<span class="token operator">&#43;&#43;</span>
+	<span class="token comment">// 解锁&#xff1a;释放资源</span>
+	<span class="token comment">// mutex.Unlock()</span>
+	<span class="token comment">/*
+		Java对应&#xff1a;synchronized 代码块 / 手动锁
+		区别&#xff1a;Go锁语法更简洁&#xff0c;手动控制加锁解锁范围&#xff0c;精准控制临界区
+	*/</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161168189-05-548c899f75.png" loading="lazy"></p>
+<hr />
+<h3><a rel="noopener noreferrer" id="4Channel__412"></a>知识点4&#xff1a;Channel 通道</h3>
+<p>Go并发设计理念&#xff1a;<strong>不要通过共享内存通信&#xff0c;要通过通信实现数据共享</strong>。Channel是协程之间专用的数据通信管道&#xff0c;替代Java共享变量&#43;锁的通信方式&#xff0c;实现协程间安全数据传输&#xff0c;分为无缓冲通道、有缓冲通道。</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token string">&#34;fmt&#34;</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 1. 创建无缓冲通道&#xff0c;用于传输int类型数据</span>
+	msgChan <span class="token operator">:&#61;</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">int</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 启动发送数据协程</span>
+	<span class="token keyword">go</span> <span class="token keyword">func</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+		<span class="token comment">// 向通道写入数据</span>
+		msgChan <span class="token operator">&lt;-</span> <span class="token number">666</span>
+		fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;数据已发送至通道&#34;</span><span class="token punctuation">)</span>
+	<span class="token punctuation">}</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 从通道读取数据&#xff0c;主线程接收</span>
+	res <span class="token operator">:&#61;</span> <span class="token operator">&lt;-</span>msgChan
+	fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;从通道接收数据&#xff1a;%d\n&#34;</span><span class="token punctuation">,</span> res<span class="token punctuation">)</span>
+	<span class="token comment">/*
+	无缓冲通道特性&#xff1a;
+	1. 必须同时存在发送和接收操作&#xff0c;否则程序阻塞
+	2. 数据收发一一对应&#xff0c;同步执行
+	Java无原生对等组件&#xff0c;需手动封装队列实现协程通信
+	*/</span>
+
+	<span class="token comment">// 2. 有缓冲通道&#xff0c;指定缓冲区容量</span>
+	bufChan <span class="token operator">:&#61;</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">string</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+	<span class="token comment">// 可先存入数据&#xff0c;无需立即接收&#xff0c;缓冲区满后才阻塞</span>
+	bufChan <span class="token operator">&lt;-</span> <span class="token string">&#34;Go并发&#34;</span>
+	bufChan <span class="token operator">&lt;-</span> <span class="token string">&#34;Channel通道&#34;</span>
+
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token operator">&lt;-</span>bufChan<span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token operator">&lt;-</span>bufChan<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<p><strong>关闭通道 &#43; 遍历通道</strong></p>
+<p>通道使用完成后需要手动关闭&#xff0c;避免协程一直阻塞等待&#xff1b;可通过<code>for range</code>自动遍历通道内所有数据&#xff0c;数据读取完毕自动退出遍历&#xff0c;简化批量数据接收逻辑。</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token string">&#34;fmt&#34;</span>
+
+<span class="token keyword">func</span> <span class="token function">sendData</span><span class="token punctuation">(</span>ch <span class="token keyword">chan</span><span class="token operator">&lt;-</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 单向通道&#xff1a;只允许发送数据</span>
+	<span class="token keyword">for</span> i <span class="token operator">:&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span> <span class="token punctuation">{<!-- --></span>
+		ch <span class="token operator">&lt;-</span> i
+	<span class="token punctuation">}</span>
+	<span class="token comment">// 数据发送完成&#xff0c;关闭通道</span>
+	<span class="token function">close</span><span class="token punctuation">(</span>ch<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 创建双向通道</span>
+	ch <span class="token operator">:&#61;</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">)</span>
+	<span class="token keyword">go</span> <span class="token function">sendData</span><span class="token punctuation">(</span>ch<span class="token punctuation">)</span>
+
+	<span class="token comment">// range遍历通道&#xff0c;通道关闭后自动结束遍历</span>
+	<span class="token keyword">for</span> val <span class="token operator">:&#61;</span> <span class="token keyword">range</span> ch <span class="token punctuation">{<!-- --></span>
+		fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;读取通道数据&#xff1a;&#34;</span><span class="token punctuation">,</span> val<span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;通道数据读取完毕&#xff0c;通道已关闭&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="6_486"></a>知识点6&#xff1a;并发实战&#xff1a;生产者消费者模型</h3>
+<p>后端开发高频经典并发模型&#xff0c;Java通过线程&#43;队列实现&#xff0c;Go依托<strong>协程&#43;Channel</strong>实现更加简洁高效&#xff0c;分工明确&#xff0c;生产者负责生产数据&#xff0c;消费者负责处理数据&#xff0c;完美解耦。</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;fmt&#34;</span>
+	<span class="token string">&#34;sync&#34;</span>
+	<span class="token string">&#34;time&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token keyword">var</span> wg sync<span class="token punctuation">.</span>WaitGroup
+
+<span class="token comment">// 生产者&#xff1a;生产数据写入通道</span>
+<span class="token keyword">func</span> <span class="token function">producer</span><span class="token punctuation">(</span>ch <span class="token keyword">chan</span><span class="token operator">&lt;-</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token keyword">for</span> i <span class="token operator">:&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span> <span class="token punctuation">{<!-- --></span>
+		ch <span class="token operator">&lt;-</span> i
+		fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;生产者生产数据&#xff1a;%d\n&#34;</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span>
+		time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">300</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Millisecond<span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+	<span class="token function">close</span><span class="token punctuation">(</span>ch<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 消费者&#xff1a;读取通道数据并处理</span>
+<span class="token keyword">func</span> <span class="token function">consumer</span><span class="token punctuation">(</span>ch <span class="token operator">&lt;-</span><span class="token keyword">chan</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token keyword">for</span> data <span class="token operator">:&#61;</span> <span class="token keyword">range</span> ch <span class="token punctuation">{<!-- --></span>
+		fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;消费者处理数据&#xff1a;%d\n&#34;</span><span class="token punctuation">,</span> data<span class="token punctuation">)</span>
+		time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">500</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Millisecond<span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	dataChan <span class="token operator">:&#61;</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+	wg<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span>
+
+	<span class="token keyword">go</span> <span class="token function">producer</span><span class="token punctuation">(</span>dataChan<span class="token punctuation">)</span>
+	<span class="token keyword">go</span> <span class="token function">consumer</span><span class="token punctuation">(</span>dataChan<span class="token punctuation">)</span>
+
+	wg<span class="token punctuation">.</span><span class="token function">Wait</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;生产者消费者模型执行结束&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161168189-06-52feda75dd.png" loading="lazy"><br /> 消费者不是提前消费&#xff0c;是刚拿到数据就立刻输出了&#xff01;只是输出比生产者快一点点。现在看到顺序混乱&#xff0c;只是并发协程调度抢占 CPU导致打印先后错位&#xff0c;业务逻辑完全安全。可以改下代码&#xff0c;让生产逻辑的打印睡眠时间短于消费逻辑</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;fmt&#34;</span>
+	<span class="token string">&#34;sync&#34;</span>
+	<span class="token string">&#34;time&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token keyword">var</span> wg sync<span class="token punctuation">.</span>WaitGroup
+
+<span class="token comment">// 生产者&#xff1a;生产数据写入通道</span>
+<span class="token keyword">func</span> <span class="token function">producer</span><span class="token punctuation">(</span>ch <span class="token keyword">chan</span><span class="token operator">&lt;-</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token keyword">for</span> i <span class="token operator">:&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span> <span class="token punctuation">{<!-- --></span>
+		ch <span class="token operator">&lt;-</span> i <span class="token comment">// 先往通道塞数据</span>
+		fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;【生产者】生产数据&#xff1a;%d\n&#34;</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span>
+		time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">300</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Millisecond<span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+	<span class="token function">close</span><span class="token punctuation">(</span>ch<span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;【生产者】全部生产完毕&#xff0c;关闭通道&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 消费者&#xff1a;读取通道数据并处理</span>
+<span class="token keyword">func</span> <span class="token function">consumer</span><span class="token punctuation">(</span>ch <span class="token operator">&lt;-</span><span class="token keyword">chan</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">defer</span> wg<span class="token punctuation">.</span><span class="token function">Done</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;【消费者】已启动&#xff0c;通道暂无数据&#xff0c;进入阻塞等待...&#34;</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 通道为空时&#xff0c;直接阻塞在这里&#xff0c;不会执行循环体</span>
+	<span class="token keyword">for</span> data <span class="token operator">:&#61;</span> <span class="token keyword">range</span> ch <span class="token punctuation">{<!-- --></span>
+		fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">&#34;【消费者】成功拿到数据开始处理&#xff1a;%d\n&#34;</span><span class="token punctuation">,</span> data<span class="token punctuation">)</span>
+		time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">500</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Millisecond<span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;【消费者】通道关闭&#xff0c;无新数据&#xff0c;消费结束&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 缓冲区大小2</span>
+	dataChan <span class="token operator">:&#61;</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">chan</span> <span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+	wg<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span>
+
+	<span class="token keyword">go</span> <span class="token function">producer</span><span class="token punctuation">(</span>dataChan<span class="token punctuation">)</span>
+	<span class="token keyword">go</span> <span class="token function">consumer</span><span class="token punctuation">(</span>dataChan<span class="token punctuation">)</span>
+
+	wg<span class="token punctuation">.</span><span class="token function">Wait</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;生产者消费者模型执行结束&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这样看到的结果就是顺序的了</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161168189-07-a8e2ff0562.png" loading="lazy"></p>
+<hr />
+<h2><a rel="noopener noreferrer" id="_588"></a>总结一下</h2>
+<p>Go原生对并发的支持确实会比Java好&#xff0c;核心原因是内置 GMP 调度模型&#xff0c;可以在用户态自主完成多数协程调度切换&#xff0c;摆脱对操作系统原生内核线程的强依赖&#xff0c;减少内核态与用户态切换产生的 CPU、内存资源损耗&#xff08;仅当发生真正的阻塞系统调用或 I/O 时才会进入内核态&#xff09;</p>
+<p>Go 协程与 Java 线程的生命周期状态逻辑相近&#xff0c;但 Java 受限于历史线程模型&#xff08;1:1 映射内核线程&#xff09;&#xff0c;只能通过线程池、虚拟线程等方式优化开销&#xff0c;无法从底层彻底抛弃内核线程调度架构&#xff08;即使想实现类似 GMP 的模型&#xff0c;历史替换成本也极高&#xff09;。</p>
+<p>此外Go 语言面向云原生高并发场景做了深度优化&#xff0c;原生封装等待组、互斥锁、通道等常用并发组件&#xff0c;可以快速实现生产者消费者等经典并发模型&#xff08;这些在Java里都需要自己去搭配相关类库和自己去组合实现&#xff09;&#xff0c;Go锁的使用也更加简洁&#xff0c;将底层的复杂逻辑&#xff08;原子操作、信号量、goroutine 阻塞/唤醒、排队等&#xff09;隐性封装在运行时中</p>
+<p>总的来说在并发这件事上&#xff0c;Java 大而全&#xff0c;并发开发需要开发者自行整合工具、把控线程池细节&#xff1b;Go 小而美&#xff0c;让开发者更聚焦业务逻辑&#xff0c;并发调度逻辑以隐式方式可靠运行。</p>

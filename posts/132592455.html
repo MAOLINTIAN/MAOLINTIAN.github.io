@@ -1,0 +1,157 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【】&#xff0c;使用【】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/132592455-01-13f0356e81.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_4"></a>验证二叉搜索树【MID】</h2>
+<p>中序遍历递归验证二叉搜索树</p>
+<h3><a rel="noopener noreferrer" id="_6"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132592455-02-32b17bf275.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_9"></a>解题思路</h3>
+<p><strong>二叉搜索树的特性就是中序遍历是递增序</strong>,既然是判断是否是二叉搜索树&#xff0c;那我们可以<strong>使用中序递归遍历</strong>。只要之前的节点是二叉树搜索树&#xff0c;那么<strong>如果当前的节点小于上一个节点值那么就可以向下判断</strong></p>
+<h3><a rel="noopener noreferrer" id="_11"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>二叉树</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>递归&#xff0c;DFS</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class TreeNode {
+ *   int val &#61; 0;
+ *   TreeNode left &#61; null;
+ *   TreeNode right &#61; null;
+ *   public TreeNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> maxValue <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MIN_VALUE</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param root TreeNode类
+     * &#64;return bool布尔型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> isValidBST <span class="token punctuation">(</span><span class="token class-name">TreeNode</span> root<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>root <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token function">dfsCheck</span><span class="token punctuation">(</span>root<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">dfsCheck</span><span class="token punctuation">(</span><span class="token class-name">TreeNode</span> root<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 判断的递归终止条件,到达叶子节点</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>root <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 如果左子树不满足条件&#xff0c;返回false</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">dfsCheck</span><span class="token punctuation">(</span>root<span class="token punctuation">.</span>left<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 如果当前值小于历史最大值&#xff0c;则不满足&#xff0c;返回false</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>root<span class="token punctuation">.</span>val <span class="token operator">&lt;&#61;</span> maxValue<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 更新历史最大值为当前值</span>
+        maxValue <span class="token operator">&#61;</span> root<span class="token punctuation">.</span>val<span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 返回右子树的结果</span>
+        <span class="token keyword">return</span> <span class="token function">dfsCheck</span><span class="token punctuation">(</span>root<span class="token punctuation">.</span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_78"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;O(n)&#xff0c;其中n为二叉树的节点数&#xff0c;遍历整棵二叉树<br /> 空间复杂度&#xff1a;O(n)&#xff0c;最坏情况下&#xff0c;二叉树化为链表&#xff0c;递归栈深度最大为n</p>
+<h2><a rel="noopener noreferrer" id="MID_82"></a>将二叉搜索树转为排序的双向循环链表【MID】</h2>
+<p>数据结构考察&#xff0c;二叉搜索树和双向链表互转</p>
+<h3><a rel="noopener noreferrer" id="_84"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132592455-03-16ffe6b637.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_89"></a>解题思路</h3>
+<p>本文解法基于性质&#xff1a;<strong>二叉搜索树的中序遍历为递增序列</strong> 。 将 二叉搜索树 转换成一个 <strong>“排序的循环双向链表</strong>” &#xff0c;其中包含三个要素&#xff1a;</p>
+<ul><li><strong>排序链表</strong>&#xff1a; 节点应从小到大排序&#xff0c;因此应使用 <strong>中序遍历</strong> “从小到大”访问树的节点。</li><li><strong>双向链表</strong>&#xff1a; 在构建相邻节点的引用关系时&#xff0c;<strong>设前驱节点 pre 和当前节点 cur</strong> &#xff0c;不仅应构建 <code>pre.right &#61; cur</code> &#xff0c;也应构建 <code>cur.left &#61; pre</code> 。</li><li><strong>循环链表</strong>&#xff1a; 设链表头节点 head 和尾节点 tail &#xff0c;则应构建 <strong>head.left &#61; tail</strong> 和 <strong>tail.right &#61; head</strong> 。</li></ul>
+<p>整体如下图所示<br /> <img alt="在这里插入图片描述" src="./posts/assets/132592455-04-2e50ad3b4f.png" loading="lazy"><br /> 中序遍历 为对二叉树作 “<strong>左、根、右</strong>” 顺序遍历算法流程&#xff1a;dfs(cur): 递归法中序遍历&#xff1b;</p>
+<ul><li><strong>终止条件</strong>&#xff1a; 当节点 cur 为空&#xff0c;代表越过叶节点&#xff0c;直接返回&#xff1b;</li><li><strong>递归左子树</strong>&#xff0c;即 dfs(cur.left) &#xff1b; <strong>构建链表</strong>&#xff1a;当 pre 为空时&#xff1a; 代表正在访问链表头节点&#xff0c;记为 head &#xff1b;当 pre 不为空时&#xff1a; 修改双向节点引用&#xff0c;<code>即 pre.right &#61; cur &#xff0c; cur.left &#61; pre &#xff1b;</code>保存 cur &#xff1a; 更新 pre &#61; cur &#xff0c;即节点 cur 是后继节点的 pre &#xff1b;</li><li><strong>递归右子树</strong>&#xff0c;即 dfs(cur.right) &#xff1b;处理过程同上<br /> treeToDoublyList(root)&#xff1a;</li></ul>
+<p><strong>特例处理</strong>&#xff1a; 若节点 root 为空&#xff0c;则直接返回&#xff1b;<strong>初始化</strong>&#xff1a; 空节点 pre &#xff1b;<strong>转化为双向链表</strong>&#xff1a; 调用 dfs(root) &#xff1b;<strong>构建循环链表</strong>&#xff1a; 中序遍历完成后&#xff0c;head 指向头节点&#xff0c; pre 指向尾节点&#xff0c;因此修改 head 和 pre 的双向节点引用即可&#xff1b;<strong>返回值</strong>&#xff1a; 返回链表的头节点 head 即可&#xff1b;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132592455-05-6a37f1862b.png" loading="lazy"><br /> <img alt="在这里插入图片描述" src="./posts/assets/132592455-06-073b2267e8.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_110"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>二叉树</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>递归&#xff0c;DFS</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token comment">/*
+// Definition for a Node.
+class Node {
+    public int val;
+    public Node left;
+    public Node right;
+
+    public Node() {}
+
+    public Node(int _val) {
+        val &#61; _val;
+    }
+
+    public Node(int _val,Node _left,Node _right) {
+        val &#61; _val;
+        left &#61; _left;
+        right &#61; _right;
+    }
+};
+*/</span>
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 1 定义头节点和前置节点</span>
+    <span class="token keyword">private</span> <span class="token class-name">Node</span> head<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">Node</span> pre<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token class-name">Node</span> <span class="token function">treeToDoublyList</span><span class="token punctuation">(</span><span class="token class-name">Node</span> root<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>root <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 1 递归处理节点关系</span>
+        <span class="token function">dfsGen</span><span class="token punctuation">(</span>root<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 绑定头尾节点</span>
+        <span class="token comment">// 初始化头尾节点相互指向:尾节点的下一个是头节点</span>
+        pre<span class="token punctuation">.</span>right <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token comment">// 初始化头尾节点相互指向:头节点的上一个是尾节点</span>
+        head<span class="token punctuation">.</span>left <span class="token operator">&#61;</span> pre<span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 返回头节点</span>
+        <span class="token keyword">return</span> head<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">dfsGen</span><span class="token punctuation">(</span><span class="token class-name">Node</span> cur<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>cur <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 1 中序遍历&#xff0c;先处理左子树</span>
+        <span class="token function">dfsGen</span><span class="token punctuation">(</span>cur<span class="token punctuation">.</span>left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pre <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 记录头节点位置</span>
+            head <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 本级任务:pre节点与cur节点进行绑定</span>
+            pre<span class="token punctuation">.</span>right <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+            cur<span class="token punctuation">.</span>left <span class="token operator">&#61;</span> pre<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        pre <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+        <span class="token comment">// 3 中序遍历&#xff0c;最后处理右子树</span>
+        <span class="token function">dfsGen</span><span class="token punctuation">(</span>cur<span class="token punctuation">.</span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_188"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;O(n)&#xff0c;其中n为二叉树的节点数&#xff0c;遍历整棵二叉树<br /> 空间复杂度&#xff1a;O(n)&#xff0c;最坏情况下&#xff0c;二叉树化为链表&#xff0c;递归栈深度最大为n</p>
+<h2><a rel="noopener noreferrer" id="_191"></a>拓展知识&#xff1a;二叉搜索树</h2>
+<p>二叉搜索树&#xff08;Binary Search Tree&#xff0c;简称BST&#xff09;是一种二叉树的形式&#xff0c;它具有一些特殊的性质&#xff0c;使得它在存储和检索数据方面非常高效。<strong>BST中的每个节点都包含一个值&#xff0c;而且对于每个节点&#xff0c;其左子树中的所有节点的值都小于该节点的值&#xff0c;而右子树中的所有节点的值都大于该节点的值</strong>。这个性质使得在BST中查找、插入和删除操作都可以在平均情况下在**O(log n)**的时间内完成&#xff0c;其中n是BST中节点的数量。</p>
+<p>以下是一些BST的基本性质和操作&#xff1a;</p>
+<ol><li> <p>查找&#xff1a;要查找BST中的一个特定值&#xff0c;可以从根节点开始&#xff0c;比较目标值与当前节点的值。如果目标值小于当前节点的值&#xff0c;就在左子树中继续查找&#xff1b;如果大于当前节点的值&#xff0c;就在右子树中查找。如果找到目标值&#xff0c;操作成功&#xff1b;否则&#xff0c;继续向下查找&#xff0c;直到找到目标值或者达到叶子节点。</p> </li><li> <p>插入&#xff1a;要插入一个新值到BST中&#xff0c;首先执行查找操作&#xff0c;找到插入位置。然后&#xff0c;在插入位置创建一个新节点&#xff0c;将新值赋给该节点&#xff0c;并将其连接到树中的合适位置。插入操作确保BST的性质仍然成立。</p> </li><li> <p>删除&#xff1a;要删除BST中的一个值&#xff0c;首先执行查找操作&#xff0c;找到要删除的节点。然后&#xff0c;根据节点的子树情况执行不同的操作&#xff1a;如果节点是叶子节点&#xff0c;直接删除它&#xff1b;如果节点有一个子节点&#xff0c;将子节点提升到删除节点的位置&#xff1b;如果节点有两个子节点&#xff0c;可以选择用其前驱节点或后继节点替代&#xff0c;然后递归地删除前驱或后继节点。</p> </li></ol>
+<p>BST的性能取决于树的结构&#xff0c;最好的情况是平衡二叉搜索树&#xff08;Balanced BST&#xff09;&#xff0c;其中左子树和右子树的高度大致相等&#xff0c;这样可以确保查找、插入和删除等操作都能在O(log n)的时间内完成。常见的平衡BST包括AVL树和红黑树。</p>
+<p>然而&#xff0c;如果BST不平衡&#xff0c;最坏情况下操作的时间复杂度可能会退化到O(n)&#xff0c;例如当BST退化成一个链表时。因此&#xff0c;在实际应用中&#xff0c;通常需要采取一些方法来维护BST的平衡性&#xff0c;以确保高效的性能。</p>

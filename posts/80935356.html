@@ -1,0 +1,62 @@
+<p>决定开这个无限篇数&#xff0c;无限长系列是因为最近遇到了一个大坑&#xff08;关于git的merge情况&#xff09;。有感于这是我工作以来遇到的第一个大坑&#xff08;显然不是最后一个&#xff09;&#xff0c;遂决定开这个系列的博客来记录以后遇到的所有坑&#xff0c;记录出坑方法&#xff0c;这样以后就不会踩同样的坑了&#xff0c;秉持的理念就是&#xff1a;<strong>再智障的问题不会也要问出来&#xff0c;再难的问题&#xff0c;再无可避免的错误也不犯第二次</strong>。尽量做到吧。计划博客结构如下&#xff1a;</p>
+<pre><code>&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;utf-8&#34;?&gt;
+
+&lt;xs:schema xmlns:xs&#61;&#34;MaoLin Tian‘ s blog&#34; xmlns&#61;&#34;遇坑记实系列&#34; targetNamespace&#61;&#34;遇坑记实系列&#34; elementFormDefault&#61;&#34;qualified&#34;&gt;
+  &lt;xs:element name&#61;&#34;遇坑记实&#34;&gt;
+    &lt;xs:complexType&gt;
+      &lt;xs:sequence&gt;
+        &lt;xs:element name&#61;&#34;入坑&#34; type&#61;&#34;xs:string&#34;/&gt;
+        &lt;xs:complexType&gt;
+          &lt;xs:sequence&gt;
+            &lt;xs:element name&#61;&#34;入坑场景&#34; type&#61;&#34;xs:string&#34;/&gt;
+            &lt;xs:element name&#61;&#34;入坑原因&#34; type&#61;&#34;xs:string&#34;/&gt;
+          &lt;/xs:sequence&gt;
+        &lt;/xs:complexType&gt;
+        &lt;xs:element name&#61;&#34;出坑&#34; type&#61;&#34;xs:string&#34;/&gt;
+        &lt;xs:complexType&gt;
+          &lt;xs:sequence&gt;
+            &lt;xs:element name&#61;&#34;出坑方式&#34; type&#61;&#34;xs:string&#34;/&gt;
+            &lt;xs:element name&#61;&#34;经验教训&#34; type&#61;&#34;xs:string&#34;/&gt;
+          &lt;/xs:sequence&gt;
+        &lt;/xs:complexType&gt;
+        &lt;xs:element name&#61;&#34;避坑&#34; type&#61;&#34;xs:string&#34;/&gt;
+        &lt;xs:complexType&gt;
+          &lt;xs:sequence&gt;
+            &lt;xs:element name&#61;&#34;总结问题&#34; type&#61;&#34;xs:string&#34;/&gt;
+            &lt;xs:element name&#61;&#34;最佳实践&#34; type&#61;&#34;xs:string&#34;/&gt;
+          &lt;/xs:sequence&gt;
+        &lt;/xs:complexType&gt;
+      &lt;/xs:sequence&gt;
+    &lt;/xs:complexType&gt;
+  &lt;/xs:element&gt;
+&lt;/xs:schema&gt;
+
+</code></pre>
+<p>##入坑<br /> 我们都知道<strong>dev是用来开发的分支</strong>&#xff0c;<strong>master是用来上线的分支</strong>。一般流程是在dev上开发新特性&#xff0c;开发完成后合并到dev上&#xff0c;然后发布release版本&#xff0c;在release版本上交由测试人员测试没问题之后&#xff0c;再发布到master(<strong>同时上线对应的配置文件&#xff0c;脚本文件</strong>)。</p>
+<p>###入坑场景<br /> 我实现的场景如下&#xff1a;这里我开发了新特性要往线上发布时的流程是&#xff1a;</p>
+<ol><li>从dev拉取分支为dev_maolin</li><li>开发完成后将代码合并到dev并拉取最新dev代码。换句话说就是保持和dev内容相同</li><li>将新特性代码与master合并并且合并master的代码。</li></ol>
+<p>这个流程可以说是极度混乱的四不像。</p>
+<ol><li><strong>它不是标准的新特性发布流程</strong>&#xff0c;首先在第2步合并时完全没必要用dev_maolin去merge dev。 其次&#xff0c;标准新特性发布流程这里缺少release版本&#xff0c;没有测试环节。最后第3步合并时完全没必要用dev_maolin去merge master(会引入大量不想上线的别人写的特性)。</li><li><strong>它不是标准的hotfix流程</strong>&#xff0c;因为hotfix是从master拉取出来的分支&#xff0c;同样也没有必要和master以及dev双向merge。</li></ol>
+<p>###入坑原因<br /> 这里为什么不能上线的最主要原因就是&#xff1a;我从dev里拉取出来分支去开发新特性&#xff0c;如果是等待发版和别人开发的功能一起上线&#xff0c;那问题不大&#xff0c;就算是release版本也是大家一起发嘛。问题就是&#xff0c;大家开发的特性还需要测试去发版&#xff0c;不急着上线&#xff0c;而我的代码今晚就要上线&#xff0c;<strong>但如果强行上线&#xff0c;别人的更改&#xff08;未经测试&#xff09;被引到线上&#xff0c;会导致线上出问题。所以应该把我的新特性确认为一个hotfix去看待。</strong></p>
+<p>##出坑<br /> 首先分析问题出在两个地方&#xff1a;</p>
+<ul><li> <p><strong>从dev拉取分支时间节点前</strong>就有很多别人开发的特性。</p> </li><li> <p><strong>开发完新特性后merge dev时</strong>&#xff0c;又引入了很多dev拉取分支后别人在dev上开发的新特性。<br /> ###出坑方式<br /> 在遇到上述问题的时候导致的局面就是&#xff0c;首先dev_maolin和dev分支完全同步&#xff0c;接着dev_maolin分支又合并了master的代码&#xff0c;让master本地和并了dev_maolin的代码。立刻想到的处理方式有以下步骤&#xff1a;</p> </li><li> <p><strong>首先按照hotfix来看待自己的急需上线的功能</strong>&#xff0c;将本地master还原为merge dev_maolin前&#xff0c;确保本地master没被污染&#xff0c;然后从本地master拉取hotfix_master分支&#xff0c;准备接受自己的新特性代码。</p> </li><li> <p><strong>将dev_maolin还原为merge dev节点之前</strong>&#xff0c;这样在开发新特性过程中别人开发的新特性就不会污染到dev_maolin分支&#xff0c;**但这样有个问题就是&#xff0c;从dev分支节点拉出dev_maolin之前别人开发的新特性无可避免&#xff0c;**所以这一步不奏效。</p> </li></ul>
+<p>最后采取的方式是&#xff0c;上边两步骤都执行&#xff0c;然后将dev_maolin里所有代码拷贝到桌面&#xff0c;切换倒hotfix_master分支&#xff0c;将hotfix_master里所有代码拷贝到桌面&#xff0c;使用beyondCompare工具&#xff0c;<strong>依据记忆将自己的更改从dev_maolin覆盖到hotfix_master</strong>&#xff0c;然后再将hotfix_master合并到master。这样做有很大的问题&#xff0c;但实属无奈之举。</p>
+<p>###经验教训<br /> 一定要准确定位自己的功能。到底要干什么&#xff0c;紧急上线还是等待发版。<br /> ##避坑<br /> 踩了两次坑&#xff0c;这里是要总结下该怎么做了。<br /> ###总结问题<br /> 问题主要来源于git团队协作过程中对流程认识不清晰&#xff0c;同时对Git的认知也不清楚&#xff0c;这里自己记住几个原则&#xff1a;</p>
+<ol><li>master最稳定&#xff0c;master上的代码一定是最稳定的&#xff0c;不容许任何错误。</li><li>dev最全&#xff0c;无论如何dev上应该时刻保证最新最全。</li><li>hotfix&#xff0c;feature&#xff0c;release三个分支都是暂时分支。hotfix从master拉取&#xff0c;feature从dev拉取。</li><li>尽量避免双向merge&#xff0c;单向为dev和master去merge,其它三种分支尽量不要merge别的分支</li><li>区别本地行为和线上行为。</li></ol>
+<p>###最佳实践<br /> 刚好&#xff0c;使用我这个大反例&#xff0c;武哥培训了下git flow&#xff0c;最佳流程和流程清单如下&#xff1a;</p>
+<blockquote>
+ <p>GIT 团队最佳实践 <a href="https://yq.aliyun.com/articles/137035" rel="nofollow">https://yq.aliyun.com/articles/137035</a></p>
+</blockquote>
+<p>从该篇实践可以发现一个新工具GIT FLOW,下载及环境搭建方式如下所示&#xff1a;</p>
+<blockquote>
+ <p>GIT FLOW 环境搭建&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/guowenyan001/article/details/50172765">https://blog.csdn.net/guowenyan001/article/details/50172765</a></p>
+</blockquote>
+<p>当然你有可能忘了git flow流程&#xff0c;这里有备忘清单&#xff1a;</p>
+<blockquote>
+ <p>GIT流程清单&#xff1a; <a href="https://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html" rel="nofollow">https://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html</a></p>
+</blockquote>
+<p>记住一点&#xff0c;git flow hotfix name finish 的时候&#xff0c;远程publish上去的该hotfix分支连同本地的也会一起被删除哦&#xff1a;<br /> <img alt="这里写图片描述" src="./posts/assets/80935356-01-1c7f605653.png" loading="lazy"><br /> ###git rebase使用<br /> 在使用 Git 作为版本控制的时候&#xff0c;我们可能会由于各种各样的原因提交了许多临时的 commit&#xff0c;而这些 commit 拼接起来才是完整的任务。那么我们为了避免太多的 commit 而造成版本控制的混乱&#xff0c;通常我们推荐将这些 commit 合并成一个。</p>
+<blockquote>
+ <p>来自segmentfault大神 <a href="https://segmentfault.com/a/1190000007748862" rel="nofollow">https://segmentfault.com/a/1190000007748862</a></p>
+</blockquote>
+<p>这个命令我亲测可用&#xff0c;团队开发过程中不管是hotfix还是开发feature最好一次只提交一个commit,这样历史可溯源&#xff0c;这点非常重要&#xff01;</p>

@@ -1,0 +1,24 @@
+<p>接触项目之后&#xff0c;首先需要了解C#生命周期&#xff0c;和java类似&#xff0c;C#里也有一个类似struts.xml的配置文件&#xff0c;位于App_Start文件夹下的RouteConfig.cs</p>
+<blockquote>
+<p>图片来自https://www.cnblogs.com/alunchen/p/6252846.html</p>
+</blockquote>
+<p><img alt="这里写图片描述" src="./posts/assets/78593030-ext-dc4987cbdbdf.png" loading="lazy"></p>
+<p>1&#xff0c;第一步就是注册路由&#xff0c;类似要在web.xml里配置struts的拦截器&#xff0c;在C#里我们也需要创建Global.asax文件&#xff0c;用来注册路由&#xff0c;这样配置文件才能生效</p>
+<p>2&#xff0c;第二步就是在App_Start文件夹下编写RouteConfig.cs文件&#xff0c;只要请求到达都会被路由到对应的控制器<br />
+该文件默认配置如下&#xff1a;</p>
+<pre><code>public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute(&#34;{resource}.axd/{*pathInfo}&#34;);
+
+            routes.MapRoute(
+                name: &#34;Default&#34;,
+                url: &#34;{controller}/{action}/{id}&#34;,
+                defaults: new { action &#61; &#34;Index&#34;, id &#61; UrlParameter.Optional }
+            );
+        }
+    }
+</code></pre>
+<p>正因为这样的默认配置&#xff0c;我们请求的url才要写成account/singin,这样请求会跳转到该控制器</p>
+<p>3&#xff0c;该控制器的对应action方法处理完之后会将结果&#xff08;默认是一个Model对象&#xff09;返回给视图&#xff0c;而这个视图下文件夹是默认和控制器同名的&#xff0c;而视图的名和控制器里的action名是相同的&#xff0c;这样会直接定位。</p>

@@ -1,0 +1,93 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>用两个栈来实现一个队列&#xff0c;完成队列的Push和Pop操作。 队列中的元素为int类型。</p>
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;用stack1来充当入队&#xff0c;将stack1所有元素出栈到stack2&#xff0c;然后stack2出栈&#xff0c;实现先进先出。 <br />
+2&#xff0c;三种算法&#xff0c;一种比一种优化</p>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> 栈和队列;
+
+<span class="hljs-keyword">import</span> java.util.Stack;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:StacktoQueue
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月22日 上午10:16:19
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StacktoQueue</span> {<!-- --></span>
+
+    Stack&lt;Integer&gt; stack1 &#61; <span class="hljs-keyword">new</span> Stack&lt;Integer&gt;();
+    Stack&lt;Integer&gt; stack2 &#61; <span class="hljs-keyword">new</span> Stack&lt;Integer&gt;();
+  <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;普通方法&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push</span>(<span class="hljs-keyword">int</span> node) {
+        stack1.push(node);
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">pop</span>() {
+        <span class="hljs-keyword">while</span>(!stack1.isEmpty()){
+            stack2.push(stack1.pop());   <span class="hljs-comment">//把stack1的所有元素入栈到2</span>
+
+        }
+        <span class="hljs-keyword">int</span> num &#61;  stack2.pop();         <span class="hljs-comment">//返回值为2出栈</span>
+        <span class="hljs-keyword">while</span>(!stack2.isEmpty()){
+            stack1.push(stack2.pop());   <span class="hljs-comment">//把2中所有元素重新放回到1</span>
+        }
+        <span class="hljs-keyword">return</span> num;                 <span class="hljs-comment">//操作数过多</span>
+
+    }
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;优化&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push1</span>(<span class="hljs-keyword">int</span> node) {
+        stack1.push(node);
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">pop1</span>() {
+        <span class="hljs-keyword">while</span>(stack1.size()&gt;<span class="hljs-number">1</span>){
+            stack2.push(stack1.pop());   <span class="hljs-comment">//栈1里只剩一个元素&#xff0c;用于出栈</span>
+
+        }
+        <span class="hljs-keyword">int</span> num &#61;  stack1.pop();   <span class="hljs-comment">//栈1出栈</span>
+        <span class="hljs-keyword">while</span>(!stack2.isEmpty()){      <span class="hljs-comment">//把剩下的元素重新放回栈1</span>
+            stack1.push(stack2.pop());
+        }
+        <span class="hljs-keyword">return</span> num;
+
+    }
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;更加优化&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push2</span>(<span class="hljs-keyword">int</span> node) {
+        stack1.push(node);
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">pop2</span>() {
+        <span class="hljs-keyword">if</span>(stack1.isEmpty()&amp;&amp;stack2.isEmpty())
+            <span class="hljs-keyword">throw</span>  <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&#34;queue is empty&#34;</span>);
+        <span class="hljs-keyword">if</span>(stack2.isEmpty()){                <span class="hljs-comment">//只有栈2空的时候才把栈1的放进去&#xff0c;这样避免了频繁的操作</span>
+            <span class="hljs-keyword">while</span>(!stack1.isEmpty()){
+                stack2.push(stack1.pop());
+            }
+        }
+        <span class="hljs-keyword">return</span> stack2.pop();
+
+    }
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span>(String[] args) {
+        <span class="hljs-comment">// TODO Auto-dgenerated method stub</span>
+
+    }
+
+}
+</code></pre>

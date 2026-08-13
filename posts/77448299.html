@@ -1,0 +1,97 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>请实现一个函数按照之字形打印二叉树&#xff0c;即第一行按照从左到右的顺序打印&#xff0c;第二层按照从右至左的顺序打印&#xff0c;第三行按照从左到右的顺序打印&#xff0c;其他行以此类推。</p>
+
+
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;用两个栈来实现&#xff0c;stack1存放奇数行的&#xff0c;stack2存放偶数行的 <br />
+2&#xff0c;stack1先push右子节点后push左子节点&#xff0c;stack2反之 <br />
+3&#xff0c;交替打印和push</p>
+
+
+
+<h3 id="代码实现">代码实现</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs lasso">package 二叉树;
+
+<span class="hljs-keyword">import</span> java<span class="hljs-built_in">.</span>util<span class="hljs-built_in">.</span>ArrayList;
+<span class="hljs-keyword">import</span> java<span class="hljs-built_in">.</span>util<span class="hljs-built_in">.</span><span class="hljs-built_in">Stack</span>;
+
+<span class="hljs-comment">/**
+ * 请实现一个函数按照之字形打印二叉树&#xff0c;
+ * 即第一行按照从左到右的顺序打印&#xff0c;
+ * 第二行按照从右至左的顺序打印&#xff0c;
+ * 第三行按照从左到右的顺序打印&#xff0c;其他行以此类推。
+ */</span>
+<span class="hljs-keyword">public</span> class PrintBinaryTree {
+
+    <span class="hljs-keyword">public</span> ArrayList<span class="hljs-subst">&lt;</span>ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;&gt;</span> IntPrint(TreeNode pRoot) {
+
+    <span class="hljs-built_in">Stack</span><span class="hljs-subst">&lt;</span>TreeNode<span class="hljs-subst">&gt;</span> stack1 <span class="hljs-subst">&#61;</span> <span class="hljs-literal">new</span> <span class="hljs-built_in">Stack</span><span class="hljs-subst">&lt;</span>TreeNode<span class="hljs-subst">&gt;</span>();<span class="hljs-comment">// 存放奇数层的所有元素</span>
+    <span class="hljs-built_in">Stack</span><span class="hljs-subst">&lt;</span>TreeNode<span class="hljs-subst">&gt;</span> stack2 <span class="hljs-subst">&#61;</span> <span class="hljs-literal">new</span> <span class="hljs-built_in">Stack</span><span class="hljs-subst">&lt;</span>TreeNode<span class="hljs-subst">&gt;</span>();<span class="hljs-comment">// 存放偶数层的所有元素</span>
+    ArrayList<span class="hljs-subst">&lt;</span>ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;&gt;</span> listall <span class="hljs-subst">&#61;</span> <span class="hljs-literal">new</span> ArrayList<span class="hljs-subst">&lt;</span>ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;&gt;</span>(); <span class="hljs-comment">// 总的集合元素</span>
+        stack1<span class="hljs-built_in">.</span>push(pRoot);
+        int level <span class="hljs-subst">&#61;</span> <span class="hljs-number">1</span>; <span class="hljs-comment">// 从第一层开始</span>
+        <span class="hljs-keyword">while</span> (<span class="hljs-subst">!</span>stack1<span class="hljs-built_in">.</span>isEmpty() <span class="hljs-subst">||</span> <span class="hljs-subst">!</span>stack2<span class="hljs-built_in">.</span>isEmpty()) {  <span class="hljs-comment">//这里是易错点条件一定要加&#xff01;</span>
+            <span class="hljs-keyword">if</span> (level <span class="hljs-subst">%</span> <span class="hljs-number">2</span> <span class="hljs-subst">!&#61;</span> <span class="hljs-number">0</span>) { <span class="hljs-comment">// 如果当前层是奇数层</span>
+                ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;</span> <span class="hljs-built_in">list</span> <span class="hljs-subst">&#61;</span> <span class="hljs-literal">new</span> ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;</span>();
+                <span class="hljs-keyword">while</span> (<span class="hljs-subst">!</span>stack1<span class="hljs-built_in">.</span>isEmpty()) {
+                    TreeNode current <span class="hljs-subst">&#61;</span> stack1<span class="hljs-built_in">.</span>pop();
+                    <span class="hljs-keyword">if</span> (current <span class="hljs-subst">!&#61;</span> <span class="hljs-built_in">null</span>) {
+                        <span class="hljs-built_in">list</span><span class="hljs-built_in">.</span>add(current<span class="hljs-built_in">.</span>val);
+                        <span class="hljs-comment">//System.out.print(current.val &#43; &#34; &#34;);</span>
+                        <span class="hljs-keyword">if</span> (current<span class="hljs-built_in">.</span>left <span class="hljs-subst">!&#61;</span> <span class="hljs-built_in">null</span>) { <span class="hljs-comment">//偶数层是先放左节点</span>
+                            stack2<span class="hljs-built_in">.</span>push(current<span class="hljs-built_in">.</span>left);
+                        }
+                        <span class="hljs-keyword">if</span> (current<span class="hljs-built_in">.</span>right <span class="hljs-subst">!&#61;</span> <span class="hljs-built_in">null</span>) {
+                            stack2<span class="hljs-built_in">.</span>push(current<span class="hljs-built_in">.</span>right);
+                        }
+                    }
+                }
+                <span class="hljs-keyword">if</span> (<span class="hljs-subst">!</span><span class="hljs-built_in">list</span><span class="hljs-built_in">.</span>isEmpty()) {
+                    listall<span class="hljs-built_in">.</span>add(<span class="hljs-built_in">list</span>);
+                    level<span class="hljs-subst">&#43;&#43;</span>;   <span class="hljs-comment">//变为偶数层</span>
+                    System<span class="hljs-built_in">.</span>out<span class="hljs-built_in">.</span>println();
+                }
+            } <span class="hljs-keyword">else</span> {
+                ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;</span> <span class="hljs-built_in">list</span> <span class="hljs-subst">&#61;</span> <span class="hljs-literal">new</span> ArrayList<span class="hljs-subst">&lt;</span><span class="hljs-built_in">Integer</span><span class="hljs-subst">&gt;</span>();
+                <span class="hljs-keyword">while</span> (<span class="hljs-subst">!</span>stack2<span class="hljs-built_in">.</span>isEmpty()) {
+                    TreeNode current <span class="hljs-subst">&#61;</span> stack2<span class="hljs-built_in">.</span>pop();
+                    <span class="hljs-keyword">if</span> (current <span class="hljs-subst">!&#61;</span> <span class="hljs-built_in">null</span>) {
+                        <span class="hljs-built_in">list</span><span class="hljs-built_in">.</span>add(current<span class="hljs-built_in">.</span>val);
+                        System<span class="hljs-built_in">.</span>out<span class="hljs-built_in">.</span>print(current<span class="hljs-built_in">.</span>val <span class="hljs-subst">&#43;</span> <span class="hljs-string">&#34; &#34;</span>);
+
+                        <span class="hljs-keyword">if</span> (current<span class="hljs-built_in">.</span>right <span class="hljs-subst">!&#61;</span> <span class="hljs-built_in">null</span>) {           <span class="hljs-comment">//奇数层是先放右节点</span>
+                            stack1<span class="hljs-built_in">.</span>push(current<span class="hljs-built_in">.</span>right);
+                        }
+                        <span class="hljs-keyword">if</span> (current<span class="hljs-built_in">.</span>left <span class="hljs-subst">!&#61;</span> <span class="hljs-built_in">null</span>) {
+                            stack1<span class="hljs-built_in">.</span>push(current<span class="hljs-built_in">.</span>left);
+                        }
+                    }
+                }
+                <span class="hljs-keyword">if</span> (<span class="hljs-subst">!</span><span class="hljs-built_in">list</span><span class="hljs-built_in">.</span>isEmpty()) {
+                    listall<span class="hljs-built_in">.</span>add(<span class="hljs-built_in">list</span>);
+                    level<span class="hljs-subst">&#43;&#43;</span>;
+                    System<span class="hljs-built_in">.</span>out<span class="hljs-built_in">.</span>println();
+                }
+            }
+
+        }
+        <span class="hljs-keyword">return</span> listall;
+    }
+
+    <span class="hljs-keyword">public</span> static <span class="hljs-literal">void</span> main(<span class="hljs-built_in">String</span><span class="hljs-preprocessor">[</span><span class="hljs-preprocessor">]</span><span class="hljs-markup"> args) {
+
+    }
+
+}
+
+</span></code></pre>
+
+<h3 id="易错点">易错点</h3>
+
+<p>当两个栈都为空的时候应该跳出循环不再加入listall</p>

@@ -1,0 +1,139 @@
+<p><img alt="在这里插入图片描述" src="./posts/assets/109616619-01-3edb811a66.jpg" loading="lazy"></p>
+<p>之前聊过Redis的分布式锁并且基于理论<a href="https://tianmaolin.blog.csdn.net/article/details/109269855" rel="nofollow">【Redis从入门到放弃系列 十】Redis的事务机制</a>进行过代码实践<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/103061198">【Redis从入门到放弃系列 十一】Redis分布式锁实战</a>&#xff0c;但是其实只是对分布式锁的一个简单理解&#xff0c;对于其中可能的问题并没有过多讨论&#xff0c;甚至对于真实企业场景中的分布式锁&#xff0c;之前的那个也许只是个玩具&#xff0c;存在诸多问题。一个高可用的分布式锁应该满足如下几点要求&#xff1a;</p>
+<ul><li><strong>互斥性</strong>&#xff1a;任意时刻只能有一个客户端拥有锁&#xff0c;不能被多个客户端获取</li><li><strong>安全性</strong>&#xff1a;锁只能被持有该锁的客户端删除&#xff0c;不能被其它客户端删除</li><li><strong>防死锁</strong>&#xff1a;获取锁的客户端因为某些原因而宕机&#xff0c;而未能释放锁&#xff0c;其它客户端也就无法获取该锁&#xff0c;需要有机制来避免该类问题的发生</li><li><strong>高可用</strong>&#xff1a;当部分节点宕机&#xff0c;客户端仍能获取锁或者释放锁</li></ul>
+<p>之前的设计&#xff0c;通过<strong>setnx</strong>实际上只解决了互斥性的问题&#xff0c;其它的都不满足&#xff0c;那么基于问题如何再进行拓展设计呢&#xff1f;</p>
+<h3><a rel="noopener noreferrer" id="_9"></a>单机状态下可能遇到的问题</h3>
+<p>首先从纯单机的角度去考虑下Redis现有设计的分布式锁不完善的一些地方。</p>
+<h4><a rel="noopener noreferrer" id="SetNx_11"></a>解决SetNx的超时非原子操作问题【互斥性、防死锁】</h4>
+<p>之前的代码为了解决死锁的问题&#xff0c;使用了过期时间&#xff0c;代码如下&#xff1a;</p>
+<pre><code class="prism language-java">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">///给分组加分组锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> bool <span class="token function">GetGroupLock</span><span class="token punctuation">(</span>string groupKey<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                using <span class="token punctuation">(</span>var redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表分组锁空闲&#xff0c;如果返回false设置失败表明队分组锁正在被持有</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">RedisSetNx</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//如果为true,设置分组锁并设置该锁的过期时间</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token function">RedisExpire</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">,</span> <span class="token number">300</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//设置过期时间为5分钟</span>
+                        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行查询异常操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis 设置分组锁[{groupKey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//抛出异常</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>但是可以看到<strong>setnx命令无法原子性的设置锁的自身过期时间</strong>&#xff0c;也就是说执行setnx命令时我们无法同时设置其过期时间&#xff0c;那么就会出现死锁&#xff0c;例如&#xff1a;客户端A刚执行完setnx&#xff0c;这时候客户端A挂掉了&#xff0c;没有完成给锁设置过期时间&#xff0c;此时就产生了死锁&#xff0c;所有的客户端再也无法获得该锁&#xff0c;这种情况一般采用Lua脚本来实现&#xff08;因为Redis执行Lua脚本是原子性的&#xff09;&#xff0c;其实从 Redis 2.6.12 版本开始set命令完全可以替代setnx命令&#xff0c;我们看官网的set命令参数</p>
+<pre><code class="prism language-java">SET key value <span class="token punctuation">[</span>EX seconds<span class="token punctuation">]</span> <span class="token punctuation">[</span>PX milliseconds<span class="token punctuation">]</span> <span class="token punctuation">[</span>NX<span class="token operator">|</span>XX<span class="token punctuation">]</span>
+</code></pre>
+<ul><li><strong>EX second</strong> &#xff1a;设置键的过期时间为 second 秒。 SET key value EX second 效果等同于 SETEX key second value 。</li><li><strong>PX millisecond</strong> &#xff1a;设置键的过期时间为 millisecond 毫秒。 SET key value PX millisecond 效果等同于 PSETEX key millisecond value 。</li><li><strong>NX</strong> &#xff1a;只在键不存在时&#xff0c;才对键进行设置操作。 SET key value NX 效果等同于 SETNX key value 。</li><li><strong>XX</strong> &#xff1a;只在键已经存在时&#xff0c;才对键进行设置操作。</li></ul>
+<p>例如&#xff1a;SET key value NX PX 30000 这个命令的作用是在只有这个key不存在的时候才会设置这个key的值&#xff08;NX选项的作用&#xff09;&#xff0c;超时时间设为30000毫秒&#xff08;PX选项的作用&#xff09;。<strong>那么我们用set命令带上EX或者PX、以及NX参数就满足了上面提到的互斥性&#xff08;加锁&#xff09;、死锁&#xff08;自动过期&#xff09;两个要求</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_57"></a>解决非本线程对锁的删除问题【安全性】</h4>
+<p>解锁实际就是删除缓存key&#xff0c;这段代码之前是这么写的&#xff0c;调用后就立即执行删除&#xff0c;没有判断现在的锁还是不是自己的锁了&#xff1a;</p>
+<pre><code class="prism language-java">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 给分组锁解锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> bool <span class="token function">GroupUnLock</span><span class="token punctuation">(</span>ImportRequestDataModel model<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//申请成功标志</span>
+
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+            var groupKey <span class="token operator">&#61;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>model<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> model<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                using <span class="token punctuation">(</span>var redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> <span class="token function">RedisDeleteKey</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表原来不存在这样的分组&#xff0c;如果返回false设置失败表明原来存在这样的分组</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行查询异常操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis 解除分组锁[{groupKey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//抛出异常</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>如果客户端A拿到锁并设置了锁的过期时间为10S&#xff0c;但是由于某种原因<strong>客户端A执行时间超过了10S&#xff0c;此时锁自动过期&#xff0c;那么客户端B拿到了锁&#xff0c;然后客户端A此时正好执行完毕删除锁&#xff0c;但是此时删除的是客户端B加的锁</strong>&#xff0c;如何防止这种不安全的情况发生呢&#xff1f;有两种方案&#xff1a;</p>
+<h5><a rel="noopener noreferrer" id="_90"></a>给锁自动续期&#xff0c;执行完任务再删除</h5>
+<p>我们可以让获得锁的线程开启一个守护线程&#xff0c;用来给自己的锁“续期”。例如设置的超时时间为10秒&#xff0c;则有如下的判断方法&#xff1a;</p>
+<ul><li>当过去了9S&#xff0c;客户端A还没执行完&#xff0c;守护线程会执行expire指令&#xff0c;把锁再“续期”10S,</li><li>守护线程从第9S开始执行&#xff0c;每9秒执行一次。</li><li>当客户端A执行完任务&#xff0c;会显式关掉守护线程。</li></ul>
+<p><strong>如果客户端A忽然宕机&#xff0c;由于A线程和守护线程在同一个进程&#xff0c;守护线程也会停下。这把锁到了超时的时候&#xff0c;没人给它续期&#xff0c;也就自动释放了</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_99"></a>设置锁的唯一标识【判断和删除原子操作】</h5>
+<p>可以<strong>在加锁的时候把set的value值设置成一个唯一标识&#xff0c;标识这个锁是谁加的锁&#xff0c;在删除锁的时候判断是不是自己加的那把锁&#xff0c;如果不是则不删除</strong>。例如加上自己的线程号作为唯一标识。当然这里会有一个新问题产生&#xff0c;<strong>判断是不是自己加的锁和释放锁是两个独立操作&#xff0c;不是原子性&#xff0c;所以我们需要使用Lua脚本执行判断和释放锁</strong>。</p>
+<pre><code class="prism language-java"><span class="token keyword">if</span> redis<span class="token punctuation">.</span><span class="token function">call</span><span class="token punctuation">(</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span>KEYS<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> ARGV<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> then
+    <span class="token keyword">return</span> redis<span class="token punctuation">.</span><span class="token function">call</span><span class="token punctuation">(</span><span class="token string">&#34;del&#34;</span><span class="token punctuation">,</span>KEYS<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token keyword">else</span>
+    <span class="token keyword">return</span> <span class="token number">0</span>
+end
+</code></pre>
+<h4><a rel="noopener noreferrer" id="Redis_110"></a>解决Redis突然宕机线程剩余任务未执行完问题</h4>
+<p>其实在写代码的过程中有考虑过&#xff0c;如果线程在执行导入任务的过程中挂掉&#xff0c;下次起来的时候先去Redis中去获取下数据&#xff0c;如果能获取到继续执行&#xff1a;</p>
+<pre><code class="prism language-java">    <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                data <span class="token operator">&#61;</span> ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetLastTimeThreadUnDealData</span><span class="token punctuation">(</span>queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//获取上次线程的导入数据</span>
+
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span>  <span class="token comment">//如果data不为null</span>
+                <span class="token punctuation">{<!-- --></span>
+                    var groupKey <span class="token operator">&#61;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span>ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetGroupLock</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//如果可以获取到该分组的锁则处理残留数据</span>
+                        <span class="token punctuation">{<!-- --></span>
+                            <span class="token keyword">break</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                        System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">800</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//先设置&#xff0c;每次处理完之后&#xff0c;休眠800毫秒&#xff0c;保证不过于频繁的请求redis造成redis压力</span>
+                    <span class="token punctuation">}</span>
+
+                    _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;持有分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                    _loggging<span class="token punctuation">.</span><span class="token function">Info</span><span class="token punctuation">(</span><span class="token string">&#34;处理上次退出时留在redis中的数据。线程&#xff1a;&#34;</span> <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34; data&#xff1a;&#34;</span> <span class="token operator">&#43;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token function">ImportData</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    ImportGroupQueue<span class="token punctuation">.</span><span class="token function">ClearCurrentDataModelInRedis</span><span class="token punctuation">(</span>queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GroupUnLock</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//参数数据处理完毕后&#xff0c;释放该锁</span>
+                    _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;释放了分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                _loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token string">&#34;处理上次退出时留在redis中的数据发生异常&#xff1a;线程&#xff1a;&#34;</span> <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34; data&#xff1a;&#34;</span> <span class="token operator">&#43;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+</code></pre>
+<p>但是这样也有一个问题&#xff0c;万一Redis也挂掉怎么办呢&#xff1f;没关系这个时候可以使用Redis的灾备机制&#xff0c;使用持久化策略恢复数据。具体可以参照&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/109259662" rel="nofollow">【Redis从入门到放弃系列 九】Redis持久化策略</a></p>
+<h3><a rel="noopener noreferrer" id="_146"></a>集群状态下可能遇到的问题</h3>
+<p>然后再从纯集群的状态下去考虑可能遇到的问题&#xff0c;当然单机遇到的问题集群一定都会遇到&#xff0c;只是场景更为复合。在大型的应用中&#xff0c;一般Redis服务都是集群形式&#xff0c;主从模式下&#xff1a;</p>
+<ol><li>master挂掉后&#xff0c;slave选举上来成为master时容易出现问题&#xff0c;redis在进行主从复制时是异步完成的&#xff0c;比如在clientA获取锁后&#xff0c;主redis崩溃了&#xff0c;数据还没有复制到从redis中&#xff0c;</li><li>从redis选举出一个升级为主redis,造成<strong>新的主redis没有clientA 设置的锁&#xff0c;这时clientB尝试获取锁&#xff0c;并且能够成功获取锁&#xff0c;导致互斥失效</strong>。</li></ol>
+<p>这个时候就只能使用终极大招&#xff0c;Redis之父创建的<strong>Redlock算法</strong>了&#xff0c;有两个前置概念</p>
+<ul><li><strong>TTL</strong>&#xff1a;Time To Live;只 redis key 的过期时间或有效生存时间</li><li><strong>clock drift</strong>:时钟漂移&#xff1b;指两个电脑间时间流速基本相同的情况下&#xff0c;两个电脑&#xff08;或两个进程间&#xff09;时间的差值&#xff1b;如果电脑距离过远会造成时钟漂移值 过大</li></ul>
+<p>时钟漂移相对于TTL来说要小的多。</p>
+<h4><a rel="noopener noreferrer" id="RedLock_158"></a>RedLock算法</h4>
+<p>在分布式版本的算法里我们假设我们有N个Redis Master节点&#xff0c;这些节点都是完全独立的。<strong>不使用任何复制或者其他隐含的分布式协调算法&#xff08;如果采用的是Redis Cluster集群此方案可能不适用&#xff0c;因为Redis Cluster是按哈希槽 (hash slot)的方式来分配到不同节点上的&#xff0c;明显存在分布式协调算法&#xff09;</strong>。</p>
+<p>我们把N设成5&#xff0c;因此我们需要在不同的计算机或者虚拟机上运行5个master节点来保证他们大多数情况下都不会同时宕机。一个客户端需要做如下操作来获取锁&#xff1a;</p>
+<ul><li><strong>获取时间</strong>&#xff1a;5台机器同时获取当前系统时间&#xff08;单位是毫秒&#xff09;</li><li><strong>轮流请求锁</strong>&#xff1a;轮流用相同的key和随机值&#xff08;客户端的唯一标识&#xff09;在5个节点上请求锁&#xff0c;在这一步里&#xff0c;客户端在每个master上请求锁时&#xff0c;会有一个和总的锁释放时间相比小的多的超时时间。比如如果锁自动释放时间是10秒钟&#xff0c;那每个节点锁请求的超时时间可能是5-50毫秒的范围&#xff0c;这个可以防止一个客户端在某个宕掉的master节点上阻塞过长时间&#xff0c;如果一个master节点不可用了&#xff0c;我们应该尽快尝试下一个master节点。</li><li><strong>计算获取锁时间</strong>&#xff1a;客户端计算上一步中获取锁所花的时间&#xff0c;只有当客户端在大多数master节点上成功获取了锁&#xff08;在这里是3个&#xff09;&#xff0c;而且总共消耗的时间不超过锁释放时间&#xff0c;这个锁就认为是获取成功了。</li><li><strong>锁持有时间</strong>&#xff1a;如果锁获取成功了&#xff0c;那现在锁自动释放时间就是最初的锁释放时间减去之前获取锁所消耗的时间【<strong>例如获取花了3秒&#xff0c;锁释放为10秒&#xff0c;则不超过&#xff0c;并且实际使用时间为7秒&#xff0c;实际应该再减去时钟漂移&#xff0c;但可忽略不计</strong>】。</li><li><strong>释放锁</strong>&#xff1a;如果锁获取失败了&#xff0c;不管是因为获取成功的锁不超过一半&#xff08;N/2&#43;1)还是因为总消耗时间超过了锁释放时间&#xff0c;<strong>客户端都会到每个master节点上释放锁&#xff0c;即便是那些他认为没有获取成功的锁</strong>。由于释放锁时会判断这个锁的value是不是自己设置的&#xff0c;如果是才删除&#xff0c;所以在释放锁时非常简单&#xff0c;只要向所有实例都发出释放锁的命令&#xff0c;不用考虑能否成功释放锁【也解决了判定是否是自己加的锁防止误删的问题】</li></ul>
+<p>以上就是整个RedLock的算法流程。</p>
+<h4><a rel="noopener noreferrer" id="RedLock_170"></a>RedLock注意事项</h4>
+<p>有以下几个概念点需要厘清&#xff0c;关于RedLock的注意点&#xff1a;</p>
+<ul><li> <p><strong>RedLock可以看成是同步算法</strong>&#xff1a;因为 即使进程间&#xff08;多个电脑间&#xff09;没有同步时钟&#xff0c;但是每个进程时间流速大致相同&#xff1b;并且时钟漂移相对于TTL小&#xff0c;可以忽略&#xff0c;所以可以看成同步算法</p> </li><li> <p><strong>RedLock失败重试机制</strong>&#xff1a;当client不能获取锁时&#xff0c;应该在随机时间后重试获取锁&#xff1b;并且最好在同一时刻并发的把set命令发送给所有redis实例&#xff1b;而且对于已经获取锁的client在完成任务后要及时释放锁&#xff0c;这是为了节省时间&#xff1b;</p> </li><li> <p><strong>各节点Redis需要有持久化机制</strong>&#xff1a;如果redis没有持久化功能&#xff0c;在clientA获取锁成功后&#xff0c;所有redis重启&#xff0c;clientB能够再次获取到锁&#xff0c;这样违法了锁的排他互斥性; 如果启动AOF永久化存储&#xff0c;重启redis后由于redis过期机制是按照unix时间戳走的&#xff0c;所以在重启后&#xff0c;然后会按照规定的时间过期&#xff0c;不影响业务;但是由于AOF同步到磁盘的方式默认是每秒1次&#xff0c;如果在一秒内断电&#xff0c;会导致数据丢失&#xff0c;立即重启会造成锁互斥性失效;但如果同步磁盘方式使用Always(每一个写命令都同步到硬盘)造成性能急剧下降;所以<strong>锁完全有效性和性能方面要有所取舍</strong>;</p> </li><li> <p><strong>锁的有效获取时间计算方式</strong>&#xff1a;先假设client获取所有实例&#xff0c;所有实例包含相同的key和过期时间(TTL) ,但每个实例set命令时间不同导致不能同时过期&#xff0c;第一个set命令之前是T1,最后一个set命令后为T2,则此client有效获取锁的最小时间为<strong>TTL-(T2-T1)-时钟漂移</strong>;</p> </li></ul>
+<p>虽然说RedLock算法可以解决单点Redis分布式锁的高可用问题&#xff0c;但如果集群中有节点发生崩溃重启&#xff0c;还是会出现锁的安全性问题</p>
+<h4><a rel="noopener noreferrer" id="RedLock_181"></a>RedLock的极致有效</h4>
+<p>假设一共有A, B, C, D, E&#xff0c;5个Redis节点&#xff0c;设想发生了如下的事件序列&#xff1a;</p>
+<ol><li>客户端1成功锁住了A, B, C&#xff0c;获取锁成功&#xff08;但D和E没有锁住&#xff09;</li><li>节点C崩溃重启了&#xff0c;但客户端1在C上加的锁没有持久化下来&#xff0c;丢失了</li><li>节点C重启后&#xff0c;客户端2锁住了C, D, E&#xff0c;获取锁成功</li></ol>
+<p>这样&#xff0c;客户端1和客户端2同时获得了锁&#xff08;针对同一资源&#xff09;。针对这样场景&#xff0c;解决方式也很简单&#xff0c; <strong>断电后等待TTL后重启</strong>&#xff1a;即使断电情况也能有效保证锁完全有效性及性能高效&#xff1a;redis同步到磁盘方式保持默认每秒&#xff0c;在redis无论停掉后要等待TTL时间后再重启【这种情况下相当于客户端1放弃了自己的锁&#xff0c;客户端2设置后唯一&#xff0c;仍然互斥有效】(<strong>延迟重启</strong>) &#xff0c;缺点是 TTL时间内服务相当于暂停状态</p>
+<p>目前RedLock也有了较为广泛的应用&#xff0c;各种语言都有该算法的开源实现方式&#xff1a;</p>
+<ul><li><strong>Redlock-py (Python 实现)</strong>&#xff1a;https://github.com/SPSCommerce/redlock-py</li><li><strong>Redsync.go (Go 实现)</strong>&#xff1a;https://github.com/hjr265/redsync.go</li><li><strong>Redisson (Java 实现)</strong>&#xff1a;https://github.com/redisson/redisson</li><li><strong>Redlock-cs (C#/.NET 实现)</strong>&#xff1a;https://github.com/kidfashion/redlock-cs</li></ul>
+<p>以上就是整个关于Redis分布式锁的深入和一些改进策略</p>

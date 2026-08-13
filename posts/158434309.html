@@ -1,0 +1,28 @@
+<h2><a rel="noopener noreferrer" id="CacheAside__0"></a>如何保证缓存与数据库的数据一致性？——Cache-Aside 模式深度解析</h2>
+<p>在高并发系统中，缓存（如 Redis）是提升性能的利器，但它与数据库（如 MySQL）之间的数据一致性问题一直是架构设计中的核心挑战。本文将深入探讨<strong>Cache-Aside（旁路缓存）模式</strong>的读写流程，分析两种主流更新策略的优劣，并给出实践中保证最终一致性的可靠方案。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="CacheAside__6"></a>一、Cache-Aside 模式：读写流程</h3>
+<p>Cache-Aside 是最常用的缓存读写模式，应用程序直接与缓存和数据库交互，由应用代码控制数据的流向。</p>
+<h4><a rel="noopener noreferrer" id="1__10"></a>1. 读请求流程</h4>
+<ol>
+ <li>应用先查询缓存，如果命中（cache hit），直接返回数据。</li>
+ <li>如果未命中（cache miss），则查询数据库。</li>
+ <li>将数据库查询结果写入缓存，并设置过期时间（TTL）。</li>
+ <li>返回数据给客户端。</li>
+</ol>
+<h4><a rel="noopener noreferrer" id="2__16"></a>2. 写请求流程</h4>
+<p>写请求涉及数据库和缓存的更新，顺序至关重要。常见的两种策略：</p>
+<ul>
+ <li><strong>先更新数据库，再操作缓存</strong>（推荐）</li>
+ <li><strong>先操作缓存，再更新数据库</strong>（需谨慎）</li>
+</ul>
+<p>无论哪种策略，问题都源于“更新数据库”和“操作缓存”两个动作无法原子执行，高并发下必然出现时间窗口，可能导致数据不一致。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="_25"></a>二、两种更新策略的优劣分析</h3>
+<h4><a rel="noopener noreferrer" id="_27"></a>策略一：先更新数据库，再删除缓存（推荐）</h4>
+<p><strong>操作顺序</strong>：</p>
+<ol>
+ <li>更新数据库。</li>
+ <li>删除缓存中的对应 key。</li>
+</ol>
+<p><strong>可能的不一致场景</strong>：</p>

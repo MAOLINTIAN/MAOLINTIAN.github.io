@@ -1,0 +1,43 @@
+<p>最近由于校验工具出现bug&#xff0c;但无法定位问题&#xff0c;又涉及到数据库的创建和更新&#xff0c;所以在武哥的帮助下&#xff0c;学习了下DTC&#xff0c;也就是分布式事务协调管理&#xff0c;主要解决事务完整性问题和提供自动修复功能。当然现在我只涉及到了监测功能&#xff0c;修复功能需要运维的配合。</p>
+
+
+
+<h3 id="函数原型">函数原型</h3>
+
+<p>当一个函数对数据库执行多步操作需要保证其完整性的时候&#xff08;<strong>同时数据的复杂性也会导致某些执行成功&#xff0c;某些失败&#xff0c;不一定是逻辑错误&#xff0c;当然如果百分百执行不到下一步&#xff0c;很有可能逻辑错误</strong>&#xff09;</p>
+
+
+
+<pre class="prettyprint"><code class=" hljs fsharp"><span class="hljs-keyword">fun</span>(storevalue){
+
+  dtc(order1,storevalue)    <span class="hljs-comment">//初始化参数&#xff0c;如果只有order1得到了增长&#xff0c;则表明 step1fun()执行失败</span>
+  step1fun()&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;执行完之后产生参数A
+
+  dtc(order2,storevalue)  <span class="hljs-comment">//第一步函数执行后参数&#xff0c;如果order1和order2得到了增长&#xff0c;order3没有增长&#xff0c;则表明 step2fun()执行失败</span>
+  step2fun()&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;执行完之后产生参数B
+
+  dtc(order3,storevalue)  <span class="hljs-comment">//第二步函数执行后参数&#xff0c;如果order1、order2和order3得到了增长&#xff0c;order4没有增长&#xff0c;则表明 step3fun()执行失败</span>
+  step3fun()&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
+  dtc(order4,storevalue) <span class="hljs-comment">//第三步函数执行后参数&#xff0c;如果order1、order2、order3和order4都得到了增长&#xff0c;则表明 全部执行成功</span>
+
+}</code></pre>
+
+
+
+<h3 id="数据巴士">数据巴士</h3>
+
+<p><img alt="这里写图片描述" title="" src="./posts/assets/80683511-01-fd942cccf4.png" loading="lazy"> <br />
+上边的函数部分可以图形化为上图&#xff0c;也就是上下文数据再不断膨胀&#xff0c;<strong>但在每一步执行完时候都会将下一个步骤执行所需的数据序列化存储到DTC日志</strong>&#xff0c;方便复现当时场景。</p>
+
+
+
+<h3 id="线上监测">线上监测</h3>
+
+<p><img alt="这里写图片描述" title="" src="./posts/assets/80683511-02-28c987e615.png" loading="lazy"></p>
+
+<p>线上发现order1执行了3次&#xff0c;而order2只执行了2次&#xff0c;<strong>说明step1fun()有一次执行失败</strong>&#xff0c;同时&#xff0c;order4只执行了1次&#xff0c;<strong>说明&#xff0c;step3fun()有两次执行失败</strong>&#xff0c;当四次执行都成功的时候&#xff0c;每一个order都抵消1</p>
+
+<p>注意&#xff1a;这里不光是自己的代码要写完&#xff0c;还要往配置里加东西&#xff0c;<strong>具体来说我从本地代码往运维的数据库里存入数据&#xff0c;运维不管是在什么环境下&#xff0c;只要有配置文件就可以依赖其从自己的库里读取数据</strong>&#xff0c;所以我只需要给运维他需要的配置就行&#xff0c;数据库&#xff08;不管是线上还是测试&#xff09;大家都能看到&#xff0c;他也不用关心我的代码实现。</p>
+
+<p>如果步骤都执行完了&#xff0c;完成数加1&#xff0c;如果有没有执行完的&#xff0c;流程中各步数量柱状图会有所不同 <br />
+<img alt="这里写图片描述" title="" src="./posts/assets/80683511-03-ae5f3578b1.png" loading="lazy"></p>

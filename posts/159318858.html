@@ -1,0 +1,57 @@
+<h2><a rel="noopener noreferrer" id="__ZSet__0"></a>一 判断：是否通过 ZSet 实现？</h2>
+<p><strong>是的</strong>，Redis 的有序集合（Sorted Set，简称 ZSet）是构建实时排行榜的标准方案。它天然支持按分数排序、高效的范围查询和排名计算，非常适合“骑手按配送单量/积分/时长实时排名”的场景。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="_ZSet__6"></a>二 ZSet 为什么能实现排行榜？</h2>
+<p>排行榜的核心需求是：</p>
+<ul>
+ <li><strong>实时更新</strong>：骑手完成一单，分数（如单量）立即增加。</li>
+ <li><strong>高效查询</strong>：获取某个骑手的排名、获取 Top N 骑手、获取某个分数区间的骑手。</li>
+ <li><strong>高并发</strong>：百万骑手，每秒可能上千次更新和查询。</li>
+</ul>
+<p>ZSet 提供了 O(log N) 的插入、更新、删除和排名查询操作（N 为成员数量），且所有数据存储在内存中，能够支撑百万级成员的高频读写。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="_ZSet__17"></a>三 ZSet 的常用命令及在排行榜中的应用</h2>
+<table>
+ <thead>
+  <tr>
+   <th>命令</th>
+   <th>作用</th>
+   <th>排行榜场景示例</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><code>ZADD key score member</code></td>
+   <td>添加或更新成员分数</td>
+   <td><code>ZADD rider:rank 100 "rider_12345"</code>（骑手完成第100单）</td>
+  </tr>
+  <tr>
+   <td><code>ZINCRBY key increment member</code></td>
+   <td>增加成员分数</td>
+   <td><code>ZINCRBY rider:rank 1 "rider_12345"</code>（每完成一单加1分）</td>
+  </tr>
+  <tr>
+   <td><code>ZRANK key member</code></td>
+   <td>获取成员排名（从低到高）</td>
+   <td><code>ZRANK rider:rank "rider_12345"</code> → 排名（第0名为第1名）</td>
+  </tr>
+  <tr>
+   <td><code>ZREVRANK key member</code></td>
+   <td>获取成员排名（从高到低）</td>
+   <td>排行榜通常用这个获取骑手的降序排名</td>
+  </tr>
+  <tr>
+   <td><code>ZRANGE key start stop [WITHSCORES]</code></td>
+   <td>按分数升序获取指定范围成员</td>
+   <td>较少用于排行榜头部</td>
+  </tr>
+  <tr>
+   <td><code>ZREVRANGE key start stop [WITHSCORES]</code></td>
+   <td>按分数降序获取指定范围成员</td>
+   <td><code>ZREVRANGE rider:rank 0 9 WITHSCORES</code> → 获取前10名骑手</td>
+  </tr>
+  <tr>
+   <td><code>ZSCORE key member</code></td>
+  </tr>
+ </tbody>
+</table>

@@ -1,0 +1,75 @@
+<p>Java是一门面向对象编程语言&#xff0c;不仅吸收了C&#43;&#43;语言的各种优点&#xff0c;还摒弃了C&#43;&#43;里难以理解的多继承、指针等概念&#xff0c;因此Java语言具有功能强大和简单易用两个特征。Java语言作为静态面向对象编程语言的代表&#xff0c;极好地实现了面向对象理论&#xff0c;允许程序员以优雅的思维方式进行复杂的编程 。Java包括J2SE&#xff08;类库及核心特性&#xff09;、J2EE&#xff08;Web开发&#xff09;、J2ME&#xff08;手机编程&#xff0c;逐渐被取代&#xff09;&#xff0c;我们这部分就是主要探讨及核心机制。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/73138414-01-99c0b5ea63.jpg" loading="lazy"></p>
+<p>首发于CSDN&#xff0c;于2021年1月21日二次更新和补充。</p>
+<h3><a rel="noopener noreferrer" id="Java_8"></a>Java语言特性</h3>
+<p>Java具有<strong>简单性、面向对象、分布式、健壮性、安全性、平台独立与可移植性、多线程、动态性</strong>等特点  。Java可以编写桌面应用程序、Web应用程序、分布式系统和嵌入式系统应用程序等&#xff0c;Java语言包含如下9个特性&#xff1a;</p>
+<ol><li>Java是简单易学的</li><li>Java是完全面向对象的&#xff08;封装、继承、多态&#xff09;</li><li>平台⽆关性&#xff0c;Java 虚拟机实现平台⽆关性、跨平台&#xff0c;可移植</li><li>安全性 &#xff08;<strong>编写的都是中间语言&#xff0c;最后jvm解析</strong>&#xff09;</li><li>健壮性&#xff08;<strong>垃圾回收机制&#xff0c;异常处理机制</strong>&#xff09;</li><li>Java支持多线程</li><li>Java是编译与解释并存类型的&#xff08;<strong>比编译型的慢&#xff0c;但可跨平台</strong>&#xff09;</li><li>Java是高性能的&#xff08;<strong>翻译class文件是即时的&#xff0c;用到才解析</strong>&#xff09;</li><li>⽀持⽹络编程并且很⽅便&#xff08; Java 语⾔诞⽣本身就是为简化⽹络编程设计的&#xff0c;因此 Java 语⾔不<br />
+仅⽀持⽹络编程⽽且很⽅便&#xff09;</li></ol>
+<p>可以看的出为什么现在我国互联网大厂技术栈已经成了Java的天下了。</p>
+<h4><a rel="noopener noreferrer" id="_24"></a>编译型和解释型语言</h4>
+<p>在了解Java的语言特性之前我们先来了解几个概念&#xff0c;什么是编译型语言、什么是解释型语言&#xff0c;什么又是先编译后解释语言&#xff1a;</p>
+<ul><li><strong>编译型语言&#xff1a;<strong>编译型语言在程序执行之前&#xff0c;先会</strong>通过编译器对程序执行一个编译的过程&#xff0c;把程序转变成机器语言</strong>。运行时就不需要翻译&#xff0c;而直接执行就可以了。最典型的例子就是C&#xff08;C/C&#43;&#43;&#xff09;语言。</li><li><strong>解释型语言</strong>&#xff1a;而是在程序运行的时候&#xff0c;<strong>通过解释器对程序逐行作出解释&#xff0c;然后直接运行</strong>&#xff0c;最典型的例子是Ruby&#xff08;JavaScript、Perl、Python、Ruby、MATLAB&#xff09;&#xff0c;而其中Shell&#xff0c;JavaScript又是<strong>脚本语言</strong>&#xff0c;&#xff08;脚本语言通常属于解释型语言&#xff0c;也叫动态语言&#xff0c;<strong>在运行时可以改变其结构的语言</strong>  脚本语言的程序是文本文件&#xff0c;并且是解释执行的&#xff09;</li><li><strong>先编译后解释语言</strong>&#xff0c;随着Java等基于虚拟机的语言的兴起&#xff0c;我们又不能把语言纯粹地分成解释型和编译型这两种&#xff0c;用Java来举例&#xff0c;<strong>Java首先是通过编译器编译成字节码文件&#xff0c;然后在运行时通过解释器给解释成机器文件</strong>。所以我们说Java是一种先编译后解释的语言。</li></ul>
+<p>总而言之&#xff0c;编译型语言会把源文件直接编译为机器码执行&#xff0c;然后直接运行&#xff0c;解释型语言会让解释器在代码运行时再逐行解释&#xff0c;先编译后解释语言例如Java&#xff0c;则是将源文件编译为字节码文件&#xff0c;然后通过不同的JVM在不同的操作系统上解释为不同的机器码再运行。</p>
+<h4><a rel="noopener noreferrer" id="_32"></a>面向过程与面向对象</h4>
+<p>我们大一的时候一般都学过C语言&#xff0c;其实Java与C的区别可以理解为面向对象与面向过程的区别&#xff1a;</p>
+<ul><li><strong>⾯向过程</strong> &#xff1a;⾯向过程性能⽐⾯向对象⾼。 因为类调⽤时需要实例化&#xff0c;开销⽐较⼤&#xff0c;⽐较消耗资源&#xff0c;所以当性能是最重要的考量因素的时候&#xff0c;⽐如单⽚机、嵌⼊式开发、Linux/Unix 等⼀般采⽤⾯向过程开发。但是&#xff0c;⾯向过程没有⾯向对象易维护、易复⽤、易扩展。<font color="red"><strong>性能高&#xff0c;开销低&#xff0c;不易扩展、复用和维护</strong></font></li><li><strong>⾯向对象</strong> &#xff1a;⾯向对象易维护、易复⽤、易扩展。 因为⾯向对象有封装、继承、多态性的特性&#xff0c;所以可以设计出低耦合的系统&#xff0c;使系统更加灵活、更加易于维护。但是&#xff0c;⾯向对象性能⽐⾯向过程低。<font color="red"><strong>性能低&#xff0c;开销高&#xff0c;易扩展、复用和维护</strong></font></li></ul>
+<p>所以往往在不同的应用场景下我们选择不同的方式。</p>
+<h4><a rel="noopener noreferrer" id="JavaC_39"></a>Java与C&#43;&#43;的区别</h4>
+<p>我们大一的时候一般都学过C语言&#xff0c;后来也都学过C&#43;&#43;&#xff0c;那么Java和这些语言的共性与区别是什么呢&#xff1f;</p>
+<ol><li><strong>Java 是纯面向对象语言&#xff08;JAVA或C&#xff03;都是&#xff09;</strong>&#xff0c;所有代码都必须在类中出现&#xff0c;不存在所谓的全局变量或全局函数&#xff0c;但是<strong>c&#43;&#43;是半面向对象半面向过程</strong>&#xff0c;可以定义全局变量和全局函数&#xff0c;<font color="red"><strong>都是⾯向对象语言&#xff0c;但Java更纯</strong></font></li><li>Java 不提供指针来直接访问内存&#xff0c;程序内存更加安全&#xff0c;<font color="red"><strong>Java 不使用指针</strong></font></li><li><strong>Java 的类是单继承的&#xff0c;C&#43;&#43; ⽀持多重继承</strong>&#xff1b;虽然 Java 的类不可以多继承&#xff0c;但是接⼝可以多继承。<font color="red"><strong>Java 单继承</strong></font></li><li>Java 有⾃动内存管理机制&#xff0c;对于内存的分配是动态的<strong>不需要程序员手动释放无用内存</strong>&#xff0c; <font color="red"><strong>Java 内存自动管理</strong></font></li><li>Java可以跨平台&#xff0c;而C&#43;&#43;不可以&#xff0c;<font color="red"><strong>Java 跨平台</strong></font></li><li><strong>Java 是先先编译后解释型语言&#xff0c;C&#43;&#43;是编译型语言</strong>&#xff0c;java的执行速度慢于c&#43;&#43;。<font color="red"><strong>Java执行速度慢于C&#43;&#43;</strong></font></li></ol>
+<p>就我而言还是非常喜欢Java的&#xff0c;没有了讨厌的指针、内存可以自动回收&#xff0c;单继承还不显的乱。</p>
+<h3><a rel="noopener noreferrer" id="Java_50"></a>Java相关概念</h3>
+<p>文件后缀说明&#xff0c;文件有如下几种后缀</p>
+<pre><code class="prism language-java"><span class="token number">1</span> <span class="token punctuation">.</span><span class="token keyword">class</span> 编译后的Java文件
+<span class="token number">2</span> <span class="token punctuation">.</span>java是未编译的程序
+<span class="token number">3</span> <span class="token punctuation">.</span>jsp是页面程序
+<span class="token number">4</span> <span class="token punctuation">.</span>xml配置程序
+<span class="token number">5</span> <span class="token punctuation">.</span>jar是<span class="token punctuation">.</span>calss的集合
+<span class="token number">6</span> <span class="token punctuation">.</span>exe是可执行文件
+</code></pre>
+<blockquote>
+<p><strong>Java编译运行时使用的相关命令如下</strong></p>
+</blockquote>
+<ul><li>javac 是编译命令&#xff0c;也就是<code>javac YourClassName.java</code> &#xff0c;然后生成一份后缀为.class的字节码文件。当用javac命令生成编译这个.java 文件的时候&#xff0c;则会针对每一个类生成一个.class文件&#xff1b;</li><li>一个源程序文件中可以有多个类&#xff0c;如果没有public类&#xff0c;则源程序文件可以与任意类名相同&#xff0c;<strong>如果有public类则文件名必须与此类名相同&#xff0c;因为一个文件中只能有一个public类。如果文件中只有一个类&#xff0c;则文件名必须与类名相同</strong></li><li>在Java中&#xff0c;环境变量可在编译source code时指定 &#xff0c; 在编译程序时&#xff0c;所能指定的环境变量包括classpath</li><li>javac一次可同时编译数个Java源文件 用javac *.java. 即可编译当前目录下的所有java文件</li><li>javac.exe能指定编译结果要置于哪个目录&#xff08;directory&#xff09;</li></ul>
+<p>运行命令是 java &#43; Java 程序的名字但是不加后缀&#xff0c; 也就是不加 .class这个后缀。<code>java YourClassName</code>可以使用<code>java YourClassName</code></p>
+<blockquote>
+<p><strong>Java目录下的一些可执行文件使用说明</strong></p>
+</blockquote>
+<pre><code class="prism language-java"> <span class="token operator">-</span> javac<span class="token punctuation">.</span>exe是编译<span class="token punctuation">.</span>java文件
+ <span class="token operator">-</span> java<span class="token punctuation">.</span>exe是执行编译好的<span class="token punctuation">.</span><span class="token keyword">class</span>文件
+ <span class="token operator">-</span> javadoc<span class="token punctuation">.</span>exe是生成Java说明文档
+ <span class="token operator">-</span> jdb<span class="token punctuation">.</span>exe是Java调试器
+ <span class="token operator">-</span> javaprof<span class="token punctuation">.</span>exe是剖析工具
+</code></pre>
+<blockquote>
+<p><strong>关于常用的System.out.println();</strong></p>
+</blockquote>
+<p>System是java.lang中的一个<strong>类</strong>&#xff0c;out是System内的一个<strong>成员变量</strong>&#xff0c;该变量是一个<code>java.io.PrintStream</code>类的对象&#xff0c;println就是一个<strong>方法</strong>了。</p>
+<h3><a rel="noopener noreferrer" id="Java_85"></a>Java运行环境</h3>
+<p>Java从源文件到最终运行需要经历几个阶段&#xff0c;.class&gt;机器码 这⼀步 JVM 类加载器⾸先加载字节码⽂件&#xff0c;然后通过解释器逐⾏解释执⾏&#xff0c;这种⽅式的执⾏速度会相对⽐较慢<br />
+<img alt="在这里插入图片描述" src="./posts/assets/73138414-02-77e0bb5920.png" loading="lazy"><br />
+但是有些⽅法和代码块是经常需要被调⽤的(也就是所谓的热点代码)&#xff0c;所以后⾯引进了 <strong>JIT 编译器</strong>&#xff0c;⽽ JIT 属于运⾏时编译。当 JIT 编译器完成第⼀次编译后&#xff0c;其会将字节码对应的机器码保存下来&#xff0c;下次可以直接使⽤。⽽我们知道&#xff0c;机器码的运⾏效率肯定是⾼于 Java 解释器的。这也解释了我们为什么经常会说 Java 是编译与解释共存的语⾔</p>
+<h4><a rel="noopener noreferrer" id="JVMJDKJRE_90"></a>JVM、JDK与JRE</h4>
+<p>JVM、JDK与JRE三者之间的关系类似套娃&#xff0c;JRE包含JVM&#xff0c;JDK包含JRE&#xff1a;</p>
+<ul><li><strong>Java 虚拟机&#xff08;JVM&#xff09;是运⾏ Java 字节码的虚拟机</strong>。JVM 有针对不同系统的特定实现&#xff08;Windows&#xff0c;Linux&#xff0c;macOS&#xff09;&#xff0c;⽬的是使⽤相同的<strong>字节码</strong>&#xff0c;它们都会给出相同的结果。<font color="red"><strong>JVM能将相同的.class文件&#xff08;字节码&#xff09;—》不同系统的机器码</strong></font></li><li><strong>JRE 是 Java 运⾏时环境</strong>。它是<strong>运行已编译 Java 程序所需的所有内容的集合</strong>&#xff0c;包括 Java 虚拟机&#xff08;JVM&#xff09;&#xff0c;Java 类库&#xff0c;Java 命令和其他的⼀些基础构件。但是&#xff0c;它不能⽤于创建新程序。<font color="red"><strong>JRE只能运行.class文件&#xff08;字节码&#xff09;—》机器码</strong></font></li><li><strong>JDK 是 Java Development Kit&#xff0c;它是功能⻬全的 Java SDK</strong>。它拥有 JRE 所拥有的⼀切&#xff0c;还有编译器&#xff08;javac&#xff09;和⼯具&#xff08;如 javadoc 和 jdb&#xff09;。它能够创建和编译程序。<font color="red"><strong>JDK能运行.java文件—》.class文件&#xff08;字节码&#xff09;—》机器码</strong></font></li></ul>
+<p>如果只是为了运⾏⼀下 Java 程序的话&#xff0c;那么只需要安装 JRE 就可以了。如果需要进⾏⼀些Java 编程⽅⾯的⼯作&#xff0c;那么就需要安装 JDK 了。但是绝对的。有时&#xff0c;即使不打算在计算机上进⾏任何 Java 开发&#xff0c;仍然需要安装 JDK。例如&#xff0c;如果要使⽤ JSP 部署 Web 应⽤程序&#xff0c;那么从技术上讲&#xff0c;您只是在应⽤程序服务器中运⾏ Java 程序。那你为什么需要 JDK 呢&#xff1f;因为应⽤程序服务器会将 JSP 转换为 Java servlet&#xff0c;并且需要使⽤ JDK 来编译 servlet。</p>
+<h4><a rel="noopener noreferrer" id="Oracle_JDK__OpenJDK_98"></a>Oracle JDK 和 OpenJDK</h4>
+<p>可能在看这个问题之前很多⼈和我⼀样并没有接触和使⽤过 OpenJDK 。那么 Oracle 和 OpenJDK 之间是否存在重⼤差异&#xff1f;</p>
+<ul><li>Oracle JDK ⼤概每 6 个⽉发⼀次主要版本&#xff0c;⽽ OpenJDK 版本⼤概每三个⽉发布⼀次。</li><li>OpenJDK 是⼀个参考模型并且是完全开源的&#xff0c;⽽ Oracle JDK 是 OpenJDK 的⼀个实现&#xff0c;并不是完全开源的。<font color="red"><strong>Oracle JDK 是 OpenJDK 的⼀个实现</strong></font></li><li>Oracle JDK ⽐ OpenJDK 更稳定。OpenJDK 和 Oracle JDK 的代码⼏乎相同&#xff0c;但 Oracle JDK 有更多的类和⼀些错误修复。因此&#xff0c;如果您想开发企业/商业软件&#xff0c;我建议您选择 Oracle JDK&#xff0c;因为它经过了彻底的测试和稳定。某些情况下&#xff0c;有些⼈提到在使⽤ OpenJDK 可能会遇到了许多应⽤程序崩溃的问题&#xff0c;但是&#xff0c;只需切换到 Oracle JDK 就可以解决问题 <font color="red"><strong>Oracle JDK ⽐ OpenJDK 更稳定</strong></font></li><li>在响应性和 JVM 性能⽅⾯&#xff0c;Oracle JDK 与 OpenJDK 相⽐提供了更好的性能 <font color="red"><strong>Oracle JDK 与 OpenJDK 相⽐提供了更好的性能</strong></font></li><li>Oracle JDK 不会为即将发布的版本提供⻓期⽀持&#xff0c;⽤户每次都必须通过更新到最新版本获得⽀持来获取最新版本&#xff1b;</li><li>Oracle JDK 根据⼆进制代码许可协议获得许可&#xff0c;⽽ OpenJDK 根据 GPL v2 许可获得许可。</li></ul>
+<p>其实依据上述的介绍我们知道&#xff0c;用Oracle JDK可能更加好一些。</p>
+<h3><a rel="noopener noreferrer" id="Java_109"></a>Java程序分类、常用包和事件处理模型</h3>
+<p>Java中有很多常用的分类&#xff0c;以及一些常用包和事件的监听&#xff0c;这些总体上大家有个了解即可。</p>
+<h4><a rel="noopener noreferrer" id="Java_112"></a>Java程序分类</h4>
+<p>Java有很多常用的分类&#xff0c;这些分类有如下三种</p>
+<ol><li><strong>Application</strong>&#xff0c;Java应用程序”是<strong>可以独立运行的Java程序</strong>。 由Java解释器控制执行。<font color="red"><strong>J2SE</strong></font></li><li><strong>Applet</strong> &#xff0c;Java小程序”不能独立运行&#xff08;嵌入到Web页中&#xff09;。   由Java兼容浏览器控制执行。 <font color="red"><strong>J2ME</strong></font></li><li><strong>Serverlets</strong> &#xff0c;Java技术对CGI 编程的解决方案。 是运行于Web server上的、作为来自于Webbrowser 或其他HTTP client端的请求和在server上的数据库及其他应用程序之间的中间层程序。<font color="red"><strong>J2EE</strong></font></li></ol>
+<p>其中Serverlets的工作是&#xff1a;</p>
+<ol><li>读入用户发来的数据&#xff08;通常在web页的form中,&#xff09;</li><li>找出隐含在HTTP请求中的其他请求信息&#xff08;如浏览器功能细节、请求端主机名等&#xff09;</li><li>产生结果(调用其他程序、访问数据库、直接计算)</li><li>格式化结果&#xff08;网页&#xff09; 设置HTTP response参数(如告诉浏览器返回文档格式) 将文档返回给客户端。</li></ol>
+<p>我们这个系列主要讨论的为<font color="red"><strong>J2EE</strong></font></p>
+<h4><a rel="noopener noreferrer" id="Java_128"></a>Java常用包</h4>
+<p>Java有很多常用的包&#xff0c;这些包有各式各样的作用</p>
+<ol><li>Java的<code>java.lang</code>:java的语言包&#xff0c;是一个核心包&#xff0c;<strong>系统自动将这个包引入到用户程序</strong>&#xff0c;该包中主要的类&#xff0c;object类&#xff0c;它是所有类的父类&#xff0c;其中定义的方法其它类都可以使用。数据类型包装类&#xff0c;数学类&#xff0c;字符串类&#xff0c;系统和运行时类&#xff0c;操作类&#xff0c;线程类&#xff0c;错误和异常处理类&#xff0c;过程类。System提供一个独立于具体计算机资源的编程界面&#xff0c;Runtime类可用于直接访问运行时资源。</li><li>Java的 <code>java.util</code>: java的实用包&#xff0c; 实用包提供了各种实用功能的类&#xff0c;主要包括日期类、数据结构类和随机数类等。</li><li>Java的<code>java.awt</code>提供了绘图和图像类&#xff0c;主要用于编写GUI程序&#xff0c;包括按钮、标签等常用组件以及相应的事件类。</li><li>Java的 <code>java.io</code>: 包含提供多种输出输入功能的类</li><li>Java的 <code>java.net</code>&#xff1a;包含执行与网络有关的类&#xff0c;如URL&#xff0c;SCOKET&#xff0c;SEVERSOCKET</li><li>Java的<code>java.applet</code>&#xff1a; 包含java小应用程序的类</li></ol>
+<p>以上就是Java的常用包。</p>
+<h4><a rel="noopener noreferrer" id="Java_139"></a>Java提供的事件处理模型</h4>
+<p>Java提供的事件处理模型是一种人机交互模型。它有三个基本要素&#xff1a;</p>
+<ul><li><strong>事件源</strong>&#xff08;Event Source&#xff09;&#xff1a;即<strong>事件发生的场所</strong>&#xff0c;就是指各个组件&#xff0c;如按钮等&#xff0c;点击按钮其实就是组件上发生的一个事件</li><li><strong>事件</strong>&#xff08;Event&#xff09;&#xff1a;事件封装了组件上<strong>发生的事情</strong>&#xff0c;比如按钮单击、按钮松开等等&#xff1b;</li><li><strong>事件监听器</strong>&#xff08;Event Listener&#xff09;&#xff1a;负责<strong>监听事件源</strong>上发生的特定类型的事件&#xff0c;当事件到来时还必须负责处理相应的事件</li></ul>
+<p>当然事件处理模型比较通用。</p>

@@ -1,0 +1,75 @@
+<div id="content_views" class="markdown_views prism-tomorrow-night-eighties">
+
+                    <p>##题目描述<br>
+给定一个二叉树和其中的一个结点，请找出中序遍历顺序的下一个结点并且返回。注意，树中的结点不仅包含左右子结点，同时包含指向父结点的指针。<br>
+##解题思路<br>
+1，因为是中序遍历，顺序为左—中----右<br>
+2，因为考虑下一个节点，所以考察范围可以缩小到中和右<br>
+3，如果当前节点有右子树，那么下一个节点就是右子树的最左节点<br>
+4，如果当前节点没有右子树，且是父节点的左子节点，则下一个节点就是自己的父节点<br>
+5，如果当前节点没有右子树，且是父节点的右子节点，则向上找到第一个是其父节点左子节点的节点，下一个节点就是该父节点<br>
+##代码</p>
+<pre><code>/**
+ *
+ */
+package offerTest;
+
+/**
+ * &lt;p&gt;
+ * Title:Next
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ * @author 田茂林
+ * @data 2017年8月21日 上午10:34:53
+ */
+class TreeLinkNode {
+	int val;
+	TreeLinkNode left = null;
+	TreeLinkNode right = null;
+	TreeLinkNode next = null;
+
+	TreeLinkNode(int val) {
+		this.val = val;
+	}
+}
+
+public class Next {
+	public TreeLinkNode GetNext(TreeLinkNode pNode) {
+		if (pNode == null) {
+			return null;
+		}
+		// 如果当前节点有右子树
+		if (pNode.right != null) {
+			TreeLinkNode p = pNode.right;
+			while (p.left != null) {
+				p = p.left;
+			}
+			return p;
+		} else { // 如果当前节点没有右子树,且是父节点的左子节点
+			if (pNode.next != null) {
+
+				TreeLinkNode pcur = pNode;
+				TreeLinkNode parent = pcur.next;
+				if (parent != null &amp;&amp; pcur == parent.left) { 如果当前节点没有右子树，且是父节点的左子节点，则下一个节点就是自己的父节点
+					return parent;
+				}
+				while (parent != null &amp;&amp; pcur == parent.right) {如果当前节点没有右子树，且是父节点的右子节点，则向上找到第一个是其父节点左子节点的节点，下一个节点就是该父节点
+					pcur = parent;
+					parent = pcur.next;
+				}
+				return parent;
+
+			}
+		}
+		return null;
+
+	}
+}
+
+</code></pre>
+
+
+                </div>

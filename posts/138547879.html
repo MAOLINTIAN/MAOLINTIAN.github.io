@@ -1,0 +1,43 @@
+<p>本文是《从零开始学架构》的第一篇学习笔记&#xff0c;主要理解架构的设计的本质定义、历史背景以及目的。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-01-d7bb3a6926.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_4"></a>架构设计的本质</h2>
+<p>分别从三组概念的区别来理解架构设计。</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>系统与子系统</h3>
+<p>什么是系统&#xff0c;系统泛指<strong>由一群有关联的个体组成&#xff0c;根据某种规则运作&#xff0c;能完成个别元件不能单独完成的工作的群体</strong>。它的意思是“总体”“整体”或“联盟”</p>
+<ul><li><strong>关联</strong>&#xff1a;系统是由一群有关联的个体组成的&#xff0c;<font color="red"><strong>没有关联的个体堆在一起不能成为一个系统</strong></font>。例如&#xff0c;把一个发动机和一台 PC 放在一起不能称之为一个系统&#xff0c;把发动机、底盘、轮胎、车架组合起来才能成为一台汽车。</li><li><strong>规则</strong>&#xff1a;系统内的个体需要按照指定的规则运作&#xff0c;而不是单个个体各自为政。<font color="red"><strong>规则规定了系统内个体分工和协作的方式</strong></font>。例如&#xff0c;汽车发动机负责产生动力&#xff0c;然后通过变速器和传动轴&#xff0c;将动力输出到车轮上&#xff0c;从而驱动汽车前进。</li><li><strong>能力</strong>&#xff1a;系统能力与个体能力有本质的差别&#xff0c;<font color="red"><strong>系统能力不是个体能力之和&#xff0c;而是产生了新的能力</strong></font>。例如&#xff0c;汽车能够载重前进&#xff0c;而发动机、变速器、传动轴、车轮本身都不具备这样的能力</li></ul>
+<p>子系统也是由一群有关联的个体所组成的系统&#xff0c;多半会是更大系统中的一部分<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-02-97113c037d.png" loading="lazy"><br />
+例如微信本身是一个系统&#xff0c;包含聊天、登录、支付、朋友圈等子系统。朋友圈这个系统又包括动态、评论、点赞等子系统。评论这个系统可能又包括防刷子系统、审核子系统、发布子系统、存储子系统。评论审核子系统不再包含业务意义上的子系统&#xff0c;而是包括各个模块或者组件&#xff0c;这些模块或者组件本身也是另外一个维度上的系统。例如&#xff0c;MySQL、Redis 等是存储系统&#xff0c;但不是业务子系统。</p>
+<h3><a rel="noopener noreferrer" id="_17"></a>模块与组件</h3>
+<p>模块和组件都是系统的组成部分&#xff0c;只是从不同的角度拆分系统而已。 <font color="red"><strong>划分模块的主要目的是职责分离&#xff1b;划分组件的主要目的是单元复用</strong></font></p>
+<ul><li>从<strong>业务逻辑的角度</strong>来拆分系统后&#xff0c;得到的单元就是<strong>模块</strong>&#xff1b;</li><li>从<strong>物理部署的角度</strong>来拆分系统后&#xff0c;得到的单元就是<strong>组件</strong>。</li></ul>
+<p>以学生管理系统为例&#xff0c;从业务逻辑的角度分解&#xff0c;有如下模块<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-03-c3c1896aa8.png" loading="lazy"><br />
+从物理部署的角度分解&#xff0c;有如下组件&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-04-3f5047d546.png" loading="lazy"><br />
+<font color="red"><strong>子系统是独立运行的&#xff0c;模块是子系统的逻辑组成部分</strong></font>&#xff0c;如果学生管理系统规模很大&#xff08;例如在线学校&#xff09;&#xff0c;需要支撑每秒上万的登录请求&#xff0c;那么学生管理的登录<font color="red"><strong>模块可以升级为子系统</strong></font>。</p>
+<h3><a rel="noopener noreferrer" id="_27"></a>框架与架构</h3>
+<p>软件框架&#xff08;Software framework&#xff09;通常指的是为了实现某个业界标准或完成特定基本任务的软件组件规范&#xff0c;也指为了实现某个软件组件规范时&#xff0c;提供规范所要求之基础功能的软件产品</p>
+<ul><li><font color="red"><strong>框架是组件规范</strong></font>&#xff0c;例如&#xff0c;MVC 就是一种最常见的开发规范</li><li><font color="red"><strong>框架提供基础功能的产品</strong></font>&#xff0c;例如&#xff0c;Spring MVC 是 MVC 的开发框架&#xff0c;除了满足 MVC 的规范&#xff0c;Spring 提供了很多基础功能来帮助我们实现功能&#xff0c;包括注解&#xff08;&#64;Controller 等&#xff09;、Spring Security、Spring JPA 等很多基础功能</li></ul>
+<p>软件架构指软件系统的“基础结构”&#xff0c;创造这些基础结构的准则&#xff0c;以及对这些结构的描述。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-05-39d464b8fc.png" loading="lazy"></p>
+<p><font color="red"><strong>框架关注的是“规范”&#xff0c;架构关注的是“结构”</strong></font>。</p>
+<h3><a rel="noopener noreferrer" id="4R_38"></a>4R架构方法</h3>
+<p>软件架构指软件系统的顶层&#xff08;Rank&#xff09;结构&#xff0c;它定义了系统由哪些角色&#xff08;Role&#xff09;组成&#xff0c;角色之间的关系&#xff08;Relation&#xff09;和运作规则&#xff08;Rule&#xff09;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-06-85ec7e79de.png" loading="lazy"></p>
+<p>4R 是指 4 个关键词&#xff1a;Rank&#xff0c;Role&#xff0c;Relation 和 Rule。既然可以通过 4R 来定义软件系统的架构&#xff0c;那么按照 4R 架构定义的思路来画架构图也是很合情合理的&#xff0c;具体步骤如下</p>
+<ul><li>第一步&#xff0c;<strong>明确 Rank</strong>&#xff1a;它是指软件架构是分层的&#xff0c;对应“系统”和“子系统”的分层关系。不要事无巨细地把一个大系统的方方面面都在一张架构图中展现出来&#xff0c;而应该明确你要阐述的系统所属的级别&#xff08;L0&#xff5e;L4&#xff09;&#xff0c;然后只描述这个级别的架构信息。</li><li>第二步&#xff0c;<strong>画出 Role</strong>&#xff1a;指软件系统包含哪些角色&#xff0c;每个角色都会负责系统的一部分功能。架构设计最重要的工作之一就是将系统拆分为多个角色&#xff0c;角色对应架构图中的区块、图标和节点等。</li><li>第三步&#xff0c;<strong>画出 Relation</strong>&#xff1a;有了角色后&#xff0c;画出角色之间的关系&#xff0c;对应架构图中角色之间的连接线&#xff0c;不同的连接线可以代表不同的关系。</li><li>第四步&#xff0c;<strong>最后画出 Rule</strong>&#xff1a;挑选核心场景&#xff0c;画出系统角色之间如何协作来完成某项具体的业务功能&#xff0c;对应系统序列图。</li></ul>
+<p>为了方便理解&#xff0c;Rank、Role 和 Relation 是通过系统架构图来展示的&#xff0c;而 Rule 是通过系统序列图&#xff08;System Sequence Diagram&#xff09;来展示的&#xff0c;以<strong>支付系统</strong>为例&#xff0c;顶层为支付系统&#xff0c;描述其子系统角色及角色之间的关系<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-07-c7fbfe55e8.png" loading="lazy"><br />
+“扫码支付”这个核心场景的系统序列图如下所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-08-ca4844e055.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_52"></a>软件架构的历史背景</h2>
+<p>机器语言&#xff08;太难写、太难读、太难改&#xff09;-》汇编语言&#xff08;仍然面向机器&#xff09;-》高级语言&#xff08;不再面向机器&#xff09;-》结构化程序设计【模块】-》面向对象程序设计【对象】-》软件架构【组件】<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-09-e459103cf1.png" loading="lazy"></p>
+<p>软件设计过程中&#xff0c;<strong>模块、对象、组件本质上是对一定规模软件在不同粒度和层次上的“拆分”方法论&#xff08;随着软件的复杂度不断增加&#xff0c;拆分的粒度越来越粗&#xff0c;拆分的层次越来越高&#xff09;&#xff0c;软件架构是一种对软件的“组织”方法论</strong>。一分一合&#xff0c;其目的是为了软件研发过程中的成本、进度、质量得到有效控制。一个成功的软件设计是要适应并满足业务需求&#xff0c;同时不断“演化”。设计需要根据业务的变化、技术的发展不断进行“演进”&#xff0c;这就决定了这是一个动态活动&#xff0c;出现新问题&#xff0c;解决新问题&#xff0c;没有所谓的“一招鲜”。</p>
+<h2><a rel="noopener noreferrer" id="_59"></a>软件架构的目的</h2>
+<p>不是所有系统都需要架构设计&#xff0c;也不需要每个架构都具备高性能、高可用、高扩展等特点&#xff0c;架构设计的主要目的是<font color="red"><strong>为了解决软件系统复杂度带来的问题</strong></font><br />
+<img alt="在这里插入图片描述" src="./posts/assets/138547879-10-16b9d8112b.png" loading="lazy"></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/138547879-11-9641651352.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_65"></a>总结一下</h2>
+<p>Rank分层区分系统与子系统暂时隔离关注面&#xff0c;在一个系统层面上&#xff0c;其子系统就是角色Role&#xff0c;子系统之间的关系就是Relation&#xff0c;一个核心的业务流程Rule可能涉及多个子系统的交互。如果子系统就是最小层级业务系统&#xff0c;那么它从逻辑层面讲可能包含很多模块&#xff0c;从部署的角度讲也包含很多组件&#xff0c;单个子系统可以使用springBoot框架搭建&#xff0c;遵守其规范使用其功能&#xff1b;软件架构没有银弹&#xff0c;是以解决系统复杂度为目的而随业务演进的方法论。知道WHAT&#xff0c;WHY&#xff0c;才能更好的学习HOW。</p>

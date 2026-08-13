@@ -1,0 +1,74 @@
+<p>关于操作系统可能考察的知识点</p>
+<h3><a rel="noopener noreferrer" id="_1"></a>操作系统基本原理</h3>
+<blockquote>
+<p><font color="red"><strong>什么是操作系统&#xff1f;</strong></font></p>
+</blockquote>
+<p>操作系统是指控制和管理整个计算机系统的<font color="red"><strong>硬件和软件</strong></font>资源&#xff0c;并合理地组织调度计算机的工作和资源的分配&#xff0c;以<font color="red"><strong>提供给用户和它软件方便的接口和环境</strong></font>&#xff0c;是计算机系统中最基本的<font color="red"><strong>系统软件</strong></font>,总结一下就是&#xff1a;</p>
+<ol><li>操作系统&#xff08;Operating System&#xff0c;简称 OS&#xff09;是管理计算机硬件与软件资源的程序&#xff0c;是<strong>计算机系统的内核与基⽯</strong>&#xff0c;是计算机系统资源的总管理者&#xff1a;<strong>处理器管理【进程管理】、存储器管理【内存管理】、文件管理、设备管理【IO管理】</strong></li><li>操作系统本质上是运⾏在计算机上的<strong>软件程序</strong> &#xff1b;</li><li>操作系统<strong>为⽤户提供⼀个与系统交互的操作界⾯</strong> &#xff0c;向上层提供方便易用的服务</li><li>操作系统分内核与外壳&#xff08;我们可以把外壳理解成围绕着内核的应⽤程序&#xff0c;⽽内核就是能操作硬件的程序&#xff09;</li></ol>
+<p>内核负责管理系统的进程、内存、设备驱动程序、⽂件和⽹络系统等等&#xff0c;<strong>决定着系统的性能和稳定性</strong>。是连接应⽤程序和硬件的桥梁。 内核就是操作系统背后⿊盒的核⼼</p>
+<blockquote>
+<p><font color="red"><strong>操作系统的四大特性</strong></font></p>
+</blockquote>
+<p>操作系统的四大特性是&#xff1a;<strong>并发、共享、虚拟、异步</strong></p>
+<blockquote>
+<p><font color="red"><strong>串行、并发和并行的区别是什么</strong></font></p>
+</blockquote>
+<p>并发是指<strong>两个或多个事件在同一时间间隔内发生</strong>&#xff0c;在多道程序环境下&#xff0c;<font color="red"><strong>一段时间内宏观上有多个程序在同时执行&#xff0c;而在同一时刻&#xff0c;单处理器环境下实际上只有一个程序在执行&#xff0c;故微观上这些程序还是在分时的交替进行</strong></font>。操作系统的并发是通过分时得以实现的&#xff0c;和串行以及并行的概念区别</p>
+<ul><li><strong>串行</strong>&#xff1a;<strong>顺序做不同事的能力</strong>&#xff1a;先洗衣服&#xff0c;洗完后做饭。弱鸡。</li><li><strong>并发</strong>&#xff1a;<strong>交替做不同事的能力</strong>&#xff1a;一会儿洗衣服&#xff0c;一会儿做饭&#xff0c;交替执行&#xff0c;但快如闪电。洗衣服的是一个&#xff08;cpu&#xff09;做饭的是一个&#xff08;cpu&#xff09;&#xff0c;所以多核的情况下会非常快&#xff0c;在同一个时间段内每个cpu各司其职团战。并发的实质是一个物理CPU(也可以多个物理CPU) 在若干道程序之间多路复用&#xff0c;并发性是对有限物理资源强制行使多用户共享以提高效率。</li><li><strong>并行</strong>&#xff1a;<strong>同时做不同事的能力</strong>&#xff1a;左手洗衣服右手做饭&#xff0c;在同一时刻同时做两件事。单兵王。并行性指两个或两个以上事件或活动在同一时刻发生。在多道程序环境下&#xff0c;并行性使多个程序同一时刻可在不同CPU上同时执行。</li></ul>
+<p>核心区别&#xff1a;<font color="red"><strong>并发关注的是资源充分利用&#xff08;也就是不让cpu闲下来&#xff09;&#xff0c;并行关注的是一个任务被分解给多个执行者同时做&#xff0c;缩短这个任务的完成时间&#xff08;也就是尽快做完这件事&#xff09;</strong></font>&#xff0c;操作系统的并发性是指计算机系统中同时存在多个运行着的程序&#xff0c;因此它具有处理和调度多个程序同时执行的能力。在操作系统中&#xff0c;<strong>引入进程的目的是使程序能并发执行</strong>。并行则是同时间同时刻有几个程序同时运行&#xff0c;有几核就就几个程序在并行。<strong>单核CPU只能并发多个程序&#xff0c;多核CPU可以并发也可以并行【4核CPU可以并行4个程序&#xff0c;程序大于核心时就需要用到并发性】</strong></p>
+<blockquote>
+<p><font color="red"><strong>什么是用户态和核心态</strong></font></p>
+</blockquote>
+<p>根据进程访问资源的特点&#xff0c;我们可以把进程在系统上的运⾏分为两个级别&#xff1a;</p>
+<ol><li><strong>⽤户态</strong>(user mode) : ⽤户态运⾏的进程或可以直接读取⽤户程序的数据。</li><li><strong>核心态</strong>(kernel mode):可以简单的理解核心态运⾏的进程或程序⼏乎可以访问计算机的任何资源&#xff0c;不受限制</li></ol>
+<p>用户态和核心态的调用切换是需要CPU切换的&#xff0c;是会消耗资源的</p>
+<blockquote>
+<p><font color="red"><strong>什么是系统调用&#xff0c;系统调用流程</strong></font></p>
+</blockquote>
+<p>我们运⾏的程序基本都是运⾏在<strong>⽤户态</strong>&#xff0c;如果我们调⽤操作系统提供的<strong>核心态级别</strong>的⼦功能&#xff0c;就需要系统调⽤了<br />
+<img alt="在这里插入图片描述" src="./posts/assets/111405752-01-4d5066de5a.png" loading="lazy"><br />
+在我们运⾏的⽤户程序中&#xff0c;凡是与<strong>共享资源有关的操作</strong>&#xff08;如<strong>⽂件管理、进程控制、内存管理、文件管理</strong>等)&#xff0c;都必须通过系统调⽤⽅式向操作系统提出服务请求&#xff0c;并由操作系统代为完成。这些系统调⽤按功能⼤致可分为如下⼏类&#xff1a;</p>
+<ul><li><strong>设备管理</strong>。完成设备的请求或释放&#xff0c;以及设备启动等功能。</li><li><strong>⽂件管理</strong>。完成⽂件的读、写、创建及删除等功能。</li><li><strong>进程控制</strong>。完成进程的创建、撤销、阻塞及唤醒等功能。</li><li><strong>进程通信</strong>。完成进程之间的消息传递或信号传递等功能。</li><li><strong>内存管理</strong>。完成内存的分配、回收以及获取作业占⽤内存区⼤⼩及地址等功能。</li></ul>
+<p>这样可以保证系统的稳定性和安全性。系统调用有以下流程&#xff1a;</p>
+<ul><li>执行<strong>传参指令</strong>&#xff0c;将系统调用需要参数传递&#xff0c;发现<strong>特权指令</strong></li><li>执行<strong>陷入指令</strong>&#xff0c;引发内中断&#xff0c;因此转入内中断相应处理程序&#xff0c;也就是系统调用入口</li><li>CPU切换到<strong>核心态</strong></li><li>依据参数执行系统调用&#xff0c;执行<strong>特权指令</strong>&#xff0c;执行完成</li><li>CPU转回<strong>用户态</strong></li></ul>
+<p>系统调用结束&#xff0c;可以看的出&#xff0c;这里用到了<strong>内中断</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_55"></a>操作系统进程管理</h3>
+<blockquote>
+<p><font color="red"> <strong>进程和线程的区别是什么</strong></font></p>
+</blockquote>
+<p>进程和线程的主要概念如下&#xff1a;</p>
+<ul><li>进程&#xff0c;每个进程都有<strong>独立的代码和数据空间&#xff08;进程上下文&#xff09;</strong>&#xff0c;进程间的切换会有较大的开销&#xff0c;一个进程包含1–n个线程。进程是操作系统进行资源分配的单位&#xff0c;多进程是指操作系统能同时运行多个任务&#xff08;程序&#xff09;。</li><li>线程&#xff0c;<strong>同一类线程共享代码和数据空间【堆和方法区】&#xff0c;每个线程有独立的运行栈【本地方法栈、虚拟机栈】和程序计数器(PC)</strong>&#xff0c;线程切换开销小。进程中独立操作的执行单元。多线程是指在同一程序中有多个顺序流在并发执行</li><li>在引入线程的操作系统中&#xff0c;通常都是把<strong>进程作为分配资源的基本单位</strong>&#xff0c;而把<strong>线程作为独立运行和独立调度的基本单位</strong>。</li></ul>
+<p>详细区别和相同点归纳如下</p>
+<ul><li>在状态变化上&#xff1a;线程和进程一样分为五个阶段&#xff0c;<strong>创建、就绪、运行、阻塞、终止</strong>。</li><li>地址空间和其它资源&#xff1a;<strong>进程间相互独立&#xff0c;同一进程的各线程间共享&#xff0c;某进程内的线程在其它进程不可见</strong>。</li><li>通信&#xff1a;进程间通信IPC&#xff0c;线程间可以直接读写进程数据段&#xff08;如全局变量&#xff09;来进行通信——需要<strong>进程同步和互斥手段的辅助</strong>&#xff0c;以保证数据的一致性。</li><li>调度和切换&#xff1a;<strong>线程上下文切换比进程上下文切换要快得多</strong>。</li><li>在多线程操作系统中&#xff0c;进程不是一个可执行的实体&#xff0c;<strong>只是作为分配资源的基本单位&#xff0c;线程作为独立运行和独立调度的基本单位</strong></li></ul>
+<p>线程和进程最⼤的不同在于基本上各进程是独⽴的&#xff0c;⽽各线程则不⼀定&#xff0c;因为同⼀进程中的线程极有可能会相互影响</p>
+<blockquote>
+<p><font color="red"> <strong>进程有哪几种状态&#xff0c;状态如何转换</strong></font></p>
+</blockquote>
+<p>进程有五种状态&#xff1a;<strong>创建、就绪、运行、阻塞、终止</strong>。</p>
+<ul><li><strong>创建状态</strong>(new) &#xff1a;进程正在被创建&#xff0c;尚未到就绪状态。</li><li><strong>就绪状态</strong>(ready) &#xff1a;进程已处于准备运⾏状态&#xff0c;即进程获得了除了处理器之外的⼀切所需资源&#xff0c;⼀旦得到处理器资源(处理器分配的时间⽚)即可运⾏。</li><li><strong>运⾏状态</strong>(running) &#xff1a;进程正在处理器上上运⾏(单核 CPU 下任意时刻只有⼀个进程处于运⾏状态)。</li><li><strong>阻塞状态</strong>(waiting) &#xff1a;⼜称为等待状态&#xff0c;进程正在等待某⼀事件⽽暂停运⾏如等待某资源为可⽤或等待 IO 操作完成。即使处理器空闲&#xff0c;该进程也不能运⾏。</li><li><strong>结束状态</strong>(terminated) &#xff1a;进程正在从系统中消失。可能是进程正常结束或其他原因中断退出运⾏</li></ul>
+<p><img alt="如下图所示&#xff1a;" src="./posts/assets/111405752-02-7a5c61f37c.png" loading="lazy"></p>
+<blockquote>
+<p><font color="red"><strong>进程间的通信方式</strong></font></p>
+</blockquote>
+<p>进程间通信的IPC方式分为如下7种&#xff1a;</p>
+<ul><li><strong>管道/匿名管道(Pipes)</strong> &#xff1a;⽤于具有亲缘关系的⽗⼦进程间或者兄弟进程之间的通信。</li><li><strong>有名管道(Names Pipes)</strong> : 匿名管道由于没有名字&#xff0c;只能⽤于亲缘关系的进程间通信。为了克服这个缺点&#xff0c;提出了有名管道。有名管道严格遵循<strong>先进先出FIFO</strong>。有名管道<strong>以磁盘⽂件的⽅式存在&#xff0c;可以实现本机任意两个进程通信</strong>。</li><li><strong>信号(Signal)</strong> &#xff1a;信号是⼀种⽐较复杂的通信⽅式&#xff0c;⽤于通知接收进程某个事件已经发⽣</li><li><strong>消息队列(Message Queuing)</strong> &#xff1a;消息队列是消息的链表,具有特定的格式,存放在内存中并由消息队列标识符标识。管道和消息队列的通信数据都是先进先出的原则。与管道&#xff08;⽆名管道&#xff1a;只存在于内存中的⽂件&#xff1b;有名管道&#xff1a;存在于实际的磁盘介质或者⽂件系统&#xff09;不同的是消息队列存放在<strong>内核</strong>中&#xff0c;只有在内核重启(即&#xff0c;操作系统重启)或者显示地删除⼀个消息队列时&#xff0c;该消息队列才会被真正的删除。消息队列可以实现消息的随机查询,消息不⼀定要以先进先出的次序读取,也可以按消息的类型读取.⽐ FIFO 更有优势。消息队列克服了信号承载信息量少&#xff0c;管道只能承载⽆格式字节流以及缓冲区大小受限等缺点</li><li><strong>信号量(Semaphores)</strong> &#xff1a;信号量是⼀个计数器&#xff0c;⽤于多进程对共享数据的访问&#xff0c;信号量的意图在于进程间同步。这种通信⽅式主要⽤于解决与同步相关的问题并避免竞争条件。</li><li><strong>共享内存(Shared memory)</strong> &#xff1a;使得多个进程可以访问同⼀块内存空间&#xff0c;不同进程可以及时看到对⽅进程中对共享内存中数据的更新。这种⽅式需要依靠某种同步操作&#xff0c;如<strong>互斥锁和信号量</strong>等。可以说这是最有⽤的进程间通信⽅式。</li><li><strong>套接字(Sockets)</strong> : 此⽅法主要⽤于在客户端和服务器之间通过⽹络进⾏通信。套接字是⽀持TCP/IP 的⽹络通信的基本操作单元&#xff0c;可以看做是不同主机之间的进程进⾏双向通信的端点&#xff0c;简单的说就是通信的两⽅的⼀种约定&#xff0c;⽤套接字中的相关函数来完成通信过程</li></ul>
+<blockquote>
+<p><font color="red"><strong>操作系统中进程的调度算法有哪些</strong></font></p>
+</blockquote>
+<p>为了确定⾸先执⾏哪个进程以及最后执⾏哪个进程以实现最⼤ CPU 利⽤率&#xff0c;计算机科学家已经定义了⼀些算法&#xff0c;它们是&#xff1a;</p>
+<ul><li><strong>先到先服务(FCFS)调度算法</strong> : 从就绪队列中选择⼀个<strong>最先进⼊该队列的进程为之分配资源</strong>&#xff0c;使它⽴即执⾏并⼀直执⾏到完成或发⽣某事件⽽被阻塞放弃占⽤ CPU 时再重新调度。</li><li><strong>短作业优先(SJF)的调度算法</strong> : 从就绪队列中选出⼀个<strong>估计运⾏时间最短的进程为之分配资源</strong>&#xff0c;使它⽴即执⾏并⼀直执⾏到完成或发⽣某事件⽽被阻塞放弃占⽤ CPU 时再重新调度。</li><li><strong>时间⽚轮转调度算法</strong> : 时间⽚轮转调度是⼀种最古⽼&#xff0c;最简单&#xff0c;最公平且使⽤最⼴的算法&#xff0c;⼜称 RR(Round robin)调度。每个进程被分配⼀个时间段&#xff0c;称作它的时间⽚&#xff0c;即该进程允许运⾏的时间。<br />
+<strong>多级反馈队列调度算法</strong> &#xff1a;前⾯介绍的⼏种进程调度的算法都有⼀定的局限性。如短进程优先的调度算法&#xff0c;仅照顾了短进程⽽忽略了⻓进程 。多级反馈队列调度算法<strong>既能使⾼优先级的作业得到响应⼜能使短作业&#xff08;进程&#xff09;迅速完成</strong>。因⽽它是⽬前被公认的⼀种较好的进程调度算法&#xff0c;UNIX 操作系统采取的便是这种调度算法。<br />
+<strong>优先级调度</strong> &#xff1a; <strong>为每个流程分配优先级&#xff0c;⾸先执⾏具有最⾼优先级的进程</strong>&#xff0c;依此类推。<strong>具有相同优先级的进程以 FCFS ⽅式执⾏</strong>。可以根据内存要求&#xff0c;时间要求或任何其他资源要求来确定优先级。</li></ul>
+<blockquote>
+<p><font color="red"><strong>线程间的同步方式有哪些</strong></font></p>
+</blockquote>
+<p>线程同步是<strong>两个或多个共享关键资源的线程的并发执⾏。应该同步线程以避免关键的资源使⽤冲突</strong>。操作系统⼀般有下⾯三种线程同步的⽅式&#xff1a;</p>
+<ul><li><strong>互斥量(Mutex)</strong>&#xff1a;采⽤互斥对象机制&#xff0c;只有拥有互斥对象的线程才有访问公共资源的权限。因为互斥对象只有⼀个&#xff0c;所以可以保证公共资源不会被多个线程同时访问。⽐如 Java 中的synchronized 关键词和各种 Lock 都是这种机制。</li><li><strong>信号量(Semphares)</strong> &#xff1a;它允许同⼀时刻多个线程访问同⼀资源&#xff0c;但是需要控制同⼀时刻访问此资源的最⼤线程数量、</li><li><strong>事件(Event)</strong> :Wait/Notify&#xff1a;通过通知操作的⽅式来保持多线程同步&#xff0c;还可以⽅便的实现<strong>多线程优先级</strong>的⽐较操作</li></ul>
+<h3><a rel="noopener noreferrer" id="_109"></a>操作系统存储管理</h3>
+<blockquote>
+<p><font color="red"><strong>分⻚机制和分段机制有哪些共同点和区别呢&#xff1f;</strong></font></p>
+</blockquote>
+<p>分⻚机制和分段机制的共同点 &#xff1a;</p>
+<ul><li>分⻚机制和分段机制都是为了<strong>提⾼内存利⽤率&#xff0c;减少内存碎⽚</strong>。</li><li><strong>⻚和段都是离散存储的</strong>&#xff0c;所以两者都是离散分配内存的⽅式。但是&#xff0c;<strong>每个⻚和段中的内存是连续的</strong>。</li></ul>
+<p>分⻚机制和分段机制的区别&#xff1a;</p>
+<ul><li><strong>⻚的⼤⼩是固定的&#xff0c;由操作系统决定</strong>&#xff1b;⽽<strong>段的⼤⼩不固定&#xff0c;取决于我们当前运⾏的程序</strong>。</li><li><strong>分⻚仅仅是为了满⾜操作系统内存管理的需求</strong>&#xff0c;⽽<strong>段是逻辑信息的单位&#xff0c;在程序中可以体现为代码段&#xff0c;数据段&#xff0c;能够更好满⾜⽤户的需要。</strong></li></ul>

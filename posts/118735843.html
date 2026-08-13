@@ -1,0 +1,276 @@
+<p>上文提到JSP的基本技术&#xff0c;包括&#xff1a;JSP的基本概念、JSP的执行流程、JSP的文件元素、JSP的生命周期以及JSP的语法标识&#xff0c;重点了解了JSP的语法标识里的&#xff1a;脚本标识、注释标识、指令标识以及动作标识。接下来这篇Blog来重点了解下JSP的内置对象。</p>
+<h2><a rel="noopener noreferrer" id="JSP_1"></a>JSP内置对象概述</h2>
+<p>JSP隐式对象是JSP容器为每个页面提供的Java对象&#xff0c;开发者可以直接使用它们而不用显式声明。JSP隐式对象也被称为预定义变量。<img alt="在这里插入图片描述" src="./posts/assets/118735843-01-c19b762988.png" loading="lazy"><br />
+JSP所支持的九大内置对象&#xff0c;也叫隐式对象&#xff0c;从本质上讲&#xff0c;JSP的这些内置对象其实都是由特定的Java类所产生的&#xff0c;在服务器运行时根据情况自动生成。基于它们的主要作用可以分为四类&#xff1a;<strong>输入输出对象、作用域对象、Servlet对象以及异常错误对象</strong>。</p>
+<h2><a rel="noopener noreferrer" id="_5"></a>输入输出对象</h2>
+<p>输入输出对象共有两个&#xff0c;一个是我们最常用的用作向客户端输出各种数据的out对象&#xff0c;一个是主要用作页面重定向的response对象。</p>
+<h3><a rel="noopener noreferrer" id="out_7"></a>out对象</h3>
+<p>out 对象主要用于向客户端输出各种数据类型的内容&#xff0c;默认缓冲区8K&#xff0c;可以通过page指令设置&#xff0c;out 对象被封装为 <strong>javax.servlet.jsp.JspWriter</strong> 类&#xff0c;在实际应用中 out 对象会通过 JSP 容器变换为 java.io.PrintWriter 类&#xff0c;常用方法如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-02-5b8db9c2ec.png" loading="lazy"><br />
+out对象有点类似我们之前的表达式脚本<code>&lt;%&#61;&#34;我是一个跳转后的表达式语句&#34;%&gt;</code>&#xff0c;用于像客户端输出信息&#xff0c;和<code>System.out.println()</code>语句服务端本地打印不同&#xff0c;out是向客户端浏览器打印数据&#xff0c;<strong>利用out对象还可以输出html代码&#xff0c;比如<code>&lt;br /&gt;</code> 让浏览器解析</strong></p>
+<h3><a rel="noopener noreferrer" id="response_11"></a>response对象</h3>
+<p>response 对象用于响应客户请求&#xff0c;封装了 JSP 产生的响应&#xff0c;并发送到客户端以响应客户端的请求,response对象常用功能如下&#xff1a;处理 HTTP 文件头和页面重定向&#xff0c;但我们一般不会设置返回的文件头&#xff0c;我们一般使用respnse做页面重定向&#xff1a;</p>
+<ul><li>response 对象提供的 sendRedirect() 方法将网页重定向到另一个页面</li></ul>
+<p>这里简单解释下请求转发和重定向&#xff1a;</p>
+<ul><li><strong>请求转发</strong>&#xff1a;客户端发起的请求被转发到了另一个地址进行处理&#xff0c;但这依然发生在一个request作用域里&#xff0c;地址栏显示的也是原来的地址。</li><li><strong>重定向</strong>&#xff1a;重定向操作支持将地址重定向到另一个地址进行处理&#xff0c;这是由目标服务器返回的客户端再次发起的一个请求&#xff0c;不在一个request作用域里&#xff0c;在客户端浏览器上将会得到跳转的地址&#xff0c;并重新发送请求链接&#xff0c;且地址栏显示新地址</li></ul>
+<p>好简单了解后我们来看一个重定向的写法&#xff1a;</p>
+<pre><code class="prism language-java">   <span class="token comment">// 如果用户没有输入用户名&#xff0c;则重定向到 redirect.jsp</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>username <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>username<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span><span class="token string">&#34;redirect.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//如果用户名不存在&#xff0c;则转向第一个界面</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_28"></a>四大作用域对象</h2>
+<p>共有四种级别的通信域&#xff0c;每一种通信域作用的范围不同&#xff0c;也都有些各自的作用对象&#xff0c;列举如下&#xff1a;</p>
+
+<table><thead><tr><th>通信域</th><th>对象</th><th>作用范围</th><th>失效情况</th></tr></thead><tbody><tr><td>Page</td><td><strong>pageContext</strong></td><td>当前jsp页面</td><td>请求转发即失效</td></tr><tr><td>Request</td><td><strong>request</strong></td><td>一次请求</td><td>请求转发公用request&#xff0c;重定向即失效</td></tr><tr><td>Session</td><td><strong>session</strong></td><td>一次会话</td><td>浏览器关闭即失效</td></tr><tr><td>Application</td><td><strong>application</strong></td><td>项目启动期间</td><td>项目关闭即失效</td></tr></tbody></table><p>在正式聊四大作用域对象前我们先了解下表单提交&#xff0c;通过表单提交来看作用域的作用范围</p>
+<h3><a rel="noopener noreferrer" id="_38"></a>表单提交</h3>
+<p>网页中表单是用户填写信息并提交的组件&#xff0c;JSP 引擎会将客户端的请求信息封装在<strong>request</strong> 对象中&#xff0c;调用request 对象相应的方法就可以获取对应的封装信息&#xff0c;first.jsp&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">15</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">8</span><span class="token operator">:</span><span class="token number">02</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>form action<span class="token operator">&#61;</span><span class="token string">&#34;second.jsp&#34;</span> method<span class="token operator">&#61;</span><span class="token string">&#34;get&#34;</span><span class="token operator">&gt;</span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>table<span class="token punctuation">&gt;</span></span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span> 用户名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span><span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;text&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;username&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span> 密码&#xff1a;<span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span><span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;text&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;password&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span>
+            <span class="token operator">&lt;</span>td colspan<span class="token operator">&#61;</span><span class="token string">&#34;2&#34;</span><span class="token operator">&gt;</span>
+                <span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;submit&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34; 注册 &#34;</span><span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>table<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>form<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>这样当我们提交时&#xff0c;表单就会传递到second.jsp页面:<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-03-d292404cb8.png" loading="lazy"><br />
+提交后就可以在second.jsp页面获取到填写的信息&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-04-f4dfccc339.png" loading="lazy"><br />
+second.jsp的代码清单如下&#xff0c;我会在代码清单里加一些判断逻辑&#xff0c;来完成一些作用域的探索second.jsp&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">15</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">8</span><span class="token operator">:</span><span class="token number">02</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+    <span class="token class-name">String</span> username <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> password <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+
+    pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">,</span>username<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">,</span>username<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">,</span>username<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 如果用户没有输入用户名&#xff0c;则重定向到 redirect.jsp</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>username <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>username<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span><span class="token string">&#34;redirect.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//如果用户名不存在&#xff0c;则转向第一个界面</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 如果用户没有输入密码&#xff0c;则请求转发到forward.jsp</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>password <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>password<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        request<span class="token punctuation">.</span><span class="token function">getRequestDispatcher</span><span class="token punctuation">(</span><span class="token string">&#34;forward.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forward</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span>response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+    out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;输出注册信息&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;您的用户名为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> username <span class="token operator">&#43;</span> <span class="token string">&#34; 密码为&#xff1a; &#34;</span> <span class="token operator">&#43;</span> password<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="pageContext_129"></a>pageContext对象</h3>
+<p>pageContext页面上下文对象可以获取其他作用域对象&#xff0c;并提供方法用于访问内建对象在页面上定义的所有属性&#xff0c;从而保持同一页面组件之间的数据共享&#xff0c;pageContext常用方法如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-05-e7321fc66e.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="pageContext_132"></a>请求转发【pageContext失效】</h4>
+<p>在上文的代码清单里我预置了一些条件&#xff0c;当用户没有输入密码的时候我们执行请求转发&#xff0c;请求转发的代码清单如下forward.jsp&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">15</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">8</span><span class="token operator">:</span><span class="token number">38</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">[</span>pageContext<span class="token punctuation">]</span>未填写密码信息&#xff0c;只填写了用户名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>pageContext<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+<span class="token punctuation">[</span>request<span class="token punctuation">]</span>未填写密码信息&#xff0c;只填写了用户名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+<span class="token punctuation">[</span>session<span class="token punctuation">]</span>未填写密码信息&#xff0c;只填写了用户名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+<span class="token punctuation">[</span>application<span class="token punctuation">]</span>未填写密码信息&#xff0c;只填写了用户名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>此时我们在页面只输入用户名观察浏览器&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-06-6dbe60f396.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="request_160"></a>request对象</h3>
+<p>request对象是<strong>javax.servlet.http.HttpServletRequest</strong> 类的实例。每当客户端请求一个JSP页面时&#xff0c;JSP引擎就会制造一个新的request对象来代表这个请求。request对象提供了一系列方法来获取HTTP头信息&#xff0c;cookies&#xff0c;HTTP方法等等&#xff0c;最重要的作用就是&#xff1a;<strong>封装用户提交的表单信息&#xff0c;通过如下方法可以获取对应数据</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-07-deb206ac16.png" loading="lazy"><br />
+request也可以帮助我们执行请求转发&#xff1a;</p>
+<pre><code class="prism language-java">request<span class="token punctuation">.</span><span class="token function">getRequestDispatcher</span><span class="token punctuation">(</span><span class="token string">&#34;forward.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forward</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span>response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="request_168"></a>重定向【request失效】</h4>
+<p>同样在上文的代码清单里我预置了一些条件&#xff0c;当用户没有输入用户名的时候我们执行重定向&#xff0c;重定向的代码清单如下redirect.jsp&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">15</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">8</span><span class="token operator">:</span><span class="token number">20</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span>  <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">[</span>pageContext<span class="token punctuation">]</span>未填写用户名信息&#xff0c;只填写了密码&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>pageContext<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+<span class="token punctuation">[</span>request<span class="token punctuation">]</span>未填写用户名信息&#xff0c;只填写了密码&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+<span class="token punctuation">[</span>session<span class="token punctuation">]</span>未填写用户名信息&#xff0c;只填写了密码&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+<span class="token punctuation">[</span>application<span class="token punctuation">]</span>未填写用户名信息&#xff0c;只填写了密码&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+
+</code></pre>
+<p>那么我们打开页面可以观察到&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-08-8c34e8653b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="session_196"></a>session对象</h3>
+<p>session在JSP中被称为会话&#xff0c;目的是保存不同用户在web程序多个页面之间跳转时的数据信息&#xff0c;直到浏览器关闭&#xff0c;每个客户端会对应同一个session对象&#xff1a;</p>
+<ul><li>session对象存储数据方法&#xff1a;<code>session.setAttribute(“字符串名称”,要存入的数据);</code> 向session中存入数据&#xff0c;并且起名&#xff0c;要存入的数据可以是任意类型&#xff0c;名称必须是字符串类型&#xff0c;例如&#xff1a;<code>在这里插入代码片</code></li><li>session对象取出数据方法&#xff1a; <code>session.getAttribute(“存入时的名称”);</code>&#xff0c;取出数据时是Object类型&#xff0c;如需要可以转为需要类型</li><li>session对象移除数据方法如下&#xff1a;<code>session.removeAttribute(“存入时的名称”);</code></li></ul>
+<p>示例如下&#xff1a;</p>
+<pre><code class="prism language-java">session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>需要注意的是&#xff1a;服务器不知道客户端何时关闭浏览器&#xff0c;为了节省内存开销&#xff0c;<strong>默认超时时间为30分钟</strong>&#xff0c;即30分钟用户没有再次发出请求&#xff0c;则session自动销毁&#xff0c;超时时间可以在Tomcat配置文件中修改</p>
+<h4><a rel="noopener noreferrer" id="session_209"></a>浏览器关闭【session失效】</h4>
+<p>我们把请求地址粘贴到另一个新用户浏览器上来观察session的存活状态&#xff0c;发现session在切换了会话后失效了。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-09-1a549bb3ae.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="application_214"></a>application对象</h3>
+<p>application 对象用于保存应用中的公有数据&#xff0c;服务器启动自动创建 application 对象&#xff0c;只要没有关闭服务器&#xff0c;application 对象将一直存在&#xff0c;所有用户可以共享&#xff0c;application 对象常用于记录缓存项目中的全局数据&#xff0c;常用方法如下:<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-10-e93836ce13.png" loading="lazy"><br />
+示例如下&#xff1a;</p>
+<pre><code class="prism language-java"> application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="application_222"></a>关闭服务器【application失效】</h4>
+<p>我们关闭tomcat服务&#xff0c;可以观察到application的作用域也失效了&#xff0c;当然不光是失效了&#xff0c;服务器都没了。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-11-36b79437ce.png" loading="lazy"><br />
+我们这里要说的就是再重启服务器后application里也是不会有值的。<img alt="在这里插入图片描述" src="./posts/assets/118735843-12-ab4953864f.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_226"></a>异常错误对象</h2>
+<p><strong>exception</strong> 对象包装了从先前页面中抛出的异常信息。它通常被用来产生对出错条件的适当响应&#xff0c;通常和page指令里的errorPage和isErrorPage一起使用。一般常用方法如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-13-92aa752693.png" loading="lazy"></p>
+<p>我们来看下我们的异常页面为test.jsp&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">14</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">12</span><span class="token operator">:</span><span class="token number">30</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span>  errorPage<span class="token operator">&#61;</span><span class="token string">&#34;error.jsp&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span> <span class="token keyword">int</span> day <span class="token operator">&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token keyword">if</span>语句输出练习&#xff1a;
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>day <span class="token operator">&#61;&#61;</span> <span class="token number">1</span> <span class="token operator">||</span> day <span class="token operator">&#61;&#61;</span> <span class="token number">7</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>今天是周末<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>今天不是周末<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token keyword">for</span>语句输出练习&#xff1b;
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> fontSize <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> fontSize <span class="token operator">&lt;&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span> fontSize<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>span style<span class="token operator">&#61;</span><span class="token string">&#34;color: green; &#34;</span><span class="token operator">&gt;</span>
+    循环第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>fontSize<span class="token operator">%</span><span class="token operator">&gt;</span> 遍<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>span<span class="token operator">&gt;</span><span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token punctuation">}</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+    <span class="token keyword">int</span> b<span class="token operator">&#61;</span><span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span><span class="token punctuation">(</span>b<span class="token operator">&#61;&#61;</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> a<span class="token operator">&#61;</span><span class="token number">5</span><span class="token operator">/</span>b<span class="token punctuation">;</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">&#34;不能做除0运算&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>在这个页面我们通过指令指定如果出现异常要处理异常的页面是哪个&#xff1a;<code>errorPage&#61;&#34;error.jsp&#34;</code>&#xff0c;然后我们来编写下错误的处理页面error.jsp&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">15</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">8</span><span class="token operator">:</span><span class="token number">44</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> isErrorPage<span class="token operator">&#61;</span><span class="token string">&#34;true&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+        out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span><span class="token string">&#34; 异常信息: &#34;</span><span class="token operator">&#43;</span> exception<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//从exception对象中获取异常信息</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>这样当我们访问问题页面时就会自动展示错误信息&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118735843-14-be796fb8f4.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="Servlet_308"></a>Servlet对象</h2>
+<p>还有几个我们不常用到的对象这里也一并了解下&#xff0c;包括config对象和page对象</p>
+<h3><a rel="noopener noreferrer" id="config_310"></a>config对象</h3>
+<p>config对象是 <strong>javax.servlet.ServletConfig</strong> 类的实例&#xff0c;直接包装了servlet的ServletConfig类的对象。这个对象允许开发者访问Servlet或者JSP引擎的初始化参数&#xff0c;比如文件路径等。以下是config对象的使用方法&#xff0c;不是很重要&#xff0c;所以不常用&#xff1a;</p>
+<pre><code class="prism language-java">config<span class="token punctuation">.</span><span class="token function">getServletName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>它返回包含在<code>&lt;servlet-name&gt;</code>元素中的servlet名字&#xff0c;注意&#xff0c;<code>&lt;servlet-name&gt;</code>元素在 <code>WEB-INF\web.xml</code> 文件中定义。</p>
+<h3><a rel="noopener noreferrer" id="page_317"></a>page对象</h3>
+<p>这个对象就是页面实例的引用。它可以被看做是整个JSP页面的代表。page 对象就是this对象的同义词</p>
+<h2><a rel="noopener noreferrer" id="_320"></a>总结一下</h2>
+<p>好了以上就是JSP的内置对象相关内容&#xff0c;我觉得其中最重要的包含以下三个内容&#xff1a;</p>
+<ul><li>pageContext、request、Session以及application这四个作用域作用的范围&#xff0c;这对以后学习框架也有帮助</li><li>理解表单提交的基本方式</li><li>理解请求转发和重定向的含义</li></ul>
+<p>好了这期学习和练习就到这里&#xff0c;下一期我们详细学习下JavaBean以及深入理解下动作标识。</p>

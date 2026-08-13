@@ -1,0 +1,598 @@
+<p>前面几篇博客就SpringBoot的原理以及实践的一些小技巧进行了学习&#xff0c;接下来的几篇Blog&#xff0c;我愿称之为SpringBoot对各层的整合以应对完整的开发任务&#xff0c;无外乎就是对数据库以及持久层的整合以及对SpringMVC的定制整合等&#xff0c;那么今天这篇Blog就来对数据源进行整合配置&#xff0c;包括各个持久层的框架。对于数据访问层&#xff0c;无论是 SQL&#xff08;关系型数据库&#xff09; 还是 NOSQL&#xff08;非关系型数据库&#xff09;&#xff0c;<strong>Spring Boot 都默认采用整合 Spring Data&#xff08;Spring Data 也是 Spring 中与 Spring Boot、Spring Cloud 齐名的知名项目&#xff09; 的方式进行统一处理&#xff0c;通过大量自动配置&#xff0c;来简化我们对数据访问层的操作</strong>&#xff0c;我们只需要进行简单的设置即可实现对数据层的访问&#xff0c;这里提到了一个数据源的概念&#xff0c;其实数据源可以理解为一个代理&#xff0c;JDBC这套协议的具体实现&#xff0c;详细可以看这篇&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/LiZhen314/article/details/79388193"><strong>数据库与数据源的区别</strong></a></p>
+<h2><a rel="noopener noreferrer" id="SpringBootJDBC_2"></a>SpringBoot整合JDBC</h2>
+<p>我们按照如下步骤使用JDBC整合配置&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="1__JDBC__4"></a>1 导入 JDBC 场景启动器</h3>
+<p>Spring Boot 将日常企业应用研发中的各种场景都抽取出来&#xff0c;做成一个个的场景启动器&#xff08;Starter&#xff09;&#xff0c;场景启动器中整合了该场景下各种可能用到的依赖&#xff0c;让用户摆脱了处理各种依赖和配置的困扰。想要在 Spring Boot 中使用 JDBC 进行数据访问&#xff0c;第一步就是要在 pom.xml 中导入 JDBC 场景启动器&#xff1a;<code>spring-boot-starter-data-jdbc</code>&#xff0c;代码如下</p>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--导入JDBC的场景启动器--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-data-jdbc<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2__15"></a>2 导入数据库驱动</h3>
+<p>JDBC 的场景启动器中并没有导入数据库驱动&#xff0c;我们需要根据自身的需求引入所需的数据库驱动。例如&#xff0c;访问 MySQL 数据库时&#xff0c;需要导入 MySQL 的数据库驱动&#xff1a;<code>mysql-connector-java</code>&#xff0c;示例代码如下</p>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--导入数据库驱动--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>mysql<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>mysql-connector-java<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>runtime<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__27"></a>3 配置数据源</h3>
+<p>在导入了 JDBC 场景启动器和数据库驱动后&#xff0c;接下来我们就可以在配置文件&#xff08;application.properties/yml&#xff09;中配置数据源了&#xff0c;示例代码&#xff08;application.yml&#xff09;如下</p>
+<pre><code class="prism language-yaml"><span class="token comment">#数据源连接信息</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//localhost<span class="token punctuation">:</span>3306/test<span class="token punctuation">?</span>userSSL&#61;true<span class="token important">&amp;useUnicode&#61;true&amp;characterEncoding&#61;UTF-8&amp;serverTimezone&#61;UTC</span>
+    <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.cj.jdbc.Driver
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4_JdbcTemplate__40"></a>4 JdbcTemplate 请求测试</h3>
+<p>Spring Boot 提供了一个名为 JdbcTemplate 的轻量级数据访问工具&#xff0c;它是对 JDBC 的封装。Spring Boot 对 JdbcTemplate 提供了默认自动配置&#xff0c;我们可以直接使用 &#64;Autowired 或构造函数将它注入到 bean 中使用</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>junit<span class="token punctuation">.</span>jupiter<span class="token punctuation">.</span>api<span class="token punctuation">.</span></span><span class="token class-name">Test</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>test<span class="token punctuation">.</span>context<span class="token punctuation">.</span></span><span class="token class-name">SpringBootTest</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>jdbc<span class="token punctuation">.</span>core<span class="token punctuation">.</span></span><span class="token class-name">JdbcTemplate</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Resource</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>sql<span class="token punctuation">.</span></span><span class="token class-name">DataSource</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>sql<span class="token punctuation">.</span></span><span class="token class-name">SQLException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;SpringBootTest</span>
+<span class="token keyword">class</span> <span class="token class-name">SpringbootApplicationTests</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//数据源组件</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">DataSource</span> dataSource<span class="token punctuation">;</span>
+    <span class="token comment">//用于访问数据库的组件</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">JdbcTemplate</span> jdbcTemplate<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;Test</span>
+    <span class="token keyword">void</span> <span class="token function">contextLoads</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">SQLException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;默认数据源为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> dataSource<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;数据库连接实例&#xff1a;&#34;</span> <span class="token operator">&#43;</span> dataSource<span class="token punctuation">.</span><span class="token function">getConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//访问数据库</span>
+        <span class="token class-name">Integer</span> i <span class="token operator">&#61;</span> jdbcTemplate<span class="token punctuation">.</span><span class="token function">queryForObject</span><span class="token punctuation">(</span><span class="token string">&#34;SELECT count(*) from &#96;person&#96;&#34;</span><span class="token punctuation">,</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;user 表中共有&#34;</span> <span class="token operator">&#43;</span> i <span class="token operator">&#43;</span> <span class="token string">&#34;条数据。&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>数据表如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-01-878f9b1d37.png" loading="lazy"></p>
+<p>返回结果为&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-02-fd484cc9ed.png" loading="lazy"><br /> 通过以上运行结果可以看出&#xff0c;Spring Boot 默认使用 HikariCP 作为其数据源&#xff0c;对数据库的访问&#xff0c;HikariDataSource 号称 Java WEB 当前速度最快的数据源&#xff0c;相比于传统的 C3P0 、DBCP、Tomcat jdbc 等连接池更加优秀</p>
+<h2><a rel="noopener noreferrer" id="Spring_Boot_82"></a>Spring Boot数据源配置原理</h2>
+<p>在数据库访问过程中&#xff0c;“数据源”无疑是最重要的概念之一&#xff0c;它不仅可以<strong>对与数据库访问相关的各种参数进行封装和统一管理&#xff0c;还可以管理数据库连接池&#xff0c;提高数据库连接性能</strong>。目前&#xff0c;在市面上有很多优秀的开源数据源&#xff0c;例如 <strong>DBCP、C3P0、Druid、HikariCP</strong> 等等。在 Spring Boot 2.x 中&#xff0c;则采用目前性能最佳的 HikariCP 作为其默认数据源。接下来&#xff0c;我们就来具体介绍下 Spring Boot 的默认数据源配置及其原理</p>
+<h3><a rel="noopener noreferrer" id="DataSourceAutoConfiguration_84"></a>DataSourceAutoConfiguration</h3>
+<p>我们知道&#xff0c;Spring Boot 中几乎所有的默认配置都是通过配置类 XxxAutoConfiguration 进行配置的&#xff0c;Spring Boot 数据源也不例外&#xff0c;它的自动配置类是&#xff1a;DataSourceAutoConfiguration。</p>
+<p>DataSourceAutoConfiguration 中共包括以下 5 个内部静态类&#xff1a;</p>
+<ul><li>EmbeddedDatabaseCondition</li><li>PooledDataSourceAvailableCondition</li><li>PooledDataSourceCondition</li><li><strong>PooledDataSourceConfiguration&#xff08;池化数据源自动配置类&#xff09;</strong></li><li><strong>EmbeddedDatabaseConfiguration&#xff08;内嵌数据源自动配置类&#xff09;</strong></li></ul>
+<p>其中&#xff0c;PooledDataSourceConfiguration 和 EmbeddedDatabaseConfiguration 为使用了 &#64;Configuration 注解的自动配置类&#xff0c;其余 3 个为限制条件类。</p>
+<h4><a rel="noopener noreferrer" id="EmbeddedDatabaseConfiguration_95"></a>EmbeddedDatabaseConfiguration类</h4>
+<p>EmbeddedDatabaseConfiguration 是内嵌数据源的自动配置类&#xff0c;该类中并没有任何的方法实现&#xff0c;它的主要功能都是通过 &#64;Import 注解引入 EmbeddedDataSourceConfiguration 类来实现的</p>
+<pre><code class="prism language-java">  <span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>
+        proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span>
+    <span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;Conditional</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSourceAutoConfiguration<span class="token punctuation">.</span>EmbeddedDatabaseCondition</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">XADataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;Import</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">EmbeddedDataSourceConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token keyword">protected</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">EmbeddedDatabaseConfiguration</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">protected</span> <span class="token class-name">EmbeddedDatabaseConfiguration</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>EmbeddedDataSourceConfiguration 向容器中添加了一个 Spring Boot 内嵌的数据源&#xff0c;该数据源支持 HSQL&#xff0c;H2 和 DERBY 三种数据库&#xff0c;其部分代码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>
+    proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span>
+<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;EnableConfigurationProperties</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSourceProperties</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">EmbeddedDataSourceConfiguration</span> <span class="token keyword">implements</span> <span class="token class-name">BeanClassLoaderAware</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">ClassLoader</span> classLoader<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token class-name">EmbeddedDataSourceConfiguration</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setBeanClassLoader</span><span class="token punctuation">(</span><span class="token class-name">ClassLoader</span> classLoader<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>classLoader <span class="token operator">&#61;</span> classLoader<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//向容器中添加 Spring Boot 内嵌的数据源</span>
+    <span class="token annotation punctuation">&#64;Bean</span><span class="token punctuation">(</span>
+        destroyMethod <span class="token operator">&#61;</span> <span class="token string">&#34;shutdown&#34;</span>
+    <span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">EmbeddedDatabase</span> <span class="token function">dataSource</span><span class="token punctuation">(</span><span class="token class-name">DataSourceProperties</span> properties<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">EmbeddedDatabaseBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setType</span><span class="token punctuation">(</span><span class="token class-name">EmbeddedDatabaseConnection</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>classLoader<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">determineDatabaseName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>通过上面的分析&#xff0c;我们知道自动配置类 EmbeddedDatabaseConfiguration 的作用是向容器中添加一个内嵌的数据源&#xff08;DataSource&#xff09;</p>
+<h5><a rel="noopener noreferrer" id="EmbeddedDatabaseCondition_135"></a>EmbeddedDatabaseCondition条件类</h5>
+<p>向容器中添加一个内嵌的数据源是有条件限制的。在 EmbeddedDatabaseConfiguration 类上还使用一个 &#64;Conditional 注解&#xff0c;该注解使用了DataSourceAutoConfiguration 的内部限制条件类 EmbeddedDatabaseCondition 来进行条件判断</p>
+<pre><code class="prism language-java">    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">EmbeddedDatabaseCondition</span> <span class="token keyword">extends</span> <span class="token class-name">SpringBootCondition</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">String</span> DATASOURCE_URL_PROPERTY <span class="token operator">&#61;</span> <span class="token string">&#34;spring.datasource.url&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">SpringBootCondition</span> pooledCondition <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">DataSourceAutoConfiguration<span class="token punctuation">.</span>PooledDataSourceCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token class-name">EmbeddedDatabaseCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">ConditionOutcome</span> <span class="token function">getMatchOutcome</span><span class="token punctuation">(</span><span class="token class-name">ConditionContext</span> context<span class="token punctuation">,</span> <span class="token class-name">AnnotatedTypeMetadata</span> metadata<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Builder</span> message <span class="token operator">&#61;</span> <span class="token class-name">ConditionMessage</span><span class="token punctuation">.</span><span class="token function">forCondition</span><span class="token punctuation">(</span><span class="token string">&#34;EmbeddedDataSource&#34;</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">hasDataSourceUrlProperty</span><span class="token punctuation">(</span>context<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token class-name">ConditionOutcome</span><span class="token punctuation">.</span><span class="token function">noMatch</span><span class="token punctuation">(</span>message<span class="token punctuation">.</span><span class="token function">because</span><span class="token punctuation">(</span><span class="token string">&#34;spring.datasource.url is set&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">anyMatches</span><span class="token punctuation">(</span>context<span class="token punctuation">,</span> metadata<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Condition</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{<!-- --></span><span class="token keyword">this</span><span class="token punctuation">.</span>pooledCondition<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token class-name">ConditionOutcome</span><span class="token punctuation">.</span><span class="token function">noMatch</span><span class="token punctuation">(</span>message<span class="token punctuation">.</span><span class="token function">foundExactly</span><span class="token punctuation">(</span><span class="token string">&#34;supported pooled data source&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token class-name">EmbeddedDatabaseType</span> type <span class="token operator">&#61;</span> <span class="token class-name">EmbeddedDatabaseConnection</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>context<span class="token punctuation">.</span><span class="token function">getClassLoader</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span> type <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> <span class="token class-name">ConditionOutcome</span><span class="token punctuation">.</span><span class="token function">noMatch</span><span class="token punctuation">(</span>message<span class="token punctuation">.</span><span class="token function">didNotFind</span><span class="token punctuation">(</span><span class="token string">&#34;embedded database&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">atAll</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">:</span> <span class="token class-name">ConditionOutcome</span><span class="token punctuation">.</span><span class="token function">match</span><span class="token punctuation">(</span>message<span class="token punctuation">.</span><span class="token function">found</span><span class="token punctuation">(</span><span class="token string">&#34;embedded database&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">items</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{<!-- --></span>type<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">hasDataSourceUrlProperty</span><span class="token punctuation">(</span><span class="token class-name">ConditionContext</span> context<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Environment</span> environment <span class="token operator">&#61;</span> context<span class="token punctuation">.</span><span class="token function">getEnvironment</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>environment<span class="token punctuation">.</span><span class="token function">containsProperty</span><span class="token punctuation">(</span><span class="token string">&#34;spring.datasource.url&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> <span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">hasText</span><span class="token punctuation">(</span>environment<span class="token punctuation">.</span><span class="token function">getProperty</span><span class="token punctuation">(</span><span class="token string">&#34;spring.datasource.url&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IllegalArgumentException</span> var4<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>EmbeddedDatabaseCondition 主要用来检测容器中是否已经存在池化数据源&#xff08;PooledDataSource&#xff09;。若容器中存在池化数据源时&#xff0c;则 EmbeddedDatabaseConfiguration 不能被实例化。<strong>只有当容器中不存在池化数据源时&#xff0c;EmbeddedDatabaseConfiguration 才能被实例化&#xff0c;才能向容器中添加内嵌数据源&#xff08;EmbeddedDataSource&#xff09;</strong></p>
+<h4><a rel="noopener noreferrer" id="PooledDataSourceConfiguration_173"></a>PooledDataSourceConfiguration类</h4>
+<p>PooledDataSourceConfiguration 是池化数据源的自动配置类&#xff0c;该类上使用了一个 &#64;Conditional 注解&#xff0c;该注解使用了 DataSourceAutoConfiguration 的内部限制条件类 PooledDataSourceCondition 来进行条件判断。</p>
+<pre><code class="prism language-java">  <span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>
+        proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span>
+    <span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;Conditional</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSourceAutoConfiguration<span class="token punctuation">.</span>PooledDataSourceCondition</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">XADataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;Import</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">Hikari</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">Tomcat</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">Dbcp2</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">OracleUcp</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">Generic</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">DataSourceJmxConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token keyword">protected</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">PooledDataSourceConfiguration</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">protected</span> <span class="token class-name">PooledDataSourceConfiguration</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>与 EmbeddedDatabaseConfiguration 一样&#xff0c;PooledDataSourceConfiguration 类中也没有任何的方法实现&#xff0c;它的所有功能都是通过 &#64;Import 注解引入其他的类实现的。PooledDataSourceConfiguration 通过 &#64;Import 注解引入了 <strong>Hikari、Tomcat、Dbcp2、OracleUcp 和 Generic 五个数据源配置类</strong>&#xff0c;它们都是 DataSourceConfiguration 的内部类&#xff0c;且它们的功能类似&#xff0c;都是向容器中添加指定的数据源。下面我们以 Hikari 为例进行分析&#xff0c;Hikari 的源码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>
+    proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span>   <span class="token comment">//&#64;Configuration&#xff1a;表示当前类是一个配置类</span>
+<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;ConditionalOnClass</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">HikariDataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token comment">//表示必须在类路径中存在 HikariDataSource 类时&#xff0c;Hikari 才会实例化。而 HikariDataSource 类是由 spring- boot-starter-jdbc 默认将其引入的&#xff0c;因此只要我们在 pom.xml 中引入了该 starter&#xff0c; Hikari 就会被实例化&#xff08;这也是 Spring Boot 2.x 默认使用 HikariCP 作为其数据源的原因&#xff09;</span>
+<span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>  <span class="token comment">//表示容器中没有用户自定义的数据源时&#xff0c;该配置类才会被实例化</span>
+<span class="token annotation punctuation">&#64;ConditionalOnProperty</span><span class="token punctuation">(</span>
+    name <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;spring.datasource.type&#34;</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    havingValue <span class="token operator">&#61;</span> <span class="token string">&#34;com.zaxxer.hikari.HikariDataSource&#34;</span><span class="token punctuation">,</span>
+    matchIfMissing <span class="token operator">&#61;</span> <span class="token boolean">true</span>
+<span class="token punctuation">)</span> <span class="token comment">//表示当 Spring Boot 配置文件中&#xff0c;配置了 spring.datasource.type &#61; com.zaxxer.hikari.HikariDataSource&#xff08;明确指定使用 Hikari 数据源&#xff09;或者不配置 spring.datasource.type&#xff08;即默认情况&#xff09;时&#xff0c;Hikari 才会被实例化</span>
+<span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Hikari</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">Hikari</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+    <span class="token annotation punctuation">&#64;Bean</span>
+    <span class="token annotation punctuation">&#64;ConfigurationProperties</span><span class="token punctuation">(</span>
+        prefix <span class="token operator">&#61;</span> <span class="token string">&#34;spring.datasource.hikari&#34;</span>
+    <span class="token punctuation">)</span>
+    <span class="token class-name">HikariDataSource</span> <span class="token function">dataSource</span><span class="token punctuation">(</span><span class="token class-name">DataSourceProperties</span> properties<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">HikariDataSource</span> dataSource <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token class-name">HikariDataSource</span><span class="token punctuation">)</span><span class="token class-name">DataSourceConfiguration</span><span class="token punctuation">.</span><span class="token function">createDataSource</span><span class="token punctuation">(</span>properties<span class="token punctuation">,</span> <span class="token class-name">HikariDataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">hasText</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            dataSource<span class="token punctuation">.</span><span class="token function">setPoolName</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dataSource<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Hikari 类通过 &#64;Bean 注解向容器中添加了 HikariDataSource 组件&#xff0c;该组件的实例对象是通过调用 DataSourceConfiguration 的 createDataSource() 方法得到的&#xff0c;代码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Bean</span>
+<span class="token annotation punctuation">&#64;ConfigurationProperties</span><span class="token punctuation">(</span>
+    prefix <span class="token operator">&#61;</span> <span class="token string">&#34;spring.datasource.hikari&#34;</span>
+<span class="token punctuation">)</span>
+<span class="token class-name">HikariDataSource</span> <span class="token function">dataSource</span><span class="token punctuation">(</span><span class="token class-name">DataSourceProperties</span> properties<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">HikariDataSource</span> dataSource <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token class-name">HikariDataSource</span><span class="token punctuation">)</span><span class="token class-name">DataSourceConfiguration</span><span class="token punctuation">.</span><span class="token function">createDataSource</span><span class="token punctuation">(</span>properties<span class="token punctuation">,</span> <span class="token class-name">HikariDataSource</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">hasText</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setPoolName</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> dataSource<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>在 createDataSource() 方法中&#xff0c;调用 DataSourceProperties 的 initializeDataSourceBuilder() 来初始化 DataSourceBuilder,源码如下</p>
+<pre><code class="prism language-java"><span class="token keyword">protected</span> <span class="token keyword">static</span> <span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token class-name">T</span> <span class="token function">createDataSource</span><span class="token punctuation">(</span><span class="token class-name">DataSourceProperties</span> properties<span class="token punctuation">,</span> <span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">DataSource</span><span class="token punctuation">&gt;</span></span> type<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> properties<span class="token punctuation">.</span><span class="token function">initializeDataSourceBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">type</span><span class="token punctuation">(</span>type<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>initializeDataSourceBuilder() 方法通过调用 DataSourceBuilder 的 create() 方法创建 DataSourceBuilder 对象&#xff0c;并根据 Spring Boot 的配置文件&#xff08;application.properties/yml&#xff09;中的配置&#xff0c;依次设置数据源类型、驱动类名、连接 url、 用户名和密码等信息</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token class-name">DataSourceBuilder</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token operator">?</span><span class="token punctuation">&gt;</span></span> <span class="token function">initializeDataSourceBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token class-name">DataSourceBuilder</span><span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getClassLoader</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">type</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+          <span class="token function">driverClassName</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">determineDriverClassName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">url</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">determineUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">username</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">determineUsername</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">password</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">determinePassword</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="PooledDataSourceCondition_248"></a>PooledDataSourceCondition条件类</h5>
+<p>PooledDataSourceConfiguration 是池化数据源的自动配置类&#xff0c;该类上使用了一个 &#64;Conditional 注解&#xff0c;该注解使用了 DataSourceAutoConfiguration 的内部限制条件类 PooledDataSourceCondition 来进行条件判断</p>
+<pre><code class="prism language-java"><span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">PooledDataSourceCondition</span> <span class="token keyword">extends</span> <span class="token class-name">AnyNestedCondition</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">PooledDataSourceCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">super</span><span class="token punctuation">(</span><span class="token class-name">ConfigurationPhase</span><span class="token punctuation">.</span>PARSE_CONFIGURATION<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">&#64;Conditional</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DataSourceAutoConfiguration<span class="token punctuation">.</span>PooledDataSourceAvailableCondition</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+        <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">PooledDataSourceAvailable</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">PooledDataSourceAvailable</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">&#64;ConditionalOnProperty</span><span class="token punctuation">(</span>
+            prefix <span class="token operator">&#61;</span> <span class="token string">&#34;spring.datasource&#34;</span><span class="token punctuation">,</span>
+            name <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;type&#34;</span><span class="token punctuation">}</span>
+        <span class="token punctuation">)</span>
+        <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">ExplicitType</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">ExplicitType</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>PooledDataSourceCondition 与 EmbeddedDatabaseCondition 一样&#xff0c;也是用来检测容器中是否已经存在池化数据源的&#xff0c;但不同的是&#xff0c;PooledDataSourceConfiguration 是<strong>只有当容器中存在池化数据源时&#xff0c; 才可以被实例化&#xff0c;才可以向容器中添加池化数据源</strong></p>
+<h5><a rel="noopener noreferrer" id="PooledDataSourceAvailableCondition_274"></a>PooledDataSourceAvailableCondition条件类</h5>
+<p>PooledDataSourceCondition 调用了PooledDataSourceAvailableCondition类</p>
+<pre><code class="prism language-java"><span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">PooledDataSourceAvailableCondition</span> <span class="token keyword">extends</span> <span class="token class-name">SpringBootCondition</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">PooledDataSourceAvailableCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">ConditionOutcome</span> <span class="token function">getMatchOutcome</span><span class="token punctuation">(</span><span class="token class-name">ConditionContext</span> context<span class="token punctuation">,</span> <span class="token class-name">AnnotatedTypeMetadata</span> metadata<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Builder</span> message <span class="token operator">&#61;</span> <span class="token class-name">ConditionMessage</span><span class="token punctuation">.</span><span class="token function">forCondition</span><span class="token punctuation">(</span><span class="token string">&#34;PooledDataSource&#34;</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token class-name">DataSourceBuilder</span><span class="token punctuation">.</span><span class="token function">findType</span><span class="token punctuation">(</span>context<span class="token punctuation">.</span><span class="token function">getClassLoader</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> <span class="token class-name">ConditionOutcome</span><span class="token punctuation">.</span><span class="token function">match</span><span class="token punctuation">(</span>message<span class="token punctuation">.</span><span class="token function">foundExactly</span><span class="token punctuation">(</span><span class="token string">&#34;supported DataSource&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">:</span> <span class="token class-name">ConditionOutcome</span><span class="token punctuation">.</span><span class="token function">noMatch</span><span class="token punctuation">(</span>message<span class="token punctuation">.</span><span class="token function">didNotFind</span><span class="token punctuation">(</span><span class="token string">&#34;supported DataSource&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">atAll</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_287"></a>数据源自动配置原理小结</h3>
+<p>通过对 Spring Boot 数据源自动配置原理的分析可知&#xff1a;</p>
+<ul><li>在用户没有配置数据源的情况&#xff0c;若容器中存在 HikariDataSource 类&#xff0c;则 Spring Boot 就会自动实例化 Hikari&#xff0c;并将其作为其数据源。</li><li>Spring Boot 的 JDBC 场景启动器&#xff08;spring-boot-starter-data-jdbc&#xff09;通过 spring- boot-starter-jdbc 默认引入了 HikariCP 数据源&#xff08;包含 HikariDataSource 类&#xff09;&#xff0c;因此 Spring Boot 默认使用 HikariCP 作为其数据源</li></ul>
+<h2><a rel="noopener noreferrer" id="SpringBootDruid_291"></a>SpringBoot整合Druid</h2>
+<p>Spring Boot 2.x 默认使用 HikariCP 作为数据源&#xff0c;我们只要在项目中导入了 Spring Boot 的 JDBC 场景启动器&#xff0c;便可以使用 HikariCP 数据源获取数据库连接&#xff0c;对数据库进行增删改查等操作。HikariCP 是目前市面上性能最好的数据源产品&#xff0c;但在实际的开发过程中&#xff0c;企业往往使用另一款数据源产品&#xff1a;Druid&#xff0c;它是目前国内使用范围最广的数据源产品。Druid 是阿里巴巴推出的一款开源的高性能数据源产品&#xff0c;<strong>Druid 支持所有 JDBC 兼容的数据库&#xff0c;包括 Oracle、MySQL、SQL Server 和 H2 等等。Druid 不仅结合了 C3P0、DBCP 和 PROXOOL 等数据源产品的优点&#xff0c;同时还加入了强大的监控功能。通过 Druid 的监控功能&#xff0c;可以实时观察数据库连接池和 SQL 的运行情况&#xff0c;帮助用户及时排查出系统中存在的问题</strong>。Druid 不是 Spring Boot 内部提供的技术&#xff0c;它属于第三方技术&#xff0c;我们可以通过阿里提供的 starter 整合 Druid</p>
+<h3><a rel="noopener noreferrer" id="1__druidspringbootstarter_293"></a>1 引入 druid-spring-boot-starter场景启动器</h3>
+<p>在 Spring Boot 项目的 pom.xml 中添加以下依赖&#xff0c;引入 Druid Spring Boot Starter最新版本<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-03-667ab0e97e.png" loading="lazy"></p>
+<pre><code class="prism language-java">  <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>添加 druid 的 starter<span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>com<span class="token punctuation">.</span>alibaba<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>druid<span class="token operator">-</span>spring<span class="token operator">-</span>boot<span class="token operator">-</span>starter<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">1.2</span><span class="token number">.8</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2__Druid_305"></a>2 Druid相关配置属性</h3>
+<p>Druid Spring Boot Starter 已经将 Druid 数据源中的所有模块都进行默认配置&#xff0c;我们也可以通过 Spring Boot 配置文件&#xff08;<code>application.properties/ym</code>l&#xff09;来修改 Druid 各个模块的配置&#xff0c;否则将使用默认配置。在 Spring Boot 配置文件中配置以下内容&#xff1a;</p>
+<ul><li>JDBC 通用配置</li><li>Druid 数据源连接池配置</li><li>Druid 监控配置</li><li>Druid 内置 Filter 配置</li></ul>
+<p>以上自动配置内容都由starter整合好了&#xff0c;所以不需要我们再去写自动配置类</p>
+<h4><a rel="noopener noreferrer" id="1_JDBC__313"></a>1 JDBC 通用配置</h4>
+<p>我们可以在 Spring Boot 的配置文件中对 JDBC 进行通用配置&#xff0c;例如&#xff0c;数据库用户名、数据库密码、数据库 URL 以及 数据库驱动等等&#xff0c;示例代码如下</p>
+<pre><code class="prism language-yaml"><span class="token comment">#数据源连接信息</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//localhost<span class="token punctuation">:</span>3306/test<span class="token punctuation">?</span>userSSL&#61;true<span class="token important">&amp;useUnicode&#61;true&amp;characterEncoding&#61;UTF-8&amp;serverTimezone&#61;UTC</span>
+    <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.cj.jdbc.Driver
+</code></pre>
+<p>我们再次请求测试&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>junit<span class="token punctuation">.</span>jupiter<span class="token punctuation">.</span>api<span class="token punctuation">.</span></span><span class="token class-name">Test</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>test<span class="token punctuation">.</span>context<span class="token punctuation">.</span></span><span class="token class-name">SpringBootTest</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>jdbc<span class="token punctuation">.</span>core<span class="token punctuation">.</span></span><span class="token class-name">JdbcTemplate</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Resource</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>sql<span class="token punctuation">.</span></span><span class="token class-name">DataSource</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>sql<span class="token punctuation">.</span></span><span class="token class-name">SQLException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;SpringBootTest</span>
+<span class="token keyword">class</span> <span class="token class-name">SpringbootApplicationTests</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//数据源组件</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">DataSource</span> dataSource<span class="token punctuation">;</span>
+    <span class="token comment">//用于访问数据库的组件</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">JdbcTemplate</span> jdbcTemplate<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;Test</span>
+    <span class="token keyword">void</span> <span class="token function">contextLoads</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">SQLException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;默认数据源为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> dataSource<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;数据库连接实例&#xff1a;&#34;</span> <span class="token operator">&#43;</span> dataSource<span class="token punctuation">.</span><span class="token function">getConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//访问数据库</span>
+        <span class="token class-name">Integer</span> i <span class="token operator">&#61;</span> jdbcTemplate<span class="token punctuation">.</span><span class="token function">queryForObject</span><span class="token punctuation">(</span><span class="token string">&#34;SELECT count(*) from &#96;person&#96;&#34;</span><span class="token punctuation">,</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;user 表中共有&#34;</span> <span class="token operator">&#43;</span> i <span class="token operator">&#43;</span> <span class="token string">&#34;条数据。&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>因为当容器中没有 DataSource&#xff08;数据源类&#xff09;时&#xff0c;Spring Boot 才会使用 HikariCP 作为其默认数据源。 也就是说&#xff0c;若我们向容器中添加 Druid 数据源类&#xff08;DruidDataSource&#xff0c;继承自 DataSource&#xff09;的对象时&#xff0c;Spring Boot 就会使用 Druid 作为其数据源&#xff0c;而不再使用 HikariCP&#xff0c;所以打印结果如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-04-901252185b.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="2_Druid__362"></a>2 Druid 数据源连接池配置</h4>
+<p>我们还可以在 Spring Boot 的配置文件中对 Druid 数据源连接池进行配置&#xff0c;示例代码如下</p>
+<pre><code class="prism language-yaml"> <span class="token comment">################################################## Druid连接池的配置 ##########################################</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">druid</span><span class="token punctuation">:</span>
+      <span class="token key atrule">initial-size</span><span class="token punctuation">:</span> <span class="token number">5</span>                                                                 <span class="token comment">#初始化连接大小</span>
+      <span class="token key atrule">min-idle</span><span class="token punctuation">:</span> <span class="token number">5</span>                                                                     <span class="token comment">#最小连接池数量</span>
+      <span class="token key atrule">max-active</span><span class="token punctuation">:</span> <span class="token number">20</span>                                                                  <span class="token comment">#最大连接池数量</span>
+      <span class="token key atrule">max-wait</span><span class="token punctuation">:</span> <span class="token number">60000</span>                                                                 <span class="token comment">#获取连接时最大等待时间&#xff0c;单位毫秒</span>
+      <span class="token key atrule">time-between-eviction-runs-millis</span><span class="token punctuation">:</span> <span class="token number">60000</span>                                        <span class="token comment">#配置间隔多久才进行一次检测&#xff0c;检测需要关闭的空闲连接&#xff0c;单位是毫秒</span>
+      <span class="token key atrule">min-evictable-idle-time-millis</span><span class="token punctuation">:</span> <span class="token number">300000</span>                                          <span class="token comment">#配置一个连接在池中最小生存的时间&#xff0c;单位是毫秒</span>
+      <span class="token key atrule">validation-query</span><span class="token punctuation">:</span> SELECT 1 FROM DUAL                                            <span class="token comment">#测试连接</span>
+      <span class="token key atrule">test-while-idle</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                           <span class="token comment">#申请连接的时候检测&#xff0c;建议配置为true&#xff0c;不影响性能&#xff0c;并且保证安全性</span>
+      <span class="token key atrule">test-on-borrow</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                           <span class="token comment">#获取连接时执行检测&#xff0c;建议关闭&#xff0c;影响性能</span>
+      <span class="token key atrule">test-on-return</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                           <span class="token comment">#归还连接时执行检测&#xff0c;建议关闭&#xff0c;影响性能</span>
+      <span class="token key atrule">pool-prepared-statements</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                 <span class="token comment">#是否开启PSCache&#xff0c;PSCache对支持游标的数据库性能提升巨大&#xff0c;oracle建议开启&#xff0c;mysql下建议关闭</span>
+      <span class="token key atrule">max-pool-prepared-statement-per-connection-size</span><span class="token punctuation">:</span> <span class="token number">20</span>                             <span class="token comment">#开启poolPreparedStatements后生效</span>
+      <span class="token key atrule">filters</span><span class="token punctuation">:</span> stat<span class="token punctuation">,</span>wall                                                              <span class="token comment">#配置扩展插件&#xff0c;常用的插件有&#61;&gt;stat:监控统计  wall:防御sql注入</span>
+      <span class="token key atrule">connection-properties</span><span class="token punctuation">:</span> <span class="token string">&#39;druid.stat.mergeSql&#61;true;druid.stat.slowSqlMillis&#61;5000&#39;</span> <span class="token comment">#通过connectProperties属性来打开mergeSql功能;慢SQL记录</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3_Druid__385"></a>3 Druid 监控配置</h4>
+<p>我们还可以在 Spring Boot 的配置文件中对 Druid 内置监控页面、Web-JDBC 关联监控和 Spring 监控等功能进行配置&#xff0c;示例代码如下</p>
+<pre><code class="prism language-yaml"><span class="token comment">###################################################### Druid 监控配置信息  ##########################################</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">druid</span><span class="token punctuation">:</span>
+      <span class="token comment"># StatViewServlet配置&#xff0c;说明请参考Druid Wiki&#xff0c;配置_StatViewServlet配置</span>
+      <span class="token key atrule">stat-view-servlet</span><span class="token punctuation">:</span>
+        <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                                 <span class="token comment">#是否开启内置监控页面&#xff0c;默认值为 false</span>
+        <span class="token key atrule">url-pattern</span><span class="token punctuation">:</span> <span class="token string">&#39;/druid/*&#39;</span>                                                       <span class="token comment">#StatViewServlet 的映射路径&#xff0c;即内置监控页面的访问地址</span>
+        <span class="token key atrule">reset-enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                            <span class="token comment">#是否启用重置按钮</span>
+        <span class="token key atrule">login-username</span><span class="token punctuation">:</span> admin                                                         <span class="token comment">#内置监控页面的登录页用户名 username</span>
+        <span class="token key atrule">login-password</span><span class="token punctuation">:</span> admin                                                         <span class="token comment">#内置监控页面的登录页密码 password</span>
+      <span class="token comment"># WebStatFilter配置&#xff0c;说明请参考Druid Wiki&#xff0c;配置_配置WebStatFilter</span>
+      <span class="token key atrule">web-stat-filter</span><span class="token punctuation">:</span>
+        <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                                 <span class="token comment">#是否开启内置监控中的 Web-jdbc 关联监控的数据</span>
+        <span class="token key atrule">url-pattern</span><span class="token punctuation">:</span> <span class="token string">&#39;/*&#39;</span>                                                             <span class="token comment">#匹配路径</span>
+        <span class="token key atrule">exclusions</span><span class="token punctuation">:</span> <span class="token string">&#39;*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*&#39;</span>                     <span class="token comment">#排除路径</span>
+        <span class="token key atrule">session-stat-enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                     <span class="token comment">#是否监控session</span>
+      <span class="token comment"># Spring监控配置&#xff0c;说明请参考Druid Github Wiki&#xff0c;配置_Druid和Spring关联监控配置</span>
+      <span class="token key atrule">aop-patterns</span><span class="token punctuation">:</span> com.example.*                                               <span class="token comment">#Spring监控AOP切入点&#xff0c;如x.y.z.abc.*,配置多个英文逗号分隔</span>
+</code></pre>
+<p>配置完内置监控后我们访问<code>http://localhost:8080/druid</code>&#xff0c;输入配置的用户名和密码&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-05-116c1b4265.png" loading="lazy"><br /> 即可进入到监控页面&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-06-7f04fcada3.png" loading="lazy"><br /> 当然这里我们开启了SQL监控&#xff0c;所以添加一个Controller进行一下测试&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>jdbc<span class="token punctuation">.</span>core<span class="token punctuation">.</span></span><span class="token class-name">JdbcTemplate</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>stereotype<span class="token punctuation">.</span></span><span class="token class-name">Controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">GetMapping</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">ResponseBody</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Resource</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Controller</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">IndexController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//自动装配 jdbcTemplate</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">JdbcTemplate</span> jdbcTemplate<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 访问&#34;/testSql&#34;,访问数据库
+     * &#64;return
+     */</span>
+    <span class="token annotation punctuation">&#64;ResponseBody</span>
+    <span class="token annotation punctuation">&#64;GetMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/getPersonCount&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">testSql</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">String</span> SQL <span class="token operator">&#61;</span> <span class="token string">&#34;SELECT count(*) from &#96;person&#96;&#34;</span><span class="token punctuation">;</span>
+        <span class="token class-name">Integer</span> integer <span class="token operator">&#61;</span> jdbcTemplate<span class="token punctuation">.</span><span class="token function">queryForObject</span><span class="token punctuation">(</span>SQL<span class="token punctuation">,</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> integer<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>请求一下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-07-0fe335b4f4.png" loading="lazy"><br /> 然后观察下监控的变化&#xff0c;发现SQL语句被监控到了<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-08-cf5f0c367f.png" loading="lazy"><br /> 同时URI地址监控也监控到了请求信息&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-09-7364dc3ca3.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="4_Druid__Filter__450"></a>4 Druid 内置 Filter 配置</h4>
+<p>Druid Spring Boot Starter 对以下 Druid 内置 Filter&#xff0c;都提供了默认配置&#xff1a;<code>StatFilter&#xff0c;WallFilter&#xff0c;ConfigFilter&#xff0c;EncodingConvertFilter&#xff0c;Slf4jLogFilter&#xff0c;Log4jFilter&#xff0c;Log4j2Filter&#xff0c;CommonsLogFilter</code>&#xff1a;</p>
+<ul><li>可以通过 <code>spring.datasource.druid.filters&#61;stat,wall ...</code> 的方式来启用相应的内置 Filter</li><li>如果默认配置不能满足我们的需求&#xff0c;我们还可以在配置文件使用 <code>spring.datasource.druid.filter.*</code> 对这些 Filter 进行配置</li></ul>
+<p>示例代码如下</p>
+<pre><code class="prism language-yaml"><span class="token comment">#  ####################################################### Druid 监控配置信息  ##########################################</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">druid</span><span class="token punctuation">:</span>
+     <span class="token comment"># 对配置已开启的 filters 即 stat(sql 监控)  wall&#xff08;防火墙&#xff09;</span>
+      <span class="token key atrule">filter</span><span class="token punctuation">:</span>
+        <span class="token comment">#配置StatFilter (SQL监控配置)</span>
+        <span class="token key atrule">stat</span><span class="token punctuation">:</span>
+          <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                               <span class="token comment">#开启 SQL 监控</span>
+          <span class="token key atrule">slow-sql-millis</span><span class="token punctuation">:</span> <span class="token number">1000</span>                                                       <span class="token comment">#慢查询</span>
+          <span class="token key atrule">log-slow-sql</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                          <span class="token comment">#记录慢查询 SQL</span>
+        <span class="token comment">#配置WallFilter (防火墙配置)</span>
+        <span class="token key atrule">wall</span><span class="token punctuation">:</span>
+          <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                               <span class="token comment">#开启防火墙</span>
+          <span class="token key atrule">config</span><span class="token punctuation">:</span>
+            <span class="token key atrule">update-allow</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                        <span class="token comment">#允许更新操作</span>
+            <span class="token key atrule">drop-table-allow</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                   <span class="token comment">#禁止删表操作</span>
+            <span class="token key atrule">insert-allow</span><span class="token punctuation">:</span>  <span class="token boolean important">true</span>                                                       <span class="token comment">#允许插入操作</span>
+            <span class="token key atrule">delete-allow</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                        <span class="token comment">#删除数据操作</span>
+</code></pre>
+<p>在配置 Druid 内置 Filter 时&#xff0c;需要先将对应 Filter 的 enabled 设置为 true&#xff0c;否则内置 Filter 的配置不会生效</p>
+<h2><a rel="noopener noreferrer" id="SpringBootMyBatis_480"></a>SpringBoot整合MyBatis</h2>
+<p>我们之前在SSM框架整合中了解过如何通过Spring整合MyBatis&#xff0c;那么SpringBoot既然要简化&#xff0c;也需要整合MyBatis&#xff0c;MyBatis 也开发了一套基于 Spring Boot 模式的 starter&#xff1a;<code>mybatis-spring-boot-starter</code></p>
+<h3><a rel="noopener noreferrer" id="1_mybatisspringbootstarter_482"></a>1 引入mybatis-spring-boot-starter场景启动器</h3>
+<p>Spring Boot 整合 MyBatis 的第一步&#xff0c;就是在项目的 pom.xml 中引入 <code>mybatis-spring-boot-starter</code> 的依赖<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-10-d56033e6ab.png" loading="lazy"><br /> 使用当前最新版本&#xff1a;</p>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--引入 mybatis-spring-boot-starter 的依赖--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.mybatis.spring.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>mybatis-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.2.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2__MyBatis_496"></a>2 配置 MyBatis</h3>
+<p>在 Spring Boot 的配置文件&#xff08;application.properties/yml&#xff09;中对 MyBatis 进行配置&#xff0c;例如指定 mapper.xml 的位置、实体类的位置、是否开启驼峰命名法等等</p>
+<pre><code class="prism language-yaml"><span class="token comment">###################################### MyBatis 配置######################################</span>
+<span class="token key atrule">mybatis</span><span class="token punctuation">:</span>
+  <span class="token comment"># 指定 mapper.xml 的位置</span>
+  <span class="token key atrule">mapper-locations</span><span class="token punctuation">:</span> classpath<span class="token punctuation">:</span>mapper/<span class="token important">*.xml</span>
+  <span class="token comment">#扫描实体类的位置,在此处指明扫描实体类的包&#xff0c;在 mapper.xml 中就可以不写实体类的全路径名</span>
+  <span class="token key atrule">type-aliases-package</span><span class="token punctuation">:</span> com.example.model
+  <span class="token key atrule">configuration</span><span class="token punctuation">:</span>
+    <span class="token comment">#默认开启驼峰命名法&#xff0c;可以不用设置该属性</span>
+    <span class="token key atrule">map-underscore-to-camel-case</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+</code></pre>
+<p>使用 MyBatis 时&#xff0c;必须配置数据源信息&#xff0c;例如数据库 URL、数据库用户型、数据库密码和数据库驱动等&#xff0c;也就是我们前面的数据库驱动相关配置&#xff1a;</p>
+<pre><code class="prism language-yaml"><span class="token comment">#数据源连接信息</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//localhost<span class="token punctuation">:</span>3306/test<span class="token punctuation">?</span>userSSL&#61;true<span class="token important">&amp;useUnicode&#61;true&amp;characterEncoding&#61;UTF-8&amp;serverTimezone&#61;UTC</span>
+    <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.cj.jdbc.Driver
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__521"></a>3 创建实体类</h3>
+<p>我们在model包下创建Person这个实体类用来映射数据表&#xff0c;也就是创建PO<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-11-4d0c5ceeac.png" loading="lazy"><br /> 代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>model</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">AllArgsConstructor</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Data</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">NoArgsConstructor</span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * person表对应对象
+ * */</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token annotation punctuation">&#64;AllArgsConstructor</span>
+<span class="token annotation punctuation">&#64;NoArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Person</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> id<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> username<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> password<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> age<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> phone<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> email<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> hobby<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4_PersonDao_549"></a>4 PersonDao接口创建</h3>
+<p>在dao包下创建一个PersonDao接口&#xff0c;用来写接口方法&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>dao</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>model<span class="token punctuation">.</span></span><span class="token class-name">Person</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>ibatis<span class="token punctuation">.</span>annotations<span class="token punctuation">.</span></span><span class="token class-name">Mapper</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>stereotype<span class="token punctuation">.</span></span><span class="token class-name">Repository</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">List</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Mapper</span>
+<span class="token annotation punctuation">&#64;Repository</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">PersonDao</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> <span class="token function">getPersonList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="5_personMapperxml_567"></a>5 personMapper.xml映射文件编写</h3>
+<p>在资源路径下的mapper文件夹添加personMapper.xml映射文件</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34; ?&gt;</span>
+<span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">mapper</span>
+        <span class="token name">PUBLIC</span> <span class="token string">&#34;-//mybatis.org//DTD Mapper 3.0//EN&#34;</span>
+        <span class="token string">&#34;http://mybatis.org/dtd/mybatis-3-mapper.dtd&#34;</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!--namespace&#61;绑定一个指定的Dao/Mapper接口--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mapper</span> <span class="token attr-name">namespace</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.example.springboot.dao.PersonDao<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>select</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>getPersonList<span class="token punctuation">&#34;</span></span> <span class="token attr-name">resultType</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.example.springboot.model.Person<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        select * from person
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>select</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>mapper</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="6__583"></a>6 测试访问数据库</h3>
+<p>我们写个单元测试访问下数据库&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>dao<span class="token punctuation">.</span></span><span class="token class-name">PersonDao</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>model<span class="token punctuation">.</span></span><span class="token class-name">Person</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>junit<span class="token punctuation">.</span>jupiter<span class="token punctuation">.</span>api<span class="token punctuation">.</span></span><span class="token class-name">Test</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>test<span class="token punctuation">.</span>context<span class="token punctuation">.</span></span><span class="token class-name">SpringBootTest</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Resource</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>sql<span class="token punctuation">.</span></span><span class="token class-name">DataSource</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>sql<span class="token punctuation">.</span></span><span class="token class-name">SQLException</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">List</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;SpringBootTest</span>
+<span class="token keyword">class</span> <span class="token class-name">SpringbootApplicationTests</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//数据源组件</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">DataSource</span> dataSource<span class="token punctuation">;</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">PersonDao</span> personDao<span class="token punctuation">;</span>
+
+
+    <span class="token annotation punctuation">&#64;Test</span>
+    <span class="token keyword">void</span> <span class="token function">testMyBatis</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">SQLException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;默认数据源为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> dataSource<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;数据库连接实例&#xff1a;&#34;</span> <span class="token operator">&#43;</span> dataSource<span class="token punctuation">.</span><span class="token function">getConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//访问数据库</span>
+        <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> personList<span class="token operator">&#61;</span>personDao<span class="token punctuation">.</span><span class="token function">getPersonList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>personList<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>打印结果如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-12-c07a1c0ed2.png" loading="lazy"></p>
+<p>还记得我们在之前的SSM整合中还有两个重要配置&#xff0c;这里没有出现&#xff0c;一个是MyBatis的核心配置文件<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-13-7a24e10807.png" loading="lazy"><br /> 另外一个是Spring整合MyBatis的配置文件<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-14-9df410e2a9.png" loading="lazy"></p>
+<p>其实可以看的出&#xff0c;SpringBoot做了一个大一统&#xff0c;数据源连接池选什么&#xff1f;数据库驱动信息选哪些&#xff1f;都是可以选配的&#xff0c;而在yml配置文件中由于有了自动配置&#xff0c;配置和容器注入也进行了分离&#xff0c;使我们的配置视角更加单纯&#xff0c;只关注配置信息&#xff0c;别的starter都帮我们做好了&#xff0c;简单看下代码&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653015-15-1098408b39.png" loading="lazy"><br /> MyBatis-Spring-Boot-Starter 将会完成以下功能:</p>
+<ol><li>自动发现存在的DataSource</li><li>利用SqlSessionFactoryBean创建并注册SqlSessionFactory</li><li>创建并注册SqlSessionTemplate</li><li>自动扫描Mappers&#xff0c;并注册到Spring上下文环境方便程序的注入使用</li></ol>
+<p>默认情况下&#xff0c;MyBatis-Spring-Boot-Starter会查找以&#64;Mapper注解标记的映射器&#xff0c;所以这也就解释了为什么我们不需要那些额外的配置了&#xff0c;场景启动器都帮我们做好了。</p>
+<h2><a rel="noopener noreferrer" id="yml_639"></a>整体yml文件配置清单</h2>
+<p>我们一步步从JDBC到连接池Druid到MyBatis整合到了SpringBoot中&#xff0c;返回来看看我们全部的yml配置内容吧&#xff1a;</p>
+<pre><code class="prism language-yaml"><span class="token comment">#数据源连接信息</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//localhost<span class="token punctuation">:</span>3306/test<span class="token punctuation">?</span>userSSL&#61;true<span class="token important">&amp;useUnicode&#61;true&amp;characterEncoding&#61;UTF-8&amp;serverTimezone&#61;UTC</span>
+    <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.cj.jdbc.Driver
+    <span class="token comment">################################################## Druid连接池的配置 ##########################################</span>
+    <span class="token key atrule">druid</span><span class="token punctuation">:</span>
+      <span class="token key atrule">initial-size</span><span class="token punctuation">:</span> <span class="token number">5</span>                                                                 <span class="token comment">#初始化连接大小</span>
+      <span class="token key atrule">min-idle</span><span class="token punctuation">:</span> <span class="token number">5</span>                                                                     <span class="token comment">#最小连接池数量</span>
+      <span class="token key atrule">max-active</span><span class="token punctuation">:</span> <span class="token number">20</span>                                                                  <span class="token comment">#最大连接池数量</span>
+      <span class="token key atrule">max-wait</span><span class="token punctuation">:</span> <span class="token number">60000</span>                                                                 <span class="token comment">#获取连接时最大等待时间&#xff0c;单位毫秒</span>
+      <span class="token key atrule">time-between-eviction-runs-millis</span><span class="token punctuation">:</span> <span class="token number">60000</span>                                        <span class="token comment">#配置间隔多久才进行一次检测&#xff0c;检测需要关闭的空闲连接&#xff0c;单位是毫秒</span>
+      <span class="token key atrule">min-evictable-idle-time-millis</span><span class="token punctuation">:</span> <span class="token number">300000</span>                                          <span class="token comment">#配置一个连接在池中最小生存的时间&#xff0c;单位是毫秒</span>
+      <span class="token key atrule">validation-query</span><span class="token punctuation">:</span> SELECT 1 FROM DUAL                                            <span class="token comment">#测试连接</span>
+      <span class="token key atrule">test-while-idle</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                           <span class="token comment">#申请连接的时候检测&#xff0c;建议配置为true&#xff0c;不影响性能&#xff0c;并且保证安全性</span>
+      <span class="token key atrule">test-on-borrow</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                           <span class="token comment">#获取连接时执行检测&#xff0c;建议关闭&#xff0c;影响性能</span>
+      <span class="token key atrule">test-on-return</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                           <span class="token comment">#归还连接时执行检测&#xff0c;建议关闭&#xff0c;影响性能</span>
+      <span class="token key atrule">pool-prepared-statements</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                 <span class="token comment">#是否开启PSCache&#xff0c;PSCache对支持游标的数据库性能提升巨大&#xff0c;oracle建议开启&#xff0c;mysql下建议关闭</span>
+      <span class="token key atrule">max-pool-prepared-statement-per-connection-size</span><span class="token punctuation">:</span> <span class="token number">20</span>                             <span class="token comment">#开启poolPreparedStatements后生效</span>
+      <span class="token key atrule">filters</span><span class="token punctuation">:</span> stat<span class="token punctuation">,</span>wall                                                              <span class="token comment">#配置扩展插件&#xff0c;常用的插件有&#61;&gt;stat:监控统计  wall:防御sql注入</span>
+      <span class="token key atrule">connection-properties</span><span class="token punctuation">:</span> <span class="token string">&#39;druid.stat.mergeSql&#61;true;druid.stat.slowSqlMillis&#61;5000&#39;</span> <span class="token comment">#通过connectProperties属性来打开mergeSql功能;慢SQL记录</span>
+  <span class="token comment">###################################################### Druid 监控配置信息  ##########################################</span>
+      <span class="token comment"># StatViewServlet配置&#xff0c;说明请参考Druid Wiki&#xff0c;配置_StatViewServlet配置</span>
+      <span class="token key atrule">stat-view-servlet</span><span class="token punctuation">:</span>
+        <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                                 <span class="token comment">#是否开启内置监控页面&#xff0c;默认值为 false</span>
+        <span class="token key atrule">url-pattern</span><span class="token punctuation">:</span> <span class="token string">&#39;/druid/*&#39;</span>                                                       <span class="token comment">#StatViewServlet 的映射路径&#xff0c;即内置监控页面的访问地址</span>
+        <span class="token key atrule">reset-enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                            <span class="token comment">#是否启用重置按钮</span>
+        <span class="token key atrule">login-username</span><span class="token punctuation">:</span> admin                                                         <span class="token comment">#内置监控页面的登录页用户名 username</span>
+        <span class="token key atrule">login-password</span><span class="token punctuation">:</span> admin                                                         <span class="token comment">#内置监控页面的登录页密码 password</span>
+      <span class="token comment"># WebStatFilter配置&#xff0c;说明请参考Druid Wiki&#xff0c;配置_配置WebStatFilter</span>
+      <span class="token key atrule">web-stat-filter</span><span class="token punctuation">:</span>
+        <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                                 <span class="token comment">#是否开启内置监控中的 Web-jdbc 关联监控的数据</span>
+        <span class="token key atrule">url-pattern</span><span class="token punctuation">:</span> <span class="token string">&#39;/*&#39;</span>                                                             <span class="token comment">#匹配路径</span>
+        <span class="token key atrule">exclusions</span><span class="token punctuation">:</span> <span class="token string">&#39;*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*&#39;</span>                     <span class="token comment">#排除路径</span>
+        <span class="token key atrule">session-stat-enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                     <span class="token comment">#是否监控session</span>
+      <span class="token comment"># Spring监控配置&#xff0c;说明请参考Druid Github Wiki&#xff0c;配置_Druid和Spring关联监控配置</span>
+      <span class="token key atrule">aop-patterns</span><span class="token punctuation">:</span> net.biancheng.www.*                                               <span class="token comment">#Spring监控AOP切入点&#xff0c;如x.y.z.abc.*,配置多个英文逗号分隔</span>
+<span class="token comment">######################################################## Druid 监控配置信息  ##########################################</span>
+      <span class="token comment"># 对配置已开启的 filters 即 stat(sql 监控)  wall&#xff08;防火墙&#xff09;</span>
+      <span class="token key atrule">filter</span><span class="token punctuation">:</span>
+        <span class="token comment">#配置StatFilter (SQL监控配置)</span>
+        <span class="token key atrule">stat</span><span class="token punctuation">:</span>
+          <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                               <span class="token comment">#开启 SQL 监控</span>
+          <span class="token key atrule">slow-sql-millis</span><span class="token punctuation">:</span> <span class="token number">1000</span>                                                       <span class="token comment">#慢查询</span>
+          <span class="token key atrule">log-slow-sql</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                          <span class="token comment">#记录慢查询 SQL</span>
+        <span class="token comment">#配置WallFilter (防火墙配置)</span>
+        <span class="token key atrule">wall</span><span class="token punctuation">:</span>
+          <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                               <span class="token comment">#开启防火墙</span>
+          <span class="token key atrule">config</span><span class="token punctuation">:</span>
+            <span class="token key atrule">update-allow</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                        <span class="token comment">#允许更新操作</span>
+            <span class="token key atrule">drop-table-allow</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>                                                   <span class="token comment">#禁止删表操作</span>
+            <span class="token key atrule">insert-allow</span><span class="token punctuation">:</span>  <span class="token boolean important">true</span>                                                       <span class="token comment">#允许插入操作</span>
+            <span class="token key atrule">delete-allow</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>                                                        <span class="token comment">#删除数据操作</span>
+<span class="token comment">###################################### MyBatis 配置######################################</span>
+<span class="token key atrule">mybatis</span><span class="token punctuation">:</span>
+  <span class="token comment"># 指定 mapper.xml 的位置</span>
+  <span class="token key atrule">mapper-locations</span><span class="token punctuation">:</span> classpath<span class="token punctuation">:</span>mapper/<span class="token important">*.xml</span>
+  <span class="token comment">#扫描实体类的位置,在此处指明扫描实体类的包&#xff0c;在 mapper.xml 中就可以不写实体类的全路径名</span>
+  <span class="token key atrule">type-aliases-package</span><span class="token punctuation">:</span> com.example.springboot.model
+  <span class="token key atrule">configuration</span><span class="token punctuation">:</span>
+    <span class="token comment">#默认开启驼峰命名法&#xff0c;可以不用设置该属性</span>
+    <span class="token key atrule">map-underscore-to-camel-case</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_709"></a>总结一下</h2>
+<p>其实本篇Blog涉及了三个数据相关的整合&#xff1a;JDBC&#43;Druid&#43;MyBatis&#xff0c;那么这三个有什么区别呢&#xff1f;我们平时是如何组合使用呢&#xff1f;</p>
+<ul><li><strong>JDBC</strong>&#xff1a;其实是一套标准和规范&#xff0c;最原始的数据库操作方式&#xff0c;负责&#xff1a;<strong>加载数据库驱动&#xff0c;创建连接&#xff0c;写原生语句&#xff0c;执行&#xff0c;关闭连接</strong></li><li><strong>Druid</strong>&#xff1a;光有JDBC太简单了&#xff0c;我们需要连接池来解决高并发场景下的性能问题&#xff0c;这个时候就需要一些数据源工具&#xff0c;例如Druid&#xff0c;它是对JDBC的一些简单封装&#xff0c;最主要的就是连接池的加入&#xff0c;Druid可以创建很多的数据库连接放到连接池里供MyBatis使用</li><li><strong>MyBatis</strong>&#xff1a;MyBatis是对JDBC的封装&#xff0c;一个半自动的ORM框架&#xff0c;和JDBC的对比我在之前的Blog详细提到过&#xff0c;说白了就是一个方便我们使用的框架&#xff0c;MyBatis在让JDBC更好用的基础上还可以灵活驱动Druid提供的连接去进行操作。</li></ul>
+<p>那么这三者是如何配合工作的呢&#xff1f;</p>
+<ol><li>项目启动时Druid就已经使用JDBC创建好一堆连接留待后用</li><li>当请求到mapper&#xff08;Dao&#xff09;时&#xff0c;MyBatis框架创建临时类&#xff0c;并且将动态sql进行替换重写变成原始的native sql</li><li>MyBatis从Druid拿到一个连接&#xff0c;将sql通过连接交给数据库执行&#xff0c;获取执行结果&#xff0c;最终将结果进行映射并返回数据</li></ol>
+<p>也就是MyBatis替我们选好了数据源&#xff08;Druid&#xff09;&#xff0c;并且实际上最终调用JDBC原生方法执行数据操作。</p>

@@ -1,0 +1,10 @@
+<blockquote>
+ <p><font color="red"> <strong>Redis有哪些数据结构，用过哪些</strong></font></p>
+</blockquote>
+<p>Redis有<strong>字符串类型 ，散列类型，列表类型 ，集合类型，有序集合类型</strong> , 共5种数据结构类型</p>
+<ul>
+ <li><strong>String</strong>，redis对于KV的操作效率很高，可以直接用作<strong>计数器</strong>。例如，统计在线人数等等，另外string类型是二进制存储安全的，所以也可以使用它来存储图片，甚至是视频等。</li>
+ <li><strong>hash</strong>，存放键值对，一般可以用来<strong>存某个对象的基本属性信息</strong>，例如，用户信息，商品信息等，另外，由于hash的大小在小于配置的大小的时候使用的是ziplist结构，比较节约内存，所以针对大量的数据存储可以考虑使用hash来分段存储来达到压缩数据量，节约内存的目的，例如，对于大批量的商品对应的图片地址名称。比如：商品编码固定是10位，可以选取前7位做为hash的key,后三位作为field，图片地址作为value。这样每个hash表都不超过999个，只要把redis.conf中的hash-max-ziplist-entries改为1024，即可。</li>
+ <li><strong>list</strong>，列表类型，可以用于实现消息队列，最新列表，也可以使用它提供的range命令，做分页查询功能。</li>
+ <li><strong>set</strong>，集合，整数的有序列表可以直接使用set。可以用作某些去重功能，例如用户名不能重复等，另外，还可以对集合进行交集，并集操作，来查找某些元</li>
+</ul>

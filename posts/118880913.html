@@ -1,0 +1,689 @@
+<p>在正式学习Servlet之前&#xff0c;我们还是把JSP的全部内容搞定&#xff0c;剩下的EL表达式和JSTL标签其实没什么特别的&#xff0c;还是为了我们一直提到的JSP的目标&#xff1a;<strong>简化Java代码的写法&#xff0c;尽量让页面干净整洁</strong>。</p>
+<h2><a rel="noopener noreferrer" id="EL_2"></a>EL表达式</h2>
+<p>什么是EL表达式呢&#xff1f;官方解释为&#xff1a;表达式语言&#xff08;Expression Language&#xff0c;EL&#xff09;是一种简单的数据访问语言&#xff0c;基本的语法格式为<code>${ 表达式 }</code>&#xff0c;主要用于在页面上生成动态内容&#xff0c;并代替 JSP 脚本元素。其实说通俗点儿&#xff0c;EL表达式就是JSP内置的表达式&#xff1a;作用是来替代JSP的默认语法&#xff1a;<code>&lt;%&#61;%&gt;</code>。</p>
+<h3><a rel="noopener noreferrer" id="_4"></a>基本功能</h3>
+<p>EL表达式的标准格式为&#xff1a;<code>${el表达式}</code>&#xff0c;有以下几个基本功能&#xff0c;其实可以看的出来分别对应了我们前面三篇Blog中对<code>&lt;%&#61;%&gt;</code>的使用&#xff0c;基本语法&#xff0c;内置对象使用和操作Java Bean:</p>
+<ul><li><strong>输出内容&amp;执行计算【基本语法】</strong>&#xff1a;使用EL表达式可以方便地向客户端打印值&#xff0c;并且表达式支持一系列的逻辑运算</li><li><strong>操作隐式对象【内置对象】</strong>&#xff1a;使用一系列的隐含对象&#xff0c;如 pageContext 对象、request 对象和 session对象</li><li><strong>操作JavaBean对象【Java Bean】</strong>&#xff1a;使用${JavaBean.property} 的形式访问作用域中 JavaBean 对象的属性</li></ul>
+<p>接下来我们分别从这三个角度对比下写法。</p>
+<h3><a rel="noopener noreferrer" id="_12"></a>输出内容&amp;执行计算</h3>
+<p>从基本语法的角度来看&#xff0c;EL表达式好像并没有减少太多原有的<code>&lt;%&#61;%&gt;</code>写法的数量&#xff0c;只是通过符号使整个页面变得更简单了&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_14"></a>代码清单对比示例</h4>
+<p>我们来看下输出内容和执行计算的内容&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.ArrayList&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.List&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> <span class="token number">13304</span>
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">18</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">18</span><span class="token operator">:</span><span class="token number">46</span>
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">String</span> name <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span> <span class="token comment">// 定义姓名</span>
+  <span class="token keyword">int</span> age <span class="token operator">&#61;</span> <span class="token number">80</span><span class="token punctuation">;</span> <span class="token comment">// 定义年龄</span>
+  <span class="token class-name">String</span> sex <span class="token operator">&#61;</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">;</span> <span class="token comment">// 定义性别</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;name&#34;</span><span class="token punctuation">,</span> name<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 放入 page 范围内</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;age&#34;</span><span class="token punctuation">,</span> age<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sex&#34;</span><span class="token punctuation">,</span> sex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token class-name">List</span> listNull<span class="token operator">&#61;</span><span class="token keyword">null</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;listNull&#34;</span><span class="token punctuation">,</span> listNull<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token class-name">List</span> list<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;22&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;list&#34;</span><span class="token punctuation">,</span> list<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h3<span class="token punctuation">&gt;</span></span>
+  旧的写法&#xff1a;姓名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>name<span class="token operator">%</span><span class="token operator">&gt;</span>  年龄&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>age<span class="token operator">%</span><span class="token operator">&gt;</span>  性别&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>sex<span class="token operator">%</span><span class="token operator">&gt;</span>&#xff0c;域中listNull的长度是否为<span class="token number">0</span><span class="token operator">:</span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span>listNull<span class="token operator">&#61;&#61;</span><span class="token keyword">null</span><span class="token operator">?</span><span class="token string">&#34;true&#34;</span><span class="token operator">:</span><span class="token string">&#34;false&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token punctuation">,</span> 域中list的长度是否为<span class="token number">0</span><span class="token operator">:</span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span>list<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#61;&#61;</span><span class="token number">0</span><span class="token operator">?</span><span class="token string">&#34;true&#34;</span><span class="token operator">:</span><span class="token string">&#34;false&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+  新的写法&#xff1a;姓名&#xff1a;$<span class="token punctuation">{<!-- --></span>name<span class="token punctuation">}</span>  年龄&#xff1a;$<span class="token punctuation">{<!-- --></span>age<span class="token punctuation">}</span>  性别&#xff1a;$<span class="token punctuation">{<!-- --></span>sex<span class="token punctuation">}</span><span class="token punctuation">,</span> 域中listNull的长度是否为<span class="token number">0</span><span class="token operator">:</span> $<span class="token punctuation">{<!-- --></span>empty listNull <span class="token punctuation">}</span><span class="token punctuation">,</span> 域中list的长度是否为<span class="token number">0</span><span class="token operator">:</span> $<span class="token punctuation">{<!-- --></span>empty list <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h3<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">Person</span> person<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">//将person放入域中</span>
+  request<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;person&#34;</span><span class="token punctuation">,</span> person<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+获取域中person的name值【EL】<span class="token operator">:</span> $<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>name <span class="token punctuation">}</span> <span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+获取域中person的name值【旧】<span class="token operator">:</span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token class-name">Person</span><span class="token punctuation">)</span>request<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;person&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">String</span> a <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span>
+  <span class="token class-name">String</span> b <span class="token operator">&#61;</span> <span class="token string">&#34;帅&#34;</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;a&#34;</span><span class="token punctuation">,</span> a<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;b&#34;</span><span class="token punctuation">,</span> b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+a<span class="token operator">&#43;</span>b字符串相连的结果为【EL】&#xff1a;$<span class="token punctuation">{<!-- --></span>a<span class="token punctuation">}</span>$<span class="token punctuation">{<!-- --></span>b<span class="token punctuation">}</span> <span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+a<span class="token operator">&#43;</span>b字符串相连的结果为【旧】&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>a<span class="token operator">&#43;</span>b<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token keyword">int</span> para1 <span class="token operator">&#61;</span> <span class="token number">15</span><span class="token punctuation">;</span>
+  <span class="token keyword">int</span> para2 <span class="token operator">&#61;</span> <span class="token number">13</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;para1&#34;</span><span class="token punctuation">,</span> para1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;para2&#34;</span><span class="token punctuation">,</span> para2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+para1和para2比较的结果【EL】&#xff1a;$<span class="token punctuation">{<!-- --></span>para1<span class="token operator">&#61;&#61;</span>para2<span class="token punctuation">}</span><span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+para1和para2比较的结果【旧】&#xff1a;$<span class="token punctuation">{<!-- --></span>para1<span class="token operator">&#61;&#61;</span>para2<span class="token punctuation">}</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token keyword">boolean</span> flag <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;flag&#34;</span><span class="token punctuation">,</span> flag<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+para1取反的结果【EL】&#xff1a;$<span class="token punctuation">{<!-- --></span>not flag<span class="token punctuation">}</span><span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+para1取反的结果【旧】&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token operator">!</span>flag<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>返回结果为&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-01-912bbab1b7.png" loading="lazy"></p>
+<p>其实从以上内容可以看的出来&#xff0c;简单的输出上EL并没有什么优势&#xff0c;甚至如果不把变量显式放到域里EL都获取不到&#xff0c;但是一些特殊的逻辑判断和运算&#xff0c;EL是有优势的。</p>
+<h4><a rel="noopener noreferrer" id="EL_95"></a>EL的运算符</h4>
+<p>为了方便JSP中实现计算和逻辑判断功能&#xff0c;EL表达式提供了如下几种运算符&#xff1a;<strong>存取数据运算符&#xff0c;算术运算符&#xff0c;关系运算符&#xff0c;逻辑运算符&#xff0c;条件运算符&#xff0c;empty 运算符</strong>&#xff0c;从以上的例子我们知道&#xff0c;其实这才是基本语法中EL的大杀器&#xff0c;通过定义特定的语法让基本的表达式逻辑写法更简化。</p>
+<h5><a rel="noopener noreferrer" id="_97"></a>存储数据运算符</h5>
+<p>在 EL 表达式中可以使用运算符<code>[]</code>和<code>.</code>来取得对象的属性&#xff0c;如 <code>${person.name}</code> 或者 <code>${person[&#34;name&#34;]}</code> 表示取出对象 person中的 name 属性值&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">Person</span> person<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token constructor-invocation class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">//将person放入域中</span>
+  request<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;person&#34;</span><span class="token punctuation">,</span> person<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+获取域中person的name值【EL】<span class="token punctuation">:</span> $<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>name <span class="token punctuation">}</span> <span class="token operator">&lt;</span>br<span class="token operator">&gt;</span>
+获取域中person的name值【旧】<span class="token punctuation">:</span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token punctuation">(</span><span class="token punctuation">(</span>Person<span class="token punctuation">)</span>request<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;person&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_109"></a>算术运算符</h5>
+<p>算术运算符可以作用于整数和浮点数。EL 表达式中的算术运算符主要有 5 个&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-02-03d33de644.png" loading="lazy"><br />
+注意&#xff1a;EL表达式无法像Java一样将两个字符串用<code>&#43;</code>运算符相连接&#xff0c;如<code>${&#34;a&#34;&#43;&#34;b&#34;}</code>的写法是错误的&#xff0c;但可以使用<code>${&#34;a&#34;}${&#34;b&#34;}</code>的写法来表示&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">String</span> a <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span>
+  <span class="token class-name">String</span> b <span class="token operator">&#61;</span> <span class="token string">&#34;帅&#34;</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;a&#34;</span><span class="token punctuation">,</span> a<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;b&#34;</span><span class="token punctuation">,</span> b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">&gt;</span>
+a<span class="token operator">&#43;</span>b字符串相连的结果为&#xff1a;$<span class="token punctuation">{<!-- --></span>a<span class="token punctuation">}</span>$<span class="token punctuation">{<!-- --></span>b<span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_124"></a>关系运算符</h5>
+<p>关系运算符作用在整数和浮点数上&#xff0c;可以依据字母的顺序比较两个字符串的大小&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-03-4e010eb76e.png" loading="lazy"><br />
+在使用 EL 关系表达式时&#xff0c;不能写成 <code>${param.password1}&#61;&#61;${param.password2}</code>&#xff0c;而应写成 <code>${param.password1&#61;&#61;param.password2}</code>。</p>
+<pre><code class="prism language-csharp"><span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name"><span class="token keyword">int</span></span> para1 <span class="token operator">&#61;</span> <span class="token number">15</span><span class="token punctuation">;</span>
+  <span class="token class-name"><span class="token keyword">int</span></span> para2 <span class="token operator">&#61;</span> <span class="token number">13</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;para1&#34;</span><span class="token punctuation">,</span> para1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;para2&#34;</span><span class="token punctuation">,</span> para2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">&gt;</span>
+para1和para2比较的结果&#xff1a;$<span class="token punctuation">{<!-- --></span>para1<span class="token operator">&#61;&#61;</span>para2<span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_139"></a>逻辑运算符</h5>
+<p>逻辑运算符主要用于连接多个关系运算符&#xff0c;实现并且、或者关系判断&#xff0c;EL 表达式中的逻辑运算符主要包含3个<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-04-b7870b489b.png" loading="lazy"><br />
+代码示例如下&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">boolean</span> flag <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;flag&#34;</span><span class="token punctuation">,</span> flag<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">&gt;</span>
+para1取反的结果【EL】&#xff1a;$<span class="token punctuation">{<!-- --></span><span class="token keyword">not</span> flag<span class="token punctuation">}</span><span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+para1取反的结果【旧】&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token operator">!</span>flag<span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="empty__153"></a>empty 运算符</h5>
+<p>empty 运算符是一个前缀运算符&#xff0c;用于判断对象或变量是否为 null 或空&#xff0c;语法格式为&#xff1a;<code>${empty 变量或对象 }</code>&#xff0c;</p>
+<ul><li>当  <code>${empty A}</code> 指向的A对象为 null 时&#xff0c;表达式 <code>${empty A}</code>返回 true</li><li>当  <code>${empty A}</code> 中A 是空字符串时&#xff0c;表达式 <code>${empty A}</code> 返回 true</li><li>当  <code>${empty A}</code>当 A 是集合或数组时&#xff0c;如果 A 中没有任何元素&#xff0c;则表达式 <code>${empty A}</code>返回 true</li></ul>
+<p>代码示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">String</span> name <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span> <span class="token comment">// 定义姓名</span>
+  <span class="token keyword">int</span> age <span class="token operator">&#61;</span> <span class="token number">80</span><span class="token punctuation">;</span> <span class="token comment">// 定义年龄</span>
+  <span class="token class-name">String</span> sex <span class="token operator">&#61;</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">;</span> <span class="token comment">// 定义性别</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;name&#34;</span><span class="token punctuation">,</span> name<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 放入 page 范围内</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;age&#34;</span><span class="token punctuation">,</span> age<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sex&#34;</span><span class="token punctuation">,</span> sex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token class-name">List</span> listNull<span class="token operator">&#61;</span><span class="token keyword">null</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;listNull&#34;</span><span class="token punctuation">,</span> listNull<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token class-name">List</span> list<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;22&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;list&#34;</span><span class="token punctuation">,</span> list<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h3<span class="token punctuation">&gt;</span></span>
+  旧的写法&#xff1a;姓名&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>name<span class="token operator">%</span><span class="token operator">&gt;</span>  年龄&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>age<span class="token operator">%</span><span class="token operator">&gt;</span>  性别&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>sex<span class="token operator">%</span><span class="token operator">&gt;</span>&#xff0c;域中listNull的长度是否为<span class="token number">0</span><span class="token operator">:</span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span>listNull<span class="token operator">&#61;&#61;</span><span class="token keyword">null</span><span class="token operator">?</span><span class="token string">&#34;true&#34;</span><span class="token operator">:</span><span class="token string">&#34;false&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token punctuation">,</span> 域中list的长度是否为<span class="token number">0</span><span class="token operator">:</span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span>list<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#61;&#61;</span><span class="token number">0</span><span class="token operator">?</span><span class="token string">&#34;true&#34;</span><span class="token operator">:</span><span class="token string">&#34;false&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>br<span class="token operator">&gt;</span>
+  新的写法&#xff1a;姓名&#xff1a;$<span class="token punctuation">{<!-- --></span>name<span class="token punctuation">}</span>  年龄&#xff1a;$<span class="token punctuation">{<!-- --></span>age<span class="token punctuation">}</span>  性别&#xff1a;$<span class="token punctuation">{<!-- --></span>sex<span class="token punctuation">}</span><span class="token punctuation">,</span> 域中listNull的长度是否为<span class="token number">0</span><span class="token operator">:</span> $<span class="token punctuation">{<!-- --></span>empty listNull <span class="token punctuation">}</span><span class="token punctuation">,</span> 域中list的长度是否为<span class="token number">0</span><span class="token operator">:</span> $<span class="token punctuation">{<!-- --></span>empty list <span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_182"></a>条件运算符</h5>
+<p>条件运算符的格式为&#xff1a;<code>A?B:C</code>&#xff0c;它表示根据表达式 A 的结果选择执行 B 或 C&#xff0c;类似于Java中的三目判断运算符&#xff0c;首先将表达式 A 的计算结果转换为布尔型&#xff0c;如果表达式 A 的计算结果为 true&#xff0c;则执行 B 并返回表达式 B 的值&#xff1b;如果计算结果为 false&#xff0c;则执行表达式 C 并返回表达式 C 的值。</p>
+<p>例如&#xff0c;表达式 <code>${1&#61;&#61;2?&#34;true&#34;:&#34;false&#34;}</code> 的运行结果为 false</p>
+<h4><a rel="noopener noreferrer" id="_187"></a>运算符优先级</h4>
+<p>EL 中的运算符有不同的运算优先级&#xff0c;而同一行中的运算符&#xff0c;则按照运算符在表达式中的顺序从左到右依次进行计算。所有运算符的优先级别从高到低如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">[</span> <span class="token punctuation">]</span> <span class="token punctuation">(</span> <span class="token punctuation">)</span>
+not <span class="token operator">!</span> empty
+算术运算符
+关系运算符
+逻辑运算符
+三目运算符
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_199"></a>操作隐式对象</h3>
+<p>为了更方便的读取Cookie、HTTP 请求消息头字段、请求参数以及 Web 应用程序的初始化参数等信息&#xff0c;JSP中定义了如下隐含对象&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-05-6815314e4f.png" loading="lazy"><br />
+需要注意&#xff1a;不要将 EL 表达式中的隐含对象与 JSP 隐含对象混淆&#xff0c;其中只有 pageContext 对象是两者共用的。</p>
+<h4><a rel="noopener noreferrer" id="_203"></a>代码清单对比示例</h4>
+<p>整体的代码清单如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> <span class="token number">13304</span>
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">18</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">22</span><span class="token operator">:</span><span class="token number">41</span>
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>table border<span class="token operator">&#61;</span><span class="token string">&#34;1&#34;</span> align<span class="token operator">&#61;</span><span class="token string">&#34;left&#34;</span><span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span> 对 pageContext 隐含对象的调用【EL】 <span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>pageContext<span class="token punctuation">.</span>request<span class="token punctuation">.</span>requestURL<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>pageContext<span class="token punctuation">.</span>request<span class="token punctuation">.</span>contextPath<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>pageContext<span class="token punctuation">.</span>request<span class="token punctuation">.</span>method<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>table<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>table<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 page 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  request<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 request 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 session 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 application 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>pageScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>requestScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>sessionScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>applicationScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+旧的写法
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>pageContext<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>request<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+</code></pre>
+<p>返回结果为&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-06-820041c13a.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="pageContext_258"></a>pageContext隐含对象</h4>
+<p>我们来看下pageContext的一些使用示例&#xff0c;看看pageContext的一些用法&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>table border<span class="token operator">&#61;</span><span class="token string">&#34;1&#34;</span> align<span class="token operator">&#61;</span><span class="token string">&#34;left&#34;</span><span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span> 对 pageContext 隐含对象的调用 <span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>pageContext<span class="token punctuation">.</span>request<span class="token punctuation">.</span>requestURL<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>pageContext<span class="token punctuation">.</span>request<span class="token punctuation">.</span>contextPath<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>tr<span class="token punctuation">&gt;</span></span><span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>pageContext<span class="token punctuation">.</span>request<span class="token punctuation">.</span>method<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>table<span class="token operator">&gt;</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_270"></a>作用域隐含对象</h4>
+<p>不同的作用域可以放置不同的对象&#xff0c;EL也支持直接用隐含对象获取&#xff0c;我们来看下旧的写法和EL写法的对比&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  pageContext<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 page 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  request<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 request 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 session 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34; 访问放入 application 范围内的 Java&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>pageScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>requestScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>sessionScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> $<span class="token punctuation">{<!-- --></span>applicationScope<span class="token punctuation">.</span>userName <span class="token punctuation">}</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+旧的写法
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>pageContext<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>request<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;userName&#34;</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>这里对比可以看的出来EL表达式写法确实更加简洁。</p>
+<h3><a rel="noopener noreferrer" id="JavaBean_296"></a>操作JavaBean对象</h3>
+<p>之前的Blog我们提到过通过JSP动作标签和脚本代码两种方式来访问JavaBean对象&#xff0c;这次我们用更加简化的方式&#xff0c;使用EL表达式来操作Java Bean对象&#xff0c;这里还使用我们上篇Blog中的Person对象&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> <span class="token number">13304</span>
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">18</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">23</span><span class="token operator">:</span><span class="token number">06</span>
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>导入javabean类<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.*&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span> JSP脚本段<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+JSP脚本段
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+    <span class="token class-name">Person</span> p <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getAge</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getSex</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span> JSP动作标签<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+JSP动作标签
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>id表示被实例化的对象名字&#xff0c;<span class="token keyword">class</span>表示类这是javabea声明标签<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;age&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;sex&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span> EL表达式<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+EL表达式
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;personEl&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+$<span class="token punctuation">{<!-- --></span>personEl<span class="token punctuation">.</span>name<span class="token punctuation">}</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+$<span class="token punctuation">{<!-- --></span>personEl<span class="token punctuation">.</span>age<span class="token punctuation">}</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+$<span class="token punctuation">{<!-- --></span>personEl<span class="token punctuation">.</span>sex<span class="token punctuation">}</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>输出的结果都是相同的&#xff0c;我们可以看的出来脚本段掺杂了换行元素&#xff0c;Jsp动作标识比较冗长&#xff0c;而EL表达式则是最合适的方式&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-07-a08640ff0d.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="JSTL_355"></a>JSTL标签</h2>
+<p>什么是JSTL标签&#xff0c;官方的定义为&#xff1a;JSP 标准标签库&#xff08;JavaServer Pages Standard Tag Library&#xff0c;JSTL&#xff09;&#xff0c;包含用于编写和开发 JSP 页面的一组标准标签&#xff0c;<strong>它可以为用户提供一个无脚本环境&#xff0c;通常和EL表达式配合使用</strong>。</p>
+<p>好的&#xff0c;说白了就是发明出来为了取代<code>&lt;% %&gt;</code>和<code>&lt;%! %&gt;</code>脚本段的&#xff0c;还是那个目标&#xff0c;简化简化再简化&#xff0c;直至JSP页面没有脚本代码。也就是说<strong>EL&#43;JSTL</strong>就可以取代页面的所有脚本逻辑</p>
+<h3><a rel="noopener noreferrer" id="_359"></a>基本功能</h3>
+<p>JSTL 提供 4 个主要的标签库&#xff0c;包括<strong>核心标签库、国际化与格式化标签库</strong>、SQL 标签库和 XML 标签库。但随着时代的发展&#xff0c;现在我们实际上只能用到两个&#xff1a;核心标签库、国际化与格式化标签库。JSP界面默认情况下不能直接使用JSTL标签库&#xff0c;必须在JSP页面的首行中使用<code>&lt;%&#64; taglib %&gt;</code>指令定义标签库的引用位置和访问前缀&#xff0c;以区分Html标签。</p>
+<ul><li><strong>核心标签库</strong>&#xff1a;<code>&lt;%&#64;taglib uri&#61;&#34;http://java.sun.com/jsp/jstl/core&#34; prefix&#61;&#34;c&#34; %&gt;</code></li><li><strong>国际化与格式化标签库</strong>&#xff1a;<code>&lt;%&#64;taglib uri&#61;&#34;http://java.sun.com/jsp/jstl/fmt&#34; prefix&#61;&#34;fmt&#34; %&gt;</code></li><li>SQL标签库&#xff1a;<code>&lt;%&#64;taglib uri&#61;&#34;http://java.sun.com/jsp/jstl/sql&#34; prefix&#61;&#34;sql&#34; %&gt;</code></li><li>XML标签库&#xff1a;<code>&lt;%&#64;taglib uri&#61;”http://java.sun.com/jsp/jstl/xml” prefix&#61;”xml”%&gt;</code></li></ul>
+<p>其中&#xff1a;taglib是导入标签库的指令&#xff1b;prefix代表标签使用时前缀&#xff0c;可以更改主要是和html标签加以区分&#xff1b;uri是标签库的引用地址。</p>
+<p>需要注意&#xff0c;在使用JSTL之前还需要导入Maven的pom.xml配置&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>mvnrepository<span class="token punctuation">.</span>com<span class="token operator">/</span>artifact<span class="token operator">/</span>javax<span class="token punctuation">.</span>servlet<span class="token operator">/</span>jstl <span class="token operator">--</span><span class="token operator">&gt;</span>
+	<span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+	    <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>javax<span class="token punctuation">.</span>servlet<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+	    <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>jstl<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+	    <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">1.2</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+	<span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+	<span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>mvnrepository<span class="token punctuation">.</span>com<span class="token operator">/</span>artifact<span class="token operator">/</span>taglibs<span class="token operator">/</span>standard <span class="token operator">--</span><span class="token operator">&gt;</span>
+	<span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+	    <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>taglibs<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+	    <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>standard<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+	    <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">1.1</span><span class="token number">.2</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+	<span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_385"></a>核心标签库</h3>
+<p>核心标签库中的<strong>通用标签</strong>用于操作 JSP 页面创建的范围变量&#xff0c;<strong>条件标签</strong>用于对 JSP 页面中的代码进行条件判断和处理&#xff0c;而<strong>迭代标签</strong>用于循环遍历一个对象集合。核心标签库的所有标签如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-08-fb088ecbce.png" loading="lazy"><br />
+整体的代码清单如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> <span class="token number">13304</span>
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">18</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">23</span><span class="token operator">:</span><span class="token number">25</span>
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>导入javabean类<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.*&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.ArrayList&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; taglib uri<span class="token operator">&#61;</span><span class="token string">&#34;http://java.sun.com/jsp/jstl/core&#34;</span> prefix<span class="token operator">&#61;</span><span class="token string">&#34;c&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>id表示被实例化的对象名字&#xff0c;<span class="token keyword">class</span>表示类这是javabea声明标签<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;personService&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.PersonService&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+通过cout标签进行输出&#xff1a;
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${person.age}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 使用 c<span class="token operator">:</span>set 标签设置指定域中某个属性对象的属性值 <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set target<span class="token operator">&#61;</span><span class="token string">&#34;${person}&#34;</span> property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;李四&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+输出 session 中 person 对象的 name 属性值 <span class="token operator">:</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${person.name}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;salary&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;session&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${2000*2}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>salary 变量值 <span class="token operator">:</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${salary}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>remove <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;salary&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>
+    删除 salary 变量后的值 <span class="token operator">:</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${salary}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+通过cif标签单条件判断&#xff1a;
+<span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${3&gt;4 }&#34;</span><span class="token operator">&gt;</span>
+    <span class="token number">3</span>大于<span class="token number">4</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${3&lt;&#61;4 }&#34;</span><span class="token operator">&gt;</span>
+    <span class="token number">3</span>不大于<span class="token number">4</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+通过cchoose标签多条件判断&#xff1a;
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;grade&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;2&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;shopPrice&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;3&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;quantity&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;4&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>choose<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>when test<span class="token operator">&#61;</span><span class="token string">&#34;${grade ge 1}&#34;</span><span class="token operator">&gt;</span>
+       <span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;mustPay&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${shopPrice*quantity*0.9}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>when<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>when test<span class="token operator">&#61;</span><span class="token string">&#34;${grade ge 2}&#34;</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;mustPay&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${shopPrice*quantity*0.8}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>when<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>otherwise<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;mustPay&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${shopPrice*quantity}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>otherwise<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>choose<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${mustPay}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+
+通过cforeach进行迭代
+<span class="token operator">&lt;</span>table height<span class="token operator">&#61;</span><span class="token number">300</span> width<span class="token operator">&#61;</span><span class="token number">400</span> align<span class="token operator">&#61;</span>center<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>tr bgcolor<span class="token operator">&#61;</span>green<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>th<span class="token punctuation">&gt;</span></span>编号<span class="token operator">&lt;</span><span class="token operator">/</span>th<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>th<span class="token punctuation">&gt;</span></span>姓名<span class="token operator">&lt;</span><span class="token operator">/</span>th<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>th<span class="token punctuation">&gt;</span></span>年龄<span class="token operator">&lt;</span><span class="token operator">/</span>th<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>forEach items<span class="token operator">&#61;</span><span class="token string">&#34;${personService.allPerson}&#34;</span> <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> varStatus<span class="token operator">&#61;</span><span class="token string">&#34;varIndex&#34;</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${varIndex.count%2&#61;&#61;0 }&#34;</span><span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span>tr bgcolor<span class="token operator">&#61;</span>red<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${varIndex.count%2!&#61;0 }&#34;</span><span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span>tr bgcolor<span class="token operator">&#61;</span>yellow<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+
+        <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>name <span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>age <span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>sex<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>forEach<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>table<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+
+</code></pre>
+<p>返回的结果如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-09-f73137ffa5.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_489"></a>通用标签</h4>
+<p><code>&lt;c:out&gt;</code>计算表达式并将结果存储在当前的 JspWriter 对象中&#xff0c;其语法格式如下&#xff1a;<code>&lt;c:out value&#61;&#34;value&#34; escapeXml&#61;&#34;true|false“ default&#61;&#34;defaultValue&#34;/&gt;</code></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118880913-10-c9bafccbad.png" loading="lazy"><br />
+示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>id表示被实例化的对象名字&#xff0c;<span class="token keyword">class</span>表示类这是javabea声明标签<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+通过cout标签进行输出&#xff1a;
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${person.age}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p><code>&lt;c:set&gt;</code>用于设置页面中的变量或对象属性值&#xff0c;即声明一个变量或对象&#xff0c;其语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;varName&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;value&#34;</span> target<span class="token operator">&#61;</span><span class="token string">&#34;target&#34;</span> property<span class="token operator">&#61;</span><span class="token string">&#34;propertyName&#34;</span>
+    scope<span class="token operator">&#61;</span><span class="token string">&#34;page|request|session|application&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118880913-11-0021d2de8e.png" loading="lazy"><br />
+示例代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 使用 c<span class="token operator">:</span>set 标签设置指定域中某个属性对象的属性值 <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set target<span class="token operator">&#61;</span><span class="token string">&#34;${person}&#34;</span> property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;李四&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+输出 session 中 person 对象的 name 属性值 <span class="token operator">:</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${person.name}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>&lt;c:remove&gt;标签用于删除创建的变量&#xff0c;其语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>remove <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;varName&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;page|request|session|application&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118880913-12-b751cbef2d.png" loading="lazy"><br />
+示例代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;salary&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;session&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${2000*2}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>salary 变量值 <span class="token operator">:</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${salary}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>remove <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;salary&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>
+    删除 salary 变量后的值 <span class="token operator">:</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${salary}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_540"></a>条件标签</h4>
+<p>JSTL 条件标签用于支持 JSP 页面中的各种条件判断。 条件标签分为单条件判断的<code>&lt;if&gt;</code>和多条件判断的<code>&lt;c:choose&gt;</code>&#xff0c;其中单条件的if语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span>“条件表达式&#34; <span class="token operator">&gt;</span>
+	如果test中结果为<span class="token boolean">true</span>&#xff0c;则执行<span class="token keyword">if</span>中代码
+ <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${3&gt;4 }&#34;</span><span class="token operator">&gt;</span>
+    <span class="token number">3</span>大于<span class="token number">4</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${3&lt;&#61;4 }&#34;</span><span class="token operator">&gt;</span>
+    <span class="token number">3</span>不大于<span class="token number">4</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>多选择的条件标签&#xff0c;类似switch&#xff0c;<code>&lt;c:choose&gt;</code>其语法格式为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>choose<span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span>c<span class="token operator">:</span>when test<span class="token operator">&#61;</span>“条件<span class="token number">1</span>&#34;<span class="token operator">&gt;</span>
+    <span class="token class-name">Body</span> <span class="token class-name">Content1</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>when<span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span>c<span class="token operator">:</span>when test<span class="token operator">&#61;</span>“条件<span class="token number">2</span>&#34;<span class="token operator">&gt;</span>
+    <span class="token class-name">Body</span> <span class="token class-name">Content2</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>when<span class="token operator">&gt;</span>
+  <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  <span class="token operator">&lt;</span>c<span class="token operator">:</span>otherwise<span class="token operator">&gt;</span>
+    <span class="token class-name">Body</span> <span class="token class-name">Content</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>otherwise<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>choose<span class="token operator">&gt;</span>
+</code></pre>
+<p>语法示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;grade&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;2&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;shopPrice&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;3&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;quantity&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;4&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>choose<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>when test<span class="token operator">&#61;</span><span class="token string">&#34;${grade ge 1}&#34;</span><span class="token operator">&gt;</span>
+       <span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;mustPay&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${shopPrice*quantity*0.9}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>when<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>when test<span class="token operator">&#61;</span><span class="token string">&#34;${grade ge 2}&#34;</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;mustPay&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${shopPrice*quantity*0.8}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>when<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>otherwise<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;mustPay&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;${shopPrice*quantity}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>otherwise<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>choose<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>out value<span class="token operator">&#61;</span><span class="token string">&#34;${mustPay}&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_595"></a>迭代标签</h4>
+<p><code>&lt;c:forEach&gt;</code> 循环迭代标签用于重复在整个对象集合中嵌套的标签体内容&#xff0c;遍历次数可由用户在代码中指定&#xff0c;类似于Java中的for循环&#xff0c;其语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>forEach <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;varName&#34;</span> items<span class="token operator">&#61;</span><span class="token string">&#34;collection&#34;</span> varStatus<span class="token operator">&#61;</span><span class="token string">&#34;varStatusName&#34;</span>
+begin<span class="token operator">&#61;</span><span class="token string">&#34;begin&#34;</span> end<span class="token operator">&#61;</span><span class="token string">&#34;end&#34;</span><span class="token operator">&gt;</span>
+	<span class="token class-name">Body</span> <span class="token class-name">Content</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>forEach<span class="token operator">&gt;</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118880913-13-0a6bf47fd9.png" loading="lazy"><br />
+<code>&lt;c:forEach&gt;</code> 循环迭代过程中产生的varStatus代表循环状态对象&#xff0c;通过状态对象可以获取循环中的数据信息<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-14-49f1fc2a63.png" loading="lazy"><br />
+代码示例如下&#xff0c;我们先对personService的方法进行调整获取person的集合&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>javabean<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">Serializable</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">ArrayList</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">List</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonService</span> <span class="token keyword">implements</span> <span class="token class-name">Serializable</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 增加 Person</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">Person</span> people<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 通过 id 更新一个 Person</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">update</span><span class="token punctuation">(</span><span class="token class-name">Person</span> <span class="token class-name">Person</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 通过 id 删除一个 Person</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">del</span><span class="token punctuation">(</span><span class="token keyword">int</span> id<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 根据 id 得到一个 Person</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> <span class="token function">getAllPerson</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> list <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token string">&#34;张三&#34;</span><span class="token punctuation">,</span> <span class="token number">23</span><span class="token punctuation">,</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token string">&#34;李四&#34;</span><span class="token punctuation">,</span> <span class="token number">24</span><span class="token punctuation">,</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token string">&#34;王五&#34;</span><span class="token punctuation">,</span> <span class="token number">25</span><span class="token punctuation">,</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token string">&#34;赵六&#34;</span><span class="token punctuation">,</span> <span class="token number">26</span><span class="token punctuation">,</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> list<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 得到所有的 Person</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> <span class="token function">getAll</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>赋值和循环输出代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;personService&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.PersonService&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+
+
+通过cforeach进行迭代
+<span class="token operator">&lt;</span>table height<span class="token operator">&#61;</span><span class="token number">300</span> width<span class="token operator">&#61;</span><span class="token number">400</span> align<span class="token operator">&#61;</span>center<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>tr bgcolor<span class="token operator">&#61;</span>green<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>th<span class="token punctuation">&gt;</span></span>编号<span class="token operator">&lt;</span><span class="token operator">/</span>th<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>th<span class="token punctuation">&gt;</span></span>姓名<span class="token operator">&lt;</span><span class="token operator">/</span>th<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>th<span class="token punctuation">&gt;</span></span>年龄<span class="token operator">&lt;</span><span class="token operator">/</span>th<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>c<span class="token operator">:</span>forEach items<span class="token operator">&#61;</span><span class="token string">&#34;${personService.allPerson}&#34;</span> <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> varStatus<span class="token operator">&#61;</span><span class="token string">&#34;varIndex&#34;</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${varIndex.count%2&#61;&#61;0 }&#34;</span><span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span>tr bgcolor<span class="token operator">&#61;</span>red<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>c<span class="token operator">:</span><span class="token keyword">if</span> test<span class="token operator">&#61;</span><span class="token string">&#34;${varIndex.count%2!&#61;0 }&#34;</span><span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span>tr bgcolor<span class="token operator">&#61;</span>yellow<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span><span class="token keyword">if</span><span class="token operator">&gt;</span>
+
+        <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>name <span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>age <span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>td<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>sex<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>td<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>tr<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>c<span class="token operator">:</span>forEach<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>table<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_674"></a>格式化标签库</h3>
+<p>格式化标签库主要用于处理JSP界面中的日期、小数等数据的格式化显示&#xff0c;在JSP界面中使用格式化标签时&#xff0c;需要引入如下指令导入标签库</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; taglib prefix<span class="token operator">&#61;</span><span class="token string">&#34;fmt&#34;</span> uri<span class="token operator">&#61;</span><span class="token string">&#34;http://java.sun.com/jsp/jstl/fmt&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+
+</code></pre>
+<p>有如下的标签可以使用&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-15-75711e9658.png" loading="lazy"></p>
+<p>整体的代码清单如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.Date&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">19</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">10</span><span class="token operator">:</span><span class="token number">44</span> 上午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; taglib prefix<span class="token operator">&#61;</span><span class="token string">&#34;fmt&#34;</span> uri<span class="token operator">&#61;</span><span class="token string">&#34;http://java.sun.com/jsp/jstl/fmt&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; taglib uri<span class="token operator">&#61;</span><span class="token string">&#34;http://java.sun.com/jsp/jstl/core&#34;</span> prefix<span class="token operator">&#61;</span><span class="token string">&#34;c&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;price&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;2.5&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h3<span class="token punctuation">&gt;</span></span>
+    未格式化之前的结果&#xff1a;$<span class="token punctuation">{<!-- --></span>price <span class="token punctuation">}</span><span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+    以货币的形式格式化的结果&#xff1a;
+    <span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;${price}&#34;</span> type<span class="token operator">&#61;</span><span class="token string">&#34;currency&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+    以百分比的形式格式化的结果&#xff1a;
+    <span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;${price}&#34;</span> maxFractionDigits<span class="token operator">&#61;</span><span class="token string">&#34;1&#34;</span> type<span class="token operator">&#61;</span><span class="token string">&#34;percent&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+    以四舍五入一位的形式格式化的结果&#xff1a;
+    <span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;${price}&#34;</span> maxFractionDigits<span class="token operator">&#61;</span><span class="token string">&#34;1&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h3<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;today&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.Date&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+未格式化前的日期&#xff1a;$<span class="token punctuation">{<!-- --></span>today <span class="token punctuation">}</span><span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span> 以 yyyy<span class="token operator">-</span>MM<span class="token operator">-</span>dd 形式格式化&#xff1a;
+<span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;${today}&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;yyyy-MM-dd&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span> 以 yyyy 年 MM 月 dd 形式格式化&#xff1a;
+<span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;${today}&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;yyyy 年 MM 月 dd 日 &#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span> 以 yyyy 年 MM 月 dd hh<span class="token operator">:</span>mm<span class="token operator">:</span>ss 形式格式化&#xff1a;
+<span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;${today}&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;yyyy 年 MM 月 dd hh:mm:ss&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>返回结果如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/118880913-16-f499447e18.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_734"></a>格式化数字</h4>
+<p>格式化数字可使用 <code>&lt;fmt:formatNumber&gt;</code> 标签&#xff0c;可以指定保留小数位数&#xff0c;语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;num&#34;</span> maxFractionDigits<span class="token operator">&#61;</span><span class="token string">&#34;maxDigits&#34;</span>
+type<span class="token operator">&#61;</span><span class="token string">&#34;number|currency|percent&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118880913-17-5d9ca86532.png" loading="lazy"><br />
+示例代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>c<span class="token operator">:</span>set <span class="token keyword">var</span><span class="token operator">&#61;</span><span class="token string">&#34;price&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;2.5&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h3<span class="token punctuation">&gt;</span></span>
+    未格式化之前的结果&#xff1a;$<span class="token punctuation">{<!-- --></span>price <span class="token punctuation">}</span><span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+    以货币的形式格式化的结果&#xff1a;
+    <span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;${price}&#34;</span> type<span class="token operator">&#61;</span><span class="token string">&#34;currency&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+    以百分比的形式格式化的结果&#xff1a;
+    <span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;${price}&#34;</span> maxFractionDigits<span class="token operator">&#61;</span><span class="token string">&#34;1&#34;</span> type<span class="token operator">&#61;</span><span class="token string">&#34;percent&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+    以四舍五入一位的形式格式化的结果&#xff1a;
+    <span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatNumber value<span class="token operator">&#61;</span><span class="token string">&#34;${price}&#34;</span> maxFractionDigits<span class="token operator">&#61;</span><span class="token string">&#34;1&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h3<span class="token operator">&gt;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_763"></a>格式化日期</h4>
+<p>格式化日期可使用 <code>&lt;fmt:formatDate&gt;</code> 标签实现&#xff0c;可以设置日期格式&#xff0c;其语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;date&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;pattern&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118880913-18-686b4292d9.png" loading="lazy"><br />
+代码示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;today&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.Date&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+未格式化前的日期&#xff1a;$<span class="token punctuation">{<!-- --></span>today <span class="token punctuation">}</span><span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span> 以 yyyy<span class="token operator">-</span>MM<span class="token operator">-</span>dd 形式格式化&#xff1a;
+<span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;${today}&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;yyyy-MM-dd&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span> 以 yyyy 年 MM 月 dd 形式格式化&#xff1a;
+<span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;${today}&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;yyyy 年 MM 月 dd 日 &#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br <span class="token operator">/</span><span class="token operator">&gt;</span> 以 yyyy 年 MM 月 dd hh<span class="token operator">:</span>mm<span class="token operator">:</span>ss 形式格式化&#xff1a;
+<span class="token operator">&lt;</span>fmt<span class="token operator">:</span>formatDate value<span class="token operator">&#61;</span><span class="token string">&#34;${today}&#34;</span> pattern<span class="token operator">&#61;</span><span class="token string">&#34;yyyy 年 MM 月 dd hh:mm:ss&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_781"></a>总结一下</h2>
+<p>往往EL表达式和JSTL联合起来的作用就是替换JSP中的脚本代码&#xff0c;让页面元素和脚本代码不要掺杂在一起&#xff0c;同时我们也可以看的出来这些标签致力于让后端的值进行显示而不涉及过多的代码逻辑&#xff0c;所以回归本源&#xff0c;JSP就是做页面展示的&#xff0c;它大多数作用就是获取返回的VO并进行呈现。而具体的逻辑和数据可以交给<strong>业务Bean和数据Bean去处理</strong>&#xff0c;到后边我们知道如果有更为复杂的逻辑&#xff0c;在业务Bean之上还会有一层Service。</p>
+<p>这里还要说明一个问题&#xff0c;JSP还有必要学习么&#xff1f;在前后端分离的今天&#xff0c;JSP似乎没有必要去学习了&#xff0c;但我觉得JSP没必要深入学习我是同意的&#xff0c;但是了解JSP也是应该的&#xff0c;没有前因哪有后果&#xff0c;回顾Web的开发历程&#xff0c;了解早期的MVC模型是如何构建的&#xff0c;前人为了网站开发想出的一些办法和思想&#xff0c;以及发展过程中的掣肘在哪儿&#xff0c;我们才能知道为什么后期要搞前后端分离&#xff0c;况且为了让jsp写的更爽的一些努力的方法也值得借鉴&#xff0c;例如EL表达式和JSTL标签语言其实就是一种结构化配置化的开发方式&#xff0c;与之后学习的spring和框架里的配置代替代码有异曲同工之妙&#xff0c;也为后期的spring boot的约定大于配置做好铺垫。</p>

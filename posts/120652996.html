@@ -1,0 +1,179 @@
+<p>上篇Blog详细探讨了SpringBoot是如何整合数据源的&#xff0c;从JDBC层面、数据源连接池层面&#xff08;Druid&#xff09;&#xff0c;再到MyBatis层面。我们分别使用了<code>spring-boot-starter-data-jdbc、druid-spring-boot-starter、mybatis-spring-boot-starter</code>这三个封装好的场景启动器&#xff0c;通过SpringBoot的自动配置机制我们只需要关心yml配置文件内容即可简单方便的使用SpringBoot操作数据库&#xff0c;可以说非常方便&#xff0c;至少比起Spring整合MyBatis节省了不少代码和配置。同样SpringBoot整合SpringMVC也非常方便&#xff0c;通过<code>spring-boot-starter-web</code>场景启动器即可。</p>
+<h2><a rel="noopener noreferrer" id="springbootstarterweb_1"></a>spring-boot-starter-web场景启动器</h2>
+<p>spring-boot-starter-web 为我们提供了<strong>嵌入的 Servlet 容器</strong>以及 <strong>SpringMVC 的依赖</strong>&#xff0c;并为 <strong>Spring MVC 提供了大量自动配置</strong>&#xff0c;可以适用于大多数 Web 开发场景。Spring Boot 为 Spring MVC 提供了自动配置&#xff0c;并在 Spring MVC 默认功能的基础上添加了以下特性&#xff1a;</p>
+<ul><li>引入了 ContentNegotiatingViewResolver 和 BeanNameViewResolver&#xff08;视图解析器&#xff09;</li><li>对包括 WebJars 在内的静态资源的支持&#xff0c;支持对静态首页&#xff08;index.html&#xff09;的访问</li><li>自动注册 Converter、GenericConverter 和 Formatter &#xff08;转换器和格式化器&#xff09;</li><li>对 HttpMessageConverters 的支持&#xff08;Spring MVC 中用于转换 HTTP 请求和响应的消息转换器&#xff09;</li><li>自动注册 MessageCodesResolver&#xff08;用于定义错误代码生成规则&#xff09;</li><li>自动使用 ConfigurableWebBindingInitializer</li></ul>
+<p>只要我们在 Spring Boot 项目中的 pom.xml 中引入了 spring-boot-starter-web &#xff0c;即使不进行任何配置&#xff0c;也可以直接使用 Spring MVC 进行 Web 开发&#xff0c;如果大家有没有印象可以看下我的第一篇SpringBoot的Blog<a href="https://tianmaolin.blog.csdn.net/article/details/120409870" rel="nofollow"><strong>【SpringBoot学习笔记 一】SpringBoot基本概念和项目初始化</strong></a>&#xff0c;当时第一次引入web模块的时候其实已经自动引入了SpringMVC。对比之前的Spring整合SpringMVC&#xff0c;以下步骤都省略了&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120652996-01-f25ef04a9b.png" loading="lazy"><br /> 我们专注于自己的逻辑即可&#xff0c;SpringBoot的自动配置都替我们做好了。</p>
+<h2><a rel="noopener noreferrer" id="SpringMVC_13"></a>SpringMVC自动配置原理</h2>
+<p>Spring Boot 抛弃了传统 xml 配置文件&#xff0c;通过配置类&#xff08;标注 &#64;Configuration 的类&#xff0c;相当于一个 xml 配置文件&#xff09;以 JavaBean 形式进行相关配置。Spring Boot 对 Spring MVC 的自动配置可以满足我们的大部分需求&#xff0c;但是我们也可以通过<strong>自定义配置类&#xff08;标注 &#64;Configuration 的类&#xff09;并实现 WebMvcConfigurer 接口来定制 Spring MVC 配置</strong>&#xff0c;例如拦截器、格式化程序、视图控制器等</p>
+<h3><a rel="noopener noreferrer" id="WebMvcAutoConfiguration_16"></a>WebMvcAutoConfiguration自动配置类</h3>
+<p>在自动配置原理<a href="https://tianmaolin.blog.csdn.net/article/details/120647304" rel="nofollow">SpringBoot学习笔记 四】SpringBoot自动配置原理</a>这篇Blog中提到&#xff0c;在 <code>spring-boot-autoconfigure-xxx.jar</code> 类路径下的 <code>META-INF/spring.factories</code> 中设置了一些自动配置类&#xff0c;就包括<code>WebMvcAutoConfiguration</code><br /> <img alt="在这里插入图片描述" src="./posts/assets/120652996-02-0af8eef877.png" loading="lazy"><br /> 它可以帮我们完成SpringMVC的自动整合和定制。</p>
+<h3><a rel="noopener noreferrer" id="_20"></a>格式化举例说明</h3>
+<p>我们举个例子&#xff0c;找到格式化转换器&#xff0c;代码如下&#xff1a;</p>
+<pre><code class="prism language-java">        <span class="token annotation punctuation">&#64;Bean</span>
+        <span class="token keyword">public</span> <span class="token class-name">FormattingConversionService</span> <span class="token function">mvcConversionService</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">WebConversionService</span> conversionService <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">WebConversionService</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>mvcProperties<span class="token punctuation">.</span><span class="token function">getDateFormat</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">addFormatters</span><span class="token punctuation">(</span>conversionService<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> conversionService<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>跟进去可以看到&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getDateFormat</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>dateFormat<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">/**
+* Date format to use. For instance, &#96;dd/MM/yyyy&#96;. 默认的
+ */</span>
+<span class="token keyword">private</span> <span class="token class-name">String</span> dateFormat<span class="token punctuation">;</span>
+</code></pre>
+<p>可以看到在我们的Properties文件中&#xff0c;我们可以进行自动配置它&#xff0c;如果配置了自己的格式化方式&#xff0c;就会注册到Bean中生效&#xff0c;例如我们可以在配置文件中配置日期格式化的规则。</p>
+<h2><a rel="noopener noreferrer" id="SpringMVC_45"></a>扩展SpringMVC功能</h2>
+<p>在 Spring Boot 项目中&#xff0c;我们可以通过以下 2 中形式定制 Spring MVC&#xff1a;扩展 Spring MVC&#xff0c;全面接管 Spring MVC</p>
+<p>下面&#xff0c;我们分别对这两种定制 Spring MVC 的形式进行介绍</p>
+<p>WebMvcConfigurer 是一个基于 Java 8 的接口&#xff0c;该接口定义了许多与 Spring MVC 相关的方法&#xff0c;其中大部分方法都是 default 类型的&#xff0c;且都是空实现。因此我们只需要定义一个配置类实现 WebMvcConfigurer 接口&#xff0c;并重写相应的方法便可以定制 Spring MVC 的配置</p>
+<h3><a rel="noopener noreferrer" id="WebMvcConfigurer_52"></a>WebMvcConfigurer接口</h3>
+<p>如果 Spring Boot 对 Spring MVC 的自动配置不能满足我们的需要&#xff0c;我们还可以通过自定义一个 WebMvcConfigurer 类型&#xff08;实现 WebMvcConfigurer 接口&#xff09;的配置类&#xff08;标注 &#64;Configuration&#xff0c;但不标注 &#64;EnableWebMvc 注解的类&#xff09;&#xff0c;来扩展 Spring MVC。这样不但能够保留 Spring Boot 对 Spring MVC 的自动配置&#xff0c;享受 Spring Boot 自动配置带来的便利&#xff0c;还能额外增加自定义的 Spring MVC 配置<br /> <img alt="在这里插入图片描述" src="./posts/assets/120652996-03-5d6ff64bbc.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="SpringBoot_55"></a>定制修改SpringBoot的默认配置</h3>
+<p>我们可以修改SpringBoot的默认配置来自定义自己的实现&#xff0c;我们先来看下如果不开启拦截&#xff0c;首页请求会是什么样&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120652996-04-e84b0ceed7.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="1_Controller_59"></a>1 创建Controller</h4>
+<p>我们创建一个result的Controller跳转请求&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">GetMapping</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RestController</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;RestController</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ResultController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;GetMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/result&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">loginPage</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token string">&#34;result&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2__77"></a>2 修改自定义配置</h4>
+<p>实现 WebMvcConfigurer 接口可以来扩展 SpringMVC 的功能</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>config</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Configuration</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>config<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token comment">//实现 WebMvcConfigurer 接口可以来扩展 SpringMVC 的功能</span>
+<span class="token annotation punctuation">&#64;Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyMvcConfig</span> <span class="token keyword">implements</span> <span class="token class-name">WebMvcConfigurer</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addViewControllers</span><span class="token punctuation">(</span><span class="token class-name">ViewControllerRegistry</span> registry<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//当访问 “/” 或 “/index.html” 时&#xff0c;都直接跳转到登陆页面</span>
+        registry<span class="token punctuation">.</span><span class="token function">addViewController</span><span class="token punctuation">(</span><span class="token string">&#34;/&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setViewName</span><span class="token punctuation">(</span><span class="token string">&#34;result&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>修改自定义配置&#xff0c;让首页请求到来时&#xff0c;会被拦截然后转到result的请求上去</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">GetMapping</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RestController</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;RestController</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ResultController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;GetMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/result&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">loginPage</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token string">&#34;我不是你想看到的首页&#xff0c;我是一个跳转定制页面,一个登录页面&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__109"></a>3 请求首页查看效果</h4>
+<p>我们配置了自定义设置后再次进行首页请求查看&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120652996-05-777115ef5b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="SpringMVC_112"></a>扩展SpringMVC原理</h3>
+<p>为什么定制扩展可以生效呢&#xff1f;我们通过源码追溯一下&#xff1a;</p>
+<blockquote>
+ <p>WebMvcAutoConfiguration</p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/120652996-06-6b1778c275.png" loading="lazy"></p>
+<p>是 SpringMVC的自动配置类&#xff0c;里面有一个类</p>
+<blockquote>
+ <p>WebMvcAutoConfigurationAdapter</p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/120652996-07-2b7affed81.png" loading="lazy"><br /> 这个类上有一个注解&#xff0c;在做其他自动配置时会导入&#xff1a;<code>&#64;Import(EnableWebMvcConfiguration.class)</code>&#xff0c;我们点进<code>EnableWebMvcConfiguration</code>这个类看一下&#xff0c;它继承了一个父类&#xff1a;</p>
+<blockquote>
+ <p>DelegatingWebMvcConfiguration</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DelegatingWebMvcConfiguration</span> <span class="token keyword">extends</span> <span class="token class-name">WebMvcConfigurationSupport</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">WebMvcConfigurerComposite</span> configurers <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">WebMvcConfigurerComposite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token comment">// 从容器中获取所有的webmvcConfigurer</span>
+    <span class="token annotation punctuation">&#64;Autowired</span><span class="token punctuation">(</span>required <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setConfigurers</span><span class="token punctuation">(</span><span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">WebMvcConfigurer</span><span class="token punctuation">&gt;</span></span> configurers<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token class-name">CollectionUtils</span><span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span>configurers<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>configurers<span class="token punctuation">.</span><span class="token function">addWebMvcConfigurers</span><span class="token punctuation">(</span>configurers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>我们可以在这个类中去寻找一个我们刚才设置的viewController当做参考&#xff0c;发现它调用了一个</p>
+<pre><code class="prism language-java"><span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">addViewControllers</span><span class="token punctuation">(</span><span class="token class-name">ViewControllerRegistry</span> registry<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>configurers<span class="token punctuation">.</span><span class="token function">addViewControllers</span><span class="token punctuation">(</span>registry<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>继续向下看&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addViewControllers</span><span class="token punctuation">(</span><span class="token class-name">ViewControllerRegistry</span> registry<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">Iterator</span> var2 <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span>delegates<span class="token punctuation">.</span><span class="token function">iterator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">while</span><span class="token punctuation">(</span>var2<span class="token punctuation">.</span><span class="token function">hasNext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">WebMvcConfigurer</span> delegate <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token class-name">WebMvcConfigurer</span><span class="token punctuation">)</span>var2<span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            delegate<span class="token punctuation">.</span><span class="token function">addViewControllers</span><span class="token punctuation">(</span>registry<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>所以得出结论&#xff1a;所有的WebMvcConfiguration都会被作用&#xff0c;不止Spring自己的配置类&#xff0c;我们自己的配置类当然也会被调用</p>
+<h2><a rel="noopener noreferrer" id="SpringMVC_165"></a>全面接管SpringMVC</h2>
+<p>全面接管即SpringBoot对SpringMVC的自动配置不需要了&#xff0c;所有内容都是我们自己去配置&#xff0c;实现方式只需在我们的配置类中加一个<code>&#64;EnableWebMvc</code>&#xff0c;当然我们开发中&#xff0c;不推荐使用全面接管SpringMVC。</p>
+<h3><a rel="noopener noreferrer" id="_167"></a>开启全面接管效果</h3>
+<p>开启全面接管比较简单&#xff0c;我们只需要在原有的定制配置类开启注解即可&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>config</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Configuration</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>config<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token comment">//实现 WebMvcConfigurer 接口可以来扩展 SpringMVC 的功能</span>
+<span class="token annotation punctuation">&#64;Configuration</span>
+<span class="token annotation punctuation">&#64;EnableWebMvc</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyMvcConfig</span> <span class="token keyword">implements</span> <span class="token class-name">WebMvcConfigurer</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addViewControllers</span><span class="token punctuation">(</span><span class="token class-name">ViewControllerRegistry</span> registry<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//当访问 “/” 或 “/index.html” 时&#xff0c;都直接跳转到登陆页面</span>
+        registry<span class="token punctuation">.</span><span class="token function">addViewController</span><span class="token punctuation">(</span><span class="token string">&#34;/&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setViewName</span><span class="token punctuation">(</span><span class="token string">&#34;result&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>全面接管后再次请求&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120652996-08-91850c0a84.png" loading="lazy"><br /> Spring Boot 能够访问首页静态资源是SpringBoot默认的SpringMVC配置&#xff0c;全面接管后该自动配置失效</p>
+<h3><a rel="noopener noreferrer" id="_189"></a>全面接管的原理</h3>
+<p>为什么加了一个注解&#xff0c;自动配置就失效了&#xff1f;我们看下源码&#xff1a;</p>
+<blockquote>
+ <p>EnableWebMVC注解</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Import</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">DelegatingWebMvcConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">EnableWebMvc</span> <span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这里发现它是导入了一个类&#xff0c;我们可以继续进去看</p>
+<blockquote>
+ <p>WebMvcConfigurationSupport类</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DelegatingWebMvcConfiguration</span> <span class="token keyword">extends</span> <span class="token class-name">WebMvcConfigurationSupport</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ......</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>它继承了一个父类 WebMvcConfigurationSupport&#xff0c;我们来回顾一下Webmvc自动配置类</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;ConditionalOnWebApplication</span><span class="token punctuation">(</span>type <span class="token operator">&#61;</span> <span class="token class-name">Type</span><span class="token punctuation">.</span>SERVLET<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;ConditionalOnClass</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span> <span class="token class-name">Servlet</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">DispatcherServlet</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">WebMvcConfigurer</span><span class="token punctuation">.</span><span class="token keyword">class</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token comment">// 这个注解的意思就是&#xff1a;容器中没有这个组件的时候&#xff0c;这个自动配置类才生效</span>
+<span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span><span class="token class-name">WebMvcConfigurationSupport</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;AutoConfigureOrder</span><span class="token punctuation">(</span><span class="token class-name">Ordered</span><span class="token punctuation">.</span>HIGHEST_PRECEDENCE <span class="token operator">&#43;</span> <span class="token number">10</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;AutoConfigureAfter</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span> <span class="token class-name">DispatcherServletAutoConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">TaskExecutionAutoConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span>
+    <span class="token class-name">ValidationAutoConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">WebMvcAutoConfiguration</span> <span class="token punctuation">{<!-- --></span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>因为有了这个注解<code>&#64;ConditionalOnMissingBean(WebMvcConfigurationSupport.class)</code>&#xff0c;导致<br /> <code>WebMvcAutoConfiguration</code>自动配置不会生效&#xff0c;而WebMvcConfigurationSupport只有SpringMVC的基本功能&#xff0c;所以我们编写起来难度太大&#xff0c;不方便操作。</p>
+<h2><a rel="noopener noreferrer" id="_226"></a>总结一下</h2>
+<p>首先&#xff0c;不要用全面接管&#xff0c;不要用全面接管&#xff0c;不要用全面接管&#xff0c;重要的事情说三遍&#xff0c;这样啥活都干不了了。其次我们可以发现定制的SpringMVC配置有点像拦截器&#xff0c;就是我们可以在默认的基础上修改请求&#xff0c;常用的一些功能还是很有用的&#xff0c;所以只要了解定制扩展方式就可以了&#xff0c;当然为什么全面接管生效的原理也需要简单了解下&#xff0c;知其然知其所以然&#xff0c;最后我们最好用封装好的场景启动器&#xff0c;例如&#xff1a;<code>spring-boot-starter-web</code>可以给我们省去很多麻烦。</p>

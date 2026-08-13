@@ -1,0 +1,15 @@
+<p>最近在进行文件上传验证的过程中&#xff0c;遇到<strong>后端未验证</strong>的情况&#xff1a;例如我想验证文件上传的后缀对不对&#xff0c;而前端也对上传的文件做过验证&#xff0c;我需要模拟请求通过前端验证&#xff0c;然后在通过前端验证后拦截该请求&#xff0c;再次修改请求&#xff0c;进而验证后端的验证是否能成功拦截该修改过的请求。说起来比较复杂&#xff0c;如果用一张图表示的话&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/100002191-01-bf5653db51.png" loading="lazy"></p>
+<p>要想验证功能成不成功&#xff0c;则<strong>只需要使用fiddler拦截通过前端验证的请求并修改文件后缀继续发往后端即可</strong>。</p>
+<blockquote>
+<p>1 首先使用fiddler的【bpu 请求】来拦截该请求</p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/100002191-02-5068f2a21e.png" loading="lazy"></p>
+<blockquote>
+<p>2 然后在SyntaxView修改该文件后缀而不破坏文件结构&#xff0c;然后点击RUN TO Completion即可执行</p>
+</blockquote>
+<p><img alt="在这里插入图片描述" src="./posts/assets/100002191-03-ca2a3cde95.png" loading="lazy"></p>
+<p>这里有一个大佬写的一篇很全的总结&#xff0c;收藏转需&#xff1a;</p>
+<blockquote>
+<p>详细的使用总结&#xff1a;https://www.cnblogs.com/yyhh/p/5140852.html</p>
+</blockquote>

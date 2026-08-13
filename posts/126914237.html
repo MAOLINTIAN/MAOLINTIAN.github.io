@@ -1,0 +1,158 @@
+<p>说起来设计原则的第一篇是在6月份&#xff0c;之后7、8月因为工作比较忙基本都没怎么学习&#xff0c;9月份才又赶上来了&#xff0c;这段时间基于极客时间的《设计模式之美》重新学习了下经典设计原则&#xff0c;收获认知提升颇多。这里对这一阶段的经典设计原则的学习和重点进行一个小结。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>经典设计原则博客目录</h2>
+<p>话不多说&#xff0c;对这段时间学习的七篇设计原则进行总结</p>
+<table><thead><tr><th>序号</th><th align="left">文章列表</th></tr></thead><tbody><tr><td>1</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/125155496?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】一 SOLID-SRP单一职责原则</strong></a></td></tr><tr><td>2</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126862346?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】二 SOLID-OCP开闭原则</strong></a></td></tr><tr><td>3</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126881236?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】三 SOLID-LSP里式替换原则</strong></a></td></tr><tr><td>4</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126880696?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】四 SOLID-ISP接口隔离原则</strong></a></td></tr><tr><td>5</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126898883?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】五 SOLID-DIP依赖反转原则</strong></a></td></tr><tr><td>6</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126905777?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】六 KISS、YAGNI和DRY原则</strong></a></td></tr><tr><td>7</td><td align="left"><a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/126909603?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 经典设计原则】七 LOD迪米特法则</strong></a></td></tr></tbody></table>
+<p>这其中涉及到不少知识点&#xff0c;总体总结在这里&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/126914237-01-3b0219d998.png" loading="lazy"></p>
+<p>左侧的5 个设计原则组成的SOLID&#xff0c;它们分别是&#xff1a;SRP单一职责原则&#xff08;the single responsibility principle &#xff09;、OCP开闭原则&#xff08;the open closed principle&#xff09;、LSP里氏替换原则&#xff08;the liskov substitution principle&#xff09;、ISP接口隔离原则&#xff08;the interface segregation principle&#xff09;、DIP依赖反转原则&#xff08;the dependency inversion principle&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="_18"></a>经典设计原则重点内容</h2>
+<p>接下来回顾一下这些设计原则学习过程中的重点</p>
+<h3><a rel="noopener noreferrer" id="SRP_20"></a>SRP单一职责原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>SRP单一职责原则的定义是什么</strong></p>
+</blockquote>
+<p><strong>一个类或者模块只负责完成一个职责&#xff08;或者功能&#xff09;</strong>&#xff0c;也就是说&#xff0c;<font color="red"><strong>不要设计大而全的类&#xff0c;要设计粒度小、功能单一的类</strong></font>。换个角度来讲就是&#xff0c;一个类包含了两个或者两个以上业务不相干的功能&#xff0c;那我们就说它职责不够单一&#xff0c;应该将它拆分成多个功能更加单一、粒度更细的类</p>
+<blockquote>
+ <p><strong>SRP原则解决什么问题</strong></p>
+</blockquote>
+<p>单一职责原则的<strong>目标是设计粒度小、功能单一的类&#xff0c;从类自身功能角度出发考虑</strong>。通过重构类的功能实现代码<strong>高内聚&#xff08;功能相关高内聚&#xff09;</strong>、促进代码低耦合&#xff08;功能无关低耦合&#xff09;&#xff0c;提高代码的<font color="red"><strong>可复用性、可读性、可维护性</strong></font></p>
+<blockquote>
+ <p><strong>如何实现SRP原则</strong></p>
+</blockquote>
+<p>主观上依据当前场景合理拆分&#xff0c;<strong>开始设计要尽量避免过度设计&#xff0c;因为根本不知道业务未来会发展成什么样&#xff0c;能做的最好只是提前预留好扩展点&#xff0c;静候业务发展然后实时做出调整</strong>&#xff0c;可以先写一个粗粒度的类&#xff0c;满足业务需求。随着业务的发展&#xff0c;如果粗粒度的类越来越庞大&#xff0c;代码越来越多&#xff0c;可以将这个粗粒度的类&#xff0c;拆分成几个更细粒度的类。这就是所谓的<strong>持续重构</strong></p>
+<p>客观上可以参照如下几个标准&#xff0c;下面这几条判断原则&#xff0c;比起很主观地去思考类是否职责单一&#xff0c;要更有指导意义、更具有可执行性&#xff1a;</p>
+<ul><li><strong>类中的代码行数、函数或属性过多</strong>&#xff0c;会影响代码的可读性和可维护性&#xff0c;我们就需要考虑对类进行拆分&#xff1b; 从另一个角度来看&#xff0c;当一个类的代码&#xff0c;可读性非常差&#xff0c;实现某个功能时不知道该用哪个函数&#xff0c;想用哪个函数翻半天都找不到了&#xff0c;只用到一个小功能要引入整个类&#xff08;类中包含很多无关此功能实现的函数&#xff09;的时候&#xff0c;这就说明类的行数、函数、属性过多了</li><li><strong>类依赖的其他类过多&#xff0c;或者依赖类的其他类过多&#xff08;被其它类使用&#xff09;</strong>&#xff0c;不符合高内聚、低耦合的设计思想&#xff0c;我们就需要考虑对类进行拆分&#xff1b;</li><li><strong>私有方法过多&#xff0c;我们就要考虑能否将私有方法独立到新的类中</strong>&#xff0c;设置为 public 方法&#xff0c;供更多的类使用&#xff0c;从而提高代码的复用性&#xff1b;</li><li><strong>比较难给类起一个合适名字&#xff0c;很难用一个业务名词概括&#xff0c;或者只能用一些笼统的 Manager、Context 之类的词语来命名</strong>&#xff0c;这就说明类的职责定义得可能不够清晰&#xff1b;</li><li><strong>类中大量的方法都是集中操作类中的某几个属性</strong>&#xff0c;比如&#xff0c;在 UserInfo 例子中&#xff0c;如果一半的方法都是在操作 address 信息&#xff0c;那就可以考虑将这几个属性和对应的方法拆分出来。</li></ul>
+<p>有了主观重构意识再加上客观条件判断能帮助我们写出符合SRP的代码</p>
+<h3><a rel="noopener noreferrer" id="OCP_44"></a>OCP开闭原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>OCP开闭原则的定义是什么</strong></p>
+</blockquote>
+<p><font color="red"><strong>软件实体&#xff08;模块、类、方法等&#xff09;应该对扩展开放、对修改关闭</strong></font>。详细表述就是&#xff0c;<font color="red"><strong>添加一个新的功能应该是&#xff0c;在已有代码基础上扩展代码&#xff08;新增模块、类、方法等&#xff09;&#xff0c;而非修改已有代码&#xff08;修改模块、类、方法等&#xff09;</strong></font></p>
+<p><strong>对于方法的扩展是对于类的修改&#xff0c;这样不满足OCP么</strong></p>
+<ul><li>同样一个代码改动&#xff0c;在粗代码粒度下&#xff0c;被认定为修改&#xff0c;在细代码粒度下&#xff0c;又可以被认定为扩展。改动一添加属性和方法相当于修改类&#xff0c;在类这个层面&#xff0c;这个代码改动可以被认定为修改&#xff1b;但这个代码改动并没有修改已有的属性和方法&#xff0c;在方法&#xff08;及其属性&#xff09;这一层面&#xff0c;它又可以被认定为“扩展”。那么该如何衡量呢&#xff1f;抓住一个原则就可以了&#xff1a;<font color="red"><strong>只要它没有破坏原有的代码的正常运行&#xff0c;没有破坏原有的单元测试</strong></font>&#xff0c;它就符合OCP</li></ul>
+<p><strong>OCP规定代码一行都不能改么</strong></p>
+<ul><li>添加一个新功能&#xff0c;不可能任何模块、类、方法的代码都不“修改”&#xff0c;这个是做不到的。类需要创建、组装、并且做一些初始化操作&#xff0c;才能构建成可运行的的程序&#xff0c;这部分代码的修改是在所难免的。我们要做的是<font color="red"><strong>尽量让修改操作更集中、更少、更上层&#xff0c;尽量让最核心、最复杂的那部分逻辑代码满足开闭原则</strong></font></li></ul>
+<p><strong>写代码越OCP越好么</strong></p>
+<ul><li>写OCP的代码成本比非OCP的高&#xff0c;逻辑也更负责&#xff0c;读起来更费劲&#xff0c;有些时候<strong>代码的扩展性会跟可读性相冲突</strong>。<font color="red"><strong>对于一些比较确定的、短期内可能就会扩展&#xff0c;或者需求改动对代码结构影响比较大的情况&#xff0c;或者实现成本不高的扩展点&#xff0c;在编写代码的时候之后&#xff0c;可以事先做些扩展性设计。但对于一些不确定未来是否要支持的需求&#xff0c;或者实现起来比较复杂的扩展点&#xff0c;可以等到有需求驱动的时候&#xff0c;再通过重构代码的方式来支持扩展的需求</strong></font></li></ul>
+<blockquote>
+ <p><strong>OCP原则解决什么问题</strong></p>
+</blockquote>
+<p>OCP的目标就是提高代码的<font color="red"><strong>可扩展性</strong></font>&#xff0c;23种设计模式大多数也是这个目标&#xff0c;所以说OCP非常重要</p>
+<blockquote>
+ <p><strong>如何实现OCP原则</strong></p>
+</blockquote>
+<p>主观上要具备<font color="red"><strong>扩展意识、抽象意识、封装意识</strong></font> &#xff0c;具体的方法论则是&#xff1a;<strong>多态、依赖注入、基于接口而非实现编程&#xff0c;以及大部分的设计模式&#xff08;比如&#xff0c;装饰、策略、模板、职责链、状态等&#xff09;</strong></p>
+<h3><a rel="noopener noreferrer" id="LSP_70"></a>LSP里氏替换原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>LSP里氏替换原则的定义是什么</strong></p>
+</blockquote>
+<p><font color="red"><strong>子类对象&#xff08;object of subtype/derived class&#xff09;能够替换程序&#xff08;program&#xff09;中父类对象&#xff08;object of base/parent class&#xff09;出现的任何地方&#xff0c;并且保证原来程序的逻辑行为&#xff08;behavior&#xff09;不变及正确性不被破坏</strong>。</font></p>
+<blockquote>
+ <p><strong>LSP原则解决什么问题</strong></p>
+</blockquote>
+<p>用来<font color="red"><strong>指导继承关系中子类该如何设计</strong></font> &#xff0c;子类的设计要保证在替换父类的时候&#xff0c;不改变原有程序的逻辑及不破坏原有程序的正确性&#xff0c;保证父子关系更加稳定健壮&#xff0c;通常用于指导框架版本向后兼容增强而不改变原有功能的设计。搭配【基于接口而非实现编程】使用效果最佳</p>
+<blockquote>
+ <p><strong>如何实现LSP原则</strong></p>
+</blockquote>
+<p>子类在设计的时候&#xff0c;要遵守父类的行为约定&#xff08;或者叫协议&#xff09;。父类定义了函数的行为约定&#xff0c;那子类可以改变函数的内部实现逻辑&#xff0c;但不能改变函数原有的行为约定。这里的行为约定包括&#xff1a;<font color="red"><strong>函数声明要实现的功能&#xff1b;对输入、输出、异常的约定&#xff1b;甚至包括注释中所罗列的任何特殊说明。实际上&#xff0c;定义中父类和子类之间的关系&#xff0c;也可以替换成接口和实现类之间的关系</strong></font></p>
+<h3><a rel="noopener noreferrer" id="ISP_83"></a>ISP接口隔离原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>ISP接口隔离原则的定义是什么</strong></p>
+</blockquote>
+<p><font color="red"><strong>客户端不应该被强迫依赖它不需要的接口。其中的客户端&#xff0c;可以理解为接口的调用者或者使用者</strong></font>&#xff0c;这里的接口不仅指Java里的接口类&#xff0c;实际上它有三种含义&#xff1a; <strong>一组 API 接口或方法集合</strong>&#xff1b; <strong>单个 API 接口或方法</strong>&#xff1b; <strong>OOP 中的接口概念</strong></p>
+<p><strong>SRP和ISP都是降低代码依赖耦合&#xff0c;区别是什么</strong></p>
+<ul><li>通过拆分方法让代码粒度变细的方式&#xff0c;ISP和SRP有点类似&#xff0c;不过稍微还是有点区别。单一职责原则针对的是模块、类、接口的设计。而接口隔离原则相对于单一职责原则&#xff0c;一方面它更侧重于接口的设计&#xff0c;另一方面它的思考的角度不同。它提供了一种判断接口是否职责单一的标准&#xff1a;<strong>通过调用者如何使用接口来间接地判定</strong>。如果调用者只使用部分接口或接口的部分功能&#xff0c;那接口的设计就不够职责单一。也就是说<strong>ISP的判定更为主观一些</strong>。</li></ul>
+<blockquote>
+ <p><strong>ISP原则解决什么问题</strong></p>
+</blockquote>
+<p>解决代码的无用依赖问题&#xff0c;指导接口的设计&#xff0c;让接口的功能更内聚单一&#xff0c;让调用方和接口直接的耦合度降低&#xff0c;提升接口的<font color="red"><strong>可复用性、可读性、可维护性</strong></font></p>
+<blockquote>
+ <p><strong>如何实现ISP原则</strong></p>
+</blockquote>
+<ul><li>接口是【一组 API 接口或方法集合】&#xff1a;调用者的角度出发&#xff1a;<font color="red"><strong>如果部分接口只被部分调用者使用&#xff0c;那我们就需要将这部分接口隔离出来&#xff0c;单独给对应的调用者使用&#xff0c;而不是强迫其他调用者也依赖这部分不会被用到的接口</strong></font></li><li>接口是【单个 API 接口或方法】&#xff1a;调用者的角度出发&#xff1a;<font color="red"><strong>函数的设计要功能单一&#xff0c;不要将多个不同的功能逻辑在一个函数中实现</strong></font></li><li>接口是【OOP 中的接口概念】&#xff1a;使用者和调用者的角度出发&#xff1a;<font color="red"><strong>那接口的设计要尽量单一&#xff0c;不要让接口的实现类和调用者&#xff0c;依赖不需要的接口函数</strong></font></li></ul>
+<h3><a rel="noopener noreferrer" id="DIP_102"></a>DIP依赖反转原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>DIP依赖反转原则的定义是什么</strong></p>
+</blockquote>
+<p><font color="red"><strong>高层模块&#xff08;high-level modules&#xff09;不要依赖低层模块&#xff08;low-level&#xff09;。高层模块和低层模块应该通过抽象&#xff08;abstractions&#xff09;来互相依赖。除此之外&#xff0c;抽象&#xff08;abstractions&#xff09;不要依赖具体实现细节&#xff08;details&#xff09;&#xff0c;具体实现细节&#xff08;details&#xff09;依赖抽象&#xff08;abstractions&#xff09;</strong></font>&#xff0c;所谓高层模块和低层模块的划分&#xff0c;简单来说就是&#xff0c;在调用链上&#xff0c;调用者属于高层&#xff0c;被调用者属于低层</p>
+<p><strong>所谓反转并不是指反过来低层要依赖高层&#xff0c;而是二者都依赖抽象</strong>&#xff0c;这里的反转指的是原本高层依赖低层&#xff0c;在DIP下实际上是规范低层次模块的设计。低层次模块提供的接口要足够的抽象、通用&#xff0c;在设计时需要考虑高层次模块的使用种类和场景。<strong>明明是高层次模块要使用低层次模块&#xff0c;对低层次模块有依赖性。现在反而低层次模块需要根据高层次模块来设计&#xff0c;出现了「倒置」的显现</strong></p>
+<blockquote>
+ <p><strong>DIP原则解决什么问题</strong></p>
+</blockquote>
+<p>DIP用来指导框架设计&#xff0c;框架是高层&#xff0c;我们写的代码是低层&#xff0c;我们要按照通用的约定实现自己的底层代码&#xff0c;以满足高层的调用需求。例如&#xff1a;</p>
+<ul><li><strong>JVM是高层模块&#xff0c;我们编写的Java代码是底层模块</strong>。JVM和Java代码没有直接的依赖关系&#xff0c;两者都依赖同一个抽象&#xff0c;也就是<strong>class字节码</strong>。字节码不依赖具体的JVM虚拟机和Java语言&#xff0c;而JVM虚拟机和Java依赖字节码规范。 这样做的好处就是JVM与Java高度解耦&#xff0c;Java语言可以替换成Groovy、Kotlin&#xff0c;只要能编译为字节码&#xff0c;符合虚拟机的执行规范</li><li>Tomcat 是运行 Java Web 应用程序的容器。我们编写的 Web 应用程序代码只需要部署在 Tomcat 容器下&#xff0c;便可以被 Tomcat 容器调用执行。<strong>Tomcat 就是高层模块&#xff0c;我们编写的 Web 应用程序代码就是低层模块</strong>。Tomcat 和应用程序代码之间并没有直接的依赖关系&#xff0c;两者都依赖同一个“抽象”&#xff0c;也就是 <strong>Servlet 规范</strong>。Servlet 规范不依赖具体的 Tomcat 容器和应用程序的实现细节&#xff0c;而 Tomcat 容器和应用程序依赖 Servlet 规范</li></ul>
+<blockquote>
+ <p><strong>如何实现DIP原则</strong></p>
+</blockquote>
+<p>如果我们编写框架&#xff0c;就得<strong>让框架依赖的抽象规范明确&#xff0c;基于抽象而非实现编程</strong>&#xff1b;如果我们编写实现代码&#xff0c;要想让框架或者容器能调用我们的实现方法实现功能&#xff0c;我们就得<strong>依赖满足高层运行功能抽象规范去写自己的实现</strong>&#xff0c;也就是按照约定编程。</p>
+<h3><a rel="noopener noreferrer" id="KISS_119"></a>KISS保持简单原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>KISS保持简单原则的定义是什么</strong></p>
+</blockquote>
+<p>KISS原则&#xff1a;Keep It Simple and Stupid。翻译成中文就是&#xff1a;尽量保持简单&#xff0c;这里的简单并不是代码行数越少就越简单&#xff0c;还要考虑<font color="red"><strong>逻辑复杂度、实现难度、代码的可读性</strong></font>&#xff0c;还有一点就是<font color="red"><strong>本身就复杂的问题&#xff0c;用复杂的方法解决&#xff0c;并不违背 KISS 原则</strong></font></p>
+<blockquote>
+ <p><strong>KISS原则解决什么问题</strong></p>
+</blockquote>
+<p><font color="red"><strong>KISS 原则是保持代码可读和可维护的重要手段</strong></font>。代码足够简单&#xff0c;也就意味着很容易读懂&#xff0c;bug 比较难隐藏。即便出现 bug&#xff0c;修复起来也比较简单。</p>
+<blockquote>
+ <p><strong>如何实现KISS原则</strong></p>
+</blockquote>
+<p>KISS原则其实本来就比较主观&#xff0c;不过还是有一些验证方式的&#xff1a;</p>
+<ol><li><strong>不要使用同事可能不懂的技术来实现代码</strong>。例如复杂的正则表达式&#xff0c;还有一些编程语言中过于高级的语法等。如果想用&#xff0c;培训一下大家</li><li><strong>不要重复造轮子</strong>&#xff0c;要善于使用已经有的工具类库。经验证明&#xff0c;自己去实现这些类库&#xff0c;出 bug 的概率会更高&#xff0c;维护的成本也比较高。</li><li><strong>不要过度优化</strong>。不要过度使用一些奇技淫巧&#xff08;比如&#xff0c;位运算代替算术运算、复杂的条件语句代替 if-else、使用一些过于底层的函数等&#xff09;来优化代码&#xff0c;牺牲代码的可读性。</li></ol>
+<p>主观验证的方式就是代码CR&#xff0c;让大家看看是否满足。</p>
+<h3><a rel="noopener noreferrer" id="YAGNI_138"></a>YAGNI勿过度设计原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>YAGNI勿过度设计原则的定义是什么</strong></p>
+</blockquote>
+<p><strong>不要去设计当前用不到的功能</strong>&#xff1b;不要去编写当前用不到的代码。实际上&#xff0c;这条原则的核心思想就是&#xff1a;<font color="red"><strong>不要做过度设计</strong></font>&#xff0c;当然这并不意味着我们不要预留代码扩展点</p>
+<blockquote>
+ <p><strong>YAGNI原则解决什么问题</strong></p>
+</blockquote>
+<p>防止项目中代码冗余&#xff0c;防止降低代码的<font color="red"><strong>可读性和可维护性</strong></font></p>
+<blockquote>
+ <p><strong>如何实现YAGNI原则</strong></p>
+</blockquote>
+<p>感觉未来要实现的地方&#xff0c;预留扩展点&#xff0c;先不要实现。</p>
+<h3><a rel="noopener noreferrer" id="DRY_151"></a>DRY勿重复编码原则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>DRY勿重复编码原则的定义是什么</strong></p>
+</blockquote>
+<p>就是字面意思&#xff1a;<strong>不要写重复的代码</strong>。但这里的重复有不同的含义&#xff0c;包括&#xff1a;<strong>实现逻辑重复&#xff08;代码写重复了&#xff09;、功能语义重复&#xff08;方法的用处相同&#xff09;、代码逻辑重复&#xff08;方法内代码块重复执行&#xff09;</strong></p>
+<p><strong>DRY原则可以提升代码的复用性么&#xff1f;</strong></p>
+<ul><li><strong>代码复用表示一种行为</strong>&#xff1a;我们在开发新功能的时候&#xff0c;尽量复用已经存在的代码。<strong>代码的可复用性表示一段代码可被复用的特性或能力</strong>&#xff1a;我们在编写代码的时候&#xff0c;让代码尽量可复用&#xff0c;<strong>DRY原则是一条原则要保证的是不要写重复的代码</strong>&#xff0c;但并不意味着DRY就提高了代码的可复用性</li></ul>
+<p><strong>如何提高代码复用性</strong></p>
+<ol><li><strong>减少代码耦合</strong>&#xff0c;对于高度耦合的代码&#xff0c;当希望复用其中的一个功能&#xff0c;想把这个功能的代码抽取出来成为一个独立的模块、类或者函数的时候&#xff0c;往往会发现牵一发而动全身。移动一点代码&#xff0c;就要牵连到很多其他相关的代码。所以&#xff0c;高度耦合的代码会影响到代码的复用性&#xff0c;要尽量减少代码耦合。</li><li><strong>满足单一职责原则</strong>&#xff0c;如果职责不够单一&#xff0c;模块、类设计得大而全&#xff0c;那依赖它的代码或者它依赖的代码就会比较多&#xff0c;进而增加了代码的耦合。根据上一点&#xff0c;也就会影响到代码的复用性。相反&#xff0c;越细粒度的代码&#xff0c;代码的通用性会越好&#xff0c;越容易被复用。</li><li><strong>模块化</strong>&#xff0c;模块不单单指一组类构成的模块&#xff0c;还可以理解为单个类、函数。要善于将功能独立的代码&#xff0c;封装成模块。独立的模块就像一块一块的积木&#xff0c;更加容易复用&#xff0c;可以直接拿来搭建更加复杂的系统。</li><li><strong>业务与非业务逻辑分离</strong>&#xff0c;越是跟业务无关的代码越是容易复用&#xff0c;越是针对特定业务的代码越难复用。所以&#xff0c;为了复用跟业务无关的代码&#xff0c;需要将业务和非业务逻辑代码分离&#xff0c;抽取成一些通用的框架、类库、组件等。</li><li><strong>通用代码下沉</strong>&#xff0c;从分层的角度来看&#xff0c;越底层的代码越通用、会被越多的模块调用&#xff0c;越应该设计得足够可复用。一般情况下&#xff0c;在代码分层之后&#xff0c;为了避免交叉调用导致调用关系混乱&#xff0c;通常只允许上层代码调用下层代码及同层代码之间的调用&#xff0c;杜绝下层代码调用上层代码。所以&#xff0c;通用的代码我们尽量下沉到更下层。</li><li><strong>继承、多态、抽象、封装</strong>&#xff0c;利用继承&#xff0c;可以将公共的代码抽取到父类&#xff0c;子类复用父类的属性和方法。利用多态&#xff0c;可以动态地替换一段代码的部分逻辑&#xff0c;让这段代码可复用。除此之外&#xff0c;抽象和封装&#xff0c;从更加广义的层面、而非狭义的面向对象特性的层面来理解的话&#xff0c;越抽象、越不依赖具体的实现&#xff0c;越容易复用。代码封装成模块&#xff0c;隐藏可变的细节、暴露不变的接口&#xff0c;就越容易复用。</li><li><strong>应用模板等设计模式</strong>&#xff0c;一些设计模式&#xff0c;也能提高代码的复用性。比如&#xff0c;模板模式利用了多态来实现&#xff0c;可以灵活地替换其中的部分代码&#xff0c;整个流程模板代码可复用。</li></ol>
+<blockquote>
+ <p><strong>DRY原则解决什么问题</strong></p>
+</blockquote>
+<p>减少项目中的重复功能代码&#xff0c;提高代码的<font color="red"><strong>可读性和可维护性</strong></font></p>
+<blockquote>
+ <p><strong>如何实现DRY原则</strong></p>
+</blockquote>
+<p><font color="red"><strong>实现逻辑重复&#xff0c;但功能语义不重复的代码&#xff0c;并不违反 DRY 原则&#xff0c;可以通过更细粒度的SRP改造来去除重复代码。实现逻辑不重复&#xff0c;但功能语义重复的代码&#xff0c;也算是违反 DRY 原则。除此之外&#xff0c;代码执行重复也算是违反 DRY 原则&#xff0c;后边这两种情况需要通过重构去除重复功能方法、逻辑代码块以及重构来满足DRY</strong></font></p>
+<h3><a rel="noopener noreferrer" id="LOD_177"></a>LOD迪米特最小知道法则</h3>
+<p>以下内容为我认为认知得到加深的内容&#xff1a;</p>
+<blockquote>
+ <p><strong>LOD迪米特最小知道法则的定义是什么</strong></p>
+</blockquote>
+<p>每个模块&#xff08;unit&#xff09;只应该了解那些与它关系密切的模块的有限知识&#xff08;knowledge&#xff09;也即每个模块只和自己的朋友说话&#xff0c;不和陌生人说话&#xff0c;<font color="red"><strong>不该有直接依赖关系的类之间&#xff0c;不要有依赖&#xff1b;有依赖关系的类之间&#xff0c;尽量只依赖必要的接口&#xff08;也就是定义中的“有限知识”&#xff09;</strong></font></p>
+<blockquote>
+ <p><strong>LOD迪米特法则解决什么问题</strong></p>
+</blockquote>
+<p>让代码尽量高内聚&#xff0c;低耦合&#xff0c;重点侧重低耦合&#xff0c;设计类间关系时要多加小心&#xff0c;防止过度依赖。目的也是提高代码的<font color="red"><strong>可读性和可维护性</strong></font></p>
+<blockquote>
+ <p><strong>如何实现LOD法则</strong></p>
+</blockquote>
+<ul><li>不该有直接依赖关系的类之间&#xff0c;不要有依赖。可以通过调整方法&#xff0c;例如依赖的类有5个属性只用到其中2个&#xff0c;那么方法不要传入整个依赖类&#xff0c;而是把这两个属性提出来当做参数</li><li>有依赖关系的类之间&#xff0c;尽量只依赖必要的接口。可以通过ISP隔离接口&#xff0c;然后通过基于接口而非实现的方式将依赖注入&#xff0c;这样就能只依赖必要接口了。</li></ul>
+<h2><a rel="noopener noreferrer" id="_191"></a>经典设计原则横向对比</h2>
+<p>这里对所有涉及到的原则和法则做一个横向总结&#xff0c;这里的接口指OOP中的接口或抽象类。</p>
+<table><thead><tr><th>设计原则</th><th>应用范围</th><th>看待视角</th><th>解决什么问题</th></tr></thead><tbody><tr><td>SRP单一职责原则</td><td>模块、类&#xff08;接口&#xff09;、方法</td><td>实体自身视角</td><td>提高代码的内聚性&#xff0c;<font color="red"><strong>可复用性、可读性、可维护性</strong></font></td></tr><tr><td>OCP开闭原则</td><td>模块、类&#xff08;接口&#xff09;、方法</td><td>实体自身视角</td><td>提高代码的<font color="red"><strong>可扩展</strong></font></td></tr><tr><td>LSP里氏替换原则</td><td>类&#xff08;接口&#xff09;</td><td>父子间关系视角</td><td>指导<font color="red"><strong>子类设计、继承设计</strong></font></td></tr><tr><td>ISP接口隔离原则</td><td>接口</td><td>实体间关系视角</td><td>降低调用者或使用者依赖&#xff0c;提升接口的<font color="red"><strong>可复用性、可读性、可维护性</strong></font></td></tr><tr><td>DIP依赖反转原则</td><td>模块</td><td>框架设计视角</td><td>指导<font color="red"><strong>框架设计</strong></font></td></tr><tr><td>KISS保持简单原则</td><td>方法</td><td>全局视角</td><td>提高代码的<font color="red"><strong>简洁性、可读性、可维护性</strong></font></td></tr><tr><td>YAGNI勿过度设计原则</td><td>类&#xff08;接口&#xff09;、方法</td><td>全局视角</td><td>不过度设计只预留扩展<font color="red"><strong>防止降低代码的可读性和可维护性</strong></font></td></tr><tr><td>DRY勿重复编码原则</td><td>类&#xff08;接口&#xff09;、方法</td><td>全局视角</td><td>去除重复代码 <font color="red"><strong>防止降低代码的可读性和可维护性</strong></font></td></tr><tr><td>LOD迪米特法则</td><td>类&#xff08;接口&#xff09;</td><td>实体间关系视角</td><td>防止类间过度依赖&#xff0c;降低代码的耦合性&#xff0c;提高代码的<font color="red"><strong>可读性和可维护性</strong></font></td></tr></tbody></table>
+<h2><a rel="noopener noreferrer" id="_205"></a>总结一下</h2>
+<p>其实无论是SOLID、还是KISS、YAGNI、DRY以及LOD&#xff0c;都是服务于写出高质量代码。简单而言就是写出&#xff1a;可维护性、可读性、可扩展性、灵活性、简洁性&#xff08;简单、复杂&#xff09;、可复用性、可测试性强的高质量代码。可读性、可维护性的一个基本设计就是写出高内聚、低耦合的代码&#xff0c;其中SRP服务于高内聚&#xff0c;ISP和LOD服务于低耦合。毋庸置疑OCP服务于代码的扩展性&#xff0c;LSP和DIP场景就比较具体了&#xff1a;LSP用于指导父子关系设计&#xff0c;DIP用于指导框架设计。而KISS、YAGNI以及DRY都是从代码的整体视角去告诉我们写代码要尽量简单明了&#xff0c;不要写现在没用或重复的代码&#xff0c;这样代码的可读性和可维护性才高。</p>

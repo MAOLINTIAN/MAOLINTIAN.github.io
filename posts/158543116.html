@@ -1,0 +1,34 @@
+<h3><a rel="noopener noreferrer" id="Redis_0"></a>Redis的内存模型</h3>
+<p>Redis 采用<strong>单线程 Reactor 模型</strong>&#xff0c;即同一个主线程负责所有工作&#xff1a;</p>
+<ul><li><strong>网络 I/O 处理</strong>&#xff1a;监听连接、读取请求、写回响应。</li><li><strong>命令执行</strong>&#xff1a;解析请求并执行对应的操作。</li></ul>
+<p>这个单线程之所以能支撑高并发&#xff0c;关键在于 <strong>I/O 多路复用</strong>。</p>
+<h3><a rel="noopener noreferrer" id="IO__8"></a>I/O 多路复用机制</h3>
+<h4><a rel="noopener noreferrer" id="_IO__10"></a>传统阻塞 I/O 的问题</h4>
+<ul><li>每个连接需要一个线程&#xff0c;线程创建/切换开销大。</li><li>线程阻塞在 <code>read</code>/<code>write</code> 上时&#xff0c;CPU 资源被浪费。</li></ul>
+<h4><a rel="noopener noreferrer" id="_14"></a>多路复用的核心思想</h4>
+<p>一个线程同时监控多个连接&#xff08;文件描述符&#xff09;&#xff0c;只处理那些真正<strong>就绪</strong>的连接&#xff0c;空闲连接不消耗 CPU。</p>
+<h3><a rel="noopener noreferrer" id="Redis_epollkqueue_17"></a>Redis 使用的高效实现&#xff08;epoll/kqueue&#xff09;</h3>
+<ul><li><strong>epoll&#xff08;Linux&#xff09;</strong> / <strong>kqueue&#xff08;BSD/macOS&#xff09;</strong> 是事件驱动的 I/O 多路复用器。</li><li><strong>工作流程</strong>&#xff1a;
+<ol><li>将所有客户端连接注册到 epoll 实例上&#xff0c;关注可读事件。</li><li>主线程调用 <code>epoll_wait</code> 进入休眠&#xff0c;等待内核通知。</li><li>当某个连接有数据到达时&#xff0c;内核唤醒主线程&#xff0c;并返回就绪的连接列表。</li><li>主线程<strong>串行</strong>处理这些活跃连接&#xff1a;读取请求、执行命令、写回响应。</li><li>处理完后再次进入 <code>epoll_wait</code> 循环。</li></ol>
+</li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/158543116-01-8a9614ee6a.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="epoll__selectpoll__28"></a>epoll 相比 select/poll 的优势</h4>
+
+<table><thead><tr><th>对比维度</th><th>select/poll</th><th>epoll</th></tr></thead><tbody><tr><td><strong>监控方式</strong></td><td>每次调用都要将全部 fd 传给内核&#xff08;O(n)&#xff09;</td><td>内核维护监控列表&#xff0c;事件发生时回调通知&#xff08;O(1)&#xff09;</td></tr><tr><td><strong>返回结果</strong></td><td>返回全部 fd&#xff0c;需遍历找出就绪的</td><td>直接返回就绪的 fd 列表</td></tr><tr><td><strong>扩展性</strong></td><td>随 fd 数量增加性能下降</td><td>性能与活跃连接数相关&#xff0c;可支撑百万连接</td></tr></tbody></table><h3><a rel="noopener noreferrer" id="_Redis__35"></a>为什么 Redis 选择单线程模型&#xff1f;</h3>
+<ol><li>
+<p><strong>瓶颈不在 CPU&#xff0c;而在内存和网络</strong>&#xff1a;Redis 是内存数据库&#xff0c;操作速度极快&#xff08;纳秒级&#xff09;&#xff0c;CPU 很少成为瓶颈。真正的瓶颈往往是内存大小和网络带宽。</p>
+</li><li>
+<p><strong>避免多线程的复杂性</strong>&#xff1a;</p>
+<ul><li><strong>无锁竞争</strong>&#xff1a;单线程消除了加锁/解锁的开销&#xff0c;也避免了死锁问题。</li><li><strong>无上下文切换</strong>&#xff1a;不需要在多个线程间切换&#xff0c;节省 CPU 资源。</li><li><strong>数据天然一致</strong>&#xff1a;命令串行执行&#xff0c;无需考虑并发修改。</li></ul>
+</li><li>
+<p><strong>I/O 多路复用已经解决了并发问题</strong>&#xff1a;单线程 &#43; epoll 足以高效处理数万并发连接&#xff0c;没必要引入多线程。</p>
+</li></ol>
+<h4><a rel="noopener noreferrer" id="Redis_60__IO_46"></a>Redis 6.0 的优化&#xff1a;多线程 I/O</h4>
+<p>随着 10Gbps 甚至更高带宽网卡的普及&#xff0c;<strong>网络 I/O 本身的开销</strong>开始成为新的瓶颈。这里需要明确&#xff1a;</p>
+<ul><li><strong>网络 I/O 消耗的是 CPU 时间</strong>&#xff08;数据在内核空间与用户空间之间的拷贝、协议解析&#xff09;&#xff0c;而不是内存。</li><li>当网络带宽足够高时&#xff0c;单线程处理网络数据拷贝的 CPU 开销会显著增加&#xff0c;甚至可能影响命令执行的吞吐量。</li></ul>
+<p>因此&#xff0c;Redis 6.0 引入了<strong>多线程 I/O</strong>&#xff1a;</p>
+<ul><li><strong>多线程处理网络读写和协议解析</strong>&#xff1a;使用多个 I/O 线程并行处理网络数据的接收、发送和解析&#xff0c;将这部分 CPU 开销分散到多个核心。</li><li><strong>命令执行仍然单线程</strong>&#xff1a;解析后的命令被放入队列&#xff0c;由主线程<strong>串行</strong>执行&#xff0c;保证了无锁和数据一致性。</li><li><strong>效果</strong>&#xff1a;提升了网络吞吐量&#xff0c;释放了主线程的 CPU 时间&#xff0c;让主线程更专注于命令执行。</li></ul>
+<h3><a rel="noopener noreferrer" id="Redis__57"></a>总结&#xff1a;Redis 线程模型演进</h3>
+
+<table><thead><tr><th>版本</th><th>模型</th><th>说明</th></tr></thead><tbody><tr><td><strong>Redis 6.0 之前</strong></td><td>单线程&#xff08;I/O &#43; 命令执行&#xff09;</td><td>单线程 Reactor &#43; epoll&#xff0c;极致简单高效</td></tr><tr><td><strong>Redis 6.0 及之后</strong></td><td>多线程 I/O &#43; 单线程命令执行</td><td>I/O 线程负责网络读写和协议解析&#xff0c;主线程串行执行命令</td></tr></tbody></table><p>Redis 始终秉持一个核心哲学&#xff1a;</p>
+<ul><li><strong>用单线程执行命令来保证简单和一致</strong>&#xff0c;避免多线程的复杂开销。</li><li><strong>用 I/O 多路复用来应对高并发连接</strong>&#xff0c;让单线程也能驾驭海量连接。</li><li><strong>只在网络 I/O 成为 CPU 瓶颈时&#xff0c;引入多线程 I/O 进行辅助</strong>&#xff0c;解除瓶颈的同时不破坏命令执行的单线程特性。</li></ul>

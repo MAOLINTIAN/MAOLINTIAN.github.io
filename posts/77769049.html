@@ -1,0 +1,205 @@
+<p>网络层的目的是实现两个端系统之间的数据透明传送&#xff0c;<strong>具体功能包括寻址和路由选择、连接的建立、保持和终止等。<strong>它提供的服务</strong>使传输层不需要了解网络中的数据传输和交换技术</strong>。主要工作就是“<strong><font color="red">路径选择、路由及逻辑寻址”</font></strong></p>
+<h3><a rel="noopener noreferrer" id="_2"></a>网络层基本概念</h3>
+<p>网络层向上只提供<strong>简单灵活的、无连接的、尽最大努力交付</strong>的数据报服务。网络在发送分组时<strong>不需要先建立连接</strong>。每一个分组(也就是IP数据报)独立发送&#xff0c;与其前后的分组无关(不进行编号)。网络层不提供服务质量的承诺。也就是说&#xff0c;<strong>所传送的分组可能出错、丢失、重复和失序(即不按序到达终点)&#xff0c;当然也不保证分组交付的时限</strong>。由于传输网络不提供端到端的可靠传输服务&#xff0c;这就使网络中的路由器比较简单&#xff0c;且价格低廉</p>
+<p><font color="red"><strong>网际层IP的作用</strong></font>&#xff1a;物理地址寻址、数据的成帧、流量控制、数据的检错、重发等。<br />
+<font color="red"><strong>网际层IP的协议</strong></font>&#xff1a;<strong>IP</strong>、<strong>ICMP</strong>、<strong>ARP</strong>、<strong>RARP</strong>、OSPF、IPX、RIP、IGRP、<br />
+<font color="red"><strong>网际层IP的设备</strong></font>&#xff1a;路由器</p>
+<h3><a rel="noopener noreferrer" id="_10"></a>路由器</h3>
+<p>从一般的概念来讲&#xff0c;将网络互相连接起来要使用一些中间设备。根据中间设备所在的层次&#xff0c;可以有以下四种不同的中间设备&#xff1a;</p>
+<ul><li>物理层使用的中间设备叫做<strong>转发器</strong>(repeater)</li><li>数据链路层使用的中间设备叫做<strong>网桥</strong>或<strong>桥接器</strong>(bridge)</li><li>网络层使用的中间设备叫做<strong>路由器</strong>(router)</li><li>在网络层以上使用的中间设备叫做<strong>网关</strong>(gateway)。用网关连接两个不兼容的系统需要在高层进行协议的转换。</li></ul>
+<p>网关由于比较复杂&#xff0c;目前使用得较少。因此现在我们讨论网络互连时&#xff0c;都是指用<strong>路由器进行网络互连和路由选择。路由器其实就是一台专用计算机&#xff0c;用来在互联网中进行路由选择</strong></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/77769049-01-86ec25c3cd.png" loading="lazy"><br />
+通过路由器和IP协议&#xff0c;我们就能很轻松的进行跨网络机器数据传输&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-02-ad9e891d4b.png" loading="lazy"><br />
+路由器由三部分组成&#xff1a;<strong>交换结构、一组输入端口和一组输出端口</strong>&#xff0c;它的<strong>主要工作就是为经过路由器的每个数据包寻找一条最佳的传输路径&#xff0c;并将该数据有效地传送到目的站点</strong>。由此可见&#xff0c;选择最佳路径的策略即<strong>路由算法</strong>是路由器的关键所在。为了完成这项工作&#xff0c;在路由器中保存着各种传输路径的相关数据——<strong>路由表</strong>&#xff08;Routing Table&#xff09;&#xff0c;供路由选择时使用&#xff0c;<strong>表中包含的信息决定了数据转发的策略</strong>。</p>
+<h3><a rel="noopener noreferrer" id="IP_23"></a>网际协议IP</h3>
+<p>网络层中涉及众多的协议&#xff0c;其中包括最重要的协议&#xff0c;也是<strong>TCP/IP的核心协议——IP协议</strong>。IP协议非常简单&#xff0c;仅仅提供<strong>不可靠、无连接的传送服务</strong>。</p>
+<p>IP协议的主要功能有&#xff1a;<strong>无连接数据报传输、数据报路由选择和差错控制</strong>&#xff0c;与IP协议配套使用实现其功能的还有</p>
+<ul><li><strong>地址解析协议ARP</strong> (Address Resolution Protocol)&#xff0c;<strong>逆地址解析协议RARP</strong></li><li><strong>网际控制报文协议ICMP</strong> (Internet Control Message Protocol)</li><li><strong>网际组管理协议IGMP</strong> (Internet Group Management Protocol)</li></ul>
+<p>接下来详细介绍下IP协议&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="IP_32"></a>IP地址</h4>
+<p>IP地址由<strong>网络号&#xff08;包括子网号&#xff09;<strong>和</strong>主机号</strong>组成&#xff0c;整个的互联网就是一个单一的、抽象的网络。IP地址就是给互联网上的<strong>每一台主机(或路由器)的每一个接口</strong>分配一个在全世界范围内是唯一的32位的标识符。</p>
+<ul><li><strong>网络号(net-id)</strong>&#xff0c;它标志主机(或路由器)所连接到的网络。<strong>一个网络号在整个互联网范围内必须是唯一的</strong>。</li><li><strong>主机号(host-id)</strong>&#xff0c;它标志该主机(或路由器)。<strong>一台主机号在它前面的网络号所指明的网络范围内必须是唯一的</strong></li></ul>
+<p>IP地址的结构使我们可以在互联网上很方便地进行寻址&#xff0c;因为IP地址在全网是唯一的。</p>
+<p><img alt="这里写图片描述" src="./posts/assets/77769049-03-63892fd1dd.jpg" loading="lazy"><br />
+对主机或路由器来说&#xff0c;IP地址都是32位的二进制代码。为了提高可读性&#xff0c;我们常常把32位的IP地址中的每8位插入一个空格(但在机器中并没有这样的空格)。<strong>为了便于书写&#xff0c;可用其等效的十进制数字表示&#xff0c;并且在这些数字之间加上一个点。这就叫做点分十进制记法</strong><br />
+其中A类&#xff0c;B类&#xff0c;C类地址都是单播地址&#xff0c;而网络号里的1-3位表示类别位。IP地址指派范围<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-04-855f5f9b90.png" loading="lazy"><br />
+一般不使用的特殊ip地址&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-05-ef4f75a71e.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="_45"></a>五类网络地址</h5>
+<p>可以看到总共划分了五个网段&#xff0c;当然我们常用的只有三个网段。</p>
+<ul><li>
+<p><strong>A类地址</strong>&#xff08;50%的IP地址&#xff09;以0开头&#xff0c;第一个字节作为网络号</p>
+<ul><li>地址范围为&#xff1a;1.0.0.0 到126.0.0.0</li><li>每个A类子网最大主机数2^24-2 &#61; 16777214</li></ul>
+</li><li>
+<p><strong>B类地址</strong>&#xff08;25%的IP地址&#xff09;以10开头&#xff0c;前两个字节作为网络号&#xff0c;默认128.0.0.0不指派</p>
+<ul><li>地址范围为&#xff1a;128.1.0.0到191.255.255.255</li><li>每个B类子网最大主机数2^16 -2 &#61; 65534</li></ul>
+</li><li>
+<p><strong>C类地址</strong>&#xff08;12.5%的IP地址&#xff09;以110开头&#xff0c;前三个字节作为网络号&#xff0c;默认192.0.0.0不指派</p>
+<ul><li>地址范围为&#xff1a;192.0.1.0~223.255.255.255。</li><li>每个C类子网最大主机数2^8 -2 &#61; 254</li></ul>
+</li><li>
+<p><strong>D类地址</strong>以1110开头</p>
+<ul><li>地址范围是224.0.0.0~239.255.255.255&#xff0c;D类地址作为组播地址&#xff08;一对多的通信&#xff09;&#xff1b;</li></ul>
+</li><li>
+<p><strong>E类地址</strong>以1111开头&#xff0c;地址范围是240.0.0.0~255.255.255.255&#xff0c;E类地址为保留地址&#xff0c;供以后使用。</p>
+</li></ul>
+<p><strong>只有A,B,C有网络号和主机号之分&#xff0c;D类地址和E类地址没有划分网络号和主机号</strong>。</p>
+<h5><a rel="noopener noreferrer" id="IP_71"></a>IP地址特点</h5>
+<p>这样设计IP地址有以下四个特点和优点&#xff1a;</p>
+<ul><li>
+<p><strong>每一个IP地址都由网络号和主机号两部分组成</strong>。有两个好处&#xff1a;</p>
+<ul><li>IP地址管理机构在分配IP地址时<strong>只分配网络号</strong>(第一级)&#xff0c;而剩下的主机号(第二级)则由得到该网络号的单位自行分配&#xff1b;</li><li><strong>路由器仅根据目的主机所连接的网络号来转发分组</strong>(而不考虑目的主机号)&#xff0c;这样就可以使路由表中的项目数大幅度减少&#xff0c;从而减小了路由表所占的存储空间以及查找路由表的时间。</li></ul>
+</li><li>
+<p><strong>实际上IP地址是标志一台主机(或路由器)和一条链路的接口</strong>。当一台主机同时连接到两个网络上时&#xff0c;该主机就必须同时具有两个相应的IP地址&#xff0c;其网络号必须是不同的。这种主机称为多归属主机(multihomed host)。由于一个路由器至少应当连接到两个网络&#xff0c;因此<strong>一个路由器至少应当有两个不同的IP地址【不同网络号】</strong>。</p>
+</li><li>
+<p><strong>用放大器【物理层】或网桥【数据链路层】连接起来的若干个局域网仍为一个网络</strong>&#xff0c;因为这些局域网都具有<strong>同样的网络号</strong>。具有不同网络号的局域网必须使用路由器进行互连。</p>
+</li><li>
+<p>在IP地址中&#xff0c;<strong>所有分配到网络号的网络(不管是范围很小的局域网&#xff0c;还是可能覆盖很大地理范围的广域网)都是平等的。所谓平等</strong>&#xff0c;是指互联网同等对待每一个IP地址。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-06-26f5c29ed3.png" loading="lazy"></p>
+</li></ul>
+<p><strong>上图描述的是C类地址&#xff0c;前三个字节作为网络号</strong>:</p>
+<ul><li><strong>同一个局域网上的主机或路由器中的ip地址中的网络号必须是一样的</strong></li><li>两个路由器直连时可以不分配IP地址</li><li>用网桥&#xff08;交换机&#xff09;互联的网段仍然是一个局域网</li></ul>
+<p><strong>网络地址的主机号为全0&#xff0c;网络地址代表着整个网络</strong>。例如LAN2(<strong>222.1.2.0</strong>)</p>
+<h4><a rel="noopener noreferrer" id="IP_91"></a>IP地址与硬件地址</h4>
+<p>在局域网中&#xff0c;由于<strong>硬件地址已固化在网卡上的ROM中。因此常常将硬件地址称为物理地址</strong>。因为在局域网的<strong>MAC帧</strong>中的源地址和目的地址都是硬件地址。因此<strong>硬件地址又称为MAC地址</strong>。物理地址、硬件地址和MAC地址常常作为同义词出现。要弄懂主机的IP地址与硬件地址的区别。</p>
+<p>下图说明了这两种地址的区别。从层次的角度看&#xff0c;<strong>物理地址是数据链路层和物理层使用的地址</strong>&#xff0c;<strong>而IP地址是网络层和以上各层使用的地址&#xff0c;是一种逻辑地址</strong>(称IP地址为逻辑地址是因为IP地址是用软件实现的)<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-07-488d9a96f5.png" loading="lazy"><br />
+这里要强调指出以下几点&#xff1a;</p>
+<ul><li><strong>在IP层抽象的互联网上只能看到IP数据报</strong>。发送过程中IP地址不会变化。举个例子&#xff0c;虽然IP数据报从IP1发往IP2要经过路由器R1和R2的两次转发&#xff0c;但在它的首部中的源地址和目的地址始终分别是IP1和IP2。</li><li>虽然在IP数据报首部有源站IP地址&#xff0c;但<strong>路由器只根据目的站的IP地址的网络号进行路由选择</strong>。</li><li><strong>在局域网的链路层&#xff0c;只能看见MAC帧</strong>。IP数据报被封装在MAC帧中。<strong>MAC帧在不同网络上传送时&#xff0c;其MAC帧首部中的源地址和目的地址会发生变化</strong>。举个例子&#xff0c;MAC帧从IP1发往IP2要经过路由器R1和R2的两次转发&#xff0c;它的首部中的源地址和目的地址会因转发而发生变化&#xff0c;但是&#xff0c; MAC帧的首部的这种变化&#xff0c;在上面的IP层上是看不见的。</li><li>尽管互连在一起的网络的硬件地址体系各不相同&#xff0c;但<strong>IP层抽象的互联网却屏蔽了下层这些很复杂的细节。只要我们在网络层上讨论问题&#xff0c;就能够使用统一的、抽象的IP地址研究主机和主机或路由器之间的通信</strong>。上述的这种“屏蔽”概念是一个很有用、很普遍的基本概念。</li></ul>
+<p>我们可以从不同层次上看ip地址和硬件地址&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-08-026ad15b0f.png" loading="lazy"></p>
+<p>而ip地址到硬件地址的映射&#xff0c;由ARP协议来完成&#xff0c;注意&#xff0c;<strong>APR协议是解决同一个局域网上的主机或者路由器的IP地址和硬件地址的映射问题。</strong></p>
+<h4><a rel="noopener noreferrer" id="ARP_108"></a>地址解析协议ARP</h4>
+<p>己经知道了一个机器(主机或路由器)的IP地址&#xff0c;<strong>需要找出其相应的硬件地址</strong>。地址解析协议ARP就是用来解决这样的问题的&#xff0c;由于是IP协议使用了ARP协议&#xff0c;因此通常就把ARP协议划归网络层。但<strong>ARP协议的用途是为了从网络层使用的IP地址&#xff0c;解析出在数据链路层使用的硬件地址</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-09-a9cd322519.png" loading="lazy"><br />
+<strong>场景举例</strong>&#xff1a;主机A的IP地址为192.168.1.1&#xff0c;MAC地址为0A-11-22-33-44-01&#xff1b;主机B的IP地址为192.168.1.2&#xff0c;MAC地址为0A-11-22-33-44-02&#xff1b;注意&#xff0c;<strong>需要是同一局域网内的解析</strong>当主机A要与主机B通信时&#xff0c;地址解析协议可以将主机B的IP地址&#xff08;192.168.1.2&#xff09;解析成主机B的MAC地址&#xff0c;以下为工作流程&#xff1a;</p>
+<ol><li>根据主机A上的路由表内容&#xff0c;IP确定用于访问主机B的转发IP地址是192.168.1.2。然后<strong>A主机在自己的本地ARP缓存中检查主机B的匹配MAC地址</strong>。</li><li>如果主机A在ARP缓存中没有找到映射&#xff0c;<strong>它将询问192.168.1.2的硬件地址&#xff0c;从而将ARP请求帧广播到本地网络上的所有主机。<strong>源主机A的IP地址和MAC地址都包括在ARP请求中。本地网络上的</strong>每台主机都接收到ARP请求并且检查是否与自己的IP地址匹配。如果主机发现请求的IP地址与自己的IP地址不匹配&#xff0c;它将丢弃ARP请求。</strong></li><li>主机B确定ARP请求中的IP地址与自己的IP地址匹配&#xff0c;<strong>则将主机A的IP地址和MAC地址映射添加到本地ARP缓存中。</strong></li><li><strong>主机B将包含其MAC地址的ARP回复消息直接发送回主机A。</strong></li><li>当主机A收到从主机B发来的ARP回复消息时&#xff0c;会用主机B的IP和MAC地址映射更新ARP缓存。本机缓存是有生存期的&#xff0c;生存期结束后&#xff0c;将再次重复上面的过程。<strong>主机B的MAC地址一旦确定&#xff0c;主机A就能向主机B发送IP通信了。</strong></li></ol>
+<p>需要注意的是&#xff1a;<strong>ARP是广播发送&#xff0c;ARP响应是单播发送的</strong>。</p>
+<h5><a rel="noopener noreferrer" id="ARP_119"></a>ARP欺骗</h5>
+<p>地址解析协议是建立在网络中各个主机互相信任的基础上的&#xff0c;网络上的主机可以自主发送ARP应答消息&#xff0c;其他主机收到应答报文时不会检测该报文的真实性就会将其记入本机ARP缓存&#xff1b;由此攻击者就可以向某一主机发送伪ARP应答报文&#xff0c;使其发送的信息无法到达预期的主机或到达错误的主机&#xff0c;这就构成了一个<strong>ARP欺骗</strong>。ARP命令可用于查询本机ARP缓存中IP地址和MAC地址的对应关系、添加或删除静态对应关系等。</p>
+<h5><a rel="noopener noreferrer" id="ARP_121"></a>跨局域网ARP</h5>
+<p>ARP是解决<strong>同一个局域网</strong>上的主机或路由器的IP地址和硬件地址的映射问题。那么不同局域网的通讯是如何做到的呢&#xff0c;</p>
+<ul><li>连接不同局域网的设备&#xff08;主机或路由器&#xff09;<strong>有多个IP</strong>&#xff0c;只要主机或路由器要和一个网络上的另一个己知IP地址的主机或路由器进行通信&#xff0c;ARP协议就会自动地把这个IP地址解析为链路层所需要的硬件地址。从IP地址到硬件地址的解析是自动进行的&#xff0c;主机的用户对这种地址解析过程是不知道的。</li></ul>
+<h5><a rel="noopener noreferrer" id="ARP_124"></a>为什么要用ARP</h5>
+<p>既然在网络链路上传送的帧最终是按照硬件地址找到目的主机的&#xff0c;那么为什么我们还要使用抽象的IP地址&#xff0c;而不直接使用硬件地址进行通信?这样似乎可以免除使用ARP。</p>
+<ul><li>由于全世界存在着各<strong>式各样的网络&#xff0c;它们使用不同的硬件地址</strong>。要使这些异构网络能够互相通信就必须进行非常复杂的硬件地址转换工作&#xff0c;因此由用户或用户主机来完成这项工作几乎是不可能的事。但IP编址把这个复杂问题解决了。</li></ul>
+<p>因此&#xff0c;在虚拟的IP网络上用IP地址进行通信给广大的计算机用户带来很大的方便</p>
+<h4><a rel="noopener noreferrer" id="RARP_129"></a>逆地址解析协议RARP</h4>
+<p>逆地址解析协议&#xff0c;即RARP&#xff0c;功能和ARP协议相对&#xff0c;<strong>其将局域网中某个主机的物理地址转换为IP地址</strong>&#xff0c;比如局域网中有一台主机只知道物理地址而不知道IP地址&#xff0c;那么可以通过RARP协议发出征求自身IP地址的广播请求&#xff0c;然后由RARP服务器负责回答。</p>
+<p>RARP是逆地址解析协议&#xff0c;作用是完成硬件地址到IP地址的映射&#xff0c;<strong>主要用于无盘工作站&#xff0c;因为给无盘工作站配置的IP地址不能保存</strong>。RARP协议工作流程&#xff1a;</p>
+<ol><li>给主机发送一个本地的RARP广播&#xff0c;在此广播包中&#xff0c;<strong>声明自己的MAC地址并且请求任何收到此请求的RARP服务器分配一个IP地址</strong></li><li>本地网段上的RARP服务器收到此请求后&#xff0c;<strong>检查其RARP列表&#xff0c;查找该MAC地址对应的IP地址</strong></li><li>如果存在&#xff0c;<strong>RARP服务器就给源主机发送一个响应数据包并将此IP地址提供给对方主机使用</strong></li><li>如果不存在&#xff0c;RARP服务器对此不做任何的响应</li><li>源主机收到从RARP服务器的响应信息&#xff0c;就利用得到的IP地址进行通讯&#xff1b;如果一直没有收到RARP服务器的响应信息&#xff0c;表示初始化失败。</li></ol>
+<p>应用场景较少&#xff0c;可以不关注。</p>
+<h4><a rel="noopener noreferrer" id="IP_141"></a>IP数据报</h4>
+<p>IP数据报的主要格式如下图所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-10-83e07410c6.png" loading="lazy"><br />
+一个IP数据报由<strong>首部</strong>和<strong>数据</strong>两部分组成。首部的前一部分是固定长度&#xff0c;共20字节&#xff0c;是所有IP数据报必须具有的。在首部的固定部分的后面是一些可选字段&#xff0c;其长度是可变的。下面介绍首部各字段的意义。<strong>IP数据报首部的固定部分中的各字段</strong></p>
+<ul><li><strong>版本</strong>&#xff0c;占4位&#xff0c;指IP协议的版本。<strong>通信双方使用的IP协议的版本必须一致</strong>。目前广泛使用的IP协议版本号为4(即IPv4)。关于以后要使用的IPv6(即版本6的IP协议)</li><li><strong>首部长度</strong>&#xff0c;长度占4位&#xff0c;可表示的最大十进制数值是15。表明IP数据报的首部长度。最小值0101(5)&#xff0c;最大值1111(15)&#xff0c;单位是32字&#xff08;4字节&#xff09;。</li><li><strong>区分服务</strong>&#xff0c;占8位&#xff0c;用来获得更好的服务。在一般的情况下都不使用这个字段。</li><li><strong>总长度</strong>&#xff0c;总长度字段为16位&#xff0c;<strong>表明首部和数据之和的长度&#xff0c;单位为字节</strong>。在数据链路层blog中提到&#xff0c;在IP层下面的每一种数据链路层协议都规定了一个数据帧中的数据字段的最大长度&#xff0c;这称为最大传送单元<strong>MTU</strong> 。当一个IP数据报封装成链路层的帧时&#xff0c;此数据报的总长度(即首部加上数据部分)一定不能超过下面的数据链路层所规定的MTU值。例如&#xff0c;最常用的以太网就规定其MTU值是1500字节。若所传送的数据报长度超过数据链路层的MTU值&#xff0c;就必须把过长的数据报进行分片处理。在进行分片时(见后面的“片偏移”字段)&#xff0c;<strong>数据报首部中的“总长度”字段是指分片后的每一个分片的首部长度与该分片的数据长度的总和</strong>。</li><li><strong>标识</strong>&#xff0c;占16位。IP软件在存储器中维持一个计数器&#xff0c;每产生一个数据报&#xff0c;计数器就加1&#xff0c;并将此值赋给标识字段。但这个“标识”并不是序号&#xff0c;<strong>因为IP是无连接服务&#xff0c;数据报不存在按序接收的问题</strong>。当数据报由于长度超过网络的MTU而必须分片时&#xff0c;这个标识字段的值就被复制到所有的数据报片的标识字段中。相同的标识字段的值使分片后的各数据报片最后能正确地重装成为原来的数据报。</li><li><strong>标志</strong>&#xff0c;占3位&#xff0c;但目前只有两位有意义。标志字段中的最低位记为MF (More Fragment)。<strong>MF&#61;1即表示后面“还有分片”的数据报。MF &#61; 0表示这己是若千数据报片中的最后一个</strong>。标志字段中间的一位记为DF (Don’t Fragment)&#xff0c;意思是“不能分片”。<strong>只有当DF &#61; 0时才允许分片</strong>。</li><li><strong>片偏移</strong>&#xff0c;占13位。片偏移指出&#xff1a;<strong>较长的分组在分片后&#xff0c;某片在原分组中的相对位置</strong>。也就是说&#xff0c;相对于用户数据字段的起点&#xff0c;该片从何处开始。片偏移以8个字节为偏移单位。这就是说&#xff0c;<strong>每个分片的长度一定是8字节(64位)的整数倍</strong>。</li><li><strong>生存时间</strong>&#xff0c;占8位&#xff0c;生存时间字段常用的英文缩写是TTL (Time To Live)&#xff0c;表明这是<strong>数据报在网络中的寿命。由发出数据报的源点设置这个字段</strong>。其目的是防止无法交付的数据报无限制地在互联网中兜圈子(例如从路由器R1,转发到R2&#xff0c;再转发到R3&#xff0c;然后又转发到R1)&#xff0c;因而白白消耗网络资源。TTL的意义是指明数据报在互联网中至多可经过多少个<strong>路由器</strong> TTL值就减小到零&#xff0c;就会被转发路由器丢弃。</li><li><strong>协议</strong>&#xff0c;占8位&#xff0c;协议字段指出此数据报携带的数据是使用何种协议&#xff0c;<strong>以便使目的主机的IP层知道应将数据部分上交给哪个协议进行处理</strong>。常用的一些协议和相应的协议字段值如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-11-a453d0f43c.png" loading="lazy"></li><li><strong>首部检验和</strong>&#xff0c; 占16位.<strong>这个字段只检验数据报的首部&#xff0c;但不包括数据部分</strong>。这是因为数据报每经过一个路由器&#xff0c;路由器都要重新计算一下首部检验和(一些字段&#xff0c;如生存时间、标志、片偏移等都可能发生变化)。不检验数据部分可减少计算的工作量。为了进一步减小计算检验和的工作量&#xff0c;<strong>IP首部的检验和不采用复杂的CRC检验码而采用一种简单的计算方法</strong>。</li><li><strong>源地址</strong> 占32位。</li><li><strong>目的地址</strong> 占32位。</li></ul>
+<p>IP数据报首部的可变部分&#xff0c;IP数据报首部的可变部分就是一个选项字段。选项字段用来支持<strong>排错、测量以及安全</strong>等措施&#xff0c;</p>
+<h3><a rel="noopener noreferrer" id="IP_162"></a>IP数据报分组转发算法</h3>
+<p>分组转发是指在互联网络中<strong>路由器转发IP分组的物理传输过程与数据报转发机制</strong>。根据<strong>分组的目的IP地址与源IP地址是否属于同一个子网</strong>可分为直接转发和间接转发在路由表中&#xff0c;对每一条路由最主要的是以下两个信息&#xff1a;<code>(目的网络地址&#xff0c;下一跳地址)</code>&#xff0c;在互联网上转发分组时&#xff0c;是<strong>从一个路由器转发到下一个路由器</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-12-22b6e10a7d.png" loading="lazy"><br />
+在IP数据报的首部中<strong>没有地方可以用来指明“下一跳路由器的IP地址”</strong>。在IP数据报的首部写上的IP地址是源IP地址和目的IP地址&#xff0c;而没有中间经过的路由器的IP地址。那么待转发的数据报又怎样能够找到下一跳路由器呢?</p>
+<ul><li>当路由器收到一个待转发的数据报&#xff0c;在从路由表得出下一跳路由器的IP地址后&#xff0c;不是把这个地址填入IP数据报&#xff0c;而是<strong>送交数据链路层的网络接口软件。网络接口软件负责把下一跳路由器的IP地址转换成硬件地址(必须使用ARP)&#xff0c;并将此硬件地址放在链路层的MAC帧的首部&#xff0c;然后根据这个硬件地址找到下一跳路由器</strong>。</li></ul>
+<p>分组转发算法归纳&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-13-5f5b3d821d.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_171"></a>划分子网和构造超网</h3>
+<p>上面所讨论的是IP层怎样根据路由表的内容进行分组转发&#xff0c;而<strong>没有涉及到路由表一开始是如何建立的以及路由表中的内容应如何进行更新</strong>。但是在进一步讨论路由选择之前&#xff0c;我们还要先介绍划分子网和构造超网这两个非常重要的概念。</p>
+<h4><a rel="noopener noreferrer" id="_173"></a>划分子网</h4>
+<p>从两级IP地址到三级IP地址&#xff0c;在早期&#xff0c;原来的两级IP地址的设计不够合理。</p>
+<ul><li>第一&#xff0c;<strong>IP地址空间的利用率有时很低</strong>。有的单位申请到了一个B类地址网络&#xff0c;但所连接的主机数并不多&#xff0c;可是又不愿意申请一个足够使用的C类地址&#xff0c;理由是考虑到今后可能的发展。</li><li>第二&#xff0c;<strong>给每一个物理网络分配一个网络号会使路由表变得太大因而使网络性能变坏</strong>。</li><li>第三&#xff0c;<strong>两级IP地址不够灵活</strong>。有时情况紧急&#xff0c;一个单位需要在新的地点马上开通一个新的网络。但是在申请到一个新的IP地址之前&#xff0c;新增加的网络是不可能连接到互联网上工作的。</li></ul>
+<p>为解决上述问题&#xff0c;从1985年起在IP地址中又增加了一个“<strong>子网号字段</strong>”&#xff0c;使两级IP地址变成为三级IP地址&#xff0c;它能够较好地解决上述问题&#xff0c;并且使用起来也很灵活。这种做法叫做划分子网(subnetting) [RFC 950]。或子网寻址或子网路由选择 。划分子网己成为互联网的正式标准协议。<strong>划分子网是通过借用IP地址的若干位主机位来充当子网地址从而将原网络划分为若干子网而实现的</strong>。划分子网的思路如下&#xff1a;</p>
+<ul><li>划分子网时&#xff0c;随着子网地址借用主机位数的增多&#xff0c;子网的数目随之增加&#xff0c;而每个子网中的可用主机数逐渐减少。</li></ul>
+<h5><a rel="noopener noreferrer" id="_181"></a>子网划分举例</h5>
+<p>以C类网络为例&#xff0c;原有8位主机位&#xff0c;2的8次方即256个主机地址&#xff0c;<strong>默认子网掩码255.255.255.0</strong>。</p>
+<ul><li>借用1位主机位&#xff0c;产生2个子网&#xff0c;每个子网有126个主机地址</li><li>借用2位主机位&#xff0c;产生4个子网&#xff0c;每个子网有62个主机地址</li></ul>
+<p>每个网中&#xff0c;<strong>第一个IP地址&#xff08;即主机部分全部为0的IP&#xff09;和最后一个IP&#xff08;即主机部分全部为1的IP&#xff09;不能分配给主机使用&#xff0c;所以每个子网的可用IP地址数为总IP地址数量减2</strong>&#xff1b;根据子网ID借用的主机位数&#xff0c;我们可以计算出划分的子网数、掩码、每个子网主机数。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-14-70659b37c3.png" loading="lazy"><br />
+若子网占用7位主机位时&#xff0c;主机位只剩一位&#xff0c;无论设为0还是1&#xff0c;都意味着主机位是全0或全1。由于主机位全0表示本网络&#xff0c;全1留作广播地址&#xff0c;这时子网实际没有可用主机地址&#xff0c;所以主机位至少应保留2位</p>
+<h5><a rel="noopener noreferrer" id="_189"></a>子网掩码</h5>
+<p>子网掩码(subnet mask)又叫网络掩码、地址掩码、子网络遮罩&#xff0c;它是一种用来指明一个IP地址的哪些位标识的是主机所在的子网&#xff0c;以及哪些位标识的是主机的位掩码。子<strong>网掩码不能单独存在&#xff0c;它必须结合IP地址一起使用。子网掩码只有一个作用&#xff0c;就是将某个IP地址划分成网络地址和主机地址两部分</strong>。</p>
+<ul><li>子网掩码是标志两个IP地址是否同属于一个子网的&#xff0c;也是32位二进制地址&#xff0c;<strong>其每一个为1代表该位是网络位&#xff0c;为0代表主机位</strong>。它和IP地址一样也是使用<strong>点式十进制</strong>来表示的。</li><li><strong>如果两个IP地址在子网掩码的按位与的计算下所得结果相同&#xff0c;即表明它们共属于同一子网中。</strong></li></ul>
+<p>其实就是用主机位为0与掉ip地址里1的部分&#xff0c;这样就证明在同一个网段。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-15-5cdf515dfa.png" loading="lazy"><br />
+如果一个网络不划分子网&#xff0c;那么该网络的子网掩码就使用默认子网掩码<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-ext-5b48a8c54670.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="_198"></a>带有子网掩码的分组转发算法</h5>
+<p>子网划分后&#xff0c;路由转发算法就得带着子网掩码进行计算了。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-17-357acaf850.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="_201"></a>子网掩码、子网、主机相互计算</h5>
+<blockquote>
+<p><strong>利用子网数来计算子网掩码</strong></p>
+</blockquote>
+<p>如果想把B类地址168.195.0.0划分成27个子网&#xff0c;则子网掩码为&#xff1a;</p>
+<ol><li>把数目转化为二进制&#xff1a;27个子网&#xff0c;二进制为11011</li><li>取得该二进制位数&#xff1a;5</li><li>将B类地址168.195.0.0的主机位前5位置1&#xff0c;得到255.255.248.0</li></ol>
+<blockquote>
+<p><strong>利用主机数来计算子网掩码</strong></p>
+</blockquote>
+<p>如欲将B类IP地址168.195.0.0划分成若干子网&#xff0c;每个子网内有主机700台&#xff1a;</p>
+<ol><li>700台主机转为二进制&#xff0c;700 &#61; 10 10111100</li><li>如果主机数<strong>小于或等于254</strong>&#xff08;注意去掉保留的两个IP地址&#xff09;&#xff0c;则取得该主机的二进制位数&#xff0c;为N&#xff0c;这里肯定 N&lt;8。如果大于254&#xff0c;则 N&gt;8&#xff0c;这就是说主机地址将占据不止8位&#xff1b;<strong>占据10位二进制位</strong></li><li>则子网掩码为255.255.11111100,00000000, 也就是<strong>255.255.252.0</strong></li></ol>
+<p><img alt="在这里插入图片描述" src="./posts/assets/77769049-18-587ef33a19.png" loading="lazy"></p>
+<blockquote>
+<p><strong>利用掩码求主机数</strong></p>
+</blockquote>
+<p>把网络202.112.78.0划分为多个子网&#xff08;子网掩码是255.255.255.192&#xff09;&#xff0c;则各子网中可用的主机地址总数是&#xff0c;因为192占用2位且是C类地址&#xff0c;<strong>每个子网的主机数是2^6-2 &#61; 62&#xff0c;所以总的主机数是124</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_226"></a>构建超网</h4>
+<p>无分类域IBS路由选择CIDR &#xff0c;<strong>CIDR消除了传统的A类、B类和C类地址以及划分子网的概念</strong>&#xff0c;<strong>CIDR把网络前缀都相同的连续的IP地址组成一个“CIDR地址块”</strong></p>
+<h3><a rel="noopener noreferrer" id="_230"></a>路由选择协议</h3>
+<p>路由选择协议也叫做内部网关协议&#xff0c;主要讨论<strong>路由表中的路由是怎样得出的</strong>。路由选择协议的核心就是路由算法&#xff0c;即需要何种算法来获得路由表中的各项目。</p>
+<h4><a rel="noopener noreferrer" id="_232"></a>理想的路由算法</h4>
+<p><strong>一个理想的路由算法应具有如下的一些特点</strong>&#xff1a;</p>
+<ul><li><strong>算法必须是正确的和完整的</strong>。这里&#xff0c;“正确”的含义是&#xff1a;沿着各路由表所指引的路由&#xff0c;分组一定能够最终到达目的网络和目的主机。</li><li><strong>算法在计算上应简单</strong>。路由选择的计算不应使网络通信量增加太多的额外开销。</li><li><strong>算法应能适应通信量和网络拓扑的变化&#xff0c;这就是说&#xff0c;要有自适应性</strong>。当网络中的通信量发生变化时&#xff0c;算法能自适应地改变路由以均衡各链路的负载。当某个或某些结点、链路发生故障不能工作&#xff0c;或者修理好了再投入运行时&#xff0c;算法也能及时地改变路由。有时称这种自适应性为“稳健性”(robustness)。</li><li><strong>算法应具有稳定性</strong>。在网络通信量和网络拓扑相对稳定的情况下&#xff0c;路由算法应收敛于一个可以接受的解&#xff0c;而不应使得出的路由不停地变化。</li><li><strong>算法应是公平的</strong>。路由选择算法应对所有用户(除对少数优先级高的用户)都是平等的。例如&#xff0c;若仅仅使某一对用户的端到端时延为最小&#xff0c;但却不考虑其他的广大用户&#xff0c;这就明显地不符合公平性的要求。</li><li><strong>算法应是最佳的</strong>。路由选择算法应当能够找出最好的路由&#xff0c;使得分组平均时延最小而网络的吞吐量最大。虽然我们希望得到“最佳”的算法&#xff0c;但这并不总是最重要的。对于某些网络&#xff0c;网络的可靠性有时要比最小的分组平均时延或最大吞吐量更加重要。因此&#xff0c;所谓“最佳”只能是相对于某一种特定要求下得出的较为合理的选择而已。</li></ul>
+<p>应当指出&#xff0c;路由选择是个非常复杂的问题&#xff0c;因为<strong>它是网络中的所有结点共同协调工作的结果。并且路由选择的环境往往是不断变化的&#xff0c;而这种变化有时无法事先知道</strong>。</p>
+<p>从路由算法能否随网络的通信量或拓扑自适应地进行调整变化来划分&#xff0c;则只有两大类</p>
+<ul><li><strong>静态路由选择</strong>&#xff0c;也叫做非自适应路由选择&#xff0c;其特点是简单和开销较小&#xff0c;但不能及时适应网络状态的变化.<strong>对于很简单的小网络&#xff0c;完全可以采用静态路由选择</strong>&#xff0c;用人工配置每一条路由。</li><li><strong>动态路由选择</strong>&#xff0c;也叫做自适应路由选择&#xff0c;其特点是能较好地适应网络状态的变化&#xff0c;但实现起来较为复杂&#xff0c;开销也比较大。因此&#xff0c;<strong>动态路由选择适用于较复杂的大网络</strong>。</li></ul>
+<h4><a rel="noopener noreferrer" id="_247"></a>分层次的路由选择协议</h4>
+<p>互联网采用的路由选择协议主要是<strong>自适应的(即动态的)、分布式路由选择协议</strong>。由于以下两个原因&#xff0c;互联网采用分层次的路由选择协议&#xff1a;</p>
+<ul><li><strong>互联网的规模非常大。如果让所有的路由器知道所有的网络应怎样到达&#xff0c;则这种路由表将非常大</strong>&#xff0c;处理起来也太花时间。而所有这些路由器之间交换路由信息所需的带宽就会使互联网的通信链路饱和。</li><li><strong>许多单位不愿意外界了解自己单位网络的布局细节和本部门所采用的路由选择协议</strong>(这属于本部门内部的事情)&#xff0c;但同时还希望连接到互联网上。</li></ul>
+<p>为此&#xff0c;<strong>可以把整个互联网划分为许多较小的自治系统(autonomous system)&#xff0c;一般都记为AS。自治系统AS是在单一技术管理下的一组路由器&#xff0c;而这些路由器使用一种自治系统内部的路由选择协议和共同的度量</strong>。一个AS对其他AS表现出的是一个单一的和一致的路由选择策略[RFC 4271]。</p>
+<p>在目前的互联网中&#xff0c;一个大的ISP就是一个自治系统。这样&#xff0c;互联网就把路由选择协议划分为两大类&#xff0c;即&#xff1a;</p>
+<ul><li><strong>内部网关协议IGP</strong> (Interior Gateway Protocol)&#xff0c;即在一个<strong>自治系统内部使用的路由选择协议</strong>&#xff0c;而这与在互联网中的其他自治系统选用什么路由选择协议无关。目前这类路由选择协议使用得最多&#xff0c;<strong>如RIP和OSPF协议</strong>。</li><li><strong>外部网关协议EGP</strong> (External Gateway Protocol)若源主机和目的主机处在<strong>不同的自治系统中(这两个自治系统可能使用不同的内部网关协议)</strong>&#xff0c;当数据报传到一个自治系统的边界时&#xff0c;就需要使用一种协议将路由选择信息传递到另一个自治系统中。这样的协议就是外部网关协议EGP.目前使用最多的外部网关协议是<strong>BGP</strong>的版本4 (BGP-4).</li></ul>
+<p>自治系统之间的路由选择也叫做<strong>域间路由选择</strong>(interdomain routing)&#xff0c;而在自治系统内部的路由选择叫做<strong>域内路由选择</strong>(intradomain routing)。</p>
+<p>每个自治系统自己决定在本自治系统内部运行哪一个内部路由选择协议(例如&#xff0c;可以是RIP&#xff0c;也可以是OSPF)。但<strong>每个自治系统都有一个或多个路由器(图中的路由器R1和R2)除运行本系统的内部路由选择协议外&#xff0c;还要运行自治系统间的路由选择协议(BGP-4)</strong></p>
+<h4><a rel="noopener noreferrer" id="RIP_263"></a>内部网关协议RIP协议</h4>
+<p>RIP是一种分布式的基于距离向量的路由选择协议&#xff0c;是互联网的标准协议&#xff0c;其最大优点就是简单.RIP协议要求网络中的每一个路由器都要维护从它自己到其他每一个目的网络的距离记录(因此&#xff0c;这是一组距离&#xff0c;即**“距离向量”)。RIP协议将“距离”**定义如下:</p>
+<ul><li>从一路由器到直接连接的网络的距离定义为1。</li><li>从一路由器到非直接连接的网络的距离定义为<strong>所经过的路由器数加1</strong>。“加1”是因为到达目的网络后就进行直接交付&#xff0c;而到直接连接的网络的距离己经定义为1。</li></ul>
+<p>RIP协议的“距离”也称为**“跳数”(hop count)&#xff0c;因为每经过一个路由器&#xff0c;跳数就加1。RIP认为好的路由就是它通过的路由器的数目少&#xff0c;即“距离短”。<strong>RIP允许一条路径最多只能包含15个路由器。因此&#xff0c;“距离”等于16时即相当于不可达。可见RIP只适用于小型互联网</strong></p>
+<h5><a rel="noopener noreferrer" id="RIP_269"></a>RIP协议特点</h5>
+<p>RIP协议有如下几个特点&#xff1a;</p>
+<ul><li><strong>仅和相邻路由器交换信息</strong>。如果两个路由器之间的通信不需要经过另一个路由器&#xff0c;那么这两个路由器就是相邻的。RIP协议规定&#xff0c;不相邻的路由器不交换信息.</li><li><strong>路由器交换的信息是当前本路由器所知道的全部信息</strong>&#xff0c;即自己现在的路由表。也就是说&#xff0c;交换的信息是:“我到本自治系统中所有网络的(最短)距离&#xff0c;以及到每个网络应经过的下一跳路由器’&#xff0c;。</li><li><strong>按固定的时间间隔交换路由信息</strong>&#xff0c;例如&#xff0c;每隔30秒。然后路由器根据收到的路由信息更新路由表。当网络拓扑发生变化时&#xff0c;路由器也及时向相邻路由器通告拓扑变化后的路由信息</li></ul>
+<p>路由器在刚刚开始工作时&#xff0c;它的路由表是空的。然后路由器就得出到直接相连的几个网络的距离(这些距离定义为1)。接着&#xff0c;每一个路由器也只和数目非常有限的相邻路由器交换并更新路由信息。<strong>但经过若干次的更新后&#xff0c;所有的路由器最终都会知道到达本自治系统中任何一个网络的最短距离和下一跳路由器的地址。最后在自治系统中所有的结点都得到了正确的路由选择信息</strong></p>
+<h5><a rel="noopener noreferrer" id="RIP_277"></a>RIP报文</h5>
+<p>RIP的报文如下&#xff0c;不展开说了&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769049-19-a7dddfb5d4.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="OSPF_281"></a>内部网关协议OSPF</h4>
+<p>这个协议的名字是开放最短路径优先OSPF (Open Shortest Path First)。它是为克服RIP的缺点在1989年开发出来的。OSPF的原理很简单&#xff0c;但实现起来却较复杂。“开放”表明OSPF协议不是受某一家厂商控制&#xff0c;而是公开发表的。“最短路径优先”是因为使用了Dijkstra提出的最短路径算法SPF。</p>
+<p>OSPF最主要的特征就是使用分布式的链路状态协议((link state protocol)&#xff0c;而不是像RIP那样的距离向量协议。和RIP协议相比&#xff0c;OSPF的三个要点和RIP的都不一样&#xff1a;</p>
+<ul><li><strong>向本自治系统中所有路由器发送信息</strong>。这里使用的方法是洪泛法((flooding)&#xff0c;这就是路由器通过所有输出端口<strong>向所有相邻的路由器发送信息</strong>。而每一个相邻路由器又再将此信息发往其所有的相邻路由器(但不再发送给刚刚发来信息的那个路由器)。这样&#xff0c;最终整个区域中所有的路由器都得到了这个信息的一个副本。我们应注意&#xff0c;RIP协议是仅仅向自己相邻的几个路由器发送信息。</li><li><strong>发送的信息就是与本路由器相邻的所有路由器的链路状态&#xff0c;但这只是路由器所知道的部分信息</strong>。所谓“链路状态”就是说明本路由器都和哪些路由器相邻&#xff0c;以及该链路的“度量”(metric). OSPF将这个“度量”用来表示费用、距离、时延、带宽&#xff0c;等等。这些都由网络管理人员来决定&#xff0c;因此较为灵活。有时为了方便就称这个度量为“代价”。我们应注意&#xff0c;对于RIP协议&#xff0c;发送的信息是:“<strong>到所有网络的距离和下一跳路由器</strong>”。</li><li><strong>只有当链路状态发生变化时&#xff0c;路由器才向所有路由器用洪泛法发送此信息</strong>。而不像RIP那样&#xff0c;不管网络拓扑有无发生变化&#xff0c;路由器之间都要定期交换路由表的信息。</li></ul>
+<p>OSPF的链路状态数据库能较快地进行更新&#xff0c;使各个路由器能及时更新其路由表。OSPF的更新过程收敛得快是其重要优点。有如下相关的术语&#xff1a;</p>
+<ul><li>路由器/Router&#xff1a;一种三层IP包的交换设备。在早期的IP文献中被称为网关/gateway。</li><li>自制系统/Autonomous System&#xff1a;一组使用相同路由协议交换路由信息的路由器&#xff0c;缩写为AS。</li><li>内部网关协议/Interior Gateway Protocol&#xff1a;被一个AS内的路由器所使用的路由协议&#xff0c;缩写为IGP。每个AS使用单一的IGP&#xff0c;不同的AS会使用不同的IGP。</li><li>路由器标识/Router ID&#xff1a;一个32位的数字&#xff0c;用以识别每台运行OSPF协议的路由器。在一个AS中&#xff0c;这个数字可以唯一地表示出一台路由器。</li><li>网络/Network&#xff1a;在本备忘录中&#xff0c;会表示IP网络/子网/超网。一个物理网络上可能设置有多个网络/子网号&#xff0c;我们把它们按照独立的网络来对待。物理点对点/point-to-point网络是个例外——无论在上面设置了多少网络/子网号&#xff08;如果有的话&#xff09;&#xff0c;都将其看作是一个网络。</li><li>网络掩码/Network mask&#xff1a;一个32位的数字&#xff0c;表示IP地址的范围来说明这是一个IP网络/子网/超网。本文以16进制来表示网络掩码。如将C类IP地址的网络掩码显示为0xffffff00&#xff0c;这一掩码在其他文献中经常被表示为255.255.255.0。</li><li>点对点网络/Point-to-point networks&#xff1a;仅仅连接一对路由器的网络。56k的串行线路是一个点对点网络的例子。</li><li>广播网络/Broadcast networks&#xff1a;支持多台&#xff08;大于两台&#xff09;路由器接入的网络&#xff0c;同时有能力发送一条信息就能到所有接入的路由器&#xff08;广播&#xff09;。网络上邻居路由器可以通过OSPF的Hello协议来动态发现。如果可能&#xff0c;OSPF协议将进一步使用多播。广播网络上的每一对路由器都被认为可以直接通讯。以太网/ethernet是一个广播网络的例子。</li><li>非广播网络/Non-broadcast networks&#xff1a;支持多台&#xff08;大于两台&#xff09;路由器接入的网络&#xff0c;但没有广播能力。网络上的邻居路由器通过OSPF的Hello协议来维持。但由于缺乏广播能力&#xff0c;需要一些配置信息的帮助来发现邻居。在非广播网络上&#xff0c;OSPF协议的数据通常需要被轮流发送到每一台邻居路由器上。X.25公用数据网/Public Data Network&#xff08;PDN&#xff09;是一个非广播网络的例子。在非广播网络上运行的OSPF有两种模式。第一种被称为非广播多路接入/non-broadcast multi-access&#xff08;<strong>NBMA</strong>&#xff09;&#xff0c;模拟OSPF在广播网络上的操作&#xff1b;第二种被称为点对多点/<strong>Point-to-MultiPoint</strong>&#xff0c;将非广播网络看作是一系列点对点的连接。非广播网络被作为NBMA网络还是点对多点网络&#xff0c;取决于OSPF在该网络上所配置的运行模式</li><li>接口/Interface&#xff1a;是指路由器与所接入的网络之间的一个连接。接口通过下层协议和路由协议获取与其相关的状态信息。指向网络的接口只和单一的IP地址及掩码相关&#xff08;除非是无编号的点对点网络&#xff09;。接口有时也被称为连接/link。</li><li>邻居路由器/Neighboring routers&#xff1a;在同一网络中都有接口的两台路由器。邻居关系是由OSPF的Hello协议来维持&#xff0c;并通常依靠Hello协议来动态发现。</li><li>邻接/Adjacency&#xff1a;用以在所选择的邻居路由器之间交换路由信息的关系。不是每对邻居路由器都会成为邻接。</li><li>连接状态宣告/Link state advertisement&#xff1a;描述路由器或网络自身状态的数据单元。对路由器来说&#xff0c;这包含它的接口和邻接状态。每一项连接状态宣告都被洪泛到整个路由域中。所有路由器和网络连接状态宣告的集合形成了协议的连接状态数据库。在本备忘录中&#xff0c;连接状态宣告被缩写为LSA。</li><li>Hello协议/Hello Protocol&#xff1a;在OSPF协议中&#xff0c;用于建立和维持邻居关系的部分。在广播网络中还被用于动态发现邻居路由器。</li><li>洪泛/Flooding&#xff1a;在OSPF协议中&#xff0c;用于OSPF路由器之间发送及同步连接状态数据库的部分。</li><li>指定路由器/Designated Router&#xff1a;在每个接入了至少两台路由器的广播和NBMA网络中都有一台作为指定路由器。指定路由器生成Network-LSA并在运行协议时完成其他特定职责。指定路由器通过Hello协议选举。&#xff08;译注&#xff1a;本文后边将缩写为DR&#xff09;</li><li>指定路由器的概念减少了广播和NBMA网络上所需要的邻接数量。同时也减少了路由协议所需要的流量及连接数据库的大小。</li><li>下层协议/Lower-level protocols&#xff1a;为IP及OSPF协议提供服务的下层网络接入协议。如为X.25 PDN服务的X.25 packet and frame level&#xff1b;以及为以太网服务的以太网数据链路层。</li></ul>
+<p>OSPF不用UDP而是直接用<strong>IP数据报传送(其IP数据报首部的协议字段值为89)</strong> OSPF构成的数据报很短。这样做可减少路由信息的通信量。数据报很短的另一好处是可以不必将长的数据报分片传送。分片传送的数据报只要丢失一个&#xff0c;就无法组装成原来的数据报&#xff0c;而整个数据报就必须重传</p>
+<h3><a rel="noopener noreferrer" id="IPv6_313"></a>IPv6</h3>
+<p>IPv6是Internet Protocol Version 6的缩写&#xff0c;其中Internet Protocol译为“互联网协议”。IPv6是IETF&#xff08;互联网工程任务组&#xff0c;Internet Engineering Task Force&#xff09;设计的用于替代现行版本IP协议&#xff08;IPv4&#xff09;的下一代IP协议&#xff0c;号称可以为全世界的每一粒沙子编上一个网址。由于IPv4最大的问题在于网络地址资源有限&#xff0c;严重制约了互联网的应用和发展。IPv6的使用&#xff0c;不仅能解决网络地址资源数量的问题&#xff0c;而且也解决了多种接入设备连入互联网的障碍 。</p>
+<h4><a rel="noopener noreferrer" id="_316"></a>基本首部</h4>
+<p>IPv6仍支持无连接的传送&#xff0c;但将协议数据单元PDU称为分组&#xff0c;而不是IPv4的数据报。为方便起见&#xff0c;本文仍采用数据报这一名词。IPv6所引进的主要变化如下&#xff1a;</p>
+<ul><li><strong>更大的地址空间</strong>。IPv6把地址从IPv4的32位增大到4倍&#xff0c;即增大到128位&#xff0c;使地址空间增大了2^96倍。这样大的地址空间在可预见的将来是不会用完的.</li><li><strong>扩展的地址层次结构</strong>。IPv6由于地址空间很大&#xff0c;因此可以划分为更多的层次。</li><li><strong>灵活的首部格式。</strong></li><li><strong>改进的选项</strong>。IPv6允许数据报包含有选项的控制信息&#xff0c;因而可以包含一些新的选项。但IPv6的首部长度是固定的&#xff0c;其选项放在有效载荷中。我们知道&#xff0c;IPv4所规定的选项是固定不变的&#xff0c;其选项放在首部的可变部分。</li><li><strong>允许协议继续扩充</strong>。这一点很重要&#xff0c;因为技术总是在不断地发展(如网络硬件的更新)而新的应用也还会出现。但我们知道&#xff0c;IPv4的功能是固定不变的。</li><li><strong>支持即插即用(即自动配置)。因此IPv6不需要使用DHCP</strong>。</li><li><strong>支持资源的预分配</strong>。IPv6支持实时视像等要求保证一定的带宽和时延的应用。</li><li><strong>IPv6首部改为8字节对齐</strong>(即首部长度必须是8字节的整数倍)。原来的IPv4首部是4字节对齐。</li></ul>
+<p>IPv6数据报由两大部分组成&#xff0c;即基<strong>本首部(base header)<strong>和后面的有</strong>效载荷(payload)</strong>。有效载荷也称为净负荷。有效载荷允许有零个或多个扩展首部(extension header)&#xff0c;再后面是数据部分(上图)。但请注意&#xff0c;所有的扩展首部并不属于IPv6数据报的首部。</p>
+<h4><a rel="noopener noreferrer" id="IPv6_330"></a>IPv6的地址</h4>
+<p>一般来讲&#xff0c;一个IPv6数据报的目的地址可以是以下三种基本类型地址之一&#xff1a;</p>
+<ul><li><strong>单播</strong>&#xff0c;单播就是传统的点对点通信。</li><li>**多播 ** 多播是一点对多点的通信&#xff0c;数据报发送到一组计算机中的每一个。IPv6没有采用广播的术语&#xff0c;而是将广播看作多播的一个特例。</li><li><strong>任播这是IPv6增加的一种类型。任播的终点是一组计算机&#xff0c;但数据报只交付其中的一个&#xff0c;通常是距离最近的一个</strong>。</li></ul>
+<p>在IPv6中&#xff0c;每个地址占128位&#xff0c;例如&#xff0c;一个用点分十进制记法的128位的地址为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">104.230</span><span class="token number">.140</span><span class="token number">.100</span><span class="token number">.255</span><span class="token number">.255</span><span class="token number">.255</span><span class="token number">.255</span><span class="token number">.0</span><span class="token number">.0</span><span class="token number">.17</span><span class="token number">.128</span><span class="token number">.150</span><span class="token number">.10</span><span class="token number">.255</span><span class="token number">.255</span>
+</code></pre>
+<p>为了使地址再稍简洁些&#xff0c;IPv6使用冒号十六进制记法(colon hexadecimal notation)&#xff0c;它把每个16位的值用十六进制值表示&#xff0c;各值之间用冒号分隔。例如&#xff0c;前文值改为冒号十六进制记法&#xff0c;就变成了&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">68E6</span><span class="token operator">:</span><span class="token number">8</span>C64<span class="token operator">:</span>FFFF<span class="token operator">:</span>FFFF<span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">1180</span><span class="token operator">:</span><span class="token number">960</span>A<span class="token operator">:</span>FFFF
+</code></pre>
+<p>在十六进制记法中&#xff0c;允许把数字前面的0省略。上面就把0000中的前三个0省略了。冒号十六进制记法还包含两个技术使它尤其有用。首先&#xff0c;冒号十六进制记法可以允许零压缩(zero compression)&#xff0c;即一连串连续的零可以为一对冒号所取代&#xff0c;例如:</p>
+<pre><code class="prism language-java">FF05<span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span>B3可压缩为FF05<span class="token operator">:</span><span class="token operator">:</span>B3
+</code></pre>
+<p>为了保证零压缩有一个不含混的解释&#xff0c;<strong>规定在任一地址中只能使用一次零压缩</strong>。该技术对己建议的分配策略特别有用&#xff0c;因为会有许多地址包含较长连续的零串。</p>
+<p>其次&#xff0c;冒号十六进制记法可结合使用点分十进制记法的后缀。我们下面会看到这种结合在IPv4向IPv6的转换阶段特别有用。例如&#xff0c;下面的串是一个合法的冒号十六进制记法&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">0</span><span class="token operator">:</span><span class="token number">128.10</span><span class="token number">.2</span><span class="token number">.1</span>&#xff0c;再使用零压缩&#xff0c;<span class="token number">128.10</span><span class="token number">.2</span><span class="token number">.1</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="IPv4IPv6_364"></a>从IPv4向IPv6过渡</h4>
+<p>由于现在整个互联网的规模太大&#xff0c;因此&#xff0c;“规定一个日期&#xff0c;从这一天起所有的路由器一律都改用IPv6&#34;&#xff0c;显然是不可行的。这样&#xff0c;向IPv6过渡只能采用逐步演进的办法&#xff0c;同时&#xff0c;还必须使新安装的IPv6系统能够向后兼容。这就是说&#xff0c;<strong>IPv6系统必须能够接收和转发IPv4分组&#xff0c;并且能够为IPv4分组洗择路由</strong>。</p>

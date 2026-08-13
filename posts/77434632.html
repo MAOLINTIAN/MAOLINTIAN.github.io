@@ -1,0 +1,60 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>从上往下打印出二叉树的每个节点&#xff0c;同层节点从左至右打印。</p>
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>二叉树的层序遍历&#xff0c;用一个队列来实现</p>
+
+<h3 id="代码">代码</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> offerTest;
+
+<span class="hljs-keyword">import</span> java.util.ArrayList;
+<span class="hljs-keyword">import</span> java.util.LinkedList;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:PrintFromTopToBottom
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月20日 下午9:15:55
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PrintFromTopToBottom</span> {<!-- --></span>
+
+    <span class="hljs-keyword">public</span> ArrayList&lt;Integer&gt; <span class="hljs-title">ListPrintFromTopToBottom</span>(TreeNode root) {
+        ArrayList&lt;Integer&gt; list &#61; <span class="hljs-keyword">new</span> ArrayList&lt;Integer&gt;();
+        LinkedList&lt;TreeNode&gt; queue &#61; <span class="hljs-keyword">new</span> LinkedList&lt;TreeNode&gt;();
+        <span class="hljs-keyword">if</span> (root &#61;&#61; <span class="hljs-keyword">null</span>) {
+            <span class="hljs-keyword">return</span> list;
+        }
+        queue.offer(root);
+        <span class="hljs-keyword">while</span> (!queue.isEmpty()) {
+            TreeNode current &#61; queue.poll();
+            list.add(current.val);
+            <span class="hljs-keyword">if</span> (current.left !&#61; <span class="hljs-keyword">null</span>) {
+                queue.offer(current.left);
+            }
+            <span class="hljs-keyword">if</span> (current.right !&#61; <span class="hljs-keyword">null</span>) {
+                queue.offer(current.right);
+            }
+        }
+        <span class="hljs-keyword">return</span> list;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span>(String[] args) {
+        <span class="hljs-comment">// TODO Auto-generated method stub</span>
+
+    }
+
+}
+</code></pre>

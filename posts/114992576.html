@@ -1,0 +1,156 @@
+<p>本篇blog主要介绍装箱拆箱问题&#xff0c;怎么实现的&#xff0c;有什么问题&#xff1f;首先 通过一道例题分析看几个基本函数表示什么&#xff1a;</p>
+<pre><code class="prism language-java">设有下面两个赋值语句&#xff1a;
+a <span class="token operator">&#61;</span> Integer<span class="token punctuation">.</span><span class="token function">parseInt</span><span class="token punctuation">(</span><span class="token string">&#34;1024&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+b <span class="token operator">&#61;</span> Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token string">&#34;1024&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">intValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+下述说法正确的是&#xff08;&#xff09;
+A<span class="token punctuation">,</span>  a是整数类型变量&#xff0c;b是整数类对象。
+B<span class="token punctuation">,</span>  a是整数类对象&#xff0c;b是整数类型变量。
+C<span class="token punctuation">,</span>  a和b都是整数类对象并且它们的值相等。
+D<span class="token punctuation">,</span>  a和b都是整数类型变量并且它们的值相等。
+</code></pre>
+<p>涉及的函数表示意义如下&#xff1a;</p>
+<ul><li><strong>intValue()<strong>是把</strong>Integer对象类型变成int的基础数据类型</strong>&#xff1b;</li><li><strong>parseInt()<strong>是把</strong>String 变成int的基础数据类型</strong>&#xff1b;</li><li><strong>ValueOf()是把String 转化成Integer对象类型&#xff1b;</strong>&#xff08;现在JDK版本支持自动装箱拆箱了。&#xff09;</li></ul>
+<p>本题&#xff1a;parseInt得到的是基础数据类型int&#xff0c;valueof得到的是装箱数据类型Integer&#xff0c;然后再通过valueInt转换成int&#xff0c;所以选择D</p>
+<h3><a rel="noopener noreferrer" id="_19"></a>基础类型和包装类型</h3>
+<p>每种基础类型都会对应一种包装类型&#xff0c;它们的对应关系如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114992576-01-4a51d337a9.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_22"></a>类型转换</h3>
+<p>那么基础类型和包装类型是如何进行类型转换的呢&#xff1f;</p>
+<pre><code class="prism language-java">下面赋值语句中正确的是&#xff08;&#xff09;
+A  <span class="token keyword">double</span> d<span class="token operator">&#61;</span><span class="token number">5.3e12</span><span class="token punctuation">;</span> <span class="token comment">//科学计数表示方法,需要注意的是表示范围是否越界</span>
+B  <span class="token keyword">float</span> f<span class="token operator">&#61;</span><span class="token number">11.1</span><span class="token punctuation">;</span>  <span class="token comment">//double--&gt;float 精度丢失,需要强转</span>
+C  <span class="token keyword">int</span> i<span class="token operator">&#61;</span><span class="token number">0.0</span><span class="token punctuation">;</span> <span class="token comment">//double--&gt;int 精度丢失,需要强转</span>
+D  Double oD<span class="token operator">&#61;</span><span class="token number">3</span>
+</code></pre>
+<p>在不加任何后缀情况下&#xff0c;整型默认为 int 浮点默认为 double&#xff0c;对于D选项&#xff0c;3是int类型&#xff0c;Double是包装器类型无法自动转型&#xff0c;所以应该表示为</p>
+<pre><code class="prism language-java"><span class="token keyword">double</span> d<span class="token operator">&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span> 自动转型<span class="token punctuation">,</span><span class="token keyword">int</span><span class="token operator">--</span><span class="token operator">&gt;</span><span class="token keyword">double</span>
+Double d <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">double</span><span class="token punctuation">)</span> <span class="token number">3</span><span class="token punctuation">;</span> 强转<span class="token operator">&#43;</span>自动装箱
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_37"></a>比较操作</h3>
+<p>通过一道例题来分析以下<code>&#61;&#61;</code>和<code>equals</code>的相关比较操作</p>
+<pre><code class="prism language-java">Integer i <span class="token operator">&#61;</span> <span class="token number">42</span><span class="token punctuation">;</span> <span class="token comment">//装箱</span>
+Long l <span class="token operator">&#61;</span> <span class="token number">42</span>l<span class="token punctuation">;</span>
+Double d <span class="token operator">&#61;</span> <span class="token number">42.0</span><span class="token punctuation">;</span>
+</code></pre>
+<p>下面为true的是</p>
+<pre><code class="prism language-java">A   <span class="token punctuation">(</span>i <span class="token operator">&#61;&#61;</span> l<span class="token punctuation">)</span>
+B   <span class="token punctuation">(</span>i <span class="token operator">&#61;&#61;</span> d<span class="token punctuation">)</span>
+C   <span class="token punctuation">(</span>l <span class="token operator">&#61;&#61;</span> d<span class="token punctuation">)</span>
+D   i<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>d<span class="token punctuation">)</span>
+E   d<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span>
+F   i<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span>
+G  l<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token number">42</span>L<span class="token punctuation">)</span>
+</code></pre>
+<p>依据三条原则来进行分析判断</p>
+<ul><li><strong>1&#xff0c;对于值类型来说比较大小就可以了&#xff0c;对于引用类型来说来说&#61;&#61;比较的是地址&#xff0c;equals比较的是类型&#43;值&#xff08;重写过&#xff0c;否则引用地址不同也不能相等&#xff09;</strong></li><li><strong>2&#xff0c;包装类的“&#61;&#61;”运算在遇到基本类型的情况下会自动拆箱</strong></li><li><strong>3&#xff0c;包装类的equals()方法不处理数据转型</strong></li></ul>
+<p>分析上题&#xff0c;ABC选项&#xff0c;都是包装类&#xff0c;引用类型&#xff0c;比较的是地址&#xff0c;<strong>地址不同&#xff0c;编译错误</strong>&#xff0c;DEF选项&#xff0c;因为equals方法不处理数据转型&#xff0c;所以还是比较<strong>类型</strong>&#xff0c;所以是错的&#xff0c;G是先对42L装箱&#xff0c;然后比较类型是否相同&#xff0c;如果相同&#xff0c;再比较值大小是否相同&#xff0c;显然都相同</p>
+<h3><a rel="noopener noreferrer" id="_64"></a>&#61;&#61;比较</h3>
+<p>基本型和基本型封装型进行“&#61;&#61;”运算符的比较。</p>
+<h4><a rel="noopener noreferrer" id="_66"></a>自动拆箱</h4>
+<p><strong>基本型封装型将会自动拆箱变为基本型后再进行比较</strong>&#xff0c;因此Integer(0)会自动拆箱为int类型再进行比较&#xff0c;显然返回true&#xff1b;</p>
+<pre><code class="prism language-java"><span class="token keyword">int</span> a <span class="token operator">&#61;</span> <span class="token number">220</span><span class="token punctuation">;</span>
+Integer b <span class="token operator">&#61;</span> <span class="token number">220</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>a<span class="token operator">&#61;&#61;</span>b<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//true</span>
+</code></pre>
+<p><strong>两个基本型的&#61;&#61;操作就是比值&#xff08;不管是不是同类型的基本型&#xff09;&#xff0c;但两个封装型的会先判断类型&#xff0c;类型不同报错&#xff0c;并且即使是同一类型也为false&#xff0c;因为引用指向的地址不同</strong></p>
+<h4><a rel="noopener noreferrer" id="Integer_75"></a>Integer特殊的值范围</h4>
+<p>两个Integer类型&#xff08;Integer.valueOf&#xff09;进行“&#61;&#61;”比较&#xff0c; 如果其值在**-128至127**  &#xff0c;那么返回true&#xff0c;否则返回false, 这跟Integer.valueOf()的缓冲对象有关。</p>
+<pre><code class="prism language-java">Integer c<span class="token operator">&#61;</span><span class="token number">3</span><span class="token punctuation">;</span>
+Integer h<span class="token operator">&#61;</span><span class="token number">3</span><span class="token punctuation">;</span>
+Integer e<span class="token operator">&#61;</span><span class="token number">321</span><span class="token punctuation">;</span>
+Integer f<span class="token operator">&#61;</span><span class="token number">321</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>c<span class="token operator">&#61;&#61;</span>h<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//true</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>e<span class="token operator">&#61;&#61;</span>f<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//false</span>
+</code></pre>
+<p>这个方法就是返回一个 Integer 对象&#xff0c;只是在返回之前&#xff0c;看作了一个判断&#xff0c;判断当前 i 的值是否在 [-128,127] 区别&#xff0c;且 IntegerCache 中是否存在此对象&#xff0c;如果存在&#xff0c;则直接返回引用&#xff0c;否则&#xff0c;创建一个新的对象。 创建新对象后当然就是不同的引用了。源代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> Integer <span class="token function">valueOf</span><span class="token punctuation">(</span>inti<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      assertIntegerCache<span class="token punctuation">.</span>high<span class="token operator">&gt;&#61;</span><span class="token number">127</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span><span class="token punctuation">(</span>i <span class="token operator">&gt;&#61;</span> IntegerCache<span class="token punctuation">.</span>low<span class="token operator">&amp;&amp;</span> i <span class="token operator">&lt;&#61;</span> IntegerCache<span class="token punctuation">.</span>high<span class="token punctuation">)</span>
+             <span class="token keyword">return</span>  IntegerCache<span class="token punctuation">.</span>cache<span class="token punctuation">[</span>i<span class="token operator">&#43;</span> <span class="token punctuation">(</span><span class="token operator">-</span>IntegerCache<span class="token punctuation">.</span>low<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span>  <span class="token keyword">new</span>  <span class="token class-name">Integer</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="Integer_98"></a>Integer非特殊情况</h4>
+<p>但无论如何&#xff0c;<strong>Integer与new Integer不会相等。不会经历拆箱过程</strong></p>
+<pre><code class="prism language-java">
+<span class="token keyword">package</span> test<span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author 田茂林
+ * &#64;data 2017年9月6日 下午9:46:42
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestFinally</span> <span class="token punctuation">{<!-- --></span>
+
+
+	    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+	      Integer i<span class="token operator">&#61;</span> <span class="token number">57</span><span class="token punctuation">;</span>
+	      Integer l <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Integer</span><span class="token punctuation">(</span><span class="token number">57</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	      <span class="token keyword">if</span><span class="token punctuation">(</span>i<span class="token operator">&#61;&#61;</span>l<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+		  System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;true&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	      <span class="token punctuation">}</span><span class="token keyword">else</span><span class="token punctuation">{<!-- --></span>
+		  System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;false&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//输出为false</span>
+	      <span class="token punctuation">}</span>
+		<span class="token punctuation">}</span>
+
+
+	<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="equals_130"></a>equals比较</h3>
+<p><strong>两个基本型的封装型进行equals()比较</strong>&#xff0c;首先<strong>equals()会比较类型&#xff0c;如果类型相同&#xff0c;则继续比较值&#xff0c;如果值也相同&#xff0c;返回true</strong></p>
+<pre><code class="prism language-java">Integer a<span class="token operator">&#61;</span><span class="token number">1</span><span class="token punctuation">;</span>
+Integer b<span class="token operator">&#61;</span><span class="token number">2</span><span class="token punctuation">;</span>
+Integer c<span class="token operator">&#61;</span><span class="token number">3</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>c<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>a<span class="token operator">&#43;</span>b<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//true</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_139"></a>自动装箱</h4>
+<p><strong>基本型封装类型调用equals(),但是参数是基本类型</strong>&#xff0c;这时候&#xff0c;先会进行自动装箱&#xff0c;基本型转换为其封装类型&#xff0c;再进行比较</p>
+<pre><code class="prism language-java"><span class="token keyword">int</span> i<span class="token operator">&#61;</span><span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+Integer c<span class="token operator">&#61;</span><span class="token number">3</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>c<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>i<span class="token operator">&#43;</span>j<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//true</span>
+I<span class="token operator">&#61;&#61;</span>L
+</code></pre>
+<p><strong>基本型不能调用equals()方法&#xff0c;否则编译会报错</strong></p>
+<h3><a rel="noopener noreferrer" id="_153"></a>综合举例</h3>
+<p>看下边这样一道题进行分析。</p>
+<pre><code class="prism language-java">
+<span class="token keyword">package</span> test<span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author 田茂林
+ * &#64;data 2017年9月6日 下午9:46:42
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestFinally</span> <span class="token punctuation">{<!-- --></span>
+
+	    <span class="token keyword">public</span> <span class="token keyword">static</span>  <span class="token keyword">void</span> <span class="token function">add</span><span class="token punctuation">(</span>Byte b<span class="token punctuation">)</span>
+	    <span class="token punctuation">{<!-- --></span>
+	        b <span class="token operator">&#61;</span> b<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+	    <span class="token punctuation">}</span>
+	    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+	        Byte a <span class="token operator">&#61;</span> <span class="token number">127</span><span class="token punctuation">;</span>
+	        Byte b <span class="token operator">&#61;</span> <span class="token number">127</span><span class="token punctuation">;</span>
+	        <span class="token function">add</span><span class="token punctuation">(</span><span class="token operator">&#43;&#43;</span>a<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//自动拆箱</span>
+	        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>a <span class="token operator">&#43;</span> <span class="token string">&#34; &#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	        <span class="token function">add</span><span class="token punctuation">(</span>b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>b <span class="token operator">&#43;</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span>
+
+
+	<span class="token punctuation">}</span>
+
+</code></pre>
+<p>运行结果</p>
+<pre><code class="prism language-java"><span class="token operator">-</span><span class="token number">128</span> <span class="token number">127</span>
+</code></pre>
+<p><code>public void add(Byte b){ b&#61;b&#43;&#43;; }</code> 这里涉及java的自动装箱/自动拆箱(AutoBoxing/UnBoxing) Byte的首字母为大写&#xff0c;是类&#xff0c;看似是引用传递&#xff0c;但是在add函数内实现&#43;&#43;操作&#xff0c;会自动拆箱成byte值传递类型&#xff0c;所以add函数还是不能实现自增功能。也就是说add函数只是个摆设&#xff0c;没有任何作用</p>
+<ul><li>add(&#43;&#43;a);&#xff0c;Byte类型值大小为-128~127之间。 add(&#43;&#43;a);这里&#43;&#43;a会越界&#xff0c;a的值变为-128</li><li>add(b)&#xff0c;没有变化&#xff0c;还是127</li></ul>
+<p>以上就是装箱拆箱的全部内容理解&#xff0c;可以看的出Java对equals有了重写&#xff0c;对于操作符&#61;&#61;没有重写</p>
+<ul><li><strong>&#61;&#61;</strong>&#xff1a;它的作⽤是判断两个对象的地址是不是相等。即&#xff0c;判断两个对象是不是同⼀个对象(基本数据类型⽐较的是值&#xff0c;引⽤数据类型⽐较的是内存地址</li><li><strong>equals()</strong> : 它的作⽤也是判断两个对象是否相等。但它⼀般有两种使⽤情况&#xff1a;
+<ul><li>类没有覆盖 equals() ⽅法。则通过 equals() ⽐较该类的两个对象时&#xff0c;等价于通过“&#61;&#61;”⽐较这两个对象。</li><li>类覆盖了 equals() ⽅法。⼀般&#xff0c;我们都覆盖 equals() ⽅法来⽐较两个对象的内容是否相等&#xff1b;若它们的内容相等&#xff0c;则返回 true (即&#xff0c;认为这两个对象相等)</li></ul>
+</li></ul>
+<p>结合装箱拆箱以及比较的实现来理解更加深刻</p>

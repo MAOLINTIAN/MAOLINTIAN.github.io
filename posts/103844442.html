@@ -1,0 +1,125 @@
+<p>上一节介绍到了如何进行Object方法重写和操作符重载&#xff0c;本篇博客来接着介绍合式类型剩余的内容&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103844442-01-f625399168.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_2"></a>程序集引用及命名空间定义</h3>
+<p>其中一些相对简单的内容就不进行过多的介绍了&#xff0c;例如引用其他程序集&#xff0c;只需要注意三种引用方式&#xff1a;</p>
+<ul><li><strong>第一种方式是引用库项目文件</strong>&#xff0c;指出库的源代码在哪个项目中&#xff0c;并在两个项目之间建立依赖关系。编译好库之后才能编译引用了该库的程序。该依赖关系造成在编译程序时先编译库&#xff08;如果还没有编译的话&#xff09;<font color="red"><strong>项目拷贝&#xff0c;常用</strong></font></li><li><strong>第二种方式是引用程序集文件本身</strong>。换言之&#xff0c;引用编译好的库而不是项目。如果库和程序分开编译&#xff0c;比如由企业内的另一个团队编译&#xff0c;这种方式就非常合理。<strong>&#xff08;<font color="red">dll拷贝&#xff0c;调试时候用&#xff09;</font></strong></li><li><strong>第三种方式是引用NuGet包</strong>&#xff08;<font color="red"><strong>项目拷贝高级版&#xff0c;从NuGet库拷贝项目</strong></font>&#xff09;</li></ul>
+<p>注意库和包并非只能由控制台程序引用。事实上&#xff0c;任何程序集都能引用其他任何程序集。<strong>经常是一个库引用另一个库&#xff0c;创建一个依赖链</strong>。同时可以关注下类型的访问级别&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103844442-02-2b1778c51c.png" loading="lazy"><br />
+需要注意&#xff1a;<strong>成员的可访问性不能大于其包容类</strong>&#xff0c;<strong>类&#xff08;除了嵌套类&#xff0c;其可使用任意修饰符&#xff09;只能使用public和internal</strong>。命名空间比较简单&#xff0c;只需要注意如下设计规范就行了&#xff1a;</p>
+<ul><li>要<strong>为命名空间附加公司名前缀</strong>&#xff0c;防止不同公司使用同一个名称。</li><li>要为<strong>命名空间二级名称使用稳定的、不随版本升级而变化的产品名称</strong>。</li><li>不要定义没有明确放到一个命名空间中的类型。</li><li><strong>考虑创建和命名空间层次结构匹配的文件夹结构</strong>。</li></ul>
+<p>总而言之就是&#xff0c;最好一个类在一个文件&#xff0c;用一个命名空间包裹一个类。</p>
+<h3><a rel="noopener noreferrer" id="XML_19"></a>XML注释</h3>
+<p>虽然C#编译器在最终生成的可执行文件中忽略所有注释&#xff0c;但开发者可利用命令行选项&#xff0c;<font color="red"><strong>指示编译器&#xfffc;将XML注释提取到单独的XML文件中。这样就可根据XML注释生成API文档。</strong></font>此外&#xff0c;C#编辑器可解析代码中的XML注释&#xff0c;并对其进行分区显示&#xff08;例如&#xff0c;可使用有别于其他代码的一种颜色&#xff09;&#xff0c;或者解析XML注释数据元素并向开发者显示。这样就可以进行文档规范化操作&#xff0c;例如可以定义一些参数&#xff0c;生成API文档的时候予以解析<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103844442-03-4932510662.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_23"></a>垃圾回收</h3>
+<p>垃圾回收是“运行时”的核心功能&#xff0c;旨在回收不再被引用的对象所占用的内存。这句话的重点是**“内存”和“引用”<strong>。<strong>垃圾回收器只回收内存&#xff0c;不处理其他资源</strong>&#xff0c;比如数据库连接、句柄&#xff08;文件、窗口等&#xff09;、网络端口以及硬件设备&#xff08;比如串口&#xff09;。此外&#xff0c;垃圾回收器根据是否存在任何引用来决定要清理什么。这暗示</strong>垃圾回收器处理的是引用对象&#xff0c;只回收堆上的内存。另外&#xff0c;还意味着假如维持对一个对象的引用&#xff0c;就会阻止垃圾回收器重用对象所用的内存。**</p>
+<h4><a rel="noopener noreferrer" id="_26"></a>垃圾回收算法</h4>
+<p>.Net使用mark-and-compact算法&#xff0c;就是先把可达对象整理和覆盖不可访问对象内存&#xff0c;然后执行清理&#xff0c;整个操作流程如下&#xff0c;使用可达性算法进行&#xff1a;</p>
+<ol><li>一次垃圾回收周期开始时&#xff0c;识别对象的所有根引用。根引用是来自静态变量、CPU寄存器以及局部变量或参数实例&#xff08;包括f-reachable对象&#xff09;的任何引用<strong>基于该列表&#xff0c;垃圾回收器可遍历每个根引用所标识的树形结构&#xff0c;并递归确定所有根引用指向的对象。这样&#xff0c;垃圾回收器就可识别出所有可达对象</strong>。</li><li>执行垃圾回收时&#xff0c;垃圾回收器不是枚举所有访问不到的对象&#xff1b;相反&#xff0c;<strong>它将所有可达对象紧挨着放到一起&#xff0c;从而覆盖不可访问的对象&#xff08;也就是垃圾&#xff0c;或者不可达对象&#xff09;所占用的内存</strong>&#xff0c;为定位和移动所有可达对象&#xff0c;系统要在垃圾回收器运行期间维持状态的一致性。为此&#xff0c;<strong>进程中的所有托管线程都会在垃圾回收期间暂停</strong>。这显然会造成应用程序出现短暂的停顿。不过&#xff0c;除非垃圾回收周期特别长&#xff0c;否则这个停顿是不太引人注意的。为尽量避免在不恰当的时间执行垃圾回收&#xff0c;System.GC对象包含一个**Collect&#xff08;&#xff09;**方法。可在执行关键代码之前调用它&#xff08;执行这些代码时不希望GC运行&#xff09;。这样做不会阻止垃圾回收器运行&#xff0c;但会显著减小它运行的可能性——前提是关键代码执行期间不会发生内存被大量消耗的情况</li><li><strong>发现相较于长期存在的对象&#xff0c;最近创建的对象更有可能需要垃圾回收</strong>。为此&#xff0c;.NET垃圾回收器支持“代”&#xff08;generation&#xff09;的概念&#xff0c;它会以更快的频率尝试清除生存时间较短的对象&#xff08;新生对象&#xff09;。而那些已在一次垃圾回收中“存活”下来的对象&#xff08;老对象&#xff09;会以较低的频率清除。具体地说&#xff0c;共有3代对象。一个对象每次在一个垃圾回收周期中存活下来&#xff0c;它都会移动到下一代&#xff0c;直至最终移动到第二代&#xff08;从第零代开始&#xff09;。<strong>相较于第二代对象&#xff0c;垃圾回收器会以更快的频率对第零代的对象执行垃圾回收</strong></li></ol>
+<p>相较于Java的成体系的垃圾回收算法&#xff0c;感觉CLR做的不是很好&#xff0c;也许是没有体系化的了解过吧。</p>
+<h4><a rel="noopener noreferrer" id="_35"></a>弱引用</h4>
+<p>弱引用是什么&#xff1f;<strong>弱引用就是一直维持的一个引用&#xff0c;但是它并不会组织垃圾回收</strong>&#xff0c;为什么要有弱引用呢&#xff1f;这么去想象一下&#xff0c;假如要从数据库加载一个特别大的对象&#xff0c;如果是强引用&#xff0c;一旦用户不再使用该对象&#xff0c;断开引用就需要进行垃圾回收&#xff0c;但假如用户一会儿又想用了&#xff0c;又得重新加载和引用&#xff0c;但如果是弱引用&#xff0c;你可以在保持引用的状态下进行垃圾回收&#xff0c;但在你垃圾回收之前我还是一直保持引用状态&#xff0c;那么假如用户下次请求的时候刚好CLR还没有回收对象&#xff0c;就可以直接获取到对象了&#xff0c;<strong>实际上相当于一次内存里的缓存</strong>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token class-name">WeakReference</span> Data<span class="token punctuation">;</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">FileStream</span> <span class="token function">GetData</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">FileStream</span> data <span class="token operator">&#61;</span> <span class="token punctuation">(</span>FileStream<span class="token punctuation">)</span>Data<span class="token punctuation">.</span>Target<span class="token punctuation">;</span>
+
+            <span class="token keyword">if</span><span class="token punctuation">(</span>data <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> data<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">else</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Load data</span>
+                <span class="token comment">// ...</span>
+
+                <span class="token comment">// Create a weak reference</span>
+                <span class="token comment">// to data for use later</span>
+                Data<span class="token punctuation">.</span>Target <span class="token operator">&#61;</span> data<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> data<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;No output in this example.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>创建弱引用&#xff08;Data&#xff09;之后&#xff0c;可查看弱引用是否为null来检查垃圾回收。<strong>但这里的关键是先将弱引用赋给一个强引用&#xff08;FileStream data&#61;Data&#xff09;&#xff0c;避免在“检查null值”和“访问数据”这两个动作之间&#xff0c;垃圾回收器运行并清除弱引用</strong>。强引用明显会阻止垃圾回收器清除对象&#xff0c;所以它必须先被赋值&#xff08;而不是先检查Target是不是为null&#xff09;</p>
+<h3><a rel="noopener noreferrer" id="_71"></a>终结器</h3>
+<p>我们知道垃圾回收器不负责处理除了堆上的引用资源&#xff0c;那么除了内存管理外的一些数据库连接以及句柄等这些资源该怎么释放呢&#xff0c;这个时候就要用到终结器&#xff0c;<strong>同时终结器在垃圾回收前也发挥着不可替代的作用&#xff08;虽然会降低性能&#xff0c;但是能保证对象被延迟清除&#xff09;</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">class</span> <span class="token class-name">TemporaryFileStream</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">TemporaryFileStream</span><span class="token punctuation">(</span><span class="token keyword">string</span> fileName<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            File <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">FileInfo</span><span class="token punctuation">(</span>fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Stream <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">FileStream</span><span class="token punctuation">(</span>
+                File<span class="token punctuation">.</span>FullName<span class="token punctuation">,</span> FileMode<span class="token punctuation">.</span>OpenOrCreate<span class="token punctuation">,</span>
+                FileAccess<span class="token punctuation">.</span>ReadWrite<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token function">TemporaryFileStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">(</span>Path<span class="token punctuation">.</span><span class="token function">GetTempFileName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span> <span class="token punctuation">}</span>
+
+        <span class="token comment">// Finalizer</span>
+        <span class="token operator">~</span><span class="token function">TemporaryFileStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">FileStream</span> Stream <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token class-name">FileInfo</span> File <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Stream<span class="token operator">?</span><span class="token punctuation">.</span><span class="token function">Dispose</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            File<span class="token operator">?</span><span class="token punctuation">.</span><span class="token function">Delete</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>上边这个终结器用来删除文件和关闭流。需要注意的几点是&#xff1a;</p>
+<ul><li><strong>终结器不能被显式调用&#xff0c;只能通过垃圾回收器调用</strong>&#xff0c;会在对象最后一次使用之后调用&#xff0c;开发人员只能定义不能调用</li><li>终结器<strong>不允许传递任何参数&#xff0c;不可重载&#xff0c;不可添加访问修饰符</strong></li></ul>
+<p>这里的dispose一个对象不是垃圾回收一个对象&#xff0c;而是释放该对象中包装的资源&#xff0c;例如它字段所引用的对象&#xff0c;解除引用&#xff0c;具体的垃圾回收还是需要垃圾回收器的。这里有个漏洞会导致Dispose&#xff08;&#xff09;执行不了&#xff0c;也就是在实例化TemporaryFileStream后&#xff0c;调用Dispose()前如果发生异常可能不会调用Dispose()&#xff0c;这个时候就要使用<strong>确定性终结</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Search</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">using</span><span class="token punctuation">(</span><span class="token class-name">TemporaryFileStream</span> fileStream1 <span class="token operator">&#61;</span>
+                <span class="token keyword">new</span> <span class="token class-name">TemporaryFileStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                fileStream2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">TemporaryFileStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Use temporary file stream;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>相当于包裹了一个try finally块。所以<strong>实现了终结器的方法的对象</strong>的垃圾回收流程是这样的(<strong>如果终结器不调用System.GC.SuppressFinalize</strong>)&#xff1a;整体流程是&#xff1a;<font color="red"><strong>先由可达性分析算法把待清理的对象引用放到f-reachable队列里&#xff0c;然后由终结器进行引用终结&#xff0c;终结完成后垃圾回收器才对对象进行垃圾回收</strong></font>。需要注意以下几点&#xff1a;</p>
+<ul><li>要只为使用了稀缺或昂贵资源的对象实现终结器方法&#xff0c;即使终结会推迟垃圾回收。</li><li><strong>要为有终结器的类实现IDisposable接口以支持确定性终结</strong>。</li><li>要为实现了IDisposable的类实现终结器方法&#xff0c;以防Dispose&#xff08;&#xff09;没有被显式调用。</li><li>要重构终结器方法来调用与IDisposable相同的代码&#xff0c;可能就是调用一下Dispose&#xff08;&#xff09;方法。</li><li><strong>不要在终结器方法中抛出异常</strong>。</li><li><strong>要从Dispose&#xff08;&#xff09;中调用System.GC.SuppressFinalize&#xff08;&#xff09;&#xff0c;使垃圾回收更快地发生&#xff0c;并避免重复性的资源清理</strong>。</li><li>要保证Dispose&#xff08;&#xff09;可以重入&#xff08;可被多次调用&#xff09;。</li><li>要保持Dispose&#xff08;&#xff09;的简单性&#xff0c;把重点放在终结所要求的资源清理上。</li><li>避免为自己拥有的、带终结器的对象调用Dispose&#xff08;&#xff09;。相反&#xff0c;依赖终结队列清理实例。</li><li><strong>避免在终结方法中引用未被终结的其他对象</strong>&#xff08;对象复活&#xff0c;在f-reachable队列中又被外部引用了&#xff09;。</li><li>要在重写Dispose&#xff08;&#xff09;时调用基类的实现。</li><li>考虑在调用Dispose&#xff08;&#xff09;后将对象状态设为不可用。对象被dispose之后&#xff0c;调用除Dispose&#xff08;&#xff09;之外的方法应引发ObjectDisposedException.异常。&#xff08;Dispose&#xff08;&#xff09;应该能多次调用。&#xff09;</li><li>要为含有可dispose字段&#xff08;或属性&#xff09;的类型实现IDisposable接口&#xff0c;并dispose这些字段引用的对象</li></ul>
+<p>可以看到一个对象被回收会经历多么复杂的过程&#xff0c;那么我们最好让他在需要出现的时候再初始化岂不更好&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">using</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter10<span class="token punctuation">.</span>Listing10_21<span class="token punctuation">;</span>
+
+    <span class="token keyword">class</span> <span class="token class-name">DataCache</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">TemporaryFileStream</span> FileStream
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>_FileStream <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    _FileStream <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">TemporaryFileStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">return</span> _FileStream<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token class-name">TemporaryFileStream</span> _FileStream <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>只有调用FileStream属性的get方法时才加载TemporaryFileStream。</p>
+<p>总结一下&#xff0c;其实也就是程序集如何加载&#xff0c;命名空间使用规范&#xff0c;垃圾回收如何执行以及终结器&#xff08;析构函数&#xff09;&#xff0c;它的好处和缺点。</p>

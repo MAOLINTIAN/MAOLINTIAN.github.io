@@ -1,0 +1,32 @@
+<p>Elasticsearch 的分页查询是日常开发中高频使用的功能，但很多开发者对其内部原理和性能瓶颈缺乏深入理解。本文将通过具体例子，逐步拆解浅度分页的工作流程，分析深度分页带来的问题，并详细讲解两种深度分页解决方案——<code>search_after</code> 和 <code>scroll</code> 的原理与对比。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="_from__size_6"></a>一、浅度分页：常规的 <code>from + size</code></h3>
+<h4><a rel="noopener noreferrer" id="11__8"></a>1.1 场景设定</h4>
+<p>假设有一个索引，包含两个分片：</p>
+<ul>
+ <li><strong>分片 A</strong>：存储 100 条文档</li>
+ <li><strong>分片 B</strong>：存储 2000 条文档</li>
+</ul>
+<p>用户需要查询第 3 页数据，每页 10 条，即 <code>from=20, size=10</code>，按某个排序字段（如 <code>_score</code>）降序排列。</p>
+<h4><a rel="noopener noreferrer" id="12__15"></a>1.2 执行过程</h4>
+<p>分页查询分为两个阶段：<strong>查询阶段（Query Phase）</strong> 和 <strong>获取阶段（Fetch Phase）</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_18"></a>阶段一：查询阶段</h5>
+<ol>
+ <li><strong>客户端请求</strong> → <strong>协调节点</strong>：请求到达集群中的某个节点，该节点成为本次查询的协调节点。</li>
+ <li><strong>广播到所有分片</strong>：协调节点将请求同时发给分片 A 和分片 B（可以选择主分片或副本分片，通过轮询实现负载均衡）。</li>
+ <li><strong>每个分片本地处理</strong>：
+  <ul>
+   <li>分片 A 在自己的数据中按排序字段找出得分最高的前 <code>from+size=30</code> 条文档，将它们的 <strong>文档ID</strong> 和 <strong>排序值</strong> 存入一个大小为 30 的优先级队列中。</li>
+   <li>分片 B 同样找出自己的前 30 条，存入优先级队列。</li>
+  </ul> </li>
+ <li><strong>返回结果给协调节点</strong>：每个分片将自己的优先级队列（30 条 ID+排序值）返回给协调节点。</li>
+</ol>
+<h5><a rel="noopener noreferrer" id="_26"></a>阶段二：获取阶段</h5>
+<ol>
+ <li><strong>协调节点合并排序</strong>：
+  <ul>
+   <li>协调节点收到两个分片返回的共 60 条记录。</li>
+   <li>对这 60 条记录进行全局排序，得到全局得分最高的前 30 条（即 <code>from+size</code> 条）。</li>
+   <li>从这 30 条中截取第 20 到第 30 条（即第 3 页的 10 条），得到需要获取的文档 ID 列表。</li>
+  </ul></li>
+</ol>

@@ -1,0 +1,44 @@
+<p>##题目描述<br />
+输入两个整数序列&#xff0c;第一个序列表示栈的压入顺序&#xff0c;请判断第二个序列是否为该栈的弹出顺序。假设压入栈的所有数字均不相等。例如序列1,2,3,4,5是某栈的压入顺序&#xff0c;序列4&#xff0c;5,3,2,1是该压栈序列对应的一个弹出序列&#xff0c;但4,3,5,1,2就不可能是该压栈序列的弹出序列。&#xff08;注意&#xff1a;这两个序列的长度是相等的&#xff09;<br />
+##解题思路<br />
+1&#xff0c;按照顺序持续入栈&#xff0c;直到发现和出栈第一个元素相同的为止&#xff0c;弹出&#xff0c;接着判断<br />
+2&#xff0c;这时候就有两种情况&#xff0c;第一种就是//1,2,3,4,5和3,2,1,4,5这种情况弹完3&#xff0c;弹之前的 &#xff0c;然后之后的入栈再弹。第二种情况是  //1,2,3,4,5和3,4,5,1,2这种情况&#xff0c;弹完3&#xff0c;入栈之后的&#xff0c;弹出&#xff0c;再弹之前的。总结起来就是逐个比较即可&#xff0c;当前没有接着入栈&#xff0c;如果到最后栈还没弹完&#xff0c;说明该弹出序列不是该压入序列的正确弹出。<br />
+##代码实现</p>
+<pre><code>/**
+ *
+ */
+package 栈和队列;
+
+import java.util.Stack;
+
+/**
+ * &lt;p&gt;
+ * Title:IsPopOrder
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ * &#64;author 田茂林
+ * &#64;data 2017年8月22日 上午11:03:06
+ */
+public class IsPopOrder {
+	Stack&lt;Integer&gt; stack &#61; new Stack&lt;Integer&gt;();
+	public boolean isPopOrder(int[] pushA, int[] popA) {
+		if (pushA &#61;&#61; null || popA &#61;&#61; null || pushA.length &lt; 1
+				|| popA.length &lt; 1) {
+			return false;// 非空判断
+		}
+		int index &#61; 0;
+		for (int i &#61; 0; i &lt; pushA.length; i&#43;&#43;) {
+			stack.push(pushA[i]);               //1,2,3,4,5和3,4,5,1,2这种情况
+			while(!stack.isEmpty()&amp;&amp; stack.peek() &#61;&#61; popA[index]) {    //1,2,3,4,5和3,2,1,4,5这种情况
+				stack.pop();
+				index&#43;&#43;;
+			}
+		}
+		return stack.isEmpty();   //如果全部正常弹出&#xff0c;则为真&#xff0c;按照该序列&#xff0c;栈并没有弹出到空为止则不是
+	}
+}
+
+</code></pre>

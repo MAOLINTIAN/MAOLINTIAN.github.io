@@ -1,0 +1,376 @@
+<p>其实称本篇为多态还是有些牵强&#xff0c;因为在类的继承中也是存在多态的&#xff0c;例如我们的重写机制&#xff0c;但可以设想这样一个场景&#xff1a;飞行这个动作&#xff0c;鸟可以飞行&#xff0c;飞机可以飞行&#xff0c;<strong>而飞机其实和鸟没有父子关系的&#xff0c;他们共同拥有的是行为&#xff1a;飞行</strong>。所以本篇博客着重介绍这一点&#xff1a;<font color="red"><strong>如何通过接口来处理行为一致&#xff08;横向关系&#xff09;而非一脉相承&#xff08;纵向关系&#xff09;的关系</strong></font>。本篇的结构如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103569596-01-418be1c286.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_2"></a>接口定义</h3>
+<p>为什么要有接口&#xff1f;在介绍了类和抽象类&#xff08;我的感觉就是抽象类属于类和接口的中间产物&#xff0c;既有继承基类的能力&#xff0c;也有扩展抽象成员方法的能力&#xff09;之后&#xff0c;我们知道&#xff0c;可以通过重写和实现抽象成员来扩展和组织自己的内容。那么接口有啥必要呢&#xff1f;&#xff0c;既然有类&#xff0c;那还要接口做什么呢&#xff1f;&#xff1a;</p>
+<ul><li>接口不包含任何实现&#xff0c;<strong>可以完全隔离实现细节和提供的服务</strong></li><li>基类除了允许共享成员签名&#xff0c;还可以共享实现&#xff08;派生类通过继承基类方法直接使用其实现&#xff09;&#xff0c;<strong>接口只允许共享成员签名&#xff0c;不允许共享实现&#xff08;接口本来就不提供实现&#xff09;</strong>。</li><li><strong>C#是单继承的&#xff0c;可以通过使用接口来扩展想要的实现方法&#xff0c;而且接口是多继承&#xff08;实现&#xff09;的</strong>。</li></ul>
+<p>接口的定义如下&#xff0c;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">interface</span> <span class="token class-name">IFileCompression</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">void</span> <span class="token function">Compress</span><span class="token punctuation">(</span><span class="token keyword">string</span> targetFileName<span class="token punctuation">,</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> fileList<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">void</span> <span class="token function">Uncompress</span><span class="token punctuation">(</span><span class="token keyword">string</span> compressedFileName<span class="token punctuation">,</span> <span class="token keyword">string</span> expandDirectoryName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>需要注意以下几点&#xff1a;</p>
+<ul><li>接口不包含任何实现和数据&#xff0c;只包含<strong>属性</strong>&#xff08;属性也不包含对应的支持字段&#xff0c;所以不能使用自动属性&#xff09;和<strong>实例方法</strong>&#xff0c;并且不包含任何静态成员&#xff01;</li><li><strong>C#不允许接口使用访问修饰符&#xff0c;所有成员自动公共</strong>。</li><li>派生类实现接口时&#xff0c;也要用冒号&#xff0c;和基类以逗号分隔&#xff0c;需要注意的是&#xff0c;<font color="red"><strong>基类在前&#xff0c;接口顺序任意.</strong></font></li><li><font color="red"><strong>接口的所有成员都必须实现。</strong></font></li><li>接口永远不能实例化&#xff0c;而且接口不像抽象类&#xff0c;连构造函数和终结器都没有。</li><li><strong>接口必须显示转换为它的某个实现类型&#xff0c;而因为它的派生类总是实现它的全部方法&#xff0c;所以可以隐式转换</strong>。</li><li>不要修改已经发布的接口&#xff0c;而是通过给该接口添加子接口来实现版本控制</li></ul>
+<p><font color="red"><strong>抽象类如何通过接口甩锅呢&#xff1f;</strong></font>通过如下方式抽象类可以不实现接口方法而是让派生类实现。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">Ifoo</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">void</span> <span class="token function">Bar</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">Foo</span> <span class="token punctuation">:</span> <span class="token class-name">Ifoo</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">void</span> <span class="token function">Bar</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Child</span> <span class="token punctuation">:</span> <span class="token class-name">Foo</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">void</span> <span class="token function">Bar</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NotImplementedException</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_50"></a>接口实现多态</h3>
+<p>如何使用接口实现多态&#xff0c;其实和隐式转型类似哦。</p>
+<blockquote>
+<p>1&#xff0c;定义接口和抽象类</p>
+</blockquote>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IListable</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// Return the value of each column in the row</span>
+        <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> ColumnValues
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">PdaItem</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">virtual</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p>2&#xff0c;定义两种不同的实现类</p>
+</blockquote>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Contact</span> <span class="token punctuation">:</span> <span class="token class-name">PdaItem</span><span class="token punctuation">,</span> IListable
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Contact</span><span class="token punctuation">(</span><span class="token keyword">string</span> firstName<span class="token punctuation">,</span> <span class="token keyword">string</span> lastName<span class="token punctuation">,</span>
+            <span class="token keyword">string</span> address<span class="token punctuation">,</span> <span class="token keyword">string</span> phone<span class="token punctuation">)</span>
+            <span class="token punctuation">:</span> <span class="token keyword">base</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            FirstName <span class="token operator">&#61;</span> firstName<span class="token punctuation">;</span>
+            LastName <span class="token operator">&#61;</span> lastName<span class="token punctuation">;</span>
+            Address <span class="token operator">&#61;</span> address<span class="token punctuation">;</span>
+            Phone <span class="token operator">&#61;</span> phone<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> LastName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Address <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Phone <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> ColumnValues
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+                <span class="token punctuation">{<!-- --></span>
+                    FirstName<span class="token punctuation">,</span>
+                    LastName<span class="token punctuation">,</span>
+                    Phone<span class="token punctuation">,</span>
+                    Address
+                <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> Headers
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;First Name&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Last Name    &#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;Phone       &#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;Address                       &#34;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Publication</span> <span class="token punctuation">:</span> <span class="token class-name">IListable</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Publication</span><span class="token punctuation">(</span><span class="token keyword">string</span> title<span class="token punctuation">,</span> <span class="token keyword">string</span> author<span class="token punctuation">,</span> <span class="token keyword">int</span> year<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Title <span class="token operator">&#61;</span> title<span class="token punctuation">;</span>
+            Author <span class="token operator">&#61;</span> author<span class="token punctuation">;</span>
+            Year <span class="token operator">&#61;</span> year<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Title <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Author <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Year <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> ColumnValues
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+                <span class="token punctuation">{<!-- --></span>
+                    Title<span class="token punctuation">,</span>
+                    Author<span class="token punctuation">,</span>
+                    Year<span class="token punctuation">.</span><span class="token function">ToString</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> Headers
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;Title                                                    &#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;Author             &#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;Year&#34;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p>3&#xff0c;定义接口调用方的类和调用方法</p>
+</blockquote>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ConsoleListControl</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">List</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> headers<span class="token punctuation">,</span> IListable<span class="token punctuation">[</span><span class="token punctuation">]</span> items<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> columnWidths <span class="token operator">&#61;</span> <span class="token function">DisplayHeaders</span><span class="token punctuation">(</span>headers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> count <span class="token operator">&lt;</span> items<span class="token punctuation">.</span>Length<span class="token punctuation">;</span> count<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> values <span class="token operator">&#61;</span> items<span class="token punctuation">[</span>count<span class="token punctuation">]</span><span class="token punctuation">.</span>ColumnValues<span class="token punctuation">;</span>
+                <span class="token function">DisplayItemRow</span><span class="token punctuation">(</span>columnWidths<span class="token punctuation">,</span> values<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+     <span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p>4&#xff0c;定义入口&#xff0c;方法实现</p>
+</blockquote>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Contact<span class="token punctuation">[</span><span class="token punctuation">]</span> contacts <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+            <span class="token punctuation">{<!-- --></span>
+              <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span>
+                  <span class="token string">&#34;Dick&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Traci&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;123 Main St., Spokane, WA  99037&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;123-123-1234&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+              <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span>
+                  <span class="token string">&#34;Andrew&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Littman&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;1417 Palmary St., Dallas, TX 55555&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;555-123-4567&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+              <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span>
+                  <span class="token string">&#34;Mary&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Hartfelt&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;1520 Thunder Way, Elizabethton, PA 44444&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;444-123-4567&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+              <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span>
+                  <span class="token string">&#34;John&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Lindherst&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;1 Aerial Way Dr., Monteray, NH 88888&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;222-987-6543&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+              <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span>
+                  <span class="token string">&#34;Pat&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Wilson&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;565 Irving Dr., Parksdale, FL 22222&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;123-456-7890&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+              <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span>
+                  <span class="token string">&#34;Jane&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Doe&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;123 Main St., Aurora, IL 66666&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;333-345-6789&#34;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// Classes are cast implicitly to</span>
+            <span class="token comment">// their supported interfaces</span>
+            ConsoleListControl<span class="token punctuation">.</span><span class="token function">List</span><span class="token punctuation">(</span>Contact<span class="token punctuation">.</span>Headers<span class="token punctuation">,</span> contacts<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            Publication<span class="token punctuation">[</span><span class="token punctuation">]</span> publications <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Publication</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">new</span> <span class="token class-name">Publication</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;The End of Poverty: Economic Possibilities for Our Time&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;Jeffrey Sachs&#34;</span><span class="token punctuation">,</span> <span class="token number">2006</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token keyword">new</span> <span class="token class-name">Publication</span><span class="token punctuation">(</span><span class="token string">&#34;Orthodoxy&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;G.K. Chesterton&#34;</span><span class="token punctuation">,</span> <span class="token number">1908</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token keyword">new</span> <span class="token class-name">Publication</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;The Hitchhiker&#39;s Guide to the Galaxy&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;Douglas Adams&#34;</span><span class="token punctuation">,</span> <span class="token number">1979</span><span class="token punctuation">)</span>
+                <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            ConsoleListControl<span class="token punctuation">.</span><span class="token function">List</span><span class="token punctuation">(</span>
+                Publication<span class="token punctuation">.</span>Headers<span class="token punctuation">,</span> publications<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>隐式调用接口方法&#xff0c;会使用各个派生类对接口各自的实现方式&#xff1a;</p>
+<p>Contact会实现如下内容&#xff1a;输出以下四个属性&#xff1a;FirstName、LastName、Phone、Address</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/103569596-02-3b80203613.png" loading="lazy"><br />
+Publication会实现如下内容&#xff1a;输出&#xff1a;Title、Author、Year<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103569596-03-53f45363e9.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_243"></a>接口实现</h3>
+<p>分为显式和隐式、接口继承&#xff0c;以及多接口继承。</p>
+<h4><a rel="noopener noreferrer" id="_245"></a>显式和隐式</h4>
+<p>接口其实分为两种实现&#xff0c;显式和隐式&#xff0c;上面介绍的实现是隐式的&#xff0c;感觉像是我们大多数时候使用的场景&#xff0c;但有些时候也会用到显式实现&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> values<span class="token punctuation">;</span>
+            <span class="token class-name">Contact</span> contact1<span class="token punctuation">,</span> contact2 <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+
+            <span class="token comment">// ERROR:  Unable to call ColumnValues() directly</span>
+            <span class="token comment">//         on a contact</span>
+            <span class="token comment">// values &#61; contact1.ColumnValues;</span>
+
+            <span class="token comment">// First cast to IListable</span>
+            values <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>IListable<span class="token punctuation">)</span>contact2<span class="token punctuation">)</span><span class="token punctuation">.</span>ColumnValues<span class="token punctuation">;</span><span class="token comment">// 显式</span>
+            <span class="token keyword">var</span> result <span class="token operator">&#61;</span> contact1<span class="token punctuation">.</span><span class="token function">CompareTo</span><span class="token punctuation">(</span>contact2<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">// 隐式</span>
+
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Contact</span> <span class="token punctuation">:</span> <span class="token class-name">PdaItem</span><span class="token punctuation">,</span> IListable<span class="token punctuation">,</span> IComparable
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+        <span class="token keyword">public</span> <span class="token function">Contact</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">)</span>
+            <span class="token punctuation">:</span> <span class="token keyword">base</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> IComparable Members</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">CompareTo</span><span class="token punctuation">(</span><span class="token keyword">object</span> obj<span class="token punctuation">)</span>  <span class="token comment">//隐式实现</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//...</span>
+        <span class="token punctuation">}</span>
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span></span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> IListable Members</span>
+        <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> IListable<span class="token punctuation">.</span>ColumnValues    <span class="token comment">//显式实现</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+          <span class="token punctuation">{<!-- --></span>
+              FirstName<span class="token punctuation">,</span>
+              LastName<span class="token punctuation">,</span>
+              Phone<span class="token punctuation">,</span>
+              Address
+          <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span></span>
+
+        <span class="token keyword">protected</span> <span class="token keyword">string</span> LastName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">protected</span> <span class="token keyword">string</span> FirstName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">protected</span> <span class="token keyword">string</span> Phone <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">protected</span> <span class="token keyword">string</span> Address <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p><strong>显式实现</strong>&#xff1a;   <code>values &#61; ((IListable)contact2).ColumnValues;</code>&#xff0c;显式实现方式只能通过接口本身调用&#xff01;<strong>不能使用virtual、override或者public来修饰&#xff01;</strong><br />
+<strong>隐式实现</strong>&#xff1a;   <code>var result &#61; contact1.CompareTo(contact2);</code> 隐式实现方式允许类自身调用&#xff01;<strong>virtual、override或者public都是可选参数。</strong></p>
+<p>对于隐式和显式实现的接口成员&#xff0c;关键区别不在于成员声明的语法&#xff0c;<strong>而在于通过类型的实例而不是接口访问成员的能力。</strong> 建立<strong>类层次结构时需要建模真实世界的“属于”&#xff08;is a&#xff09;关系</strong>——例如&#xff0c;长颈鹿“属于”哺乳动物。这些是“语义”&#xff08;semantic&#xff09;关系。<strong>而接口用于建模“机制”&#xff08;mechanism&#xff09;关系</strong>。PdaItem“不属于”一种“可比较”&#xff08;comparable&#xff09;的东西&#xff0c;但它仍可实现IComparable接口。该接口和语义模型无关&#xff0c;只是实现机制的细节。<strong>显式接口实现的目的就是将“机制问题”和“模型问题”分开</strong>。<strong>要求调用者先将对象转换为接口&#xff08;比如IComparable&#xff09;&#xff0c;然后才能认为对象“可比较”&#xff0c;从而显式区分你想在什么时候和模型沟通&#xff0c;以及想在什么时候处理实现机制</strong>。</p>
+<p>一般来说&#xff0c;<font color="red"><strong>最好的做法是将一个类的公共层面限制成“全模型”&#xff0c;尽量少地涉及无关的机制</strong></font></p>
+<ul><li><strong>成员是不是核心的类功能</strong>&#xff0c;如果是&#xff0c;使用隐式&#xff0c;这样把实现方法当成自己成员&#xff0c;如果不是&#xff0c;用显式。</li><li><strong>接口成员名称作为类成员名称是否恰当</strong>&#xff1f;假定ITrace接口的Dump&#xff08;&#xff09;成员将类的数据写入跟踪日志。在Person或者Truck&#xff08;卡车&#xff09;类中隐式实现Dump&#xff08;&#xff09;会混淆该方法的作用&#xfffc;。所以&#xff0c;更好的选择是显式实现&#xff0c;确保只能通过ITrace数据类型调用Dump&#xff08;&#xff09;&#xff0c;使该方法不会产生歧义。总之&#xff0c;假如成员的用途在实现类中不明确&#xff0c;就考虑显式实现。</li><li>**是否已经有相同签名的类成员&#xff1f;**显式接口成员实现不会在类型的声明空间添加具名元素。所以&#xff0c;<strong>如果类型已存在可能冲突的成员&#xff0c;那么显式接口可与之同签名</strong></li></ul>
+<p><strong>大多数情况我们使用隐式的方式</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_320"></a>接口继承</h4>
+<p>接口可以多继承&#xff0c;但是需要注意的是&#xff0c;如果显式的实现接口&#xff0c;则必须使用最初声明该接口的名称。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter08<span class="token punctuation">.</span>Listing08_08
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">interface</span> <span class="token class-name">IReadableSettingsProvider</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">string</span> <span class="token function">GetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> defaultValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">interface</span> <span class="token class-name">ISettingsProvider</span> <span class="token punctuation">:</span> <span class="token class-name">IReadableSettingsProvider</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">void</span> <span class="token function">SetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>这样调用Getting方法是不对的&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">class</span> <span class="token class-name">FileSettingsProvider</span> <span class="token punctuation">:</span> <span class="token class-name">ISettingsProvider</span><span class="token punctuation">,</span>
+        IReadableSettingsProvider
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> ISettingsProvider Members</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">SetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> <span class="token keyword">value</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span></span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> IReadableSettingsProvider Members</span>
+         <span class="token keyword">string</span> ISettingsProvider<span class="token punctuation">.</span><span class="token function">GetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> defaultValue<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> name <span class="token operator">&#43;</span> defaultValue<span class="token punctuation">;</span> <span class="token comment">//just returning this for the example</span>
+        <span class="token punctuation">}</span>
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span></span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>应该这样调用&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">string</span> IReadableSettingsProvider<span class="token punctuation">.</span><span class="token function">GetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> defaultValue<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> name <span class="token operator">&#43;</span> defaultValue<span class="token punctuation">;</span> <span class="token comment">//just returning this for the example</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_368"></a>接口多继承</h4>
+<p>接口和类一样&#xff0c;也可以继承多个接口&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter08<span class="token punctuation">.</span>Listing08_09
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">interface</span> <span class="token class-name">IReadableSettingsProvider</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">string</span> <span class="token function">GetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> defaultValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">interface</span> <span class="token class-name">IWriteableSettingsProvider</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">void</span> <span class="token function">SetSetting</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">interface</span> <span class="token class-name">ISettingsProvider</span> <span class="token punctuation">:</span> <span class="token class-name">IReadableSettingsProvider</span><span class="token punctuation">,</span>
+        IWriteableSettingsProvider
+    <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_390"></a>接口附加扩展方法</h4>
+<p>接口也可以被当做扩展方法使用&#xff0c;而且更加灵活&#xff0c;比类更加实用&#xff0c;而且该扩展方法不仅可以是特定类型&#xff0c;还允许特定类型的集合。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Listable</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">List</span><span class="token punctuation">(</span>
+            <span class="token keyword">this</span> IListable<span class="token punctuation">[</span><span class="token punctuation">]</span> items<span class="token punctuation">,</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> headers<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> columnWidths <span class="token operator">&#61;</span> <span class="token function">DisplayHeaders</span><span class="token punctuation">(</span>headers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> itemCount <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> itemCount <span class="token operator">&lt;</span> items<span class="token punctuation">.</span>Length<span class="token punctuation">;</span> itemCount<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>items<span class="token punctuation">[</span>itemCount<span class="token punctuation">]</span> <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> values <span class="token operator">&#61;</span> items<span class="token punctuation">[</span>itemCount<span class="token punctuation">]</span><span class="token punctuation">.</span>ColumnValues<span class="token punctuation">;</span>
+
+                    <span class="token function">DisplayItemRow</span><span class="token punctuation">(</span>columnWidths<span class="token punctuation">,</span> values<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_412"></a>接口和类</h3>
+<p>接口和类的一些比较&#xff0c;用途不同吧&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103569596-04-357ed2a8be.png" loading="lazy"><br />
+推荐这么使用二者&#xff1a;</p>
+<ol><li>一般要优先选择类而不是接口。用抽象类分离契约&#xff08;类型做什么&#xff09;与实现细节&#xff08;类型怎么做&#xff09;。</li><li>如果需要使已从其他类型派生的类型支持接口定义的功能&#xff0c;考虑定义接口。</li></ol>
+<p>其实二者各有千秋吧&#xff0c;一种是模型角度&#xff0c;一种是机制角度&#xff0c;一种纵向&#xff0c;一种横向。</p>

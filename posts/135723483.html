@@ -1,0 +1,10 @@
+<p>关于MySQL部分的核心知识进行一网打尽，包括三部分：<strong>基础知识考察、核心机制策略、性能优化策略</strong>，通过一篇文章串联面试重点，并且帮助加强日常基础知识的理解，全局思维导图如下所示<br> <img alt="在这里插入图片描述" src="./posts/assets/135723483-01-b3cf0e9098.png" loading="lazy"></p>
+<p>本篇Blog为第一部分：基础知识考察，子节点表示追问或同级提问<br> <img alt="在这里插入图片描述" src="./posts/assets/135723483-02-239cf9c39e.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_7"></a>基本概念</h2>
+<p>包括一些核心问题，常用术语和范式</p>
+<h3><a rel="noopener noreferrer" id="_______9"></a>什么是元组, 码, 候选码, 主码, 外码, 主属性, 非主属性</h3>
+<ul>
+ <li><strong>元组</strong>：元组（tuple）是关系数据库中的基本概念，关系是一张表，<strong>表中的每行（即数据库中的每条记录）就是一个元组，每列就是一个属性</strong>。 在二维表里，元组也称为行。</li>
+ <li><strong>码</strong>：码就是能<strong>唯一标识实体的属性</strong>，对应表中的列。</li>
+ <li><strong>候选码</strong>：若关系中的<strong>某一属性或属性组的值能唯一的标识一个元组，而其任何子集都不能再标识，则称该属性组为候选码</strong>。例如：在学生实体中，“学号”是能唯一的区分学</li>
+</ul>

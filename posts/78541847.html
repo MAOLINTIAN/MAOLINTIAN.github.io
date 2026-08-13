@@ -1,0 +1,397 @@
+<p>上一篇基本比较了下两种语言的差异&#xff0c;其实可以看的出&#xff0c;二者大同小异&#xff0c;但C#提供了一些相比较而言差异有优势的地方&#xff0c;这一篇来进行分析&#xff0c;也是一个学习的过程&#xff0c;由于是初学者&#xff0c;如果理解有不到位的地方&#xff0c;欢迎指出错误&#xff0c;下一篇将介绍C#是最大优势&#xff0c;委托和事件&#xff0c;以及可能用到委托和事件的后续部分&#xff1a;匿名方法&#xff0c;不安全代码&#xff0c;多线程</p>
+<blockquote>
+<p>学习教程来自于http://www.runoob.com/csharp/csharp-attribute.html</p>
+</blockquote>
+<p>#特性<br />
+在我看来其实&#xff0c;C#里的特性其实和java里的注解或者在框架里常用的标签很像&#xff0c;就是用一个标签来代替大量的代码。或者更准确的理解就是&#xff0c;我感觉特性很像spring里的AOP&#xff08;日志系统的应用&#xff09;&#xff0c;不同于OOP&#xff0c;它横向的提炼相同方法&#xff0c;属性&#xff0c;类。<br />
+##特性定义<br />
+**特性就是在类的类名称、属性、方法等上面加一个标记&#xff0c;使这些类、属性、方法等具有某些统一的特征&#xff0c;从而达到某些特殊的需要。**举个小栗子&#xff1a;方法的异常捕捉&#xff0c;你是否还在某些可能出现异常的地方&#xff08;例如数据库的操作、文件的操作等&#xff09;经常使用try…catch。这个时候如果使用特性&#xff0c;就可 以大大减少方法里面的try…catch的使用。你只需要定义一个专门捕捉异常的特性类ExceptionExAttribute&#xff0c;然后给这个特性类 做些特殊处理&#xff0c;比如给它增加一个AOP拦截的功能。那么在可能出现异常的方法名称上 面加上一个[ExceptionEx]特性标签&#xff0c;这个方法就具有自动捕捉异常的能力。由此可见,特性可以减少统一需求的代码量.<br />
+##特性规范</p>
+<pre><code>[attribute(positional_parameters, name_parameter &#61; value, ...)]
+element
+</code></pre>
+<p>特性&#xff08;Attribute&#xff09;的名称和值是在方括号内规定的&#xff0c;放置在它所应用的元素之前。positional_parameters 规定必需的信息&#xff0c;name_parameter 规定可选的信息。</p>
+<p>##特性分类<br />
+###预定义特性<br />
+Net 框架提供了三种预定义特性&#xff1a;AttributeUsage&#xff0c;Conditional&#xff0c;Obsolete<br />
+####AttributeUsage<br />
+预定义特性 AttributeUsage 描述了如何使用一个自定义特性类。它规定了特性可应用到的项目的类型。</p>
+<pre><code>[AttributeUsage(
+   validon,
+   AllowMultiple&#61;allowmultiple,
+   Inherited&#61;inherited
+)]
+</code></pre>
+<ul><li>
+<p>参数 validon 规定特性可被放置的语言元素。它是枚举器 AttributeTargets 的值的组合。默认值是 AttributeTargets.All。</p>
+</li><li>
+<p>参数 allowmultiple&#xff08;可选的&#xff09;为该特性的 AllowMultiple 属性&#xff08;property&#xff09;提供一个布尔值。如果为 true&#xff0c;则该特性是多用的。默认值是 false&#xff08;单用的&#xff09;。</p>
+</li><li>
+<p>参数 inherited&#xff08;可选的&#xff09;为该特性的 Inherited 属性&#xff08;property&#xff09;提供一个布尔值。如果为 true&#xff0c;则该特性可被派生类继承。默认值是 false&#xff08;不被继承&#xff09;。</p>
+</li></ul>
+<pre><code>[AttributeUsage(AttributeTargets.Class |
+AttributeTargets.Constructor |
+AttributeTargets.Field |
+AttributeTargets.Method |
+AttributeTargets.Property,
+AllowMultiple &#61; true)]
+</code></pre>
+<p>####Conditional<br />
+标记一个条件方法&#xff0c;执行依赖于指定的预处理标识符,<strong>当程序触发时执行</strong>例如我想在调试代码的时候显示&#xff0c;则只需要设置为debug</p>
+<p><img alt="这里写图片描述" src="./posts/assets/78541847-ext-1f95e8071aed.png" loading="lazy"></p>
+<p>当调试代码的时候&#xff0c;触发该类&#xff0c;感觉有点儿观察者模式的意思。</p>
+<p>####obselete<br />
+这个预定义特性标记了不应被使用的程序实体。它可以让您通知编译器丢弃某个特定的目标元素。例如&#xff0c;当一个新方法被用在一个类中&#xff0c;但是您仍然想要保持类中的旧方法&#xff0c;您可以通过显示一个应该使用新方法&#xff0c;而不是旧方法的消息&#xff0c;来把它标记为 obsolete&#xff08;过时的&#xff09;。</p>
+<p><img alt="这里写图片描述" src="./posts/assets/78541847-ext-6f6978298ff7.png" loading="lazy"><br />
+这里当我使用旧方法的时候就会触发错误&#xff0c;当然可以设置为警告<br />
+规范写法如下&#xff1a;</p>
+<pre><code>[Obsolete(
+   message
+)]
+[Obsolete(
+   message,
+   iserror
+)]
+</code></pre>
+<ul><li>
+<p>参数 message&#xff0c;是一个字符串&#xff0c;描述项目为什么过时的原因以及该替代使用什么。</p>
+</li><li>
+<p>参数 iserror&#xff0c;是一个布尔值。如果该值为 true&#xff0c;编译器应把该项目的使用当作一个错误。默认值是 false&#xff08;编译器生成一个警告&#xff09;。<br />
+###自定义特性<br />
+.Net 框架允许创建自定义特性&#xff0c;用于存储声明性的信息&#xff0c;且可在运行时被检索。该信息根据设计标准和应用程序需要&#xff0c;可与任何目标元素相关。<br />
+创建并使用自定义特性包含四个步骤&#xff1a;</p>
+</li><li>
+<p>声明自定义特性</p>
+</li><li>
+<p>构建自定义特性</p>
+</li><li>
+<p>在目标程序元素上应用自定义特性</p>
+</li><li>
+<p>通过反射访问特性</p>
+</li></ul>
+<p>最后一个步骤包含编写一个简单的程序来读取元数据以便查找各种符号。元数据是用于描述其他数据的数据和信息。该程序应使用反射来在运行时访问特性</p>
+<p>举例如下&#xff1a;让我们构建一个名为 DeBugInfo 的自定义特性&#xff0c;该特性将存储调试程序获得的信息。它存储下面的信息&#xff1a;</p>
+<ul><li>bug 的代码编号</li><li>辨认该 bug 的开发人员名字</li><li>最后一次审查该代码的日期</li><li>一个存储了开发人员标记的字符串消息</li></ul>
+<p>我们的 DeBugInfo 类将带有<strong>三个用于存储前三个信息的私有属性&#xff08;property&#xff09;和一个用于存储消息的公有属性&#xff08;property&#xff09;</strong>。所以 bug 编号、开发人员名字和审查日期将是 DeBugInfo 类的必需的定位&#xff08; positional&#xff09;参数&#xff0c;消息将是一个可选的命名&#xff08;named&#xff09;参数。<br />
+<strong>每个特性必须至少有一个构造函数</strong>。必需的定位&#xff08; positional&#xff09;参数应通过构造函数传递。<br />
+####声明和构建自定义特性<br />
+一个新的自定义特性应派生自 System.Attribute 类</p>
+<pre><code>// 一个自定义特性 BugFix 被赋给类及其成员
+[AttributeUsage(AttributeTargets.Class |
+AttributeTargets.Constructor |
+AttributeTargets.Field |
+AttributeTargets.Method |
+AttributeTargets.Property,
+AllowMultiple &#61; true)]
+
+public class DeBugInfo : System.Attribute
+{
+  private int bugNo;
+  private string developer;
+  private string lastReview;
+  public string message;
+
+  public DeBugInfo(int bg, string dev, string d)
+  {
+      this.bugNo &#61; bg;
+      this.developer &#61; dev;
+      this.lastReview &#61; d;
+  }
+
+  public int BugNo
+  {
+      get
+      {
+          return bugNo;
+      }
+  }
+  public string Developer
+  {
+      get
+      {
+          return developer;
+      }
+  }
+  public string LastReview
+  {
+      get
+      {
+          return lastReview;
+      }
+  }
+  public string Message
+  {
+      get
+      {
+          return message;
+      }
+      set
+      {
+          message &#61; value;
+      }
+  }
+}
+</code></pre>
+<p>通过构造器传值&#xff0c;构造器没传的话&#xff0c;在特性里设置。</p>
+<p>####应用自定义特性</p>
+<pre><code>[DeBugInfo(45, &#34;Zara Ali&#34;, &#34;12/8/2012&#34;, Message &#61; &#34;Return type mismatch&#34;)]
+[DeBugInfo(49, &#34;Nuha Ali&#34;, &#34;10/10/2012&#34;, Message &#61; &#34;Unused variable&#34;)]
+class Rectangle
+{
+  // 成员变量
+  protected double length;
+  protected double width;
+  public Rectangle(double l, double w)
+  {
+      length &#61; l;
+      width &#61; w;
+  }
+  [DeBugInfo(55, &#34;Zara Ali&#34;, &#34;19/10/2012&#34;,
+  Message &#61; &#34;Return type mismatch&#34;)]
+  public double GetArea()
+  {
+      return length * width;
+  }
+  [DeBugInfo(56, &#34;Zara Ali&#34;, &#34;19/10/2012&#34;)]
+  public void Display()
+  {
+      Console.WriteLine(&#34;Length: {0}&#34;, length);
+      Console.WriteLine(&#34;Width: {0}&#34;, width);
+      Console.WriteLine(&#34;Area: {0}&#34;, GetArea());
+  }
+}
+</code></pre>
+<p>####使用反射来读取元数据</p>
+<pre><code>   class ExecuteRectangle
+    {
+        static void Main(string[] args)
+        {
+            Rectangle r &#61; new Rectangle(4.5, 7.5);
+            r.Display();
+            Type type &#61; typeof(Rectangle);
+            // 遍历 Rectangle 类的特性
+            foreach (Object attributes in type.GetCustomAttributes(false))
+            {
+                DeBugInfo dbi &#61; (DeBugInfo)attributes;
+                if (null !&#61; dbi)
+                {
+                    Console.WriteLine(&#34;Bug no: {0}&#34;, dbi.BugNo);
+                    Console.WriteLine(&#34;Developer: {0}&#34;, dbi.Developer);
+                    Console.WriteLine(&#34;Last Reviewed: {0}&#34;,
+     dbi.LastReview);
+                    Console.WriteLine(&#34;Remarks: {0}&#34;, dbi.Message);
+                }
+            }
+
+            // 遍历方法特性
+            foreach (MethodInfo m in type.GetMethods())
+            {
+                foreach (Attribute a in m.GetCustomAttributes(true))
+                {
+                    DeBugInfo dbi &#61; (DeBugInfo)a;
+                    if (null !&#61; dbi)
+                    {
+                        Console.WriteLine(&#34;Bug no: {0}, for Method: {1}&#34;,
+      dbi.BugNo, m.Name);
+                        Console.WriteLine(&#34;Developer: {0}&#34;, dbi.Developer);
+                        Console.WriteLine(&#34;Last Reviewed: {0}&#34;,
+      dbi.LastReview);
+                        Console.WriteLine(&#34;Remarks: {0}&#34;, dbi.Message);
+                    }
+                }
+            }
+            Console.ReadLine();
+        }
+    }
+}
+</code></pre>
+<p><img alt="这里写图片描述" src="./posts/assets/78541847-ext-12d99dd64301.png" loading="lazy"></p>
+<p>运行结果如上&#xff0c;通过反射的形式&#xff0c;访问到。</p>
+<p>#反射<br />
+与java中反射类似&#xff0c;但C#里的反射在这里有新的用途&#xff0c;就是查看特性信息。直白的说&#xff0c;就是运行时获取类&#xff0c;类的属性&#xff0c;方法&#xff0c;甚至可以修改。有以下几项功能是一定的&#xff1a;</p>
+<ul><li>它允许在运行时查看特性&#xff08;attribute&#xff09;信息。</li><li>它允许审查集合中的各种类型&#xff0c;以及实例化这些类型。</li><li>它允许延迟绑定的方法和属性&#xff08;property&#xff09;。</li><li>它允许在运行时创建新类型&#xff0c;然后使用这些类型执行一些任务。</li></ul>
+<p>具体实现在应用的时候再更新吧<br />
+#属性<br />
+说白了属性和java里的封装方法getter和setter是类似的&#xff0c;只不过单独拿出来起了个名字而已</p>
+<pre><code>using System;
+namespace tutorialspoint
+{
+   class Student
+   {
+
+      private string code &#61; &#34;N.A&#34;;
+      private string name &#61; &#34;not known&#34;;
+      private int age &#61; 0;
+
+      // 声明类型为 string 的 Code 属性
+      public string Code
+      {
+         get
+         {
+            return code;
+         }
+         set
+         {
+            code &#61; value;
+         }
+      }
+
+      // 声明类型为 string 的 Name 属性
+      public string Name
+      {
+         get
+         {
+            return name;
+         }
+         set
+         {
+            name &#61; value;
+         }
+      }
+
+      // 声明类型为 int 的 Age 属性
+      public int Age
+      {
+         get
+         {
+            return age;
+         }
+         set
+         {
+            age &#61; value;
+         }
+      }
+      public override string ToString()
+      {
+         return &#34;Code &#61; &#34; &#43; Code &#43;&#34;, Name &#61; &#34; &#43; Name &#43; &#34;, Age &#61; &#34; &#43; Age;
+      }
+    }
+    class ExampleDemo
+    {
+      public static void Main()
+      {
+         // 创建一个新的 Student 对象
+         Student s &#61; new Student();
+
+         // 设置 student 的 code、name 和 age
+         s.Code &#61; &#34;001&#34;;
+         s.Name &#61; &#34;Zara&#34;;
+         s.Age &#61; 9;
+         Console.WriteLine(&#34;Student Info: {0}&#34;, s);
+         // 增加年龄
+         s.Age &#43;&#61; 1;
+         Console.WriteLine(&#34;Student Info: {0}&#34;, s);
+         Console.ReadKey();
+       }
+   }
+}
+</code></pre>
+<p>不过比较奇怪的是&#xff0c;C#居然弄了一个抽象属性出来&#xff0c;不知道有啥用&#xff0c;感觉很鸡肋啊</p>
+<pre><code>using System;
+namespace tutorialspoint
+{
+   public abstract class Person
+   {
+      public abstract string Name
+      {
+         get;
+         set;
+      }
+      public abstract int Age
+      {
+         get;
+         set;
+      }
+   }
+   class Student : Person
+   {
+
+      private string code &#61; &#34;N.A&#34;;
+      private string name &#61; &#34;N.A&#34;;
+      private int age &#61; 0;
+
+      // 声明类型为 string 的 Code 属性
+      public string Code
+      {
+         get
+         {
+            return code;
+         }
+         set
+         {
+            code &#61; value;
+         }
+      }
+
+      // 声明类型为 string 的 Name 属性
+      public override string Name
+      {
+         get       //访问器
+         {
+            return name;
+         }
+         set
+         {
+            name &#61; value;
+         }
+      }
+
+      // 声明类型为 int 的 Age 属性
+      public override int Age
+      {
+         get
+         {
+            return age;
+         }
+         set
+         {
+            age &#61; value;
+         }
+      }
+      public override string ToString()
+      {
+         return &#34;Code &#61; &#34; &#43; Code &#43;&#34;, Name &#61; &#34; &#43; Name &#43; &#34;, Age &#61; &#34; &#43; Age;
+      }
+   }
+   class ExampleDemo
+   {
+      public static void Main()
+      {
+         // 创建一个新的 Student 对象
+         Student s &#61; new Student();
+
+         // 设置 student 的 code、name 和 age
+         s.Code &#61; &#34;001&#34;;
+         s.Name &#61; &#34;Zara&#34;;
+         s.Age &#61; 9;
+         Console.WriteLine(&#34;Student Info:- {0}&#34;, s);
+         // 增加年龄
+         s.Age &#43;&#61; 1;
+         Console.WriteLine(&#34;Student Info:- {0}&#34;, s);
+         Console.ReadKey();
+       }
+   }
+}
+</code></pre>
+<p>#索引器<br />
+##索引器定义<br />
+索引器&#xff08;Indexer&#xff09; 允许一个对象可以像数组一样被索引。当您为类定义一个索引器时&#xff0c;该类的行为就会像一个 虚拟数组&#xff08;virtual array&#xff09; 一样。您可以使用数组访问运算符&#xff08;[ ]&#xff09;来访问该类的实例。相<strong>当于比属性更加细粒度的访问实例</strong><br />
+##索引器规范</p>
+<pre><code>element-type this[int index]
+{
+   // get 访问器
+   get
+   {
+      // 返回 index 指定的值
+   }
+
+   // set 访问器
+   set
+   {
+      // 设置 index 指定的值
+   }
+}
+</code></pre>
+<p>感觉用途不是很多啊</p>
+<p>#泛型和集合<br />
+都和java里差不多&#xff0c;暂时用不到很多&#xff0c;但C#的泛型有别于Java里的泛型&#xff0c;C#的泛型是真正的泛型&#xff0c;而java里的只是编译器的语法糖而已&#xff0c;在运行时候还是会被转换&#xff0c;只不过对于开发人员来说&#xff0c;便于理解而已&#xff0c;&#xff0c;并不会提高性能。</p>

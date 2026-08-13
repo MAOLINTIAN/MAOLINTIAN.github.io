@@ -1,0 +1,422 @@
+<div id="content_views" class="markdown_views prism-tomorrow-night-eighties">
+
+                    <p>本篇Blog继续学习结构型模式，了解如何更优雅的布局类和对象。结构型模式描述如何<strong>将类或对象按某种布局组合以便获得更好、更灵活的结构</strong>。虽然面向对象的继承机制提供了最基本的子类扩展父类的功能，但结构型模式不仅仅简单地使用继承，而更多地通过组合与运行期的动态组合来实现更灵活的功能。它分为类结构型模式和对象结构型模式，<strong>前者采用继承机制来组织接口和类，后者釆用组合或聚合来组合对象</strong>。本篇学习的是<font color="red"><strong>组合模式</strong></font>。由于学习的都是设计模式，所有系列文章都遵循如下的目录：</p>
+<ul><li><strong>模式档案</strong>：包含模式的定义、模式的特点、解决什么问题、优缺点、使用场景等</li><li><strong>模式结构</strong>：包含模式的角色定义及调用关系以及其模版代码</li><li><strong>模式示例</strong>：包含模式的实现方式代码举例，生活中的简单问题映射</li><li><strong>模式实践</strong>：如果工作中或开源项目用到了该模式，就将使用过程贴到这里，并且客观讨论使用的是否恰当</li><li><strong>模式对比</strong>：如果模式相似，有必要体现其相似点及不同点，区分使用，说明哪些场景下使用哪种模式比较好</li><li><strong>模式扩展</strong>：如果模式有与标准结构定义不同的变体形式，一并体现出其变体结构</li></ul>
+<p>接下来所有设计模式的介绍都暂且遵循此基本行文逻辑吗，如果某一条目没有则无需体现，但条目顺序遵循此结构</p>
+<h2><a rel="noopener noreferrer" id="_10" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>模式档案</h2>
+<p>在现实生活中，存在很多<strong>部分-整体</strong>的关系，例如，大学中的部门与学院、总公司中的部门与分公司等等，在软件开发中也是这样，例如，<strong>文件系统中的文件与文件夹</strong>、<strong>窗体程序中的简单控件与容器控件</strong>等。对这些简单对象与复合对象的处理，如果用组合模式来实现会很方便。</p>
+<p><font color="red"><strong>模式定义</strong></font>：组合模式<strong>将一组对象组织（Compose）成树形结构，以表示一种部分 - 整体的层次结构</strong>。组合让客户端调用方可以<strong>统一单个对象和组合对象的处理逻辑</strong></p>
+<p><font color="red"><strong>优点</strong></font>：组合模式有如下两个优点：</p>
+<ol><li>组合模式使得客户端代码可以<strong>一致地处理单个对象和组合对象</strong>，无须关心自己处理的是单个对象，还是组合对象，简化了客户端代码</li><li>更容易在组合体内加入新的对象，客户端不会因为加入了新的对象而更改源代码，满足开闭原则</li></ol>
+<p><font color="red"><strong>缺点</strong></font>：使用场景较窄，只有处理的数据对象为树形结构才能发挥作用，通常可以应用于组织架构设计。</p>
+<p><font color="red"><strong>使用场景</strong></font>：<strong>数据必须能表示成树形结构才能使用组合模式</strong>，这也导致了这种模式在实际的项目开发中并不那么常用。但是，一旦数据满足树形结构，应用这种模式就能发挥很大的作用，能让代码变得非常简洁</p>
+<p>组合模式跟面向对象设计中的<strong>组合关系</strong>（通过组合来组装两个类），完全是两码事。这里讲的组合模式，主要是<strong>用来处理树形结构数据</strong>。这里的数据，可以简单理解为一组对象集合</p>
+<h2><a rel="noopener noreferrer" id="_25" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>模式结构</h2>
+<p>组合模式包含以下主要角色。</p>
+<ul><li><strong>抽象组件</strong>（Component）角色：它的主要作用是为树叶组件和树枝组件声明公共接口，并实现它们的默认行为。在透明式的组合模式中抽象组件还声明访问和管理子类的接口；在安全式的组合模式中不声明访问和管理子类的接口，管理工作由树枝组件完成。（总的抽象类或接口，定义一些通用的方法，比如新增、删除）</li><li><strong>树叶组件</strong>（Leaf）角色：是组合中的叶节点对象，它没有子节点，用于继承或实现抽象组件。</li><li><strong>树枝组件</strong>（Composite）角色 / 中间组件：是组合中的分支节点对象，它有子节点，用于继承和实现抽象组件。它的主要作用是存储和管理子部件，通常包含 <code>Add()、Remove()、GetChild()</code> 等方法。</li></ul>
+<p>组合模式分为<strong>透明式的组合模式</strong>和<strong>安全式的组合模式</strong>。透明式的组合模式结构如下：</p>
+<h3><a rel="noopener noreferrer" id="1__32" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>1 透明式组合模式</h3>
+<p>在该方式中，由于抽象构件声明了所有子类中的全部方法，所以客户端无须区别树叶对象和树枝对象，对客户端来说是透明的。但其缺点是：树叶构件本来没有 <code>Add()、Remove() 及 GetChild()</code> 方法，却要实现它们（空实现或抛异常），这样会带来一些安全性问题</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/124306895-01-3cb586491d.png" loading="lazy"><br>
+可以看到树叶组件也实现了管理的方法，但是方法为空方法</p>
+<h3><a rel="noopener noreferrer" id="2__37" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>2 安全式组合模式</h3>
+<p>在该方式中，将管理子构件的方法移到树枝构件中，抽象构件和树叶构件没有对子对象的管理方法，这样就避免了上一种方式的安全性问题，但由于叶子和分支有不同的接口，客户端在调用时要知道树叶对象和树枝对象的存在，所以失去了透明性<br>
+<img alt="在这里插入图片描述" src="./posts/assets/124306895-02-4dc79ea15f.png" loading="lazy"><br>
+透明式和安全式的组合模式，唯一的区别就是抽象组件中是否添加树叶节点的管理方法：</p>
+<ul><li>透明式添加，那么在基于接口进行使用时，使用者并不需要关心实际对象是树枝还是树叶</li><li>组合式不添加，那么在基于接口进行使用时，要想使用树叶管理方法，还得声明对象为树枝对象，因为树叶对象并不具备管理方法。</li></ul>
+<p>这是二者的一个本质区别。</p>
+<h2><a rel="noopener noreferrer" id="_46" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>模式实现</h2>
+<p>分别实现透明式组合模式和安全式组合模式</p>
+<h3><a rel="noopener noreferrer" id="_48" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>透明式组合模式</h3>
+<p>各个角色代码如下：</p>
+<h4><a rel="noopener noreferrer" id="1__51" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>1 <strong>抽象组件</strong></h4>
+<pre><code class="prism language-java"><span class="token comment">//抽象构件</span>
+<span class="token keyword">interface</span> <span class="token class-name">Component</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">remove</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Component</span> <span class="token function">getChild</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2__69" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>2 <strong>树叶组件</strong></h4>
+<pre><code class="prism language-java"><span class="token comment">//树叶构件</span>
+<span class="token keyword">class</span> <span class="token class-name">Leaf</span> <span class="token keyword">implements</span> <span class="token class-name">Component</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">=</span> name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">remove</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Component</span> <span class="token function">getChild</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"树叶"</span> <span class="token operator">+</span> name <span class="token operator">+</span> <span class="token string">"：被访问！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__96" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>3 <strong>树枝组件</strong></h4>
+<pre><code class="prism language-java"><span class="token comment">//树枝构件</span>
+<span class="token keyword">class</span> <span class="token class-name">Composite</span> <span class="token keyword">implements</span> <span class="token class-name">Component</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Component</span><span class="token punctuation">&gt;</span></span> children <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Component</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        children<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">remove</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        children<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Component</span> <span class="token function">getChild</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> children<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Object</span> obj <span class="token operator">:</span> children<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token class-name">Component</span><span class="token punctuation">)</span> obj<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>客户端调用如下：</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CompositePattern</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">Component</span> twig0 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Composite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> twig1 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Composite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> leaf1 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token string">"1"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> leaf2 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token string">"2"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> leaf3 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token string">"3"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig0<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig0<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>twig1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig0<span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//空方法，不执行</span>
+        leaf1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>打印结果如下：</p>
+<pre><code class="prism language-java">树叶<span class="token number">1</span>：被访问！
+树叶<span class="token number">2</span>：被访问！
+树叶<span class="token number">3</span>：被访问！
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_150" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>安全式组合模式</h3>
+<p>各个角色代码如下：</p>
+<h4><a rel="noopener noreferrer" id="1__153" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>1 <strong>抽象组件</strong></h4>
+<p>修改 Component 代码，只保留层次的公共行为</p>
+<pre><code class="prism language-java"><span class="token comment">//抽象构件</span>
+<span class="token keyword">interface</span> <span class="token class-name">Component</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2__163" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>2 <strong>树叶组件</strong></h4>
+<pre><code class="prism language-java"><span class="token comment">//树叶构件</span>
+<span class="token keyword">class</span> <span class="token class-name">Leaf</span> <span class="token keyword">implements</span> <span class="token class-name">Component</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">=</span> name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"树叶"</span> <span class="token operator">+</span> name <span class="token operator">+</span> <span class="token string">"：被访问！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__179" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>3 <strong>树枝组件</strong></h4>
+<pre><code class="prism language-java"><span class="token comment">//树枝构件</span>
+<span class="token keyword">class</span> <span class="token class-name">Composite</span> <span class="token keyword">implements</span> <span class="token class-name">Component</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Component</span><span class="token punctuation">&gt;</span></span> children <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Component</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        children<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">remove</span><span class="token punctuation">(</span><span class="token class-name">Component</span> c<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        children<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Component</span> <span class="token function">getChild</span><span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> children<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Object</span> obj <span class="token operator">:</span> children<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token class-name">Component</span><span class="token punctuation">)</span> obj<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>修改客户端代码，将树枝构件类型更改为 Composite 类型，以便获取管理子类操作的方法</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CompositePattern</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">Composite</span> twig0 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Composite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Composite</span> twig1 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Composite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> leaf1 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token string">"1"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> leaf2 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token string">"2"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Component</span> leaf3 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Leaf</span><span class="token punctuation">(</span><span class="token string">"3"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig0<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig0<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>twig1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>leaf3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        twig0<span class="token punctuation">.</span><span class="token function">operation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_222" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>模式实践</h2>
+<p>我们有如下两个场景的实践：<strong>设计一个文件系统</strong>和<strong>设计一个组织成本核算系统</strong>，以下实例组合模式为安全式组合模式。</p>
+<h3><a rel="noopener noreferrer" id="_224" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>设计一个文件系统</h3>
+<p>假设我们有这样一个需求：设计一个类来表示文件系统中的目录，能方便地实现下面这些功能：动态地添加、删除某个目录下的子目录或文件；统计指定目录下的文件个数；统计指定目录下的文件总大小。代码如下：</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FileSystemNode</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> path<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token keyword">boolean</span> isFile<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">FileSystemNode</span><span class="token punctuation">&gt;</span></span> subNodes <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">FileSystemNode</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">,</span> <span class="token keyword">boolean</span> isFile<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>path <span class="token operator">=</span> path<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>isFile <span class="token operator">=</span> isFile<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">countNumOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>isFile<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">int</span> numOfFiles <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir <span class="token operator">:</span> subNodes<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      numOfFiles <span class="token operator">+=</span> fileOrDir<span class="token punctuation">.</span><span class="token function">countNumOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> numOfFiles<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">long</span> <span class="token function">countSizeOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>isFile<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">File</span> file <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>file<span class="token punctuation">.</span><span class="token function">exists</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span> file<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">long</span> sizeofFiles <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir <span class="token operator">:</span> subNodes<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      sizeofFiles <span class="token operator">+=</span> fileOrDir<span class="token punctuation">.</span><span class="token function">countSizeOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> sizeofFiles<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> path<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addSubNode</span><span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    subNodes<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>fileOrDir<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">removeSubNode</span><span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> size <span class="token operator">=</span> subNodes<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> size<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>subNodes<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>fileOrDir<span class="token punctuation">.</span><span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">break</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&lt;</span> size<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      subNodes<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>单纯从功能实现角度来说，上面的代码没有问题，已经实现了我们想要的功能。但是，如果我们开发的是一个大型系统，从<strong>扩展性（文件或目录可能会对应不同的操作）、业务建模（文件和目录从业务上是两个概念）、代码的可读性（文件和目录区分对待更加符合人们对业务的认知）的角度</strong>来说，我们最好对文件和目录进行区分设计，定义为 File 和 Directory 两个类</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">FileSystemNode</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">protected</span> <span class="token class-name">String</span> path<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">FileSystemNode</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>path <span class="token operator">=</span> path<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">int</span> <span class="token function">countNumOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">long</span> <span class="token function">countSizeOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> path<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">File</span> <span class="token keyword">extends</span> <span class="token class-name">FileSystemNode</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token class-name">File</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">super</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">countNumOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">long</span> <span class="token function">countSizeOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name"><span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span>File</span> file <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name"><span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span>File</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>file<span class="token punctuation">.</span><span class="token function">exists</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> file<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Directory</span> <span class="token keyword">extends</span> <span class="token class-name">FileSystemNode</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">FileSystemNode</span><span class="token punctuation">&gt;</span></span> subNodes <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Directory</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">super</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">countNumOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> numOfFiles <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir <span class="token operator">:</span> subNodes<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      numOfFiles <span class="token operator">+=</span> fileOrDir<span class="token punctuation">.</span><span class="token function">countNumOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> numOfFiles<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">long</span> <span class="token function">countSizeOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">long</span> sizeofFiles <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir <span class="token operator">:</span> subNodes<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      sizeofFiles <span class="token operator">+=</span> fileOrDir<span class="token punctuation">.</span><span class="token function">countSizeOfFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> sizeofFiles<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addSubNode</span><span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    subNodes<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>fileOrDir<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">removeSubNode</span><span class="token punctuation">(</span><span class="token class-name">FileSystemNode</span> fileOrDir<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> size <span class="token operator">=</span> subNodes<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> size<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>subNodes<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>fileOrDir<span class="token punctuation">.</span><span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">break</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&lt;</span> size<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      subNodes<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_366" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>设计一个组织成本核算系统</h3>
+<p>假设我们在开发一个 OA 系统（办公自动化系统）。公司的组织结构包含部门和员工两种数据类型。其中，部门又可以包含子部门和员工<br>
+<img alt="在这里插入图片描述" src="./posts/assets/124306895-03-0d5e187344.png" loading="lazy"></p>
+<p>我们希望在内存中构建整个公司的人员架构图（部门、子部门、员工的隶属关系），并且<strong>提供接口计算出部门的薪资成本（隶属于这个部门的所有员工的薪资和）</strong>。部门包含子部门和员工，这是一种嵌套结构，可以表示成树这种数据结构。计算每个部门的薪资开支这样一个需求，也可以通过在树上的遍历算法来实现。所以，从这个角度来看，这个应用场景可以使用组合模式来设计和实现</p>
+<blockquote>
+<p><strong>抽象组件：人力资源管理</strong></p>
+</blockquote>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">HumanResource</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">protected</span> <span class="token keyword">long</span> id<span class="token punctuation">;</span>
+  <span class="token keyword">protected</span> <span class="token keyword">double</span> salary<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">HumanResource</span><span class="token punctuation">(</span><span class="token keyword">long</span> id<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>id <span class="token operator">=</span> id<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">long</span> <span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> id<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">double</span> <span class="token function">calculateSalary</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<blockquote>
+<p><strong>树叶节点：人员成本信息</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Employee</span> <span class="token keyword">extends</span> <span class="token class-name">HumanResource</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token class-name">Employee</span><span class="token punctuation">(</span><span class="token keyword">long</span> id<span class="token punctuation">,</span> <span class="token keyword">double</span> salary<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">super</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>salary <span class="token operator">=</span> salary<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">double</span> <span class="token function">calculateSalary</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> salary<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p><strong>树枝节点：部门成本信息</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Department</span> <span class="token keyword">extends</span> <span class="token class-name">HumanResource</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">HumanResource</span><span class="token punctuation">&gt;</span></span> subNodes <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Department</span><span class="token punctuation">(</span><span class="token keyword">long</span> id<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">super</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">double</span> <span class="token function">calculateSalary</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">double</span> totalSalary <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">HumanResource</span> hr <span class="token operator">:</span> subNodes<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token comment">//递归计算薪资</span>
+      totalSalary <span class="token operator">+=</span> hr<span class="token punctuation">.</span><span class="token function">calculateSalary</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>salary <span class="token operator">=</span> totalSalary<span class="token punctuation">;</span>
+    <span class="token keyword">return</span> totalSalary<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addSubNode</span><span class="token punctuation">(</span><span class="token class-name">HumanResource</span> hr<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    subNodes<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>hr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p><strong>客户端调用逻辑</strong></p>
+</blockquote>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Demo</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">long</span> ORGANIZATION_ROOT_ID <span class="token operator">=</span> <span class="token number">1001</span><span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token class-name">DepartmentRepo</span> departmentRepo<span class="token punctuation">;</span> <span class="token comment">// 依赖注入</span>
+  <span class="token keyword">private</span> <span class="token class-name">EmployeeRepo</span> employeeRepo<span class="token punctuation">;</span> <span class="token comment">// 依赖注入</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">buildOrganization</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">Department</span> rootDepartment <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Department</span><span class="token punctuation">(</span>ORGANIZATION_ROOT_ID<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">buildOrganization</span><span class="token punctuation">(</span>rootDepartment<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">// 构建组织架构的代码</span>
+  <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">buildOrganization</span><span class="token punctuation">(</span><span class="token class-name">Department</span> department<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> subDepartmentIds <span class="token operator">=</span> departmentRepo<span class="token punctuation">.</span><span class="token function">getSubDepartmentIds</span><span class="token punctuation">(</span>department<span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Long</span> subDepartmentId <span class="token operator">:</span> subDepartmentIds<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">Department</span> subDepartment <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Department</span><span class="token punctuation">(</span>subDepartmentId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      department<span class="token punctuation">.</span><span class="token function">addSubNode</span><span class="token punctuation">(</span>subDepartment<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment">//递归构建组织</span>
+      <span class="token function">buildOrganization</span><span class="token punctuation">(</span>subDepartment<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> employeeIds <span class="token operator">=</span> employeeRepo<span class="token punctuation">.</span><span class="token function">getDepartmentEmployeeIds</span><span class="token punctuation">(</span>department<span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Long</span> employeeId <span class="token operator">:</span> employeeIds<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">double</span> salary <span class="token operator">=</span> employeeRepo<span class="token punctuation">.</span><span class="token function">getEmployeeSalary</span><span class="token punctuation">(</span>employeeId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      department<span class="token punctuation">.</span><span class="token function">addSubNode</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Employee</span><span class="token punctuation">(</span>employeeId<span class="token punctuation">,</span> salary<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_467" href="https://blog.csdn.net/sinat_33087001/article/details/124306895"></a>总结一下</h2>
+<p>组合模式的场景使用较为特殊，实际上就是树这种数据结构组织的对象，通过抽象复杂数据结构中的通用方法使这个复杂对象调用起来和简单对象一样容易，例如核算一个部门的成本数据，对于<strong>部门+人</strong>这类组织数据就可以理所当然的认为是一个树形结构，无论是部门这种树枝还是人这种树叶都提供计算成本的统一方法，只要构建完毕这样一个组织，那么无论是计算哪一级的成本，都统一调用计算方法即可，递归逻辑已经内置在组织构建过程中了。</p>
+
+
+                </div>

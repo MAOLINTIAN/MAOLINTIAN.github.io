@@ -1,0 +1,182 @@
+<p>我把常用关键字分为以下几种&#xff1a;<strong>1&#xff0c;访问限制修饰符&#xff1b;2&#xff0c;类&#xff0c;方法&#xff0c;变量修饰符&#xff1b;3&#xff0c;调用类型关键字&#xff1b;4工具类型的关键字</strong></p>
+<h2><a rel="noopener noreferrer" id="_1"></a>访问限制修饰符</h2>
+<p>访问级别共有四种&#xff1a;public(全部可见)&#xff0c;protected(本包所有类和跨包子类可见)&#xff0c;default(本包所有类可见)&#xff0c;private(仅对本类可见)。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114989779-01-96dab861b8.png" loading="lazy"><br />
+对于类、变量、方法&#xff0c;其实修饰符有不同的选择方式&#xff1a;</p>
+<blockquote>
+<p><strong>类的访问修饰符</strong></p>
+</blockquote>
+<p>访问限制修饰符对内部类和外部类不同的支持</p>
+<ul><li>
+<p>对于外部类来说&#xff0c;<strong>只有两种修饰&#xff0c;public和默认&#xff08;default&#xff09;</strong>&#xff0c;因为外部类放在包中&#xff0c;只有两种可能&#xff0c;包可见和包不可见。外部类只能用<strong>public, abstract 和 final</strong> 修饰&#xff0c;因为外部类放在包中&#xff0c;只有两种可能&#xff0c;包可见和包不可见&#xff08;2种访问权限&#xff09;</p>
+</li><li>
+<p>对于内部类来说&#xff0c;可以用所有的修饰&#xff0c;因为内部类放在外部类中&#xff0c;与成员变量的地位一致&#xff0c;所以有四种可能。内部类则可以用 修饰成员变量的修饰符修饰内部类&#xff0c;比如 <strong>private&#xff0c;static, protected &#xff0c;public和默认的default修饰</strong>。</p>
+</li></ul>
+<blockquote>
+<p><strong>成员变量的访问修饰符</strong></p>
+</blockquote>
+<ul><li>public&#xff08;公共访问修饰符&#xff09;</li><li>protected&#xff08;保护访问修饰符&#xff09;指定该变量可以被自己的类、同包的类、子类访问。在子类中可以(<strong>通过super或者不调用来访问</strong>)。</li><li>default&#xff0c;在同一个包中的类可以访问&#xff0c;其他包中的类不能访问。</li><li>private&#xff08;私有访问修饰符&#xff09;指定该变量只允许自己的类的方法访问&#xff0c;其他任何类&#xff08;包括子类&#xff09;中的方法均不能访问</li></ul>
+<blockquote>
+<p><strong>方法的访问修饰符</strong></p>
+</blockquote>
+<ul><li>public&#xff08;公共修饰符&#xff09;</li><li>protected&#xff08;保护访问修饰符&#xff09;指定该方法可以被它的类和子类(<strong>通过super或者不调用来访问</strong>)进行访问。</li><li>default&#xff0c;在同一个包中的类可以访问&#xff0c;其他包中的类不能访问。</li><li>private&#xff08;私有修饰符&#xff09;指定此方法只能有自己的类访问&#xff0c;其他的类不能访问&#xff08;包括子类&#xff09;</li></ul>
+<p>需要注意的是protected&#xff0c;如果在子类的方法中new一个父类出来&#xff0c;再用父类变量去调用方法还是会报错<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114989779-02-6fd6c6a639.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_31"></a>类&#xff0c;方法&#xff0c;变量修饰符</h2>
+<p><strong>abstract和static&#xff0c;final是互斥的&#xff0c;static和final是可以连用的</strong>而且abstract不能用private、static、synchronized、native、final访问修饰符修饰。</p>
+
+<table><thead><tr><th></th><th align="left">类</th><th align="left">变量</th><th align="left">方法</th><th align="left">静态代码块</th><th align="left">代码块</th></tr></thead><tbody><tr><td>abstract</td><td align="left">抽象类被修饰为abstract</td><td align="left"></td><td align="left">抽象方法被修饰为abstact(与native互斥)</td><td align="left"></td><td align="left"></td></tr><tr><td>native</td><td align="left"></td><td align="left"></td><td align="left">本地方法被修饰为native&#xff08;与abstract互斥&#xff09;</td><td align="left"></td><td align="left"></td></tr><tr><td>final</td><td align="left">封闭类被修饰为final&#xff08;与abstract互斥&#xff09;</td><td align="left">基本类型被修饰后为常量&#xff0c;引用类型被修饰后地址不可变</td><td align="left">方法被修饰后不可被重写&#xff08;与abstract互斥&#xff09;</td><td align="left"></td><td align="left"></td></tr><tr><td>static</td><td align="left">只有静态内部类才能被修饰&#xff08;与abstract互斥&#xff09;</td><td align="left">被修饰后为静态变量</td><td align="left">被修饰后为静态方法&#xff08;与abstract互斥&#xff09;</td><td align="left">被修饰后为静态代码块</td><td align="left"></td></tr><tr><td>synchronized</td><td align="left">被修饰后为同步类&#xff08;与abstract互斥&#xff09;</td><td align="left"></td><td align="left">被修饰后为同步方法&#xff08;与abstract互斥&#xff09;</td><td align="left">被修饰后为同步静态代码块</td><td align="left">被修饰后为同步代码块</td></tr></tbody></table><h3><a rel="noopener noreferrer" id="abstract_41"></a>abstract修饰符&#xff08;修饰类&#xff0c;方法&#xff09;</h3>
+<p>abstract修饰的类叫做抽象类&#xff0c;abstract修饰的方法叫做抽象方法&#xff1a;</p>
+<ol><li><strong>抽象类中可以没有抽象方法</strong>&#xff0c;但<strong>包含了抽象方法的类必须被定义为抽象类</strong>。</li><li><strong>没有抽象构造方法&#xff0c;没有抽象静态方法。</strong> static 和 abstract不能连用</li><li><strong>抽象类中可以有非抽象的构造方法</strong>&#xff0c;创建子类的实例时可能会调用这些构造方法。</li><li>抽象类及抽象方法<strong>不能被final和private修饰符修饰</strong>。final和abstract 不能连用&#xff0c;同样private和abstract不能连用&#xff08;抽象方法就是被用来实现的&#xff09;。</li><li><strong>抽象类不能被实例化。因为抽象类可能含有没有方法体的抽象方法</strong></li></ol>
+<p>其实很好理解&#xff0c;abstract修饰的类或方法生来就是要被实现或扩展以实现多态的&#xff0c;所以一切阻挠它的<code>final、static、private</code>这些关键字都不能使用&#xff0c;并且由于抽象的类或方法不能直接使用&#xff0c;所以<code>synchronized、native</code>也不能与它连用。</p>
+<h3><a rel="noopener noreferrer" id="final_52"></a>final修饰符&#xff08;修饰类&#xff0c;变量&#xff0c;方法&#xff09;</h3>
+<p>final具有不可改变的含义&#xff0c;<strong>它可以修饰非抽象类&#xff0c;非抽象成员方法和变量</strong></p>
+<ol><li><strong>用final修饰的类不能被继承&#xff0c;没有子类</strong></li><li>当⽤ final 修饰⼀个类时&#xff0c;表明这个类不能被继承。final 类中的所有成员⽅法都会被隐式地指定为 final ⽅法</li><li><strong>用final修饰的方法不能被子类的方法覆盖(重写)</strong></li><li><strong>用final修饰的变量表示常量&#xff0c;只能被赋一次值</strong>&#xff0c;<strong>必须被显式初始化</strong>。但如果final修饰的是引用&#xff0c;<strong>它只关心引用的不可变&#xff0c;不关心引用指向的对象的变化</strong></li><li><strong>private修饰的方法默认为是final方法&#xff0c;因而不能被子类的方法覆盖</strong></li></ol>
+<p>虽说final的方法不能被覆盖&#xff0c;但以下这种情况可以写一样的&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">class</span> <span class="token class-name">Car</span> <span class="token keyword">extends</span> <span class="token class-name">Vehicle</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> main <span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">new</span>  <span class="token class-name">Car</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span> out<span class="token punctuation">.</span> println <span class="token punctuation">(</span><span class="token string">&#34;Car&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">Vehicle</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span> out<span class="token punctuation">.</span> <span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Vehicle&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>首先final声明的方法是不能被覆盖的&#xff0c;但是这里并不错误&#xff0c;因为<strong>方法是private的</strong>&#xff0c;也就是子类没有继承父类的run方法&#xff0c;因此子类的run方法跟父类的run方法无关&#xff0c;<strong>并不是覆盖</strong>。<strong>但这里如果是public修饰符就会报编译错误</strong>&#xff0c;因为编译器认为子类在试图覆写一个父类的final修饰的方法。</p>
+<h4><a rel="noopener noreferrer" id="final_87"></a>final修饰变量</h4>
+<p>当变量被final修饰的时候需要遵循&#xff1a;</p>
+<ol><li>final修饰的成员变量为基本数据类型时&#xff0c;在赋值之后无法改变。当final修饰的成员变量为引用数据类型时&#xff0c;<strong>在赋值后其指向地址无法改变&#xff0c;但是对象内容还是可以改变的</strong></li><li>final修饰的<strong>成员变量</strong>在赋值时可以有三种方式&#xff1a;在声明时直接赋值&#xff1b;在构造器中赋值&#xff08;静态的不可以&#xff09;&#xff1b;在初始代码块中进行赋值&#xff08;静态final只能在静态块&#xff0c;动态final只能在构造块&#xff09;。</li><li>因为Java允许将数据成员声明为final&#xff0c;却不赋初值&#xff0c;这种叫做blank final&#xff0c;但是<strong>blank final必须在使用之前初始化</strong></li></ol>
+<p>准确的说blank final必须在初始化的时候赋一个初始值。</p>
+<h4><a rel="noopener noreferrer" id="finalfinallyfinalize_97"></a>final&#xff0c;finally&#xff0c;finalize的区别</h4>
+<p>我们经常会碰到这样一组关键字对比final&#xff0c;finally&#xff0c;finalize&#xff0c;尽管他们很像&#xff0c;但其实是做不同的事&#xff1a;</p>
+<ol><li>final用于声明属性&#xff0c;类&#xff0c;方法&#xff0c;分别表示属性不可变&#xff08;基本类型的不可变&#xff0c;引用类型的引用不可变&#xff0c;对象可变&#xff09;&#xff0c;类不可被继承&#xff0c;方法不可被覆盖</li><li>finally作为异常处理的一部分&#xff0c;只能用于tyr/catch语句中&#xff0c;并且附带一个语句块&#xff0c;表示这段语句一定要执行&#xff0c;经常被用在需要释放资源的情况下&#xff0c;例如文件的关闭&#xff0c;删除临时文件。</li><li>finalize是Object类的一个方法&#xff0c;在垃圾回收器执行时会调用被回收对象的finalize方法。需要注意的是如果要回收该对象&#xff0c;首先该对象会调用它的finalize方法&#xff0c;在执行期间&#xff0c;如果它能逃逸&#xff0c;就可以逃逸&#xff0c;如果不能&#xff0c;那么在下一次垃圾回收动作发生时该对象被回收。&#xff08;<strong>二次标记</strong>&#xff09;</li></ol>
+<p>可以顺带记住这三个关键字的使用区别。</p>
+<h3><a rel="noopener noreferrer" id="static_106"></a>static修饰符&#xff08;修饰变量&#xff0c;方法和类&#xff09;</h3>
+<p>static修饰的变量可以先不初始化&#xff0c;常常修饰静态变量、静态方法和静态块</p>
+<blockquote>
+<p><strong>static作用于静态类</strong></p>
+</blockquote>
+<p><strong>如果一个类要被声明为static的&#xff0c;只有一种情况&#xff0c;就是静态内部类</strong>。如果在外部类声明为static&#xff0c;程序会编译都不会过。</p>
+<ol><li>静态内部类跟静态方法一样&#xff0c;只能访问静态的成员变量和方法&#xff0c;不能访问非静态的方法和属性&#xff0c;但是<strong>成员内部类可以访问任意外部类的成员变量和方法</strong></li><li><strong>静态内部类可以声明普通成员变量和方法&#xff0c;而成员内部类不能声明static成员变量和方法</strong></li><li><strong>静态内部类可以单独初始化</strong></li></ol>
+<blockquote>
+<p><strong>static作用于静态变量</strong></p>
+</blockquote>
+<ol><li>静态变量<strong>在内存中只有一个拷贝&#xff0c;在类的所有实例中共享</strong>。</li></ol>
+<blockquote>
+<p><strong>static作用于静态方法</strong></p>
+</blockquote>
+<ol><li><strong>在静态方法中不能直接访问实例方法和实例变量&#xff0c;需要new一个实例来访问</strong>。可想而知静态域在类加载的时候执行&#xff0c;那个时候还没有具体实例呢&#xff0c;除非用new触发主动初始化条件。</li><li>在静态方法中<strong>不能使用this和super</strong>关键字。其实this和super也是调用父类实例或本类实例的变量或方法&#xff0c;</li><li>静态方法不能被<strong>abstract</strong>修饰</li><li>静态方法和静态变量都<strong>可以通过类名直接被访问。</strong></li></ol>
+<blockquote>
+<p><strong>static作用于静态代码块</strong></p>
+</blockquote>
+<ul><li>当类被加载时&#xff0c;静态代码块只被执行一次。<strong>类中不同的静态代码块按它们在类中出现的顺序被依次执行</strong></li></ul>
+<p><code>public static void main(String args[]) {}</code> <strong>程序入口方法&#xff0c;可以被final修饰,也可以被synchronized修饰</strong>&#xff0c;static有如下使用的注意事项&#xff1a;</p>
+<p>是否可以在static环境中访问非static变量&#xff1f;</p>
+<ul><li>static变量在Java中是属于类的&#xff0c;它在所有的实例中的值是一样的。当类被Java虚拟机载入的时候&#xff0c;会对static变量进行初始化。如果你的代码尝试不用实例来访问非static的变量&#xff0c;编译器会报错&#xff0c;因为这些变量还没有被创建出来&#xff0c;还没有跟任何实例关联上。</li></ul>
+<p>static静态方法能不能引用非静态资源&#xff1f;</p>
+<ul><li>不能&#xff0c;new的时候才会产生的东西&#xff0c;对于初始化后就存在的静态资源来说&#xff0c;根本不认识它。</li></ul>
+<p>static静态方法里面能不能引用静态资源&#xff1f;</p>
+<ul><li>可以&#xff0c;因为都是类初始化的时候加载的&#xff0c;大家相互都认识。</li></ul>
+<p>非静态方法里面能不能引用静态资源&#xff1f;</p>
+<ul><li>可以&#xff0c;非静态方法就是实例方法&#xff0c;那是new之后才产生的&#xff0c;那么属于类的内容它都认识。</li></ul>
+<h3><a rel="noopener noreferrer" id="native_153"></a>native关键字&#xff08;修饰方法&#xff09;</h3>
+<p>native是方法修饰符。Native方法是由另外一种语言&#xff08;如c/c&#43;&#43;&#xff0c;FORTRAN&#xff0c;汇编&#xff09;实现的本地方法。</p>
+<ol><li><strong>因为在外部实现了方法&#xff0c;所以在java代码中&#xff0c;就不需要实现了&#xff0c;定义navtive方法时&#xff0c;并不提供实现体&#xff0c;因为其实现体是用非Java语言在外面实现的</strong>&#xff0c;有点类似于接口方法。</li><li><strong>Native可以和其他一些修饰符连用&#xff0c;但是abstract方法和Interface里的方法不能用native来修饰</strong>&#xff0c;因为native暗示这个方法是有实现体的&#xff0c;而abstract却显式指明了这个方法没有实现体。</li></ol>
+<p>也就是native就是修饰外部具体实现的方法&#xff0c;和没有实现的方法互斥</p>
+<h2><a rel="noopener noreferrer" id="_161"></a>调用类型关键字</h2>
+<p>调用类型关键字有两个&#xff0c;分别为super和this</p>
+<h3><a rel="noopener noreferrer" id="super_163"></a>super关键字</h3>
+<p>在类的构造方法中&#xff0c;通过super语句调用这个类的父类的构造方法。在构造方法中&#xff0c;super语句必须作为构造方法的第一条语句。</p>
+<ol><li>在子类中访问父类的被屏蔽的方法和属性</li><li>在构造方法中&#xff0c;super语句必须作为构造方法的第一条语句。</li><li><strong>只能在构造方法或实例方法内使用super关键字</strong>。 super关键字与类的特定实例相关</li></ol>
+<p>访问父类相关方法时需要用到&#xff0c;应用场景如下&#xff1a;</p>
+<ol><li>在子类构造方法中调用<strong>父类的构造方法</strong></li><li><strong>访问父类中被覆盖的同名变量或者方法&#xff08;而不是父类的被限制访问的私有方法和属性例如private或有些时候可能是default的&#xff0c;例如父类子类不在一个包&#xff09;</strong></li></ol>
+<p>需要注意<strong>super关键字只能指代直接父类&#xff0c;不能指代父类的父类。</strong></p>
+<h3><a rel="noopener noreferrer" id="this_176"></a>this关键字</h3>
+<p><strong>this关键字用来指向当前实例对象</strong>&#xff0c;通常用于成员变量和局部变量重名的时候需要<strong>用this来区分成员变量和局部变量</strong>&#xff0c;当成员变量和局部变量不能区别时用优先就近的原则。</p>
+<h2><a rel="noopener noreferrer" id="_179"></a>工具类型关键字</h2>
+<p>主要介绍instanceof和switch两个关键字</p>
+<h3><a rel="noopener noreferrer" id="instanceof_181"></a>instanceof关键字</h3>
+<p>它的作用是<strong>判断一个引用类型的变量所指向的实例是否是一个类&#xff08;接口&#xff0c;抽象类&#xff0c;父类&#xff09;的实例</strong>&#xff0c;常见用法&#xff1a;<code>result &#61; object instanceof class</code>返回一个boolean类型的值</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> test<span class="token punctuation">;</span>
+<span class="token keyword">class</span> <span class="token class-name">Base</span><span class="token punctuation">{<!-- --></span>
+
+<span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">Child</span> <span class="token keyword">extends</span> <span class="token class-name">Base</span><span class="token punctuation">{<!-- --></span>
+
+<span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">Grandchild</span> <span class="token keyword">extends</span> <span class="token class-name">Child</span><span class="token punctuation">{<!-- --></span>
+
+
+
+<span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">TT</span> <span class="token punctuation">{<!-- --></span>
+
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Singleton</span><span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+		Grandchild g <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Grandchild</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token keyword">if</span> <span class="token punctuation">(</span>g <span class="token keyword">instanceof</span> <span class="token class-name">Base</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+			System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;TRUE&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span><span class="token keyword">else</span><span class="token punctuation">{<!-- --></span>
+			System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;FALSE&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span>
+		<span class="token keyword">if</span> <span class="token punctuation">(</span>g <span class="token keyword">instanceof</span> <span class="token class-name">Child</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+			System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;TRUE&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span><span class="token keyword">else</span><span class="token punctuation">{<!-- --></span>
+			System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;FALSE&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span>
+
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>也可以判断自己父类的父类是不是满足&#xff0c;换言之&#xff0c;该方法可以向上穿透寻找父类</p>
+<h3><a rel="noopener noreferrer" id="switch_220"></a>switch关键字</h3>
+<p>switch语句用于多分支选择&#xff0c;使用switch&#xff08;expr&#xff09;时&#xff0c;expr只能是一个枚举常量&#xff08;<strong>内部是整型或字符类型</strong>&#xff09;或一个整数表达式。</p>
+<ol><li>其中整数表达式可以是基本类型<strong>int&#xff08;byte&#xff0c;short&#xff0c;char&#xff09;<strong>或</strong>其对应的包装类</strong></li><li>如果要用long&#xff0c;float&#xff0c;double&#xff0c;必须强制转为int才可以</li><li>String类型在jdk1.7支持&#xff08;先对字符串里的String值调用hashcode&#xff08;&#xff09;获取一个int类型的hash值&#xff0c;然后遍历所有case里字符串对应的hash值进行匹配&#xff0c;如果没匹配成功&#xff0c;则说明不存在&#xff0c;如果匹配成功&#xff0c;则接着调用字符串的equals操作进行匹配&#xff09;equals的范围小于hashcode</li></ol>
+<p>在Java7之前&#xff0c;switch只能支持 byte、short、char、int或者其对应的封装类以及Enum类型作为条件。在Java7中&#xff0c;呼吁很久的String支持也终于被加上了。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">StringForSwitch</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test_string_switch</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        String result<span class="token operator">&#61;</span><span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">switch</span> <span class="token punctuation">(</span><span class="token string">&#34;doctor&#34;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">case</span> <span class="token string">&#34;doctor&#34;</span><span class="token operator">:</span>
+            result <span class="token operator">&#61;</span> <span class="token string">&#34;doctor&#34;</span><span class="token punctuation">;</span>
+            <span class="token keyword">break</span><span class="token punctuation">;</span>
+        <span class="token keyword">default</span><span class="token operator">:</span>
+            <span class="token keyword">break</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>反编译后的&#xff0c;还原成大致的Java的代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">StringForSwitch</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token function">StringForSwitch</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test_string_switch</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        String result <span class="token operator">&#61;</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+        String var2 <span class="token operator">&#61;</span> <span class="token string">&#34;doctor&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">switch</span><span class="token punctuation">(</span><span class="token string">&#34;doctor&#34;</span><span class="token punctuation">.</span><span class="token function">hashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">case</span> <span class="token operator">-</span><span class="token number">1326477025</span><span class="token operator">:</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>var2<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;doctor&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                result <span class="token operator">&#61;</span> <span class="token string">&#34;doctor&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token keyword">default</span><span class="token operator">:</span>
+           <span class="token keyword">break</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>可以看出&#xff0c;字符串类型在switch语句中利用hashcode的值与字符串内容的比较来实现的&#xff1b;<strong>但是在case字句中对应的语句块中仍然需要使用String的equals方法来进一步比较字符串的内容&#xff0c;这是因为哈希函数在映射的时候可能存在冲突</strong>&#xff0c;switch关键字使用注意</p>
+<ol><li>在switch语句中&#xff0c;<strong>表达式的值不能是null</strong>&#xff0c;否则会在运行时抛出NullPointerException。<strong>在case子句中也不能使用null</strong>&#xff0c;否则会出现编译错误。</li><li><strong>case子句的值是不能重复的</strong>&#xff0c;对于字符串类型的也一样&#xff0c;但是字符串中可以包含Unicode转义字符。重复值的检查是在Java编译器对Java源代码进行相关的词法转换之后才进行的。也就是说&#xff0c;有些case字句的值虽然在源代码中看起来是不同的&#xff0c;但是经词法转换之后是一样的&#xff0c;就会在成编译错误。比如&#xff1a;“男”和“\u7537”就是一个意思。</li></ol>
+<p>以上就是Java中的一些常用关键字对比&#xff0c;希望能帮助到大家</p>

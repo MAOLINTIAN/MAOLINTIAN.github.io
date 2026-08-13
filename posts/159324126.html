@@ -1,0 +1,26 @@
+<p>在分布式系统的架构设计中，分库分表是一个无法回避的话题。当数据量达到一定规模，单库单表已经无法承载业务压力时，我们就需要考虑将数据分散到多个数据库和多个表中。然而，这种分散带来了一个新的挑战：<strong>如何在分库分表的场景下生成全局唯一且有序的主键</strong>。</p>
+<p>这个问题看似简单，实际上却涉及数据库底层原理、分布式系统设计、并发控制等多个技术领域。本文将从基础方案到进阶设计，为你全面解析分布式ID的生成策略。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="1__6"></a>1. 分库分表后，为什么自增主键失效了？</h2>
+<p>在单库单表的场景下，我们可以直接使用数据库的自增主键功能，比如在MySQL中创建表时指定 <code>AUTO_INCREMENT</code> 属性：</p>
+<pre><code class="prism language-sql"><span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> order_info <span class="token punctuation">(</span>
+    id <span class="token keyword">BIGINT</span> <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token keyword">AUTO_INCREMENT</span><span class="token punctuation">,</span>  <span class="token comment">-- 自增主键</span>
+    buyer_id <span class="token keyword">BIGINT</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    order_amount <span class="token keyword">DECIMAL</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span>
+</code></pre>
+<p>然而在分库分表的场景下，这种自增主键机制就会失效。假设我们按照买家ID对2取模的方式将订单表拆分为两张表，分别是 <code>order_info_0</code> 和 <code>order_info_1</code>。如果这两张表都依赖各自的自增机制生成主键，那么两张表可能会生成相同的ID——比如两张表各自插入第一条记录时，生成的ID都是1，这就导致了主键冲突。</p>
+<p>因此，在分库分表场景下，我们需要设计一个能够<strong>生成全局唯一ID</strong>的机制。这个机制需要满足两个核心要求：</p>
+<ul>
+ <li><strong>全局唯一</strong>：不能出现重复</li>
+ <li><strong>递增特性</strong>：因为递增与否会显著影响数据库的插入性能</li>
+</ul>
+<p>此外，由于采用分库分表的系统通常数据量巨大，意味着并发量也很高，所以主键生成方案还需要考虑<strong>高并发支持</strong>。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="2_UUID_28"></a>2. UUID方案：直观但代价高昂</h2>
+<p>UUID是最直接的主键生成方案，实现简单，但它的弊端也很明显。</p>
+<h3><a rel="noopener noreferrer" id="21_UUID_32"></a>2.1 UUID的两个主要缺陷</h3>
+<p><strong>第一，长度问题</strong>：UUID通常占用36个字符，存储空间较大，不过在实际采用UUID的场景中，这个缺点通常不是主要考虑因素。</p>
+<p><strong>第二，非递增性</strong>：这是UUID最致命的缺陷，我们需要深入理解为什么数据库倾向于使用自增主键。</p>
+<h3><a rel="noopener noreferrer" id="22_UUID_38"></a>2.2 页分裂：UUID的核心痛点</h3>
+<p>数据库的B+树索引结构中，数据按照主键大小有序存储在叶子节点上。当我们需要插入一条新记录时，如果这条记录的主键值恰好位于某个已满的叶子节点中间，就会触发<strong>页分裂</strong>操作。</p>

@@ -1,0 +1,45 @@
+<div id="content_views" class="markdown_views prism-tomorrow-night-eighties">
+
+                    <p>从2018年至今，已工作了5年有余，回望这5年的工作历程，虽然一直在学习、一直在积累，但其实都在<font color="red"><strong>术</strong></font>的层面上停留，也就是具体的技术点。这5年多的时间里其实也不是没有窥<font color="red"><strong>道</strong></font>的想法：</p>
+<ul><li>一次是2018年刚工作的时候，看着leader书桌的《领域驱动实践》，觉得自己行了，老写CRUD没意思，要搞搞，于是有了这篇<a href="https://tianmaolin.blog.csdn.net/article/details/78924414" rel="nofollow"><strong>【架构设计 领域驱动开发 一】三层VSDDD</strong></a>，当时甚至还只是在实习。只学了一点就没有再继续了，核心原因有两点：基础的<strong>术</strong>尚不扎实；业务的输入太少，根本不懂<strong>道</strong>的意义何在？翻看了半天不知所以然，人云亦云罢了。</li><li>还有一次是在去年2022年的时候，那时其实已经积累了一套自己的完备知识体系了，也就是<strong>术</strong>到位了；当然也知道自己的深浅，所以没有直接开始学习DDD，而是去将自己的术升级到最高阶，也就有了这篇<a href="https://tianmaolin.blog.csdn.net/article/details/124539645" rel="nofollow"><strong>【Java设计模式 学习目标及大纲】高质量代码的标准及实现路径</strong></a>，从<strong>面向对象思想、设计原则、设计模式、编码规范、代码重构</strong>这几个方面深化自己对于代码和设计思想的认知。</li></ul>
+<p>现如今经过一年多的业务工作磨炼，自身也开始负责一个独立的模块的开发，在开发过程中有一些偶发的困惑和经验，也就是有了一些现状的领悟和业务的输入了，此时有<font color="red"><strong>窥道</strong></font>正当时也。这个系列来自对极客时间的系列学习：<a href="https://time.geekbang.org/column/article/610620" rel="nofollow"><strong>手把手教你落地DDD</strong></a></p>
+<h2><a rel="noopener noreferrer" id="DDD_5" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>DDD的定义是什么</h2>
+<p>2003 年，Eric Evans 写了《领域驱动设计：软件核心复杂性应对之道》一书，正式提出了这种方法。领域驱动设计的英文<strong>是 Domain-Driven Design</strong>，所以简称 DDD。<font color="red"><strong>DDD 是一种开发复杂软件的系统化的方法学和思想，通俗的说就是提供了一套复杂软件开发的标准步骤</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_7" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>什么是方法学</h3>
+<p>方法学是研究和制定研究方法的学科，以<strong>面向对象方法学</strong>为例来说明：</p>
+<ul><li>如果 Java 代码写得特别溜，可以说掌握了面向对象的<strong>编程方法</strong></li><li>如果熟悉面向对象的设计原则，掌握很多设计模式，那可以说懂面向对象的<strong>设计方法</strong>；</li><li>如果能为业务概念构建领域模型，那可以说懂了面向对象的<strong>分析方法</strong>。</li></ul>
+<p>面向对象的<strong>分析、设计、编码</strong>三种方法融会贯通，成为一个有机的整体，这个叫面向对象的方法学，<strong>分析方法，或者说领域建模的方法，正是 DDD 的重点</strong>，<font color="red"><strong>步骤</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_14" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>什么是系统化</h3>
+<p>系统化指的是，<strong>提供一套相对容易的步骤，能够使我们这些中等智商的人，也能做到原来高智商的人才能做到的事情，从而让你能够省出时间和脑力，来探索更复杂的问题</strong>。在软件开发领域，DDD 就是这样一套系统化的方法学。<font color="red"><strong>标准</strong></font></p>
+<h2><a rel="noopener noreferrer" id="DDD_16" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>DDD解决什么问题</h2>
+<p>DDD，即“领域驱动设计”，是软件工程中的一种软件开发方法学。<font color="red"><strong>它继承了面向对象和敏捷方法的精华，并提炼了一套更容易掌握的原则、模式和实践，特别适合复杂的企业应用的开发</strong>。</font></p>
+<ol><li>通过领域建模，DDD可以帮助企业<strong>解决业务复杂、需求变化快、微服务架构拆分、系统重构</strong>等方面的问题。</li><li>DDD强调从业务出发进行系统设计，利用领域建模将业务知识严格化和可视化，对齐业务和开发的理解，设计灵活、易扩展的系统，<strong>帮助业务需求走在正确的方向上</strong></li><li>DDD还提供了系统化的方法，帮助企业建立目标模型和设计目标架构，并结合演进式架构和代码重构等技术，<strong>解决系统架构和代码腐化的问题</strong>。</li></ol>
+<h2><a rel="noopener noreferrer" id="DDD_22" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>DDD的来源是什么</h2>
+<p>DDD 是来自<strong>面向对象的方法学和敏捷软件开发</strong>。DDD 对它们进行了总结和提炼，使之更容易学习和实践，DDD 就是 OO Done right”。OO 就是面向对象，也就是说把面向对象做对了，就是 DDD。也可以反过来说，<strong>面向对象本来就是“领域驱动”的</strong></p>
+<h3><a rel="noopener noreferrer" id="_24" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>传统面向对象方法的问题</h3>
+<p>早期面向对象的成功，主要是在几个特定的领域，比如<strong>计算机语言、图形用户界面、办公自动化软件</strong>等等，但在<strong>企业应用</strong>（银行的贷款系统、保险公司的理赔系统、电信公司的计费系统）方面还没有取得成功。那个时候的面向对象方法学还不能很好地应用于企业应用，大体上有以下几个原因</p>
+<ul><li>第一个原因是，<strong>很多开发人员走了一条只重技术不重业务的弯路</strong>，企业应用是用来解决业务问题的，所以我们应该首先把业务研究清楚，再通过技术手段来实现。但很多开发人员把主要精力放到技术的研究上，比如语言、框架、工具等等。以为把技术学会了，自然就能把系统开发好。重技术、不重业务的思想造成了业务和技术人员之间难以相互理解，技术人员难以真正满足业务需求。<font color="red"><strong>开发人员重技术，不重业务</strong></font></li><li>第二个原因是，<strong>围绕业务进行开发的方法本身就不好学</strong>，领域建模是一种“手艺”。凡是手艺，都不是看看书、学学理论就能掌握的，而是要经过实践中的磨炼。<font color="red"><strong>领域建模实践起来有难度</strong></font></li><li>第三个原因是，<strong>早期面向对象方法学主要考虑的是建模技术，很少考虑协作问题</strong>，早期面向对象应用比较单一，协作少。企业应用则不同，多数都是团队作战。即使只有一线开发人员，也免不了和需求方打交道，<font color="red"><strong>早期面向对象方法学主要考虑的是建模技术，很少考虑协作问题</strong></font></li><li>最后一个原因是<strong>难以适应变化</strong>。企业应用的需求往往变化频繁，很多变化根本无法预料。传统的面向对象方法学也很少讨论怎样应对变化的需求，<font color="red"><strong>传统的面向对象方法学很少讨论怎样应对变化的需求</strong></font></li></ul>
+<h3><a rel="noopener noreferrer" id="DDD_31" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>DDD如何应对企业应用</h3>
+<p>针对以上的四个原因问题，DDD的解决之道如下：</p>
+<ul><li><strong>把开发者从只重技术的弯路上拉回来</strong>：“领域”指的就是软件系统要解决的业务问题，也可以叫“业务领域”。用领域来驱动设计，就是说要从业务出发进行系统的设计。强调这个原则，就是希望把开发者从只重技术的弯路上拉回来</li><li><strong>总结出一套围绕领域建模进行软件开发的模式</strong>：要搞清业务，就要学会领域建模，为了简化这个过程，DDD 采用了“模式”（解决疑难问题应对的高招）的方法对面向对象方法学和敏捷软件开发方法进行了提炼，总结出了一套围绕领域建模进行软件开发的模式。其中最基础的模式包括：<font color="red"><strong>模型驱动设计，实体、值对象</strong></font></li><li><strong>领域驱动设计非常强调业务人员和技术人员要一起协作进行领域建模</strong>，在这个过程中提炼领域知识。和协作密切相关的模式有<font color="red"><strong>通用语言、模型驱动设计、限界上下文</strong></font></li><li><strong>DDD 柔性设计</strong>，使得模型和系统可以随着需求的变化而演进，在软件设计中，不是一开始就把所有地方都设计得很灵活，而是先进行“足够的”和“整洁的”设计。随着业务变化，将变化频繁的部分重构得越来越灵活，而不常变化的部分则保持不变。也就是说，<font color="red"><strong>模型中的哪些部分需要设计得灵活，是自然演进形成的，这样就避免了“过度设计”</strong></font>。这个过程就是柔性设计。而这个重构的过程，也是不断加深领域知识理解的过程。</li></ul>
+<p>关于协作和演进，正是 DDD 的来源之一，敏捷软件开发所解决的重点问题</p>
+<h2><a rel="noopener noreferrer" id="DDD_40" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>DDD为什么正当其时</h2>
+<p>DDD2003年就提了出来，为什么现在才火？</p>
+<ol><li><font color="red"><strong>从整个业界来看，必要性还不够强</strong></font>。
+  <ul><li>在 DDD 刚出现的时候，<strong>很多企业软件还不太复杂，一些复杂的软件，变化也不像现在这样频繁</strong>。甚至还有一些企业，干脆每隔四五年把原来的系统推翻重建一次。</li><li>当时一些新兴的产业，例如互联网，还处在跑马圈地、野蛮生长的阶段。这时<strong>关注的是系统快速上线，抢占市场，至于软件质量好不好，容不容易维护，暂时不是考虑的重点</strong>。</li></ul> </li><li><font color="red"> <strong>DDD 普及的一些前提条件也还没准备好</strong>: </font>
+  <ul><li><strong>首先是敏捷软件开发刚刚出现不久，还不普及</strong>。如果没有<strong>迭代开发、持续重构、测试驱动、持续集成</strong>等敏捷实践的支持，构建良好的领域模型并在代码上落地是很困难的。</li><li><strong>其次是配套的开发框架还不成熟</strong>。那时 J2EE 还被认为是企业应用事实上的标准，而基于这种框架开发程序，是很难和 DDD 的领域模型相衔接的。2004 年，Spring 发布了 1.0 版，从技术上基本解决了 EJB 的问题，理论上可以比较好地支持 DDD。然而 Spring 的真正普及，还要假以时日</li></ul> </li></ol>
+<p>那么 DDD 为什么在这几年又火起来了呢</p>
+<ol><li><font color="red"><strong>首先是，数字化时代的到来，使 DDD 变得非常有必要</strong>。 </font>
+  <ul><li>数字化时代，技术逐渐成为企业核心竞争力的主要因素，<strong>无论业务还是系统都变得更加复杂。因此，如何将业务和技术融为一体，就成了很多企业的主要问题</strong>，而这正是 DDD 的主要优势。</li><li>行业竞争的加剧也要求系统具有<strong>更好的用户体验、更高的质量、更快地满足变化的需求。这些问题很难解决，必须引入系统化的方法</strong></li><li>云计算、微服务等新技术架构的产生，也需要方法学的支持</li></ul> </li><li><font color="red"> <strong>DDD 普及的道路已经铺好，这项技术逐渐变得可行</strong>。 </font>
+  <ul><li>现在，<strong>敏捷软件开发已经普及</strong>。<strong>迭代、演进、协作等思想已经深入人心</strong>。<strong>DevOps 技术应用得也日益广泛</strong>。而且 <strong>Spring boot 等轻量级框架已经得到广泛使用</strong>。这些框架支持了领域模型与具体技术的关注点分离，<strong>使开发人员从技术细节中解放出来，将更多的精力投入到领域逻辑本身的分析和设计</strong>。</li><li>相关的架构实践也已经研究得比较透彻，像<strong>整洁架构、事件驱动架构以及 CQRS</strong> 等等，都有力地支持了 DDD 的落地实施。DDD 本身也在不断完善，比如补充了像领域事件等新的模式，出现了事件风暴等新的实践</li></ul> </li></ol>
+<p>总的来说，市场需要DDD，DDD所依赖的前提技术准备好了，思想也深入人心。</p>
+<h2><a rel="noopener noreferrer" id="DDD_62" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>DDD学习的三个阶段</h2>
+<p>基于认知规律，学习分为三个阶段去执行，逐渐的从入门到高手</p>
+<ul><li><font color="red"><strong>迭代一：夯实基础</strong></font>：这个迭代旨在通过一个“<strong>需求-模型-代码</strong>”的闭环，初步形成对领域驱动设计（DDD）过程的完整感觉。
+  <ul><li>首先学习<strong>事件风暴方法</strong>，梳理行为需求，并介绍统一语言**。</li><li>其次将实操DDD的核心技能<strong>领域建模</strong>，引入实体、关联、模块等重要模式</li><li>最后进行模型的实现，包括<strong>建立数据库、设计代码、编写代码</strong>。</li></ul> </li><li><font color="red"><strong>迭代二：渐入佳境</strong></font>：学习一些高级的技能，
+  <ul><li>首先从理论、模型和编码层面理解“<strong>聚合</strong>”。进一步提升领域建模能力，深化对分层架构和代码封装的理解。</li><li>其次学习<strong>值对象</strong>，理解值对象的本质和优点，并解决值对象在建模和编程上的一些具体问题。</li><li>最后，学习重要的建模技巧——<strong>泛化和限定</strong>，这是领域建模由初级走向中、高级的关键技能</li></ul> </li><li><font color="red"><strong>迭代三：掌握更高级的技能</strong></font>：
+  <ul><li>首先介绍“<strong>限界上下文</strong>”模式，通过分而治之来维护概念的一致性。在此基础上进一步学习<strong>微服务设计</strong>。</li><li>其次了解<strong>事件驱动架构</strong>和 <strong>CQRS</strong> 这两个重要的架构模式。讨论怎样为更加灵活多变的业务建模，并深化对<strong>高级泛化</strong>的理解。</li><li>最后解决实际的<strong>落地问题</strong>，比如 DDD 切入点的选择，遗留系统的改造</li></ul> </li></ul>
+<p>整体的知识地图如下图所示<br> <img alt="在这里插入图片描述" src="./posts/assets/134630272-01-d9fb05f021.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_80" href="https://blog.csdn.net/sinat_33087001/article/details/134630272"></a>总结一下</h2>
+<p>DDD的重点是业务驱动的模型设计。它<strong>继承了面向对象和敏捷方法的精华，并提炼了一套更容易掌握的原则、模式和实践，特别适合复杂的企业应用的开发</strong>。早期因为市场大多数软件设计都在0-1的阶段，DDD的必要性不强且DDD所需的前提条件尚不具备。随着数字时代到来，企业应用业务逐步复杂，对技术架构的要求也逐步提高且经过发展DDD的前提条件逐步具备，所以DDD的使用正当其时。DDD的学习分三个阶段，<strong>首先是形成一个小闭环（业务事件风暴；领域建模；数据库设计、代码设计、代码编写），其次是运用一些最佳实践（聚合；值对象；泛化和限定），最后是一些高级用法（限界上下文、微服务架构；事件驱动架构、CQRS；落地问题）</strong></p>
+                </div>

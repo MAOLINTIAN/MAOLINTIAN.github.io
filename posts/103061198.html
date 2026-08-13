@@ -1,0 +1,427 @@
+<p>最近在公司做的一个功能是这样的&#xff0c;异步的方式进行导入任务处理也即&#xff1a;<strong>客户机生产消息&#xff0c;将消息通过RabbitMQ服务器分发到部署有消费代码的服务端机器进行并发处理</strong>&#xff0c;这样做保证了消息的异步处理&#xff0c;但是可能大消息量会对机器有较大的压力&#xff0c;所以<strong>所有通过RabbitMQ传递的消息在传递到消费端后首先要被放置到一个缓存队列里排队&#xff0c;然后每台机器再有条不紊的启用线程来消费队列里的消息</strong>。这样貌似很完美&#xff0c;但是在使用的过程中遇到了一个业务难题&#xff1a;</p>
+<ol><li>用户希望对这些到来的消息分组&#xff0c;并且在整体并发的前提下能控制相同分组的消息串行</li><li>用户并不希望会因为消息分组带来较大的性能损耗</li></ol>
+<p>基于以上两点业务问题&#xff0c;我使用Redis的分布式锁来解决。设定<strong>实体编码&#43;租户id</strong>为分组编码&#xff0c;给每个导入消息生成一个分组编码&#xff0c;同一分组下的导入任务不能被同时执行&#xff0c;只能被串行化执行&#xff0c;不同分组的任务则不受此限制&#xff0c;通俗的说就是&#xff1a;<strong>总体任务仍然是并行执行&#xff0c;同一分组的任务则串行执行</strong>。这样势必会降低性能&#xff0c;所以为了保证代码隔离和性能稳定&#xff0c;需要开启一套新的处理消息分组的线程和一个专门用来填充分组导入消息的Redis消息队列&#xff0c;这样未开启导入串行化配置的应用和租户不会受到任何影响&#xff0c;依旧走之前的逻辑&#xff0c;而开启了串行化配置的应用和租户则有额外的线程去处理任务&#xff0c;这样性能即使会下降&#xff0c;影响也很有限。开销仅仅是开启两个线程和增加一个分组的Reids消息队列。</p>
+<h3><a rel="noopener noreferrer" id="_6"></a>消息分发</h3>
+<p>当然第一步需要做的就是对消息进行分组&#xff0c;然后再开启一个存放分组消息的队列&#xff0c;读取到分组的消息就塞到分组的缓存队列里&#xff0c;这样消息分发的流程就变成了如下图所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103061198-01-002e0d533e.png" loading="lazy"><br />
+当然为了兼容以前的逻辑&#xff0c;只有开启了配置&#xff08;有分组需求的客户&#xff09;才会使用分组消息队列&#xff0c;整体流程如下&#xff1a;</p>
+<ol><li>客户机进行操作&#xff0c;产生任务消息&#xff0c;发往<strong>RabbitMQ服务器</strong></li><li>RabbitMQ服务器将任务消息分发到各个<strong>消费端服务器</strong></li><li>各个消费端服务器在接收到任务消息后区分是否需要对消息分组&#xff0c;如果需要读取其携带的附属信息&#xff0c;给每个任务消息生成一个分组编码&#xff0c;将该任务信息存放到<strong>分组消息缓存队列</strong>&#xff0c;如果不需要直接存放到原有的不需分组的消息缓存队列。</li></ol>
+<p>这样就完成了第一步&#xff0c;消息分组分发&#xff1a;分组消息通过Reids的Lpush操作依次进入分组消息队列中 &#xff0c;当然入队的时候也是要上<strong>队列锁</strong>&#xff08;下边会提到&#xff09;的&#xff0c;系统线程尝试获取该队列锁&#xff0c;获取成功则执行入队操作&#xff0c;获取失败则休眠800毫秒后继续尝试获取&#xff0c;不管消息入队成功与否&#xff0c;都要释放队列锁&#xff0c;防止导入任务执行受影响。这一段代码的处理流程如下&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token class-name">MessageResult</span> <span class="token function">TaskRoute</span><span class="token punctuation">(</span><span class="token class-name">ImportRequestDataModel</span> data<span class="token punctuation">,</span> <span class="token class-name">MessageResult</span> messageResult<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">var</span> tenantId <span class="token operator">&#61;</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">;</span>
+            <span class="token keyword">var</span> userId <span class="token operator">&#61;</span> data<span class="token punctuation">.</span>UserId<span class="token punctuation">;</span>
+
+            <span class="token comment">//如果该任务属于开启了分组的任务则进入分组消息队列</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">IsEnableImportParallelism</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span>AppName<span class="token punctuation">,</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token keyword">true</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetQueueLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">800</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//先设置&#xff0c;每次处理完之后&#xff0c;休眠800毫秒&#xff0c;保证不过于频繁的请求redis造成redis压力</span>
+                <span class="token punctuation">}</span>
+
+                <span class="token keyword">var</span> enQueueResult <span class="token operator">&#61;</span> ImportGroupQueue<span class="token punctuation">.</span><span class="token function">En_Queue</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//开启导入消息队列&#xff0c;将导入消息插入到缓存消息队列头部</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>enQueueResult<span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    _loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token string">&#34;导入数据 In_GroupQueue失败:userId:&#34;</span> <span class="token operator">&#43;</span> userId <span class="token operator">&#43;</span> <span class="token string">&#34; tenantId:&#34;</span> <span class="token operator">&#43;</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    ImportGroupQueue<span class="token punctuation">.</span><span class="token function">QueueUnLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//无论是否能执行入队&#xff0c;都要给缓存队列解锁</span>
+                    <span class="token keyword">return</span> messageResult<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+                _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;当前入队消息的model为&#34;</span> <span class="token operator">&#43;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;入队消息总数为&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span><span class="token function">RedisIncr</span><span class="token punctuation">(</span><span class="token string">&#34;count&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                ImportGroupQueue<span class="token punctuation">.</span><span class="token function">QueueUnLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//无论是否能执行入队&#xff0c;都要给缓存队列解锁</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">else</span> <span class="token comment">//若未开启分组&#xff0c;则任务进入原有队列&#xff0c;走以前的逻辑</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">var</span> enQueueResult <span class="token operator">&#61;</span> ImportQueue<span class="token punctuation">.</span><span class="token function">En_Queue</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//开启导入消息队列&#xff0c;将导入消息插入到缓存消息队列头部</span>
+
+                <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>enQueueResult<span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    _loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token string">&#34;导入数据 In_Queue失败:userId:&#34;</span> <span class="token operator">&#43;</span> userId <span class="token operator">&#43;</span> <span class="token string">&#34; tenantId:&#34;</span> <span class="token operator">&#43;</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span> messageResult<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> messageResult<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>当然其中将消息入队用到了Redis的<strong>Lpush</strong>操作&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 开启导入消息队列&#xff0c;将导入消息插入到缓存消息队列头部</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;model&#34;&gt;导入请求的model&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;tenantId&#34;&gt;租户id&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">En_Queue</span><span class="token punctuation">(</span><span class="token class-name">ImportRequestDataModel</span> model<span class="token punctuation">,</span> <span class="token keyword">int</span> tenantId<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>model <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">const</span> <span class="token keyword">string</span> key <span class="token operator">&#61;</span> ImportQueueRedisKey<span class="token punctuation">;</span>  <span class="token comment">//设置redis导入队列的key值</span>
+                    <span class="token keyword">var</span> jsonValue <span class="token operator">&#61;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>model<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token function">RedisSet_LPush</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> jsonValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                    <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">else</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token string">&#34;租户:&#34;</span> <span class="token operator">&#43;</span> tenantId <span class="token operator">&#43;</span> <span class="token string">&#34;, Enqueue失败,ImportRequestDataModel 数据:&#34;</span> <span class="token operator">&#43;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>model<span class="token punctuation">)</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>当然为了统计不同机器入队的消息总和&#xff0c;使用Redis的自增来进行监控&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// Redis自增计数</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;key&#34;&gt;&lt;/param&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token function">RedisIncr</span><span class="token punctuation">(</span><span class="token keyword">string</span> key<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//申请成功标志</span>
+
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">//redis中申请key-value</span>
+                    <span class="token keyword">return</span> redis<span class="token punctuation">.</span><span class="token function">Incr</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行创建异常的操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis Incr[{key}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">finally</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行创建成功或失败的操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Info</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis LPush[{key}]&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_127"></a>消息处理</h3>
+<p>针对分组消息&#xff0c;我们在对分组消息做处理的时候的核心逻辑就是&#xff1a;<strong>每个分组作为一个唯一标识其实可以作为一个锁的编码&#xff0c;我把它称之为分组锁&#xff0c;只有持有分组锁的线程才能对分组消息做处理</strong>&#xff0c;这样就保证了同一分组的消息被串行的按照队列的先后顺序处理&#xff0c;而不同分组的消息还是被并行处理&#xff0c;对性能没有太大的影响。基于此&#xff0c;<strong>每个线程都需要遍历分组队列的数据&#xff0c;获取到后尝试获取每个任务的分组锁&#xff0c;如果能获取到则将任务出队&#xff0c;执行该任务并且给该分组上锁&#xff0c;当然在这个过程中&#xff0c;为了防止别的线程也同时放完队列&#xff0c;造成并发操作&#xff0c;我们还需要给队列上一个队列锁</strong>。具体的实现逻辑如下图所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103061198-02-bf8aba2b7a.png" loading="lazy"><br />
+整体的执行流程如下&#xff1a;</p>
+<ol><li>分组线程每隔2秒尝试获取分组消息队列锁&#xff08;也就是控制权&#xff09;&#xff0c;获取之后遍历队列尝试获取分组锁&#xff08;分组的控制权&#xff09;</li><li>如果获取成功&#xff0c;则开始操作队列里的数据&#xff0c;从右向左遍历导入消息的model&#xff0c;每拿到一个model都获取其分组信息&#xff0c;如果该分组已被上锁&#xff0c;则说明相同分组的消息正在被其它线程处理&#xff0c;则去寻找下一个</li><li>如果该线程找到了未被上分组锁的消息&#xff0c;则将该导入消息序列化存储到以自己的线程编码为key的缓存里&#xff08;如果线程意外关闭&#xff0c;下次重新启动的时候还能从缓存里重新获取到任务继续执行&#xff09;并且给该分组上锁&#xff0c;防止同一分组的消息被其它线程处理&#xff0c;<strong>将该分组消息出队&#xff0c;然后释放队列锁</strong>&#xff0c;开始处理该导入消息&#xff0c;消息处理完成后&#xff0c;将自己的线程编码缓存设置为空&#xff0c;释放该分组锁&#xff0c;最后休眠2秒后继续尝试获取该队列的控制权。</li><li>如果该线程没有找到未被上分组锁的消息&#xff0c;释放队列锁并且在休眠2秒后继续尝试获取队列的控制权</li><li>如果线程在执行过程中关闭&#xff0c;再次重启的时候&#xff0c;会先从自己的线程编码缓存里尝试获取导入消息model&#xff0c;如果获取到则说明上次没有处理完&#xff0c;则需要继续处理&#xff0c;当然继续处理前需要确认当前线程是否持有该消息所属分组的分组锁&#xff0c;只有持有分组锁才能执行操作&#xff0c;否则只能等待并尝试获取分组锁&#xff0c;直到获取成功后执行。如果获取不到则证明重启前任务已执行完&#xff0c;则继续执行下边的逻辑从分组消息队列获取消息处理即可&#xff0c;走1-4部分的逻辑</li></ol>
+<p>这样保证了即使线程意外关闭不丢消息&#xff0c;线程任务同组串行执行&#xff0c;不同组并行执行的过程。整段执行流程的代码如下&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 单个处理导入数据的线程方法(分组的写法)</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;queueIndexObj&#34;&gt;&lt;/param&gt;</span>
+        <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">DealImportDataInGroupQueue</span><span class="token punctuation">(</span><span class="token keyword">object</span> queueIndexObj<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">var</span> queueIndex <span class="token operator">&#61;</span> Convert<span class="token punctuation">.</span><span class="token function">ToInt32</span><span class="token punctuation">(</span>queueIndexObj<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token class-name">ImportRequestDataModel</span> data <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                data <span class="token operator">&#61;</span> ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetLastTimeThreadUnDealData</span><span class="token punctuation">(</span>queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//获取上次线程的导入数据</span>
+
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>  <span class="token comment">//如果data不为null</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">var</span> groupKey <span class="token operator">&#61;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token keyword">true</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span>ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetGroupLock</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//如果可以获取到该分组的锁则处理残留数据</span>
+                        <span class="token punctuation">{<!-- --></span>
+                            <span class="token keyword">break</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                        System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">800</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//先设置&#xff0c;每次处理完之后&#xff0c;休眠800毫秒&#xff0c;保证不过于频繁的请求redis造成redis压力</span>
+                    <span class="token punctuation">}</span>
+
+                    _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;持有分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                    _loggging<span class="token punctuation">.</span><span class="token function">Info</span><span class="token punctuation">(</span><span class="token string">&#34;处理上次退出时留在redis中的数据。线程&#xff1a;&#34;</span> <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34; data&#xff1a;&#34;</span> <span class="token operator">&#43;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token function">ImportData</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    ImportGroupQueue<span class="token punctuation">.</span><span class="token function">ClearCurrentDataModelInRedis</span><span class="token punctuation">(</span>queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GroupUnLock</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//参数数据处理完毕后&#xff0c;释放该锁</span>
+                    _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;释放了分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                _loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token string">&#34;处理上次退出时留在redis中的数据发生异常&#xff1a;线程&#xff1a;&#34;</span> <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34; data&#xff1a;&#34;</span> <span class="token operator">&#43;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;队列长度为&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetRedisQueueLength</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token keyword">true</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetRedisQueueLength</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;试图访问队列&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GetQueueLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;访问队列成功&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;持有队列锁&#xff1a;QueueLock&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                        data <span class="token operator">&#61;</span> ImportGroupQueue<span class="token punctuation">.</span><span class="token function">De_Queue</span><span class="token punctuation">(</span>queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        ImportGroupQueue<span class="token punctuation">.</span><span class="token function">QueueUnLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//无论取到的data是否为空&#xff0c;都要给缓存队列解锁</span>
+                        _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;释放了队列锁&#xff1a;QueueLock&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+                        <span class="token punctuation">{<!-- --></span>
+                            <span class="token function">ImportData</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;对分组&#34;</span> <span class="token operator">&#43;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;的导入任务执行完成&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            ImportGroupQueue<span class="token punctuation">.</span><span class="token function">ClearCurrentDataModelInRedis</span><span class="token punctuation">(</span>queueIndex<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//清空当前缓存</span>
+                            ImportGroupQueue<span class="token punctuation">.</span><span class="token function">GroupUnLock</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//给该分组解锁</span>
+                            _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> queueIndex <span class="token operator">&#43;</span> <span class="token string">&#34;释放了分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> data<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+
+                System<span class="token punctuation">.</span>Threading<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token number">2000</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//先设置&#xff0c;每次处理完之后&#xff0c;休眠2秒钟在&#xff0c;保证不过于频繁的请求redis造成redis压力</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>其中较为核心的遍历队列获取分组消息的内容如下&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">///将导入消息从总的缓存队列尾部取出并存储到单个机器上的缓存队列中</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;threadIndex&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">ImportRequestDataModel</span> <span class="token function">De_Queue</span><span class="token punctuation">(</span><span class="token keyword">int</span> threadIndex<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//先从redis中寻找自己线程对应的数据&#xff0c;如果有&#xff0c;这说明还存在上次服务停止前没有处理完的数据&#xff0c;先处理这些数据。如果没有&#xff0c;则去获取redis 队列中的数据处理</span>
+            <span class="token class-name">ImportRequestDataModel</span> model <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+            <span class="token keyword">const</span> <span class="token keyword">string</span> rkey <span class="token operator">&#61;</span> ImportQueueRedisKey<span class="token punctuation">;</span>
+            Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> threadIndex <span class="token operator">&#43;</span> <span class="token string">&#34;开启对队列内容的检索&#xff0c;寻找未添加分组锁的导入消息&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">var</span> queueLen <span class="token operator">&#61;</span> <span class="token function">RedisGetLength</span><span class="token punctuation">(</span>rkey<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//获取redis队列长度</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">var</span> i <span class="token operator">&#61;</span> queueLen <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&gt;&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">--</span><span class="token punctuation">)</span>  <span class="token comment">//从队列右边开始倒序获取model</span>
+            <span class="token punctuation">{<!-- --></span>
+                model <span class="token operator">&#61;</span> <span class="token function">RedisLIndex</span><span class="token punctuation">(</span>ImportQueueRedisKey<span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//获取该model</span>
+                <span class="token keyword">var</span> key <span class="token operator">&#61;</span> ThreadRedisKeyPrefix <span class="token operator">&#43;</span> threadIndex<span class="token punctuation">;</span>  <span class="token comment">//当前机器当前线程的缓存</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>model <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">var</span> jsonValue <span class="token operator">&#61;</span> Common<span class="token punctuation">.</span>Serialize<span class="token punctuation">.</span>SerializeHelper<span class="token punctuation">.</span><span class="token function">Serialize</span><span class="token punctuation">(</span>model<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> threadIndex <span class="token operator">&#43;</span> <span class="token string">&#34;当前判定的model为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> jsonValue <span class="token operator">&#43;</span> <span class="token string">&#34;其队列顺序为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment">//获取分组名并先从锁缓存里判断是否存在该分组的导入消息</span>
+                    <span class="token keyword">var</span> groupKey <span class="token operator">&#61;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>model<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> model<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> threadIndex <span class="token operator">&#43;</span> <span class="token string">&#34;尝试获取分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> model<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> model<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                    <span class="token comment">//如果为true表明分组表里不存在该分组&#xff0c;设置锁并执行该分组的任务</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">GetGroupLock</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> threadIndex <span class="token operator">&#43;</span> <span class="token string">&#34;持有分组锁&#xff1a;&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;该分组锁的实体编码为:&#34;</span> <span class="token operator">&#43;</span> model<span class="token punctuation">.</span>AppName <span class="token operator">&#43;</span> <span class="token string">&#34;租户id为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> model<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token comment">//设置该导入任务到单台机器线程的redis里</span>
+                        <span class="token function">RedisSetOne</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> jsonValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;当前出队model序列化为&#34;</span> <span class="token operator">&#43;</span> jsonValue <span class="token operator">&#43;</span> <span class="token string">&#34;其队列顺序为&#xff1a;&#34;</span> <span class="token operator">&#43;</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token function">RedisLRem</span><span class="token punctuation">(</span>jsonValue<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//从消息队列里移除该元素</span>
+                        Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;队列长度为&#34;</span> <span class="token operator">&#43;</span> <span class="token function">RedisGetLength</span><span class="token punctuation">(</span>rkey<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span> <span class="token comment">//找到可以处理的元素后就跳出循环</span>
+                    <span class="token punctuation">}</span>
+                    <span class="token keyword">else</span> <span class="token comment">//如果没有获取到该分组的锁&#xff0c;则该model不需要出队&#xff0c;设置返回的model为null并且设置当前线程空置</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        model <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+                        <span class="token function">RedisSetOne</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        Loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;线程&#34;</span> <span class="token operator">&#43;</span> ImportGroupQueue<span class="token punctuation">.</span>ThreadRedisKeyPrefix <span class="token operator">&#43;</span> threadIndex <span class="token operator">&#43;</span> <span class="token string">&#34;获取分组锁:&#34;</span> <span class="token operator">&#43;</span> groupKey <span class="token operator">&#43;</span> <span class="token string">&#34;失败&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">else</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token function">RedisSetOne</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> model<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>我们都知道Redis是单线程的&#xff0c;所以天然不存在并发问题&#xff0c;name我们来看看如何通过Redis来实现队列锁和分组锁。</p>
+<h3><a rel="noopener noreferrer" id="_266"></a>技术特性</h3>
+<p>在以上的实现逻辑中&#xff0c;用到了Redis的几个经典的特性&#xff1a;<strong>队列锁、分组锁、指定元素出队</strong></p>
+<h4><a rel="noopener noreferrer" id="_268"></a>队列锁</h4>
+<p>队列锁即对队列的控制权&#xff0c;我们可以设定一个约定好的常量值即可&#xff0c;使用Redis的特性SetNx操作&#xff0c;天然的原子操作&#xff1a;<strong>只在键 key 不存在的情况下&#xff0c; 将键 key 的值设置为 value 。若键 key 已经存在&#xff0c; 则 SETNX 命令不做任何动作</strong>&#xff0c;需要注意的是队列锁需要设置过期时间&#xff0c;如果线程意外关闭没有来得及释放队列锁&#xff0c;会导致死锁。</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 获取缓存队列的队列锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">GetQueueLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//申请成功标志</span>
+            <span class="token keyword">const</span> <span class="token keyword">string</span> queueLockkey <span class="token operator">&#61;</span> <span class="token string">&#34;QueueLock&#34;</span><span class="token punctuation">;</span>
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表队列锁空闲&#xff0c;如果返回false设置失败表明队列锁正在被持有</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">RedisSetNx</span><span class="token punctuation">(</span>queueLockkey<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//如果为true,设置队列锁并设置该锁的过期时间</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token function">RedisExpire</span><span class="token punctuation">(</span>queueLockkey<span class="token punctuation">,</span> <span class="token number">600</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//设置过期时间为10分钟</span>
+                        <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行查询异常操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis 设置队列锁[{queueLockkey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//抛出异常</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 给缓存队列的队列解锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">QueueUnLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//申请成功标志</span>
+            <span class="token keyword">const</span> <span class="token keyword">string</span> queueLockkey <span class="token operator">&#61;</span> <span class="token string">&#34;QueueLock&#34;</span><span class="token punctuation">;</span>
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> <span class="token function">RedisDeleteKey</span><span class="token punctuation">(</span>queueLockkey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表原来不存在这样的分组&#xff0c;如果返回false设置失败表明原来存在这样的分组</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行查询异常操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis 解除队列锁[{queueLockkey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//抛出异常</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>SetNx的执代码如下&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 如果返回true设置成功代表原来不存在这样的锁&#xff0c;如果返回false设置失败表明原来存在这样的锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;key&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">RedisSetNx</span><span class="token punctuation">(</span><span class="token keyword">string</span> key<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> redis<span class="token punctuation">.</span><span class="token function">SetNx</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> <span class="token function">StringToBytes</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行锁创建异常的操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis setNx[{key}]:[{key}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">finally</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行锁创建成功或失败的操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Info</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis setNx[{key}]:[{key}]&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_362"></a>分组锁</h4>
+<p>同理&#xff0c;分组锁也是通过类似形式实现的&#xff0c;需要注意的是分组锁同样需要设置过期时间&#xff0c;如果线程意外关闭没有来得及释放分组锁&#xff0c;会导致死锁。</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">///给分组加分组锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">GetGroupLock</span><span class="token punctuation">(</span><span class="token keyword">string</span> groupKey<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表分组锁空闲&#xff0c;如果返回false设置失败表明队分组锁正在被持有</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">RedisSetNx</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//如果为true,设置分组锁并设置该锁的过期时间</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token function">RedisExpire</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">,</span> <span class="token number">300</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//设置过期时间为5分钟</span>
+                        <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行查询异常操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis 设置分组锁[{groupKey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//抛出异常</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 给分组锁解锁</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">GroupUnLock</span><span class="token punctuation">(</span><span class="token class-name">ImportRequestDataModel</span> model<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//申请成功标志</span>
+
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+            <span class="token keyword">var</span> groupKey <span class="token operator">&#61;</span> ImportParallelismHelper<span class="token punctuation">.</span><span class="token function">GetMessageGroupId</span><span class="token punctuation">(</span>model<span class="token punctuation">.</span>MetaObjName<span class="token punctuation">,</span> model<span class="token punctuation">.</span>TenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> <span class="token function">RedisDeleteKey</span><span class="token punctuation">(</span>groupKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表原来不存在这样的分组&#xff0c;如果返回false设置失败表明原来存在这样的分组</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行查询异常操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis 解除分组锁[{groupKey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//抛出异常</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_422"></a>相同元素出队</h4>
+<p>这也算队列的一个难题&#xff0c;因为队列没有从中间出队的&#xff0c;搜索后才发现&#xff0c;其实可以通过相同元素出队的方式处理&#xff1a;</p>
+<pre><code class="prism language-csharp">        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 从队尾开始删除第一个与model相同的元素</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;value&#34;&gt;&lt;/param&gt;</span>
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">RedisLRem</span><span class="token punctuation">(</span><span class="token keyword">string</span> <span class="token keyword">value</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//申请成功标志</span>
+
+            <span class="token keyword">const</span> <span class="token keyword">int</span> tenantId <span class="token operator">&#61;</span> TenantIdInRedis<span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> redis <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RedisNativeProviderV2</span><span class="token punctuation">(</span>KeySpaceInRedis<span class="token punctuation">,</span> tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">//redis中&#xff0c;如果返回true设置成功代表原来不存在这样的分组&#xff0c;如果返回false设置失败表明原来存在这样的分组</span>
+                    redis<span class="token punctuation">.</span><span class="token function">LRem</span><span class="token punctuation">(</span>ImportQueueRedisKey<span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token function">StringToBytes</span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行锁创建异常的操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis RedisLRem[{ImportQueueRedisKey}]异常&#34;</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">finally</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//进行锁创建成功或失败的操作</span>
+                Loggging<span class="token punctuation">.</span><span class="token function">Info</span><span class="token punctuation">(</span>$<span class="token string">&#34;在redis RedisLRem[{ImportQueueRedisKey}]异常&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>感觉还是在实战中能更加深刻的理解理论&#xff0c;当然过程还是很痛苦的&#xff0c;核对方案&#xff0c;考虑各种失败的可能性&#xff0c;以及对Redis的理解&#xff0c;尤其困难的是分布式的代码很难调试&#xff0c;只能通过日志来模拟场景。总之算是一个较大的提升吧&#xff0c;在实践中训练之后要再从理论中获取更多知识更好的服务于实践吧&#xff01;可以了解了解SetNX加过期时间的整体原子操作。</p>

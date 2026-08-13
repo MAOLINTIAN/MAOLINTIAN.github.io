@@ -1,0 +1,79 @@
+<h2><a rel="noopener noreferrer" id="__0"></a>一 业务场景</h2>
+<ul>
+ <li><strong>业务目标</strong>：对某个品牌主下的数百个门店执行“断网”操作，要求<strong>要么全部成功，要么全部失败</strong>，不允许出现部分门店断网、部分未断网的不一致状态。</li>
+ <li><strong>依赖接口</strong>（由下游治理中台提供）：
+  <ul>
+   <li><code>disableNetwork(storeId)</code>：对单个门店断网，返回一个任务ID（<code>violationId</code>）。</li>
+   <li><code>enableNetwork(storeId)</code>：恢复单个门店网络（回滚操作）。</li>
+  </ul> </li>
+ <li><strong>挑战</strong>：
+  <ul>
+   <li>远程调用可能超时、失败、网络抖动。</li>
+   <li>一个批次涉及数百个门店，需要并发调用以保证效率。</li>
+   <li>必须保证最终状态的强一致性或最终一致性。</li>
+  </ul> </li>
+</ul>
+<hr>
+<h2><a rel="noopener noreferrer" id="_TCC_TryConfirmCancel_13"></a>二 方案一：TCC 模式（Try-Confirm-Cancel）</h2>
+<h3><a rel="noopener noreferrer" id="21__15"></a>2.1 设计思路</h3>
+<p>TCC 模式将分布式事务拆分为三个阶段，通过引入临时记录表，实现<strong>强一致性</strong>下的精准回滚。</p>
+<table>
+ <thead>
+  <tr>
+   <th>阶段</th>
+   <th>目标</th>
+   <th>核心动作</th>
+   <th>落库内容</th>
+   <th>事务边界</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><strong>Try</strong></td>
+   <td>尝试处罚，获取凭证</td>
+   <td>并发调用下游处罚接口，收集 <code>violationId</code>；记录成功/失败</td>
+   <td>临时执行记录表（状态：成功/失败）</td>
+   <td>独立的本地事务（全部调用结束后落库）</td>
+  </tr>
+  <tr>
+   <td><strong>Confirm</strong></td>
+   <td>固化处罚结果</td>
+   <td>将 <code>violationId</code> 写入最终结果表，更新任务状态</td>
+   <td>最终结果表、任务状态表</td>
+   <td>一个本地事务，不包含远程调用</td>
+  </tr>
+  <tr>
+   <td><strong>Cancel</strong></td>
+   <td>回滚已成功的处罚</td>
+   <td>调用回滚接口，更新记录状态</td>
+   <td>更新执行记录表状态、任务状态表</td>
+   <td>本地事务更新状态，远程调用独立</td>
+  </tr>
+ </tbody>
+</table>
+<h3><a rel="noopener noreferrer" id="22__25"></a>2.2 详细流程</h3>
+<h4><a rel="noopener noreferrer" id="221_Try__27"></a>2.2.1 Try 阶段</h4>
+<ol>
+ <li>生成唯一 <code>batch_id</code>。</li>
+ <li>并发调用下游 <code>disableNetwork(storeId)</code>，对每个门店：
+  <ul>
+   <li>成功：获取 <code>violationId</code>，暂存在内存中。</li>
+   <li>失败：记录失败原因。</li>
+  </ul> </li>
+ <li>等待所有并发调用结束（设置超时），汇总结果。</li>
+ <li>将本次批次的所有调用结果<strong>批量写入临时执行记录表</strong>（<code>tcc_execution_record</code>），字段包括：
+  <ul>
+   <li><code>batch_id</code></li>
+   <li><code>store_id</code></li>
+   <li><code>violation_id</code>（成功时填充）</li>
+   <li><code>try_status</code>（成功/失败）</li>
+  </ul> </li>
+ <li>写入操作在一个独立的本地事务中完成，确保记录可靠持久化。</li>
+</ol>
+<p><strong>注意</strong>：</p>
+<ul>
+ <li>Try 阶段的远程调用不包裹在本地事务中，避免了长事务。</li>
+ <li>即使部分调用失败，仍会记录失败记录，便于后续统计。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="222_Confirm__44"></a>2.2.2 Confirm 阶段</h4>
+<p><strong>触发条件</strong>：Try 阶段所有门店均成功（即</p>

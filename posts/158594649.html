@@ -1,0 +1,68 @@
+<p>在分布式系统中，工作机制决定了数据如何存储、如何访问、如何保证一致性。理解 ElasticSearch、Redis 和 Kafka 的内部工作流程，不仅有助于日常开发和运维，更能揭示不同系统设计背后的核心思想。本文将从路由规则、读写流程、数据同步等维度，系统梳理三者的工作机制，并在最后进行横向对比，剖析它们的相似性与设计哲学。</p>
+<h2><a rel="noopener noreferrer" id="_Elasticsearch__1"></a>一 Elasticsearch 集群工作机制</h2>
+<p>Elasticsearch 是一个分布式搜索引擎，其内部工作机制涉及路由、数据复制、一致性保证等多个方面。理解这些流程对于优化性能和排查问题至关重要。本文将系统梳理 ES 的核心操作流程，并解答常见疑问。</p>
+<h3><a rel="noopener noreferrer" id="1__5"></a>1 路由规则</h3>
+<p>ES 通过路由决定文档属于哪个分片。路由公式如下：</p>
+<pre><code>shard = hash(routing) % number_of_primary_shards
+</code></pre>
+<ul>
+ <li><strong>默认 routing</strong>：文档的 <code>_id</code> 字段。</li>
+ <li><strong>自定义 routing</strong>：可以在索引或查询时指定 routing 值（如按用户 ID、商户 ID），使同一 routing 值的文档落在同一分片，便于批量操作或提高查询效率。</li>
+ <li><strong>重要</strong>：主分片数量一旦确定，<strong>不能随意更改</strong>，否则之前的路由失效，文档无法找到。如需改变，通常需要重建索引。</li>
+</ul>
+<hr>
+<h3><a rel="noopener noreferrer" id="2_Index__Create__Update__Delete_19"></a>2 写操作流程（Index / Create / Update / Delete）</h3>
+<p>写操作必须经过主分片，然后同步到副本分片。以索引文档为例：</p>
+<ol>
+ <li><strong>客户端请求</strong> → <strong>协调节点</strong> - 客户端向任意节点（协调节点）发送写请求。</li>
+ <li><strong>路由计算</strong> - 协调节点根据 routing（默认文档 ID）计算目标分片 <code>shard = hash(routing) % 主分片数</code>。</li>
+ <li><strong>转发请求到主分片节点</strong> - 协调节点找到该分片的主分片所在节点，将请求转发过去。</li>
+ <li><strong>主分片执行写入</strong>
+  <ul>
+   <li>验证请求，将文档写入内存缓冲区，同时记录到 <strong>translog</strong>（事务日志）。</li>
+   <li>文档此时不可搜索（需等待 refresh）。</li>
+  </ul> </li>
+ <li><strong>同步到副本分片</strong>
+  <ul>
+   <li>主分片并行将写请求发送给所有副本分片。</li>
+   <li>每个副本分片执行相同写入（写入缓冲区、记录 translog），完成后向主分片返回确认。</li>
+  </ul> </li>
+ <li><strong>等待副本确认</strong>
+  <ul>
+   <li>主分片等待足够数量的副本确认（由 <code>wait_for_active_shards</code> 控制，默认主分片自身即算一个，即至少 1 个副本确认）。</li>
+  </ul> </li>
+ <li><strong>返回成功给客户端</strong>
+  <ul>
+   <li>主分片向协调节点返回成功，协调节点再响应客户端。</li>
+  </ul> </li>
+</ol>
+<p><strong>注意</strong>：</p>
+<ul>
+ <li>写操作是<strong>同步复制</strong>，保证数据一致性。</li>
+ <li>如果副本确认超时或不足，主分片仍会返回成功（取决于配置），但集群可能处于风险状态。</li>
+</ul>
+<hr>
+<h3><a rel="noopener noreferrer" id="3_Get__43"></a>3 读操作流程（Get 单文档）</h3>
+<p>读单个文档的流程与写类似，但可以从主分片或副本分片读取，实现负载均衡：</p>
+<ol>
+ <li><strong>客户端请求</strong> → <strong>协调节点</strong></li>
+ <li><strong>路由计算</strong>（同写操作）</li>
+ <li><strong>选择目标节点</strong>
+  <ul>
+   <li>协调节点知道该分片的所有副本（主和副）所在的节点。</li>
+   <li>通过<strong>轮询（round-robin）<strong>或随机算法，在包含该分片的所有节点中</strong>直接选择一个</strong>，将请求转发过去。</li>
+   <li><strong>不需要先经过主分片</strong>：协调节点自己决定发给谁。</li>
+  </ul> </li>
+ <li><strong>目标节点读取文档</strong>（从内存或磁盘），返回给协调节点。</li>
+ <li><strong>协调节点返回给客户端</strong>。</li>
+</ol>
+<p><strong>疑问解答</strong>：读请求是协调节点直接选择具体节点（主或副），而不是先到主分片节点再由主分片节点转发。这样既减轻主分片负担，又实现读负载均衡。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="4_Search_60"></a>4 检索（Search）操作流程</h3>
+<p>搜索需要查询所有相关分片（因为文档分散在多个分片）。流程分为两步：<strong>查询阶段（Query Phase）<strong>和</strong>获取阶段（Fetch Phase）</strong>。</p>
+<h4><a rel="noopener noreferrer" id="41__64"></a>4.1 查询阶段</h4>
+<ol>
+ <li>客户端发送搜索请求到协调节点。</li>
+ <li>协调节点解析请求，确定要查询的索引和分片（所有主分片或指定分片）。</li>
+ <li>将请求广播到这些分片的<strong>主分片或副本分片</strong>（随机轮询</li>
+</ol>

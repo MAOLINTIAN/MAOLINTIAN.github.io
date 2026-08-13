@@ -1,0 +1,555 @@
+<p>整合完数据源MyBatis、SpringMVC之后&#xff0c;我们继续从后往前&#xff0c;到了页面展示的整合部分&#xff0c;之前我们的SSM框架使用的是JSP做为前端页面&#xff0c;在更早的Servlet时代用的也是JSP页面&#xff0c;但是时代变了&#xff0c;因为有了SpringBoot&#xff0c;JSP不再是前端页面的最佳选择了&#xff0c;本篇Blog就来介绍下一个SpringBoot官方推荐的默认模板引擎。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>模板引擎概念</h2>
+<p>模板引擎&#xff08;这里特指用于Web开发的模板引擎&#xff09;是为了<strong>使用户界面与业务数据&#xff08;内容&#xff09;分离而产生的&#xff0c;它可以生成特定格式的文档&#xff0c;用于网站的模板引擎就会生成一个标准的HTML文档</strong>&#xff0c;其实JSP就是一个模板引擎。</p>
+<p>通俗的讲&#xff0c;模板引擎的作用就是当我们创建一个前端页面时&#xff0c;有些值是动态的&#xff0c;需要写表达式从后端获取。<strong>模板引擎按照数据进行表达式解析、填充到页面指定的位置&#xff0c;然后把这个数据最终生成目标页面返回</strong>&#xff0c;不管是JSP还是我们本篇提到的Thymeleaf&#xff0c;抑或是其他模板引擎&#xff0c;功能作用都是一样的&#xff0c;不同模板引擎之间语法不同而已。</p>
+<h3><a rel="noopener noreferrer" id="SpringBootJSP_5"></a>SpringBoot为什么不使用JSP</h3>
+<p>JSP作为模板引擎的功能很强大&#xff0c;但是有两个原因导致SpringBoot不能使用JSP作为模板引擎</p>
+<ul><li><strong>SpringBoot用Jar打包而非War</strong>&#xff0c;springboot无法与jsp作为视图解析器一起正常使用的主要原因是因为<strong>Tomcat使用了硬编码的文件模式</strong>&#xff0c;当使用Jar打包时不会从WEB-INF文件夹中复制JSP文件&#xff0c;导致无法发现和解析JSP</li><li><strong>SpringBoot使用嵌入式Tomcat</strong>&#xff0c;默认情况下&#xff0c;嵌入式Tomcat软件包&#xff08;在springboot中用于创建可执行jar&#xff09;不包含JSP文件格式</li></ul>
+<p>所以可以理解为目前SpringBoot没有对JSP有很好的支持&#xff0c;而且更方便的选择还有很多&#xff0c;所以就抛弃了JSP转而使用Thymeleaf</p>
+<h2><a rel="noopener noreferrer" id="Thymeleaf_12"></a>Thymeleaf</h2>
+<p>Thymeleaf 是一款用于渲染 <strong>XML/XHTML/HTML5</strong> 内容的模板引擎。它与 <code>JSP&#xff0c;Velocity&#xff0c;FreeMaker</code> 等模板引擎类似&#xff0c;也可以轻易地与 Spring MVC 、SpringBoot等 Web 框架集成。与其它模板引擎相比&#xff0c;Thymeleaf 最大的特点是&#xff0c;<strong>即使不启动 Web 应用&#xff0c;也可以直接在浏览器中打开并正确显示模板页面</strong> 。</p>
+<h3><a rel="noopener noreferrer" id="1_Thymeleaf__14"></a>1 Thymeleaf 基本特点</h3>
+<p>与 Velocity、FreeMarker 等传统 Java 模板引擎不同&#xff0c;Thymeleaf 支持 HTML 原型&#xff0c;其文件后缀为<code>.html</code>&#xff1a;</p>
+<ul><li>当直接被浏览器打开时浏览器会忽略未定义的 Thymeleaf 标签属性&#xff0c;展示 thymeleaf 模板的静态页面效果&#xff1b;</li><li>当通过 Web 应用程序访问时&#xff0c;Thymeleaf 会动态地替换掉静态内容&#xff0c;使页面动态显示</li></ul>
+<p>Thymeleaf 通过在 html 标签中&#xff0c;增加额外属性来达到<strong>模板&#43;数据</strong>的展示方式</p>
+<pre><code class="prism language-html"><span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span> <span class="token attr-name">lang</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>en<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>th</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.thymeleaf.org<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span class="token attr-name">charset</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>UTF-8<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span class="token punctuation">&gt;</span></span>Title<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>title</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:text 为 Thymeleaf 属性&#xff0c;用于在展示文本--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>能看到我说明你是在web模式下启动<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>直接打开浏览器你是看不到我的动态数据的<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h1</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>例如我们直接从浏览器打开该文件&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-01-59113f036b.png" loading="lazy"><br /> 通过Web程序启动的效果等我们通过SpringBoot整合Thymeleaf之后再查看。Thymeleaf整体具备如下特点&#xff1a;</p>
+<ul><li><strong>动静结合</strong>&#xff1a;Thymeleaf 既可以直接使用浏览器打开&#xff0c;查看页面的静态效果&#xff0c;也可以通过 Web 应用程序进行访问&#xff0c;查看动态页面效果。</li><li><strong>开箱即用</strong>&#xff1a;Thymeleaf 提供了 Spring 标准方言以及一个与 SpringMVC 完美集成的可选模块&#xff0c;可以快速的实现表单绑定、属性编辑器、国际化等功能。</li><li><strong>多方言支持</strong>&#xff1a;它提供了 Thymeleaf 标准和 Spring 标准两种方言&#xff0c;可以直接套用模板实现 JSTL、 OGNL 表达式&#xff1b;必要时&#xff0c;开发人员也可以扩展和创建自定义的方言。</li><li><strong>与 SpringBoot 完美整合</strong>&#xff1a;SpringBoot 为 Thymeleaf 提供了的默认配置&#xff0c;并且还为 Thymeleaf 设置了视图解析器&#xff0c;因此 Thymeleaf 可以与 Spring Boot 完美整合。</li></ul>
+<p>在我看来其实最大的原因就是Thymeleaf能与SpringBoot完美结合&#xff0c;这让我们使用起来很方便。</p>
+<h3><a rel="noopener noreferrer" id="2_Thymeleaf__44"></a>2 Thymeleaf 语法规则</h3>
+<p>在使用 Thymeleaf 之前&#xff0c;首先要在页面的 html 标签中声明名称空间</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>html lang<span class="token operator">&#61;</span><span class="token string">&#34;en&#34;</span> xmlns<span class="token operator">:</span>th<span class="token operator">&#61;</span><span class="token string">&#34;http://www.thymeleaf.org&#34;</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>在 html 标签中声明此名称空间&#xff0c;可避免编辑器出现 html 验证错误&#xff0c;但这一步并非必须进行的&#xff0c;即使我们不声明该命名空间&#xff0c;也不影响 Thymeleaf 的使用&#xff0c;但我们最好配置上&#xff0c;防止不必要的错误。</p>
+<p>Thymeleaf 语法分为&#xff1a;标准表达式语法&#xff0c;th 属性。</p>
+<h4><a rel="noopener noreferrer" id="1__54"></a>1 标准表达式语法</h4>
+<p>Thymeleaf 模板引擎支持多种表达式&#xff0c;可类比JSP中的EL表达式。</p>
+<ul><li><strong>变量表达式</strong>&#xff1a;<code>${...}</code></li><li><strong>选择变量表达式</strong>&#xff1a;<code>*{...}</code></li><li><strong>链接表达式</strong>&#xff1a;<code>&#64;{...}</code></li><li><strong>国际化表达式</strong>&#xff1a;<code>#{...}</code></li><li><strong>片段引用表达式</strong>&#xff1a;<code>~{...}</code></li></ul>
+<p>接下来我们分别试验下标准表达式语法的用法&#xff1a;</p>
+<h5><a rel="noopener noreferrer" id="1__63"></a>1 变量表达式</h5>
+<p>变量表达式也依据获取内容的不同分为如下三类&#xff1a;</p>
+<blockquote>
+ <p><strong>获取对象的属性和方法</strong></p>
+</blockquote>
+<p>使用变量表达式可以获取对象的属性和方法&#xff0c;例如&#xff0c;获取 person 对象的 lastName 属性&#xff0c;表达式形式如下&#xff1a;</p>
+<pre><code class="prism language-java">$<span class="token punctuation">{<!-- --></span>person<span class="token punctuation">.</span>lastName<span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+ <p><strong>使用内置的基本对象</strong></p>
+</blockquote>
+<p>使用变量表达式还可以使用内置基本对象&#xff0c;获取内置对象的属性&#xff0c;调用内置对象的方法。 Thymeleaf 中常用的内置基本对象如下&#xff1a;</p>
+<pre><code class="prism language-java">#ctx &#xff1a;上下文对象&#xff1b;
+#vars &#xff1a;上下文变量&#xff1b;
+#locale&#xff1a;上下文的语言环境&#xff1b;
+#request&#xff1a;<span class="token class-name">HttpServletRequest</span> 对象&#xff08;仅在 <span class="token class-name">Web</span> 应用中可用&#xff09;&#xff1b;
+#response&#xff1a;<span class="token class-name">HttpServletResponse</span> 对象&#xff08;仅在 <span class="token class-name">Web</span> 应用中可用&#xff09;&#xff1b;
+#session&#xff1a;<span class="token class-name">HttpSession</span> 对象&#xff08;仅在 <span class="token class-name">Web</span> 应用中可用&#xff09;&#xff1b;
+#servletContext&#xff1a;<span class="token class-name">ServletContext</span> 对象&#xff08;仅在 <span class="token class-name">Web</span> 应用中可用&#xff09;
+</code></pre>
+<p>例如&#xff0c;我们通过以下 2 种形式&#xff0c;都可以获取到 session 对象中的 map 属性</p>
+<pre><code class="prism language-java">$<span class="token punctuation">{<!-- --></span>#session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#39;map&#39;</span><span class="token punctuation">)</span><span class="token punctuation">}</span>
+$<span class="token punctuation">{<!-- --></span>session<span class="token punctuation">.</span>map<span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+ <p><strong>使用内置的工具对象</strong></p>
+</blockquote>
+<p>除了能使用内置的基本对象外&#xff0c;变量表达式还可以使用一些内置的工具对象</p>
+<pre><code class="prism language-java">strings&#xff1a;字符串工具对象&#xff0c;常用方法有&#xff1a;equals、equalsIgnoreCase、length、trim、toUpperCase、toLowerCase、indexOf、substring、replace、startsWith、endsWith&#xff0c;contains 和 containsIgnoreCase 等&#xff1b;
+numbers&#xff1a;数字工具对象&#xff0c;常用的方法有&#xff1a;formatDecimal 等&#xff1b;
+bools&#xff1a;布尔工具对象&#xff0c;常用的方法有&#xff1a;isTrue 和 isFalse 等&#xff1b;
+arrays&#xff1a;数组工具对象&#xff0c;常用的方法有&#xff1a;toArray、length、isEmpty、contains 和 containsAll 等&#xff1b;
+lists<span class="token operator">/</span>sets&#xff1a;<span class="token class-name">List</span><span class="token operator">/</span><span class="token class-name">Set</span> 集合工具对象&#xff0c;常用的方法有&#xff1a;toList、size、isEmpty、contains、containsAll 和 sort 等&#xff1b;
+maps&#xff1a;<span class="token class-name">Map</span> 集合工具对象&#xff0c;常用的方法有&#xff1a;size、isEmpty、containsKey 和 containsValue 等&#xff1b;
+dates&#xff1a;日期工具对象&#xff0c;常用的方法有&#xff1a;format、year、month、hour 和 createNow 等
+</code></pre>
+<p>例如&#xff0c;我们可以使用内置工具对象 strings 的 equals 方法&#xff0c;来判断字符串与对象的某个属性是否相等&#xff0c;代码如下</p>
+<pre><code class="prism language-java">$<span class="token punctuation">{<!-- --></span>#strings<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#39;tml&#39;</span><span class="token punctuation">,</span>name<span class="token punctuation">)</span><span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="2__113"></a>2 选择变量表达式</h5>
+<p>选择变量表达式与变量表达式功能基本一致&#xff0c;只是在变量表达式的基础上增加了与 th:object 的配合使用。当使用 th:object 存储一个对象后&#xff0c;我们可以在其后代中使用选择变量表达式<code>*{...}</code>获取该对象中的属性&#xff0c;其中&#xff0c;<code>*</code>即代表该对象</p>
+<pre><code class="prism language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>object</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>${session.user}<span class="token punctuation">&#34;</span></span> <span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>*{fisrtName}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>firstname<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="3__122"></a>3 链接表达式</h5>
+<p>不管是静态资源的引用&#xff0c;还是 form 表单的请求&#xff0c;凡是链接都可以用链接表达式 <code>&#64;{...}</code>。 链接表达式的形式结构如下&#xff1a; 无参请求&#xff1a;<code>&#64;{/xxx}</code> ,有参请求&#xff1a;<code>&#64;{/xxx(k1&#61;v1,k2&#61;v2)}</code> 例如使用链接表达式引入 css 样式表&#xff0c;代码如下</p>
+<pre><code class="prism language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>link</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>asserts/css/signin.css<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">th:</span>href</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>&#64;{/asserts/css/signin.css}<span class="token punctuation">&#34;</span></span> <span class="token attr-name">rel</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>stylesheet<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="4__129"></a>4 国际化表达式</h5>
+<p>国际化表达式一般用于国际化的场景</p>
+<pre><code class="prism language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>#{msg}<span class="token punctuation">&#34;</span></span> <span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="5__136"></a>5 片段引用表达式</h5>
+<p>片段引用表达式用于在模板页面中引用其他的模板片段&#xff0c;该表达式支持以下 2 中语法结构&#xff1a;</p>
+<ul><li>推荐&#xff1a;<code>~{templatename::fragmentname}</code></li><li>支持&#xff1a;<code>~{templatename::#id}</code></li></ul>
+<p>以上语法结构说明如下&#xff1a;</p>
+<ul><li>templatename&#xff1a;模版名&#xff0c;Thymeleaf 会根据模版名解析完整径&#xff1a;<code>/resources/templates/templatename.html</code>&#xff0c;要注意文件的路径。</li><li>fragmentname&#xff1a;片段名&#xff0c;Thymeleaf 通过 <code>th:fragment</code> 声明定义代码块&#xff0c;即&#xff1a; <code>&lt;div th:fragment&#61;&#34;fragmentname&#34;&gt;</code></li><li>id&#xff1a;HTML 的 id 选择器&#xff0c;使用时要在前面加上 # 号&#xff0c;不支持 class 选择器</li></ul>
+<p>在公共页面抽取部分再详细叙述</p>
+<h4><a rel="noopener noreferrer" id="2_th_147"></a>2 th属性语法</h4>
+<p>Thymeleaf 还提供了大量的 th 属性&#xff0c;有点类似于JSTL标签。这些属性可以直接在 HTML 标签中使用&#xff0c;其中常用 th 属性及其示例如下表<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-02-79d9b690f5.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="3_Thymeleaf__151"></a>3 Thymeleaf 公共页面抽取</h3>
+<p>在 Web 项目中&#xff0c;通常会存在一些公共页面片段&#xff08;重复代码&#xff09;&#xff0c;例如头部导航栏、侧边菜单栏和公共的 js css 等。我们一般会把这些公共页面片段抽取出来&#xff0c;存放在一个独立的页面中&#xff0c;然后再由其他页面根据需要进行引用&#xff0c;这样可以消除代码重复&#xff0c;使页面更加简洁</p>
+<h4><a rel="noopener noreferrer" id="1__153"></a>1 抽取公共页面</h4>
+<p>Thymeleaf 作为一种优雅且高度可维护的模板引擎&#xff0c;同样支持公共页面的抽取和引用。我们可以将公共页面片段抽取出来&#xff0c;存放到一个独立的页面中&#xff0c;并使用 Thymeleaf 提供的 th:fragment 属性为这些抽取出来的公共页面片段命名&#xff0c;将公共页面片段抽取出来&#xff0c;存放在 commons.html 中&#xff0c;代码如下</p>
+<pre><code class="prism language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>fragment</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-name<span class="token punctuation">&#34;</span></span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2__162"></a>2 引用公共页面</h4>
+<p>在 Thymeleaf 中&#xff0c;我们可以使用以下 3 个属性&#xff0c;将公共页面片段引入到当前页面中。</p>
+<ul><li><code>th:insert</code>&#xff1a;将代码块片段<strong>整个插入</strong>到使用了 th:insert 属性的 HTML 标签中&#xff1b;</li><li><code>th:replace</code>&#xff1a;将代码块片段<strong>整个替换</strong>使用了 th:replace 属性的 HTML 标签中&#xff1b;</li><li><code>th:include</code>&#xff1a;将代码块片段<strong>包含的内容插入</strong>到使用了 th:include 属性的 HTML 标签中。</li></ul>
+<p>使用上 3 个属性引入页面片段&#xff0c;都可以通过以下 2 种方式实现。</p>
+<ul><li><code>~{templatename::#id}</code>&#xff1a;模板名::选择器名</li><li><code>~{templatename::fragmentname}</code>&#xff1a;模板名::片段名</li></ul>
+<p>也就是我们上边提到的片段引用表达式。在页面 fragment.html 中引入 commons.html 中声明的页面片段&#xff0c;可以通过以下方式实现</p>
+<pre><code class="prism language-html"><span class="token comment">&lt;!--th:insert 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>insert</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::fragment-name<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:insert id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>insert</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::#fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+------------------------------------------------
+<span class="token comment">&lt;!--th:replace 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>replace</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::fragment-name<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:replace id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>replace</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::#fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+------------------------------------------------
+<span class="token comment">&lt;!--th:include 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>include</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::fragment-name<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:include id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>include</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::#fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>启动 Spring Boot&#xff0c;使用浏览器访问 fragment.html&#xff0c;查看源码&#xff0c;结果如下</p>
+<pre><code class="prism language-html"><span class="token comment">&lt;!--th:insert 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:insert id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+------------------------------------------------
+<span class="token comment">&lt;!--th:replace 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:replace id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+------------------------------------------------
+<span class="token comment">&lt;!--th:include 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:include id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span><span class="token punctuation">&gt;</span></span>公共页面片段<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__225"></a>3 传递参数</h4>
+<p>Thymeleaf 在抽取和引入公共页面片段时&#xff0c;还可以进行参数传递&#xff0c;引用公共页面片段时&#xff0c;我们可以通过以下 2 种方式&#xff0c;将参数传入到被引用的页面片段中&#xff1a;</p>
+<ul><li>模板名::选择器名或片段名(参数1&#61;参数值1,参数2&#61;参数值2)</li><li>模板名::选择器名或片段名(参数值1,参数值2)</li></ul>
+<p>我们一般使用第一种&#xff0c;示例如下&#xff1a;</p>
+<pre><code class="prism language-html"><span class="token comment">&lt;!--th:insert 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>insert</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::fragment-name(var1&#61;<span class="token punctuation">&#39;</span>insert-name<span class="token punctuation">&#39;</span>,var2&#61;<span class="token punctuation">&#39;</span>insert-name2<span class="token punctuation">&#39;</span>)<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:insert id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>insert</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::#fragment-id(var1&#61;<span class="token punctuation">&#39;</span>insert-id<span class="token punctuation">&#39;</span>,var2&#61;<span class="token punctuation">&#39;</span>insert-id2<span class="token punctuation">&#39;</span>)<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+------------------------------------------------
+<span class="token comment">&lt;!--th:replace 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>replace</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::fragment-name(var1&#61;<span class="token punctuation">&#39;</span>replace-name<span class="token punctuation">&#39;</span>,var2&#61;<span class="token punctuation">&#39;</span>replace-name2<span class="token punctuation">&#39;</span>)<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:replace id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>replace</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::#fragment-id(var1&#61;<span class="token punctuation">&#39;</span>replace-id<span class="token punctuation">&#39;</span>,var2&#61;<span class="token punctuation">&#39;</span>replace-id2<span class="token punctuation">&#39;</span>)<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+------------------------------------------------
+<span class="token comment">&lt;!--th:include 片段名引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>include</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::fragment-name(var1&#61;<span class="token punctuation">&#39;</span>include-name<span class="token punctuation">&#39;</span>,var2&#61;<span class="token punctuation">&#39;</span>include-name2<span class="token punctuation">&#39;</span>)<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:include id 选择器引入--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>include</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>commons::#fragment-id(var1&#61;<span class="token punctuation">&#39;</span>include-id<span class="token punctuation">&#39;</span>,var2&#61;<span class="token punctuation">&#39;</span>include-id2<span class="token punctuation">&#39;</span>)<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>在commons.html公共页面我们可以使用这些参数&#xff1a;</p>
+<pre><code class="prism language-html"><span class="token comment">&lt;!--使用 var1 和 var2 声明传入的参数&#xff0c;并在该片段中直接使用这些参数 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>fragment</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-name(var1,var2)<span class="token punctuation">&#34;</span></span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>fragment-id<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span><span class="token punctuation">&#39;</span>参数1:<span class="token punctuation">&#39;</span>&#43;${var1} &#43; <span class="token punctuation">&#39;</span>-------------------参数2:<span class="token punctuation">&#39;</span> &#43; ${var2}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>...<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>启动 Spring Boot&#xff0c;使用浏览器访问<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-03-2624ba4493.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="Spring_BootThymeleaf_259"></a>Spring Boot整合Thymeleaf</h2>
+<p>Spring Boot 推荐使用 Thymeleaf 作为其模板引擎。SpringBoot 为 Thymeleaf 提供了一系列默认配置&#xff0c;项目中一但导入了 Thymeleaf 的依赖&#xff0c;相对应的自动配置 <code>ThymeleafAutoConfiguration</code> 就会自动生效&#xff0c;因此 Thymeleaf 可以与 Spring Boot 完美整合</p>
+<h3><a rel="noopener noreferrer" id="1__261"></a>1 引入依赖</h3>
+<p>Spring Boot 整合 Thymeleaf 的第一步&#xff0c;就是在项目的 pom.xml 中添加 Thymeleaf 的 Starter 依赖&#xff0c;代码如下</p>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--Thymeleaf 启动器--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-thymeleaf<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2_html_272"></a>2 创建模板html文件</h3>
+<p>Spring Boot 通过 ThymeleafAutoConfiguration 自动配置类对 Thymeleaf 提供了一整套的自动化配置方案&#xff0c;该自动配置类的部分源码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>
+    proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span>
+<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;EnableConfigurationProperties</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">ThymeleafProperties</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;ConditionalOnClass</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">TemplateMode</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">SpringTemplateEngine</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;AutoConfigureAfter</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">WebMvcAutoConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">WebFluxAutoConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThymeleafAutoConfiguration</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token class-name">ThymeleafAutoConfiguration</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>ThymeleafAutoConfiguration 使用 &#64;EnableConfigurationProperties 注解导入了 ThymeleafProperties 类&#xff0c;该类包含了与 Thymeleaf 相关的自动配置属性&#xff0c;其部分源码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;ConfigurationProperties</span><span class="token punctuation">(</span>
+    prefix <span class="token operator">&#61;</span> <span class="token string">&#34;spring.thymeleaf&#34;</span>
+<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThymeleafProperties</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Charset</span> DEFAULT_ENCODING<span class="token punctuation">;</span>  <span class="token comment">//默认编码格式</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">String</span> DEFAULT_PREFIX <span class="token operator">&#61;</span> <span class="token string">&#34;classpath:/templates/&#34;</span><span class="token punctuation">;</span>  <span class="token comment">//视图解析器的前缀</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">String</span> DEFAULT_SUFFIX <span class="token operator">&#61;</span> <span class="token string">&#34;.html&#34;</span><span class="token punctuation">;</span>  <span class="token comment">//视图解析器的后缀</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> checkTemplate <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> checkTemplateLocation <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> prefix <span class="token operator">&#61;</span> <span class="token string">&#34;classpath:/templates/&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> suffix <span class="token operator">&#61;</span> <span class="token string">&#34;.html&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> mode <span class="token operator">&#61;</span> <span class="token string">&#34;HTML&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">Charset</span> encoding<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> cache<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">Integer</span> templateResolverOrder<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> viewNames<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> excludedViewNames<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> enableSpringElCompiler<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> renderHiddenMarkersBeforeCheckboxes<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> enabled<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">ThymeleafProperties<span class="token punctuation">.</span>Servlet</span> servlet<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">ThymeleafProperties<span class="token punctuation">.</span>Reactive</span> reactive<span class="token punctuation">;</span>
+    ·····
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>ThymeleafProperties 通过 &#64;ConfigurationProperties 注解将配置文件&#xff08;application.properties/yml&#xff09; 中前缀为 spring.thymeleaf 的配置和这个类中的属性绑定&#xff0c;通过配置默认值可知&#xff1a;Thymeleaf 模板的默认位置在 <code>resources/templates</code> 目录下&#xff0c;默认的后缀是 html&#xff0c;即只要将 HTML 页面放在<code>classpath:/templates/</code>下&#xff0c;Thymeleaf 就能自动进行渲染。我们创建一个html文件&#xff1a;</p>
+<pre><code class="prism language-html"><span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span> <span class="token attr-name">lang</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>en<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>th</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.thymeleaf.org<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span class="token attr-name">charset</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>UTF-8<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span class="token punctuation">&gt;</span></span>tml第一个thymeleaf页面<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>title</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span><span class="token punctuation">&gt;</span></span>测试页面<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h1</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>${msg}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!--遍历数据--&gt;</span>
+<span class="token comment">&lt;!--th:each每次遍历都会生成当前这个标签&#xff1a;--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h4</span> <span class="token attr-name"><span class="token namespace">th:</span>each</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>user :${users}<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>${user}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h4</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--th:text 为 Thymeleaf 属性&#xff0c;用于在展示文本--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>能看到我说明你是在web模式下启动<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>直接打开浏览器你是看不到我的动态数据的<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h1</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3_Controller_338"></a>3 创建Controller</h3>
+<p>然后我们请求Controller页面&#xff0c;用来路由结果到hello.html页面</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>stereotype<span class="token punctuation">.</span></span><span class="token class-name">Controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">GetMapping</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Arrays</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Map</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+** &#64;Name HelloController
+** &#64;Description
+** &#64;author tianmaolin
+** &#64;Data 2021/10/14
+*/</span>
+<span class="token annotation punctuation">&#64;Controller</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;GetMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/hello-thymeleaf&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">test2</span><span class="token punctuation">(</span><span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span><span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> map<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//存入数据</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;msg&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;Hello&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;users&#34;</span><span class="token punctuation">,</span> <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token string">&#34;gcy&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;tml&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//classpath:/templates/hello.html</span>
+        <span class="token keyword">return</span> <span class="token string">&#34;hello&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4__370"></a>4 测试实现</h3>
+<p>我们在页面请求测试下&#xff1a;<code>http://localhost:8080/hello-thymeleaf</code><br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-04-3e4c103144.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="SpringBoot_373"></a>SpringBoot页面国际化</h2>
+<p>国际化&#xff08;Internationalization 简称 I18n&#xff0c;其中“I”和“n”分别为首末字符&#xff0c;18 则为中间的字符数&#xff09;是指软件开发时应该具备支持多种语言和地区的功能。换句话说就是&#xff0c;<strong>开发的软件需要能同时应对不同国家和地区的用户访问&#xff0c;并根据用户地区和语言习惯&#xff0c;提供相应的、符合用具阅读习惯的页面和数据</strong>&#xff0c;例如&#xff0c;为中国用户提供汉语界面显示&#xff0c;为美国用户提供提供英语界面显示</p>
+<h3><a rel="noopener noreferrer" id="1__378"></a>1 编写国际化资源文件</h3>
+<p>在 Spring Boot 的类路径下创建国际化资源文件&#xff0c;文件名格式为&#xff1a;基本名_语言代码_国家或地区代码&#xff0c;例如 login_en_US.properties、login_zh_CN.properties。</p>
+<p>以 spring-boot-springmvc-demo1为例&#xff0c;在 src/main/resources 下创建一个 i18n 的目录&#xff0c;并在该目录中按照国际化资源文件命名格式分别创建以下三个文件&#xff0c;</p>
+<ul><li>login.properties&#xff1a;无语言设置时生效</li><li>login_en_US.properties &#xff1a;英语时生效</li><li>login_zh_CN.properties&#xff1a;中文时生效</li></ul>
+<p>以上国际化资源文件创建完成后&#xff0c;IDEA 会自动识别它们&#xff0c;编写并配置国际化资源文件如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-05-ec8cd046d1.png" loading="lazy"></p>
+<blockquote>
+ <p><strong>login.properties</strong></p>
+</blockquote>
+<pre><code class="prism language-xml">loginBtn&#61;登录
+password&#61;密码
+registerBtn&#61;注册
+username&#61;用户名
+</code></pre>
+<blockquote>
+ <p><strong>login_en_US.properties</strong></p>
+</blockquote>
+<pre><code class="prism language-xml">loginBtn&#61;Login
+password&#61;PassWord
+registerBtn&#61;Register
+username&#61;UserName
+</code></pre>
+<blockquote>
+ <p><strong>login_zh_CN.properties</strong></p>
+</blockquote>
+<pre><code class="prism language-xml">loginBtn&#61;登录
+password&#61;密码
+registerBtn&#61;注册
+username&#61;用户名
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2_applicationyml_415"></a>2 application.yml配置管理国际化资源文件</h3>
+<p>Spring Boot 已经对 ResourceBundleMessageSource 提供了默认的自动配置。Spring Boot 通过 MessageSourceAutoConfiguration 对 ResourceBundleMessageSource 提供了默认配置&#xff0c;其部分源码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Configuration</span><span class="token punctuation">(</span>proxyBeanMethods <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token class-name">AbstractApplicationContext</span><span class="token punctuation">.</span>MESSAGE_SOURCE_BEAN_NAME<span class="token punctuation">,</span> search <span class="token operator">&#61;</span> <span class="token class-name">SearchStrategy</span><span class="token punctuation">.</span>CURRENT<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;AutoConfigureOrder</span><span class="token punctuation">(</span><span class="token class-name">Ordered</span><span class="token punctuation">.</span>HIGHEST_PRECEDENCE<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Conditional</span><span class="token punctuation">(</span><span class="token class-name"><span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>autoconfigure<span class="token punctuation">.</span>context<span class="token punctuation">.</span></span>MessageSourceAutoConfiguration<span class="token punctuation">.</span>ResourceBundleCondition</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;EnableConfigurationProperties</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageSourceAutoConfiguration</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Resource</span><span class="token punctuation">[</span><span class="token punctuation">]</span> NO_RESOURCES <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 将 MessageSourceProperties 以组件的形式添加到容器中</span>
+    <span class="token comment">// MessageSourceProperties 下的每个属性都与以 spring.messages 开头的属性对应</span>
+    <span class="token annotation punctuation">&#64;Bean</span>
+    <span class="token annotation punctuation">&#64;ConfigurationProperties</span><span class="token punctuation">(</span>prefix <span class="token operator">&#61;</span> <span class="token string">&#34;spring.messages&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">MessageSourceProperties</span> <span class="token function">messageSourceProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">MessageSourceProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">//Spring Boot 会从容器中获取 MessageSourceProperties</span>
+    <span class="token comment">// 读取国际化资源文件的 basename&#xff08;基本名&#xff09;、encoding&#xff08;编码&#xff09;等信息</span>
+    <span class="token comment">// 并封装到 ResourceBundleMessageSource 中</span>
+    <span class="token annotation punctuation">&#64;Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">MessageSource</span> <span class="token function">messageSource</span><span class="token punctuation">(</span><span class="token class-name">MessageSourceProperties</span> properties<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ResourceBundleMessageSource</span> messageSource <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ResourceBundleMessageSource</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//读取国际化资源文件的 basename (基本名),并封装到 ResourceBundleMessageSource 中</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">hasText</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getBasename</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            messageSource<span class="token punctuation">.</span><span class="token function">setBasenames</span><span class="token punctuation">(</span><span class="token class-name">StringUtils</span>
+                    <span class="token punctuation">.</span><span class="token function">commaDelimitedListToStringArray</span><span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">trimAllWhitespace</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getBasename</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">//读取国际化资源文件的 encoding (编码),并封装到 ResourceBundleMessageSource 中</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getEncoding</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            messageSource<span class="token punctuation">.</span><span class="token function">setDefaultEncoding</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getEncoding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        messageSource<span class="token punctuation">.</span><span class="token function">setFallbackToSystemLocale</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">isFallbackToSystemLocale</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Duration</span> cacheDuration <span class="token operator">&#61;</span> properties<span class="token punctuation">.</span><span class="token function">getCacheDuration</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>cacheDuration <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            messageSource<span class="token punctuation">.</span><span class="token function">setCacheMillis</span><span class="token punctuation">(</span>cacheDuration<span class="token punctuation">.</span><span class="token function">toMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        messageSource<span class="token punctuation">.</span><span class="token function">setAlwaysUseMessageFormat</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">isAlwaysUseMessageFormat</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        messageSource<span class="token punctuation">.</span><span class="token function">setUseCodeAsDefaultMessage</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">isUseCodeAsDefaultMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> messageSource<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>从以上源码可知&#xff1a;</p>
+<ul><li>Spring Boot 将 MessageSourceProperties 以组件的形式添加到容器中&#xff1b;</li><li>MessageSourceProperties 的属性与配置文件中以“spring.messages”开头的配置进行了绑定&#xff1b;</li><li>Spring Boot 从容器中获取 MessageSourceProperties 组件&#xff0c;并从中读取国际化资源文件的 basename&#xff08;文件基本名&#xff09;、encoding&#xff08;编码&#xff09;等信息&#xff0c;将它们封装到ResourceBundleMessageSource 中&#xff1b;</li><li>Spring Boot 将 ResourceBundleMessageSource 以组件的形式添加到容器中&#xff0c;进而实现对国际化资源文件的管理。</li></ul>
+<p>查看 MessageSourceProperties 类&#xff0c;其代码如下</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageSourceProperties</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> basename <span class="token operator">&#61;</span> <span class="token string">&#34;messages&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">Charset</span> encoding<span class="token punctuation">;</span>
+    <span class="token annotation punctuation">&#64;DurationUnit</span><span class="token punctuation">(</span><span class="token class-name">ChronoUnit</span><span class="token punctuation">.</span>SECONDS<span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">Duration</span> cacheDuration<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> fallbackToSystemLocale<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> alwaysUseMessageFormat<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> useCodeAsDefaultMessage<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token class-name">MessageSourceProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>encoding <span class="token operator">&#61;</span> <span class="token class-name">StandardCharsets</span><span class="token punctuation">.</span>UTF_8<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>fallbackToSystemLocale <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>alwaysUseMessageFormat <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>useCodeAsDefaultMessage <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>通过以上代码&#xff0c;我们可以得到以下 3 点信息&#xff1a;</p>
+<ul><li>MessageSourceProperties 为 basename、encoding 等属性提供了默认值&#xff1b;</li><li>basename 表示国际化资源文件的基本名&#xff0c;其默认取值为“messages”&#xff0c;即 Spring Boot 默认会获取类路径下的 message.properties 以及 message_XXX.properties 作为国际化资源文件&#xff1b;</li><li>在 application.porperties/yml 等配置文件中&#xff0c;使用配置参数“spring.messages.basename”即可重新指定国际化资源文件的基本名。</li></ul>
+<p>通过以上源码分析可知&#xff0c;Spring Boot 已经对国际化资源文件的管理提供了默认自动配置&#xff0c;我们这里只需要在 Spring Boot 全局配置文件中&#xff0c;使用配置参数“spring.messages.basename”指定我们自定义的国际资源文件的基本名即可&#xff0c;代码如下&#xff08;当指定多个资源文件时&#xff0c;用逗号分隔&#xff09;</p>
+<blockquote>
+ <p><strong>application.yml</strong></p>
+</blockquote>
+<pre><code class="prism language-yaml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment">#页面国际化配置</span>
+  <span class="token key atrule">messages</span><span class="token punctuation">:</span>
+    <span class="token key atrule">basename</span><span class="token punctuation">:</span> i18n.login
+    <span class="token key atrule">encoding</span><span class="token punctuation">:</span> UTF<span class="token punctuation">-</span><span class="token number">8</span>
+    <span class="token key atrule">cache-duration</span><span class="token punctuation">:</span> <span class="token number">1</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__506"></a>3 定义区域信息解析器</h3>
+<p>我们知道&#xff0c;Spring MVC 进行国际化时有 2 个十分重要的对象&#xff1a;</p>
+<ul><li>Locale&#xff1a;区域信息对象</li><li>LocaleResolver&#xff1a;区域信息解析器&#xff0c;容器中的组件&#xff0c;负责获取区域信息对象</li></ul>
+<p>我们可以通过以上两个对象对区域信息的切换&#xff0c;以达到切换语言的目的&#xff0c;Spring Boot 在 WebMvcAutoConfiguration 中为区域信息解析器&#xff08;LocaleResolver&#xff09;进行了自动配置&#xff0c;源码如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Bean</span>
+    <span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token class-name">DispatcherServlet</span><span class="token punctuation">.</span>LOCALE_RESOLVER_BEAN_NAME<span class="token punctuation">)</span>
+    <span class="token annotation punctuation">&#64;SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">&#34;deprecation&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">LocaleResolver</span> <span class="token function">localeResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>webProperties<span class="token punctuation">.</span><span class="token function">getLocaleResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token class-name">WebProperties<span class="token punctuation">.</span>LocaleResolver</span><span class="token punctuation">.</span>FIXED<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">FixedLocaleResolver</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>webProperties<span class="token punctuation">.</span><span class="token function">getLocale</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>mvcProperties<span class="token punctuation">.</span><span class="token function">getLocaleResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token class-name">WebMvcProperties<span class="token punctuation">.</span>LocaleResolver</span><span class="token punctuation">.</span>FIXED<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">FixedLocaleResolver</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>mvcProperties<span class="token punctuation">.</span><span class="token function">getLocale</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token class-name">AcceptHeaderLocaleResolver</span> localeResolver <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">AcceptHeaderLocaleResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Locale</span> locale <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>webProperties<span class="token punctuation">.</span><span class="token function">getLocale</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token operator">?</span> <span class="token keyword">this</span><span class="token punctuation">.</span>webProperties<span class="token punctuation">.</span><span class="token function">getLocale</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token operator">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>mvcProperties<span class="token punctuation">.</span><span class="token function">getLocale</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        localeResolver<span class="token punctuation">.</span><span class="token function">setDefaultLocale</span><span class="token punctuation">(</span>locale<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> localeResolver<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>从以上源码可知&#xff1a;</p>
+<ul><li>该方法默认向容器中添加了一个区域信息解析器&#xff08;LocaleResolver&#xff09;组件&#xff0c;它会根据请求头中携带的“Accept-Language”参数&#xff0c;获取相应区域信息&#xff08;Locale&#xff09;对象。</li><li>该方法上使用了 &#64;ConditionalOnMissingBean 注解&#xff0c;其参数 name 的取值为 localeResolver&#xff08;与该方法注入到容器中的组件名称一致&#xff09;&#xff0c;该注解的含义为&#xff1a;当容器中不存在名称为 localResolver 组件时&#xff0c;该方法才会生效。</li></ul>
+<p>当我们手动向容器中添加一个名为“localeResolver”的组件时&#xff0c;Spring Boot 自动配置的区域信息解析器会失效&#xff0c;而我们定义的区域信息解析器则会生效。创建一个 component 包&#xff0c;并在该包中创建一个区域信息解析器 MyLocalResolver&#xff1a;</p>
+<blockquote>
+ <p><strong>MyLocalResolver.java</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>component</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">StringUtils</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token class-name">LocaleResolver</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServletRequest</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServletResponse</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Locale</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * * &#64;Name MyLocalResolver
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/10/14
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyLocalResolver</span> <span class="token keyword">implements</span> <span class="token class-name">LocaleResolver</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Locale</span> <span class="token function">resolveLocale</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//获取请求中参数</span>
+        <span class="token class-name">String</span> l <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;l&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//获取默认的区域信息解析器</span>
+        <span class="token class-name">Locale</span> locale <span class="token operator">&#61;</span> <span class="token class-name">Locale</span><span class="token punctuation">.</span><span class="token function">getDefault</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//根据请求中的参数重新构造区域信息对象</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">hasText</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> s <span class="token operator">&#61;</span> l<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">&#34;_&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            locale <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Locale</span><span class="token punctuation">(</span>s<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> s<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> locale<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setLocale</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">HttpServletResponse</span> response<span class="token punctuation">,</span> <span class="token class-name">Locale</span> locale<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4__576"></a>4 注册区域信息解析器</h3>
+<p>我们需要定制化配置SpringMVC&#xff0c;让我们的视图解析器生效&#xff1a;</p>
+<blockquote>
+ <p><strong>MyMvcConfig</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>config</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>component<span class="token punctuation">.</span></span><span class="token class-name">MyLocalResolver</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Bean</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Configuration</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token class-name">LocaleResolver</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>config<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyMvcConfig</span> <span class="token keyword">implements</span> <span class="token class-name">WebMvcConfigurer</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//添加视图控制器</span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addViewControllers</span><span class="token punctuation">(</span><span class="token class-name">ViewControllerRegistry</span> registry<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//当访问/或者/index.html都会跳转到首页</span>
+        registry<span class="token punctuation">.</span><span class="token function">addViewController</span><span class="token punctuation">(</span><span class="token string">&#34;/&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setViewName</span><span class="token punctuation">(</span><span class="token string">&#34;login&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        registry<span class="token punctuation">.</span><span class="token function">addViewController</span><span class="token punctuation">(</span><span class="token string">&#34;/login.html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setViewName</span><span class="token punctuation">(</span><span class="token string">&#34;login&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">//将自定义的区域信息解析器以组件的形式添加到容器中</span>
+    <span class="token annotation punctuation">&#64;Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">LocaleResolver</span> <span class="token function">localeResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">MyLocalResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="5__607"></a>5 获取国际化内容</h3>
+<p>通过Controller路由到html&#xff0c;所以我们需要写一个Controller【这里Controller不写也可以&#xff0c;因为MyMvcConfig中配置了<code>registry.addViewController(&#34;/login.html&#34;).setViewName(&#34;login&#34;)</code>】</p>
+<blockquote>
+ <p><strong>LoginTestController</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>springboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>stereotype<span class="token punctuation">.</span></span><span class="token class-name">Controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">GetMapping</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * * &#64;Name LoginController
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/10/14
+ */</span>
+<span class="token annotation punctuation">&#64;Controller</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LoginTestController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;GetMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/login-i18&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">loginTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token string">&#34;login&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+
+</code></pre>
+<p>通过如下语法获取国际化内容&#xff1a;</p>
+<blockquote>
+ <p><strong>login.html</strong></p>
+</blockquote>
+<pre><code class="prism language-html"><span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span> <span class="token attr-name">lang</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>en<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>th</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.thymeleaf.org<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span class="token attr-name">http-equiv</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>Content-Type<span class="token punctuation">&#34;</span></span> <span class="token attr-name">content</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>text/html; charset&#61;utf-8<span class="token punctuation">&#34;</span></span> <span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>login-container<span class="token punctuation">&#34;</span></span> <span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>form</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>loginForm<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>input</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>text<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">th:</span>placeholder</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>#{username}<span class="token punctuation">&#34;</span></span> <span class="token punctuation">/&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>br</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>input</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>password<span class="token punctuation">&#34;</span></span>  <span class="token attr-name"><span class="token namespace">th:</span>placeholder</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>#{password}<span class="token punctuation">&#34;</span></span> <span class="token punctuation">/&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>br</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>button</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>btn<span class="token punctuation">&#34;</span></span>  <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>#{loginBtn}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>button</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>button</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>btn<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>#{registerBtn}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>button</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>br</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--thymeleaf 模板引擎的参数用&#xff08;&#xff09;代替 &#xff1f;--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>btn btn-sm<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">th:</span>href</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>&#64;{/login.html(l&#61;<span class="token punctuation">&#39;</span>zh_CN<span class="token punctuation">&#39;</span>)}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>中文<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span>|
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>btn btn-sm<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">th:</span>href</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>&#64;{/login.html(l&#61;<span class="token punctuation">&#39;</span>en_US<span class="token punctuation">&#39;</span>)}<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>English<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>form</span><span class="token punctuation">&gt;</span></span>
+
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+
+
+</code></pre>
+<p>实现效果如下<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-06-9d49c7a420.png" loading="lazy"></p>
+<p>当我们点击English时&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-07-2990d189ea.png" loading="lazy"></p>
+<p>切换回中文时&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/120653096-08-d552e3b3cf.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_681"></a>总结一下</h2>
+<p>本篇Blog详细了解了Thymeleaf的一些语法以及SpringBoot是如何定制整合Thymeleaf模板引擎&#xff0c;本质上Thymeleaf和JSP没有什么区别&#xff0c;只不过在SpringBoot时代&#xff0c;Thymeleaf能更好的和SpringBoot使用&#xff0c;有定义好的场景启动器starter供开发者方便的使用&#xff0c;而且还有方便使用的国际化配置。我们只需要简单的配置即可使用这个模板&#xff0c;当然和之前聊JSP时一样&#xff0c;在前后端分离时代其实我们更多的是通过RestController和前端交互&#xff0c;很少有后端自己定义前端页面&#xff0c;不过了解一下也好&#xff0c;对于小型项目&#xff0c;了解了Thymeleaf使用之后自己就可以独立搞定一个能完整运行的前后端都有的项目了&#xff0c;多学一点总归没有坏处。</p>

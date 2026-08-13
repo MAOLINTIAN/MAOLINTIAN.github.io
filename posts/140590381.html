@@ -1,0 +1,2 @@
+<p>微信抢红包架构应该至少包含两个负载均衡&#xff0c;<strong>一个是应用服务器的负载均衡</strong>&#xff0c;用于将任务请求分发到不同应用服务器&#xff0c;这里可以采用轮询或加权轮询的算法&#xff0c;因为这种速度快&#xff0c;适合抢红包的业务场景;另一起负载均衡是<strong>数据服务器的负载均衡&#xff0c;这里更适合根据红包ID进行hash负载均衡</strong>&#xff0c;将所有数据请求在同一台服务器上进行&#xff0c;防止多台服务器间的不同步问题</p>
+<p>更详细的原文&#xff1a;https://www.infoq.cn/article/2017hongbao-weixin</p>

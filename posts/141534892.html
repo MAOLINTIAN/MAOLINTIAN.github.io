@@ -1,0 +1,62 @@
+<p>本篇BLOG为DDD流程的第二步&#xff0c;在模型的建立阶段&#xff0c;领域专家与技术人员通过领域建模来完成更为细致的模型建立讨论<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-01-9e268790f2.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_2"></a>领域建模的目的</h2>
+<p>领域建模主要有两个目的&#xff1a;</p>
+<ul><li><strong>将知识可视化&#xff0c;准确、深刻地反映领域知识&#xff0c;并且在业务和技术人员之间达成一致</strong></li><li><strong>指导系统的设计和编码</strong>&#xff0c;也就是说&#xff0c;领域模型应该能够比较容易地转化成数据库模式和代码实现</li></ul>
+<p>不同于事件风暴仅仅追求“形似”&#xff0c;也就是说业务是怎样运作的&#xff0c;事件风暴就怎样反映&#xff0c;领域建模更要“神似”。也就是说&#xff0c;<font color="red"><strong>领域建模不仅要对业务进行直观模拟&#xff0c;更要经过提炼&#xff0c;形成浓缩的知识&#xff0c;使模型中的知识不再停留在业务的表面&#xff0c;而是深入到业务的本质&#xff0c;进而加入技术视角选择最合适的建模方案</strong></font></p>
+<h2><a rel="noopener noreferrer" id="_8"></a>领域建模的步骤</h2>
+<p>我们建立领域模型&#xff0c;主要是要<strong>识别领域对象&#xff08;domain object&#xff09;&#xff0c;领域对象之间的关系&#xff0c;以及领域对象的关键属性</strong>&#xff0c;必要的时候还要<strong>将领域对象组织成模块</strong></p>
+<h3><a rel="noopener noreferrer" id="1__10"></a>1 识别领域对象</h3>
+<p>什么是领域对象&#xff0c;我们<strong>系统中要处理的各种“事物”就是领域对象(可能是领域名词&#xff0c;也可能是名词化的动词)</strong>&#xff0c;<font color="red"><strong>DDD 中将领域对象又分成实体&#xff08;entity&#xff09;和值对象&#xff08;value object&#xff09;</strong></font><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-02-28de44585f.png" loading="lazy"><br />
+我们可以先假定每个领域名词都是一个实体&#xff0c;把它们用<strong>UML图的类的符号画出来</strong>&#xff0c;例如<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-03-8909cd86cb.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_16"></a>实体识别注意事项</h4>
+<p>实体的识别过程中有两点需要注意一下&#xff1a;</p>
+<ul><li><strong>领域建模阶段&#xff0c;我们主要关注的是实体和它们之间的关系&#xff0c;所以先不具体描述属性</strong></li><li>通过后序分析&#xff0c;我们会进一步识别<font color="red"><strong>有些名词不是实体&#xff0c;有些要转换成其他形式</strong></font></li></ul>
+<p>也就是用领域名词来当做实体是第一步。</p>
+<h3><a rel="noopener noreferrer" id="2__23"></a>2 识别领域对象关系</h3>
+<p>领域对象中的关系主要有如下几种&#xff1a;<strong>一对一关系&#xff0c;一对多关系&#xff0c;多对多关系</strong>&#xff0c;并应用UML的一些表达技巧将这些关系表示出来&#xff0c;业务事件风暴后我们最终形成了如下的领域对象关系UML&#xff0c;这里有很多要点。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-04-9c2dbab89c.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_26"></a>实体抽象【技巧】</h4>
+<p>企业、开发中心、开发组、直属部门&#xff0c;其实都是组织结构中的节点而已&#xff0c;从这一点来说&#xff0c;他们是有共性的&#xff0c;都是组织&#xff0c;所以可以<strong>抽象为组织和组织类别两个实体</strong>&#xff0c;同样管理员、人事人员的共性都是人员&#xff0c;所以<strong>可以抽象为人员和岗位两个实体</strong>&#xff0c;用于更灵活的扩展</p>
+<h4><a rel="noopener noreferrer" id="_28"></a>注释与约束【标记】</h4>
+<p>可以通过增加注释和约束&#xff0c;使模型中的业务知识更加丰富和准确。其中&#xff0c;<font color="red"><strong>约束是一种特殊的注释&#xff0c;它的内容必须以某种形式在代码或数据库中实现。约束也属于我们在之前说的业务规则&#xff0c;需要补充到业务规则表中去</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-05-98a375f3a7.png" loading="lazy"></font></p>
+<ul><li>在 UML 中&#xff0c;<strong>注释用折角的矩形表示&#xff0c;和被注释的实体之间用虚线连接</strong></li><li><strong>约束的内容用大括号括起来了。在 UML 中&#xff0c;用大括号括起来的内容称为“约束”&#xff08;constraint&#xff09;</strong></li></ul>
+<h4><a rel="noopener noreferrer" id="_33"></a>实体自关联【标记】</h4>
+<p>一个组织可以有多个组织作为自己的下级&#xff1b;而一个组织只能有一个组织作为自己的上级&#xff0c;在这个自关联的两端&#xff0c;<strong>有上级和下级两个词。它们在 UML 里称为“角色”&#xff08;role&#xff09;&#xff0c;没有角色我们无法明确上下级的多重性</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-06-99e8921309.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_37"></a>关联多重性【标记】</h4>
+<p>关联多重性主要表示两个实体之间的数量对应关系&#xff0c;我们通常会更细化一些&#xff0c;例如&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-07-44a02d352d.png" loading="lazy"></p>
+<ul><li><code>0..1</code>表示&#xff1a;一个下级可以没有上级&#xff0c;最多只能有一个上级</li><li><code>1..1</code>表示&#xff0c;一个员工最少要属于一个组织&#xff0c;最多也只能属于一个组织</li><li><code>0..*</code>表示&#xff1a;一个组织最少有 0 个员工&#xff0c;最多可以有很多员工</li></ul>
+<h4><a rel="noopener noreferrer" id="_45"></a>识别操作【标记】</h4>
+<p>操作&#xff08;operation&#xff09;在 UML 里也叫方法&#xff08;method&#xff09;。对象的属性是静态的值&#xff0c;而操作是动态的逻辑。<strong>在 UML 中&#xff0c;操作用“操作名 &#43; 括号”的方式表示&#xff0c;括号中可以写参数</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-08-a6a241e4f4.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_49"></a>实体多关联【标记】</h4>
+<p><strong>两个实体之间&#xff0c;可以有多个关联。不同的关联代表不同含义&#xff0c;数量关系也可以不同&#xff0c;可以用角色名来区分</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-09-dc3ee4c6b7.png" loading="lazy"></p>
+<ul><li><strong>员工与项目的多对多关系</strong>&#xff1a;一个员工&#xff08;角色为项目成员&#xff09;可以被分配到多个项目上&#xff0c;一个项目上又可以有多个员工</li><li><strong>员工与项目的一对多关系</strong>&#xff1a;一个员工&#xff08;角色为项目经理&#xff09;可以被分配到多个项目上&#xff0c;一个项目只能有一个项目经理</li></ul>
+<h4><a rel="noopener noreferrer" id="_55"></a>拆分多对多关联【技巧】</h4>
+<p>某些情况下我们需要拆分多对多关联为两个一对多关联&#xff0c;一般有如下三种情况&#xff1a;</p>
+<ol><li><strong>关联实体自身也有值得关注的属性</strong>【store_with_coop】<font color="red"> <strong>商户中的各种实体关系表设计的考虑&#xff0c;独有的包括关系的建立时间、断开时间&#xff0c;关系的状态等</strong></font></li><li><strong>关联实体本身也有业务关注的独立的含义的时候</strong>&#xff08;常常表现为在业务的术语里面有&#xff09;</li><li><strong>多对多关系存在业务规则时&#xff0c;需要拆分出来一个承载的关联实体</strong></li></ol>
+<p>例如项目管理有一个关于投入百分比的规则&#xff0c;那么投入百分比&#xff08;关联实体自身的属性&#xff09;这个属性应该记录在哪个实体上呢&#xff1f;这个百分比既不能记录在员工实体上&#xff0c;也不能记录在项目实体上<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-10-f7d33512ec.png" loading="lazy"><br />
+于是原来的项目成员角色演变成了一个独立的实体&#xff0c;来表达员工和项目之间的多对多关联。预计投入百分比也就自然放在这个实体里面了。注意&#xff0c;这时候&#xff0c;员工和项目成员之间的关联是一对多&#xff0c;项目和项目成员之间也是一对多。</p>
+<h3><a rel="noopener noreferrer" id="3__65"></a>3 将领域对象划分模块</h3>
+<p>当实体和关联复杂化后&#xff0c;就会让我们的认知过载&#xff0c;解决这一问题的方法就是“模块化”。也就是说&#xff0c;把模型中的业务概念组织成若干高内聚的模块&#xff08;module&#xff09;&#xff0c;而模块之间尽量低耦合&#xff0c;在 UML 中&#xff0c;可以用包来表示模块&#xff0c;包的内部可以包含实体&#xff0c;也可以包含另外的包<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-11-fa06549eb6.png" loading="lazy"><br />
+宏观层面我们可以明确大致包间的依赖关系&#xff0c;在 UML 中带箭头的虚线表示依赖&#xff08;dependency&#xff09;关系&#xff0c;箭头由依赖方指向被依赖方&#xff0c;例如项目管理依赖组织管理<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-12-05faf62189.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_72"></a>领域建模的产出</h2>
+<p>领域建模的产物主要有两个&#xff0c;一个是统一语言词汇表&#xff0c;一个是事件风暴时的业务规则表的继续完善。</p>
+<h3><a rel="noopener noreferrer" id="UL_74"></a>UL词汇表</h3>
+<p>把事件风暴和领域模型中重要的词汇列成表&#xff0c;这么做主要有两个目的&#xff1a;</p>
+<ul><li><strong>我们需要通过词汇表来规范领域模型中的词汇</strong></li><li><strong>可以用于后续编程中的命名</strong>。按照 DDD 的要求&#xff0c;程序中的各种命名也需要统一&#xff0c;并且需要与领域模型中保持一致<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-13-00423ea518.png" loading="lazy"></li></ul>
+<h3><a rel="noopener noreferrer" id="_81"></a>业务规则表</h3>
+<p>我们在做事件风暴时就开始识别业务规则了&#xff0c;在领域建模中又识别出了更多的规则&#xff0c;所以现在我们需要把这些规则补充到业务规则表<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141534892-14-a0c18fe6f2.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_84"></a>总结一下</h2>
+<p>同事件风暴一样领域建模也是在模型建立阶段&#xff0c;但更进一步的&#xff0c;领域建模不仅要对业务进行直观模拟&#xff0c;更要经过提炼&#xff0c;形成浓缩的知识&#xff0c;使模型中的知识不再停留在业务的表面&#xff0c;而是深入到业务的本质&#xff0c;进而加入技术视角选择最合适的建模方案。可以理解为是对事件风暴的技术性加工&#xff0c;使用UML图的一些标记例如&#xff1a;注释、约束、多重性、自关联、多关联、角色以及一些技巧如&#xff1a;多对多关联拆分、抽象化实体、模块化来进行领域建模。最后完善业务规则表建立UL词汇表。一个比较深的体会是对于多对多关联拆分的考虑&#xff0c;例如业务事件阶段的【门店、合作】以领域名词的形式候选为实体&#xff0c;在领域建模阶段明确其多重性为多对多关系&#xff08;一个合作可以有多个门店&#xff0c;附加时间维度一个门店不同时候也可以属于不同合作&#xff09;&#xff0c;但门店的合作包含其特有的合作周期和签约信息&#xff0c;这部分信息放到合作还是门店都不合适&#xff0c;于是需要增加关联实体【门店合作信息】将多对多关联拆分来记录关联特有的属性。</p>

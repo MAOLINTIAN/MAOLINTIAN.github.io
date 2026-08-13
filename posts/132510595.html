@@ -1,0 +1,243 @@
+<p>从今天开始进行高频算法的训练&#xff0c;一方面训练自己的逻辑思维&#xff0c;一方面保持自己的竞争力。训练过程有这么两个基准原则&#xff1a;</p>
+<ul><li>首先训练题的来源呢有三个&#xff0c;首选的是三个都出现过的高频题&#xff0c;以&#xff1a;<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客101</strong></a>为基准分类&#xff0c;然后在<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>中找近一年内出现频率最多的牛客中该分类的题目&#xff0c;还有就是<a href="https://leetcode.cn/problemset/all/?page&#61;1&amp;topicSlugs&#61;linked-list&amp;listId&#61;2cktkvj" rel="nofollow"><strong>LeetCode热题100</strong></a>&#xff0c;这个按照最低参考度考虑。</li><li>其次同一篇Blog里记录相关性较强的题&#xff0c;可以理解为普通-升级-再升级。例如当前这篇&#xff1a;反转链表-区间反转链表-K个一组反转链表</li></ul>
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;<strong>程序员永不失业&#xff0c;程序员走向架构</strong>&#xff01;首先&#xff0c;链表对应的数据结构在这篇Blog中&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/115109212" rel="nofollow"><strong>【基本数据结构 一】线性数据结构&#xff1a;链表</strong></a>&#xff0c;基于对基础知识的理解来进行题目解答。<br /> <img alt="在这里插入图片描述" src="./posts/assets/132510595-01-c1e86700bc.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="EASY_8"></a>反转链表【EASY】</h2>
+<p>先来个easy版本</p>
+<h3><a rel="noopener noreferrer" id="_10"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132510595-02-5cb27e91b6.png" loading="lazy"></p>
+<p>输入输出示例&#xff1a;</p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">}</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+复制
+
+<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+
+说明&#xff1a;空链表则输出空
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_35"></a>解题思路</h3>
+<p><font color="red">迭代方式</font>&#xff0c;比较简单&#xff0c;就是用双指针一直向后滑动&#xff0c;将引用方向反转&#xff0c;特别需要注意的是&#xff0c;由于下一个节点会因为在反转过程中断掉&#xff0c;所以需要用临时节点记录下一个节点的位置。<br /> <img alt="在这里插入图片描述" src="./posts/assets/132510595-03-5ef486c92e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_40"></a>代码实现</h3>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token comment">/*
+public class ListNode {
+    int val;
+    ListNode next &#61; null;
+
+    ListNode(int val) {
+        this.val &#61; val;
+    }
+}*/</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> <span class="token class-name">ReverseList</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 如果为空列表&#xff0c;返回null</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>head <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义双指针</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> pre <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>cur <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 存储下一个节点</span>
+            <span class="token class-name">ListNode</span>  pNext <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token comment">// 当前节点指向上一个[局部反转]</span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pre<span class="token punctuation">;</span>
+            <span class="token comment">// 双指针向后移动</span>
+            pre <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+            cur<span class="token operator">&#61;</span> pNext<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> pre<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_80"></a>复杂度分析</h3>
+<p><strong>时间复杂度O(N)</strong>&#xff1a;遍历了一遍链表&#xff1b; <strong>空间复杂度O(1)</strong>&#xff1a;常数级空间</p>
+<h2><a rel="noopener noreferrer" id="MID_82"></a>链表内指定区间反转【MID】</h2>
+<p>升级版&#xff0c;链表内指定区间进行反转</p>
+<h3><a rel="noopener noreferrer" id="_84"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132510595-04-cc2c475444.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">4</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">5</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">1</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">5</span><span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_103"></a>解题思路</h3>
+<p><font color="red"><strong>头插法迭代方式</strong></font>&#xff0c;增加如下几个节点或节点指针&#xff1a;</p>
+<ul><li>dummy 原始链表头节点的虚假头节点&#xff0c;<strong>为了避免当head节点位置改变且无明确位置的指针节点不知道该如何返回的情况</strong></li><li>pre指向反转区间前一个节点</li><li>cur指向遍历到的位置&#xff08;虽然他的位置在移动&#xff0c;但是其实一直指向的是同一个节点&#xff0c;即原始链表m处的节点&#xff09;</li><li>pNext 指向cur下一个节点&#xff0c;反转过程就是将这个节点插入到pre的下一个位置</li></ul>
+<p>步骤主要分为两大步骤</p>
+<ol><li>pre和cur同时向后走m步到达要反转的列表区间&#xff0c;pre指向反转区间前一个节点&#xff0c;cur为当前反转子区间的头节点</li><li>进行n-m次的节点反转&#xff0c;每次反转目标都是将pNext移动到pre的后边&#xff0c;分三步</li></ol>
+<p>这三个步骤是&#xff1a;</p>
+<ol><li><code>cur.next &#61; pNext.next;</code>: cur指向下一个待转节点</li><li><code>pNext.next&#61;pre.next</code>: pNext节点指向反转子区间的尾节点&#xff0c;成为反转子区间新的尾节点</li><li><code>pre.next&#61;pNext</code>: pre指向反转子区间新的尾节点pNext</li></ol>
+<p>整体示意图如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/132510595-05-f4d9b5b895.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_123"></a>代码实现</h3>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param head ListNode类
+     * &#64;param m int整型
+     * &#64;param n int整型
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> reverseBetween <span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">,</span> <span class="token keyword">int</span> m<span class="token punctuation">,</span> <span class="token keyword">int</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>head <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 1 设置虚拟头节点[避免当head节点位置改变且无明确位置的指针节点不知道该如何返回的情况]</span>
+        <span class="token class-name">ListNode</span> dummy <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ListNode</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dummy<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 双指针向后移动m步</span>
+        <span class="token class-name">ListNode</span> pre <span class="token operator">&#61;</span> dummy<span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> m<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            pre <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+            cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 3 m到n的区间链表要进行反转[下一个节点和已反转的子区间整体进行反转]</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> m<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> n<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 1 pNext 指向cur下一个节点&#xff0c;反转过程就是将这个节点插入到pre的下一个位置</span>
+            <span class="token class-name">ListNode</span> pNext <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token comment">// 2 cur指向下一个待转节点</span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pNext<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token comment">// 3 pNext节点指向反转子区间的尾节点&#xff0c;成为反转子区间新的尾节点</span>
+            pNext<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pre<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token comment">// 4 pre指向反转子区间新的尾节点pNext</span>
+            pre<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pNext<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> dummy<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_182"></a>复杂度分析</h3>
+<p><strong>时间复杂度O(N)</strong>&#xff1a;遍历了一遍链表&#xff1b; <strong>空间复杂度O(1)</strong>&#xff1a;常数级空间</p>
+<h2><a rel="noopener noreferrer" id="kHARD_184"></a>链表中的节点每k个一组翻转【HARD】</h2>
+<p>再升级&#xff0c;K个一组反转</p>
+<h3><a rel="noopener noreferrer" id="_186"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132510595-06-6efea6e341.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token number">2</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token number">1</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_205"></a>解题思路</h3>
+<p><font color="red"><strong>递归方式</strong></font>&#xff0c;我们这时候可以用到自上而下再自下而上的递归或者说栈。如果这个链表有n个分组可以反转&#xff0c;我们首先对第一个分组反转&#xff0c;那么接下来将剩余n-1个分组&#xff0c;n−1个分组反转后的结果接在第一组后面就行了&#xff0c;那这剩余的n−1组就是一个子问题。使用递归的三段式模版&#xff1a;</p>
+<ul><li><strong>终止条件</strong>&#xff1a; 当进行到最后一个分组&#xff0c;即不足k次遍历到链表尾&#xff08;0次也算&#xff09;&#xff0c;就将剩余的部分直接返回。</li><li><strong>返回值</strong>&#xff1a; 每一级要返回的就是翻转后的这一分组的头&#xff0c;以及连接好它后面所有翻转好的分组链表。</li><li><strong>本级任务</strong>&#xff1a; 对于每个子问题&#xff0c;先遍历k次&#xff0c;找到该组结尾在哪里&#xff0c;然后从这一组开头遍历到结尾&#xff0c;依次翻转&#xff0c;结尾就可以作为下一个分组的开头&#xff0c;而先前指向开头的元素已经跑到了这一分组的最后&#xff0c;可以用它来连接它后面的子问题&#xff0c;即后面分组的头。</li></ul>
+<p>具体做法&#xff1a;</p>
+<ul><li>步骤一&#xff1a;每次从进入函数的头节点优先遍历链表k次&#xff0c;分出一组&#xff0c;若是后续不足k个节点&#xff0c;不用反转直接返回头。</li><li>步骤二&#xff1a;从进入函数的头节点开始&#xff0c;依次反转接下来的一组链表&#xff0c;反转过程直接使用链表反转的算法。</li><li>步骤三&#xff1a;这一组经过反转后&#xff0c;原来的头变成了尾&#xff0c;后面接下一组的反转结果&#xff0c;下一组采用上述递归继续。</li></ul>
+<p>整个过程如图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/132510595-07-b6318c4796.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_219"></a>代码实现</h3>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>递归</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param head ListNode类
+     * &#64;param k int整型
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> reverseKGroup <span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">,</span> <span class="token keyword">int</span> k<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义分组尾节点</span>
+        <span class="token class-name">ListNode</span> tail <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token comment">// 2 划分本级处理的区间反转子任务</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> k<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tail <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-1 任务停止条件是区间不足K个节点&#xff0c;此时直接返回这些节点即可</span>
+                <span class="token keyword">return</span> head<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            tail <span class="token operator">&#61;</span> tail<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+         <span class="token comment">// 3 处理本级区间反转任务</span>
+        <span class="token class-name">ListNode</span> newHead <span class="token operator">&#61;</span> <span class="token function">reverse</span><span class="token punctuation">(</span>head<span class="token punctuation">,</span> tail<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//  4 剩余区间继续递归反转&#xff0c;直到全部反转</span>
+        head<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> <span class="token function">reverseKGroup</span><span class="token punctuation">(</span>tail<span class="token punctuation">,</span> k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> newHead<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">ListNode</span> <span class="token function">reverse</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> head<span class="token punctuation">,</span> <span class="token class-name">ListNode</span> tail<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ListNode</span> pre <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> head<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>cur <span class="token operator">!&#61;</span> tail<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">ListNode</span> pNext <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pre<span class="token punctuation">;</span>
+            pre <span class="token operator">&#61;</span> cur<span class="token punctuation">;</span>
+            cur <span class="token operator">&#61;</span> pNext<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> pre<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_277"></a>复杂度分析</h3>
+<p><strong>时间复杂度O(N)</strong>&#xff1a;遍历了一遍链表&#xff1b; <strong>空间复杂度O(N/K)</strong>&#xff1a;递归最大的栈深度&#xff0c;</p>
+<h2><a rel="noopener noreferrer" id="_279"></a>拓展&#xff1a;递归和迭代的区别</h2>
+<p>递归&#xff08;Recursion&#xff09;和迭代&#xff08;Iteration&#xff09;都是两种解决问题的方法&#xff0c;它们在实现方式和思维方式上有一些区别。</p>
+<p><strong>递归</strong>&#xff1a;<br /> 递归是一种通过将问题分解成更小的子问题来解决问题的方法。在递归中&#xff0c;函数会调用自身来解决子问题&#xff0c;直到达到基本情况&#xff08;递归终止条件&#xff09;&#xff0c;然后逐层返回结果&#xff0c;最终得到整个问题的解。递归通常在问题的结构具有递归性质时使用&#xff0c;例如树形结构、链式结构等。</p>
+<p>优点&#xff1a;</p>
+<ul><li>可以处理问题的复杂逻辑&#xff0c;将大问题分解为小问题。</li><li>在某些情况下&#xff0c;代码相对简洁易懂。</li></ul>
+<p>缺点&#xff1a;</p>
+<ul><li>递归可能会导致函数调用堆栈的增长&#xff0c;可能导致栈溢出。</li><li>递归的性能可能不如迭代。</li></ul>
+<pre><code class="prism language-java">递归算法的空间复杂度 <span class="token operator">&#61;</span> 每次递归的空间复杂度 <span class="token operator">*</span> 递归深度
+</code></pre>
+<p>为什么要求递归的深度呢&#xff1f;因为每次递归所需的空间都被压到调用栈里&#xff08;这是内存管理里面的数据结构&#xff0c;和算法里的栈原理是一样的&#xff09;&#xff0c;一次递归结束&#xff0c;这个栈就是就是把本次递归的数据弹出去。所以这个栈最大的长度就是递归的深度。</p>
+<p><strong>迭代</strong>&#xff1a;<br /> 迭代是通过循环控制来重复执行一系列操作&#xff0c;从而逐步逼近问题的解。在迭代中&#xff0c;通过在循环体内更新变量的值&#xff0c;逐步推进问题的求解&#xff0c;直到满足特定的条件为止。</p>
+<p>优点&#xff1a;</p>
+<ul><li>迭代通常比递归更节省内存&#xff0c;因为不需要保存多层的函数调用信息。</li><li>性能更高&#xff0c;避免了函数调用的开销。</li></ul>
+<p>缺点&#xff1a;</p>
+<ul><li>在某些情况下&#xff0c;代码可能相对复杂&#xff0c;特别是涉及到复杂的循环控制逻辑。</li></ul>
+<p>在选择使用递归还是迭代时&#xff0c;需要考虑问题的性质、可读性、性能等因素。有些问题更适合用递归解决&#xff0c;而其他问题则更适合用迭代解决。有时候&#xff0c;递归和迭代也可以结合使用&#xff0c;例如一些动态规划问题。</p>

@@ -1,0 +1,19 @@
+<h2><a rel="noopener noreferrer" id="Redis_0"></a>Redis缓存、预热、雪崩、穿透、击穿分别是什么场景</h2>
+<p>可以从客户端请求流程来看待这个问题：<br> <img alt="在这里插入图片描述" src="./posts/assets/158436474-01-9299237e57.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_4"></a>一、缓存穿透</h3>
+<h4><a rel="noopener noreferrer" id="1__6"></a>1. 定义</h4>
+<p>缓存穿透是指<strong>查询一个根本不存在的数据</strong>，导致每次请求都直接落到数据库上，而无法被缓存拦截。由于数据库中也不存在该记录，所以缓存永远不会被写入，导致每一次查询都会穿透缓存直达存储层。</p>
+<h4><a rel="noopener noreferrer" id="2__9"></a>2. 典型场景</h4>
+<ul>
+ <li>恶意攻击：攻击者故意请求大量不存在的 key（如使用随机ID或非法参数）。</li>
+ <li>业务漏洞：用户查询的记录确实已被删除，但代码未做处理。</li>
+ <li>代码缺陷：查询条件不合理，导致数据库返回空结果后未缓存空值。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="3__14"></a>3. 影响</h4>
+<p>当穿透请求量巨大时，数据库会承受巨大的查询压力，可能导致连接耗尽、响应变慢甚至宕机。同时，缓存层形同虚设，失去了保护作用。</p>
+<h4><a rel="noopener noreferrer" id="4__17"></a>4. 解决方案</h4>
+<h5><a rel="noopener noreferrer" id="41__19"></a>4.1 缓存空值</h5>
+<p>当数据库查询结果为空时，仍然将空结果写入缓存，但设置较短的过期时间（如5分钟）。这样后续相同 key 的请求就会被缓存拦截，直接返回空，而不会打到数据库。</p>
+<p><strong>优点</strong>：实现简单，能有效拦截大部分穿透流量。<br> <strong>缺点</strong>：需要额外的存储空间存放空 key；攻击者使用大量不同 key 时，会占用缓存空间。</p>
+<h5><a rel="noopener noreferrer" id="42_Bloom_Filter_25"></a>4.2 布隆过滤器（Bloom Filter）</h5>
+<p>在缓存前加一层布隆</p>

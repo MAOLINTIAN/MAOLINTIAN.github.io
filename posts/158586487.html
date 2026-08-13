@@ -1,0 +1,69 @@
+<p>在现代分布式系统中，集群架构是保证高可用、可扩展和高性能的核心。Elasticsearch、Redis和Kafka作为各自领域的代表，其集群设计体现了不同的分布式系统哲学。本文将详细剖析这三种组件的集群架构，并横向对比它们的设计理念与异同。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="ElasticSearch__5"></a>一、ElasticSearch 集群基础架构</h3>
+<h4><a rel="noopener noreferrer" id="1__7"></a>1 集群组成结构</h4>
+<ul>
+ <li><strong>集群（Cluster）</strong>：由一个或多个节点组成，通过集群名称组织在一起，共同承担数据存储与搜索任务。</li>
+ <li><strong>节点（Node）</strong>：集群中的单个服务器，参与数据存储与查询。每个节点都有唯一标识（节点 ID）。</li>
+ <li><strong>索引（Index）</strong>：具有相似特征的文档集合，类似于关系数据库中的表。</li>
+ <li><strong>分片（Shard）</strong>：索引被拆分成多个物理单元，每个分片是一个独立的 Lucene 索引。分片分为主分片（Primary Shard）和副本分片（Replica Shard）。</li>
+ <li><strong>副本（Replica）</strong>：主分片的拷贝，用于提高数据可用性和查询并发能力。副本分片不能与主分片分配在同一节点。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="2__15"></a>2 节点类型与角色</h4>
+<p>ES 节点通过配置文件中的角色标识决定其职责。主要节点类型如下：</p>
+<table>
+ <thead>
+  <tr>
+   <th>节点类型</th>
+   <th>角色标识</th>
+   <th>作用</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><strong>候选主节点</strong></td>
+   <td><code>node.master: true</code></td>
+   <td>参与主节点选举，持有集群状态。生产环境通常配置多个，形成高可用“裁决团”。</td>
+  </tr>
+  <tr>
+   <td><strong>数据节点</strong></td>
+   <td><code>node.data: true</code></td>
+   <td>存储数据分片，执行数据相关的 CRUD、聚合等操作，对 CPU、内存、IO 要求较高。</td>
+  </tr>
+  <tr>
+   <td><strong>协调节点</strong></td>
+   <td><code>node.master: false</code><br><code>node.data: false</code></td>
+   <td>接收客户端请求，路由到数据节点，合并结果返回。不存储数据，不参与选举。可作为专用节点独立部署。</td>
+  </tr>
+  <tr>
+   <td><strong>Ingest 节点</strong></td>
+   <td><code>node.ingest: true</code></td>
+   <td>数据预处理节点，可在索引前对文档进行转换、 enrichment 等。生产可按需开启。</td>
+  </tr>
+ </tbody>
+</table>
+<p><strong>默认情况下</strong>，未显式配置的节点会同时具备 <code>master</code>（候选）、<code>data</code>、<code>ingest</code> 角色。但在生产环境中，强烈建议<strong>角色分离</strong>，以避免主节点因数据负载过重而变得不稳定。</p>
+<hr>
+<h4><a rel="noopener noreferrer" id="3__30"></a>3 生产实践中的节点配置</h4>
+<p>专用主节点，专用数据节点，专用协调节点</p>
+<p><strong>1 专用主节点（Master-eligible Nodes）</strong></p>
+<ul>
+ <li><strong>作用</strong>：组成“裁决团”，负责集群元数据管理、分片分配、节点加入/离开等。它们不存储数据，仅维护集群状态并参与选主。</li>
+ <li><strong>配置示例</strong>（<code>elasticsearch.yml</code>）：<pre><code class="prism language-yaml"><span class="token key atrule">node.master</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+<span class="token key atrule">node.data</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+<span class="token key atrule">node.ingest</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+</code></pre> </li>
+ <li><strong>数量与规格</strong>：
+  <ul>
+   <li>通常部署 <strong>3 台</strong>（奇数，保证多数派），可容忍 1 台故障。</li>
+   <li>规格要求：CPU 中等，内存不必太大（8-16GB 足够），磁盘不需要大容量（仅存日志和元数据）。</li>
+   <li>JVM 堆内存设置为物理内存的一半，不超过 32GB。</li>
+  </ul> </li>
+</ul>
+<p><strong>2 专用数据节点（Data Nodes）</strong></p>
+<ul>
+ <li><strong>作用</strong>：承担所有数据存储与查询负载。</li>
+ <li><strong>配置示例</strong>：<pre><code class="prism language-yaml"><span class="token key atrule">node.master</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+<span class="token key atrule">node.data</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+<span class="token key atrule">node.ingest</span></code></pre></li>
+</ul>

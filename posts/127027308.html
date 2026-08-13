@@ -1,0 +1,462 @@
+<p>前面学习了这么多重构相关的知识&#xff0c;比如&#xff1a;<strong>持续重构、单元测试、代码的可测试性、解耦、编码规范</strong>。都是在理论层面&#xff0c;而重构本身是一个实战的事儿&#xff0c;所以如何将这些理论运用到实践中至关重要&#xff0c;否则只能是纸上谈兵。今天用一个案例case来串联之前学习的重构&#xff0c;来做到融汇贯通。</p>
+<h2><a rel="noopener noreferrer" id="CASE_1"></a>CASE背景</h2>
+<p>后端开发中&#xff0c;为了方便在请求出错时排查问题&#xff0c;我们在编写代码的时候会在关键路径上打印日志。某个请求出错之后&#xff0c;希望能搜索出这个请求对应的所有日志&#xff0c;以此来查找问题的原因。而实际情况是&#xff0c;在日志文件中&#xff0c;不同请求的日志会交织在一起。如果没有东西来标识哪些日志属于同一个请求&#xff0c;就无法关联同一个请求的所有日志。每次打印日志的时候可以从请求上下文中取出请求 ID&#xff0c;跟日志一块输出。这样&#xff0c;同一个请求的所有日志都包含同样的请求 ID 信息&#xff0c;就可以通过请求 ID 来搜索同一个请求的所有日志了。ID生成器的简单设计的代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>service</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>org<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>internal<span class="token punctuation">.</span></span><span class="token class-name">Logger</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>org<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>internal<span class="token punctuation">.</span></span><span class="token class-name">LoggerFactory</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>net<span class="token punctuation">.</span></span><span class="token class-name">InetAddress</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>net<span class="token punctuation">.</span></span><span class="token class-name">UnknownHostException</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Random</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ 1. &#64;author tianmaolin004
+ 2. &#64;date 2022/9/24
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">IdGenerator</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Logger</span> logger <span class="token operator">&#61;</span> <span class="token class-name">LoggerFactory</span><span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span><span class="token class-name">IdGenerator</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">String</span> id <span class="token operator">&#61;</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">String</span> hostName <span class="token operator">&#61;</span> <span class="token class-name">InetAddress</span><span class="token punctuation">.</span><span class="token function">getLocalHost</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tokens <span class="token operator">&#61;</span> hostName<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">&#34;\\.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tokens<span class="token punctuation">.</span>length <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                hostName <span class="token operator">&#61;</span> tokens<span class="token punctuation">[</span>tokens<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span> randomChars <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+            <span class="token class-name">Random</span> random <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span>count <span class="token operator">&lt;</span> <span class="token number">8</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">int</span> randomAscii <span class="token operator">&#61;</span> random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span><span class="token number">122</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>randomAscii <span class="token operator">&gt;&#61;</span> <span class="token number">48</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token number">57</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    randomChars<span class="token punctuation">[</span>count<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token char">&#39;0&#39;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>randomAscii <span class="token operator">-</span> <span class="token number">48</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    count<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>randomAscii <span class="token operator">&gt;&#61;</span> <span class="token number">65</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token number">90</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    randomChars<span class="token punctuation">[</span>count<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token char">&#39;A&#39;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>randomAscii <span class="token operator">-</span> <span class="token number">65</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    count<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>randomAscii <span class="token operator">&gt;&#61;</span> <span class="token number">97</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token number">122</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    randomChars<span class="token punctuation">[</span>count<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token char">&#39;a&#39;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>randomAscii <span class="token operator">-</span> <span class="token number">97</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    count<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            id <span class="token operator">&#61;</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">&#34;%s-%d-%s&#34;</span><span class="token punctuation">,</span> hostName<span class="token punctuation">,</span>
+                    <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span>randomChars<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">UnknownHostException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            logger<span class="token punctuation">.</span><span class="token function">warn</span><span class="token punctuation">(</span><span class="token string">&#34;Failed to get the host name.&#34;</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> id<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>整个 ID 由三部分组成。第一部分是本机名的最后一个字段。第二部分是当前时间戳&#xff0c;精确到毫秒。第三部分是 8 位的随机字符串&#xff0c;包含大小写字母和数字&#xff0c;打印测试如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/127027308-01-f4fbe114e7.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_57"></a>代码诊断</h2>
+<p>代码问题的排查分为常规检查和业务检查</p>
+<h3><a rel="noopener noreferrer" id="CheckList_59"></a>常规检查CheckList</h3>
+<p>从通用的标准&#xff0c;也就是本专栏追求的最高目标就是&#xff1a;看这段代码是否<strong>可读、可扩展、可维护、灵活、简洁、可复用、可测试</strong>&#xff0c;具体的判断标准就是&#xff1a;</p>
+<ol><li><strong>目录设置是否合理、模块划分是否清晰、代码结构是否合理</strong>&#xff0c;<font color="red"><strong>整体结构考虑OK么</strong>&#xff1f;</font></li><li><strong>是否遵循经典的设计原则&#xff08;SOLID、DRY、KISS、YAGNI、LOD&#xff09;、设计思想&#xff08;封装、继承、抽象、多态、控制反转、高内聚-松耦合、基于接口而非实现编程&#xff0c;多用组合少用继承&#xff09;</strong>&#xff0c;<strong>设计模式是否应用得当&#xff0c;是否有过度设计</strong>&#xff0c;<font color="red"><strong>有明显违反理论的地方么</strong>&#xff1f;</font></li><li><strong>代码是否容易扩展&#xff0c;如果要添加新功能&#xff0c;是否容易实现</strong>&#xff0c;<font color="red"><strong>好改么&#xff0c;好加功能么</strong>&#xff1f;</font></li><li><strong>代码是否可以复用&#xff0c;是否可以复用已有的项目代码或类库&#xff1f;是否有重复造轮子&#xff08;违反DRY&#xff09;</strong>&#xff0c;<font color="red"><strong>能抽出来么&#xff0c;通用么</strong>&#xff1f;</font></li><li><strong>代码是否容易测试&#xff0c;单元测试是否全面覆盖了各种正常和异常的情况</strong>&#xff0c;<font color="red"><strong>好测试么&#xff0c;mock难度高么</strong>&#xff1f;</font></li><li><strong>代码是否易读&#xff0c;是否符合编码规范&#xff08;比如命名和注释是否恰当、代码风格是否一致等&#xff09;</strong>&#xff0c;<font color="red"><strong>命名注释ok么&#xff0c;代码风格和编码技巧ok么</strong>&#xff1f;</font></li></ol>
+<p>第1条是从结构划分上考虑&#xff0c;第2条是从理论层面上考虑&#xff0c;后边4条是从编码感觉上考虑。说到设计原则&#xff0c;这里顺便再回顾下之前学习的设计原则</p>
+<table><thead><tr><th>设计原则</th><th>应用范围</th><th>看待视角</th><th>解决什么问题</th></tr></thead><tbody><tr><td>SRP单一职责原则</td><td>模块、类&#xff08;接口&#xff09;、方法</td><td>实体自身视角</td><td>提高代码的内聚性&#xff0c;<font color="red"><strong>可复用性、可读性、可维护性</strong></font></td></tr><tr><td>OCP开闭原则</td><td>模块、类&#xff08;接口&#xff09;、方法</td><td>实体自身视角</td><td>提高代码的<font color="red"><strong>可扩展</strong></font></td></tr><tr><td>LSP里氏替换原则</td><td>类&#xff08;接口&#xff09;</td><td>父子间关系视角</td><td>指导<font color="red"><strong>子类设计、继承设计</strong></font></td></tr><tr><td>ISP接口隔离原则</td><td>接口</td><td>实体间关系视角</td><td>降低调用者或使用者依赖&#xff0c;提升接口的<font color="red"><strong>可复用性、可读性、可维护性</strong></font></td></tr><tr><td>DIP依赖反转原则</td><td>模块</td><td>框架设计视角</td><td>指导<font color="red"><strong>框架设计</strong></font></td></tr><tr><td>KISS保持简单原则</td><td>方法</td><td>全局视角</td><td>提高代码的<font color="red"><strong>简洁性、可读性、可维护性</strong></font></td></tr><tr><td>YAGNI勿过度设计原则</td><td>类&#xff08;接口&#xff09;、方法</td><td>全局视角</td><td>不过度设计只预留扩展<font color="red"><strong>防止降低代码的可读性和可维护性</strong></font></td></tr><tr><td>DRY勿重复编码原则</td><td>类&#xff08;接口&#xff09;、方法</td><td>全局视角</td><td>去除重复代码 <font color="red"><strong>防止降低代码的可读性和可维护性</strong></font></td></tr><tr><td>LOD迪米特法则</td><td>类&#xff08;接口&#xff09;</td><td>实体间关系视角</td><td>防止类间过度依赖&#xff0c;降低代码的耦合性&#xff0c;提高代码的<font color="red"><strong>可读性和可维护性</strong></font></td></tr></tbody></table>
+<p>参照常规检查对ID生成器进行检查</p>
+<ol><li>IdGenerator 的代码比较简单&#xff0c;只有一个类&#xff0c;所以&#xff0c;不涉及目录设置、模块划分、代码结构问题</li><li>IdGenerator 功能单一&#xff0c;不违反基本的 SOLID、DRY、KISS、YAGNI、LOD 等设计原则。它没有应用设计模式&#xff0c;所以也不存在不合理使用和过度设计的问题。不过IdGenerator 设计成了实现类而非接口&#xff0c;调用者直接依赖实现而非接口&#xff0c;<font color="blue"><strong>违反基于接口而非实现编程的设计思想</strong></font></li><li>IdGenerator功能单一&#xff0c;没有复杂分支&#xff0c;也暂时不需要扩展</li><li>IdGenerator生成业务要求格式的唯一ID&#xff0c;所以没有重复造轮子</li><li>IdGenerator 的 <code>generate</code> 函数定义为静态函数&#xff0c;会影响使用该函数的代码的可测试性。同时&#xff0c;<code>generate</code> 函数的代码实现依赖运行环境&#xff08;本机名&#xff09;、时间函数、随机函数&#xff0c;所以 <code>generate</code>函数本身的可测试性也不好&#xff0c;需要做比较大的重构。<font color="blue"><strong>代码可测试性不高&#xff0c;同时也没有单元测试</strong></font></li><li>虽然 IdGenerator 只包含一个函数&#xff0c;并且代码行数也不多&#xff0c;但代码的可读性并不好。特别是随机字符串生成的那部分代码&#xff0c;一方面&#xff0c;代码完全没有注释&#xff0c;生成算法比较难读懂&#xff0c;另一方面&#xff0c;代码里有很多魔法数&#xff0c;严重影响代码的可读性。<font color="blue"><strong>代码可读性差&#xff0c;不规范</strong></font></li></ol>
+<p>以上为通用checklist检查出来的问题</p>
+<h3><a rel="noopener noreferrer" id="CheckList_93"></a>业务检查CheckList</h3>
+<p>以上是一些通用的关注点&#xff0c;可以作为常规检查项&#xff0c;套用在任何代码的重构上。除此之外&#xff0c;我们还要关注代码实现是否满足业务本身特有的功能和非功能需求</p>
+<ol><li>代码是否实现了预期的业务需求&#xff0c;<font color="red"><strong>功能满足么</strong>&#xff1f;</font></li><li>逻辑是否正确&#xff0c;是否处理了各种异常情况&#xff0c;<font color="red"><strong>异常情况都hold住么&#xff0c;异常抛出方式合理么</strong>&#xff1f;</font></li><li>日志打印是否得当&#xff0c;是否方便 debug 排查问题&#xff0c;<font color="red"><strong>好查问题么</strong>&#xff1f;</font></li><li>接口是否易用&#xff0c;是否支持幂等、事务等&#xff0c;<font color="red"><strong>简明稳定么&#xff0c;可以重复调用么</strong>&#xff1f;</font></li><li>代码是否存在并发问题&#xff0c;是否线程安全&#xff0c;<font color="red"><strong>高并发下扛的住么</strong>&#xff1f;</font></li><li>性能是否有优化空间&#xff0c;比如&#xff0c;SQL、算法是否可以优化&#xff0c;<font color="red"><strong>性能还能更好么</strong>&#xff1f;</font></li><li>是否有安全漏洞&#xff0c;比如输入输出校验是否全面&#xff1f;<font color="red"><strong>质量高么&#xff0c;容易出错么</strong>&#xff1f;</font></li></ol>
+<p>有了以上的checklist就可以来校验代码到底行不行了。</p>
+<ol><li> <p>虽然代码生成的 ID 并非绝对的唯一&#xff0c;但是对于追踪打印日志来说&#xff0c;是可以接受小概率 ID 冲突的&#xff0c;满足预期的业务需求</p> </li><li> <p>获取 hostName 这部分代码逻辑有点问题&#xff0c;并未处理hostName为空的情况&#xff0c;同时尽管代码中针对获取不到本机名的情况做了异常处理&#xff0c;但是对异常的处理是在 IdGenerator 内部将其吐掉&#xff0c;然后打印一条报警日志&#xff0c;并没有继续往上抛出&#xff0c;<font color="blue"><strong>没有处理所有异常情况&#xff0c;异常抛出的方式也不合理</strong></font></p> </li><li> <p>日志打印得当&#xff0c;日志描述能够准确反应问题&#xff0c;方便 debug&#xff0c;并且没有过多的冗余日志</p> </li><li> <p>IdGenerator 只暴露一个 generate() 接口供使用者使用&#xff0c;接口的定义简单明了&#xff0c;不存在不易用问题</p> </li><li> <p>generate函数代码中没有涉及共享变量&#xff0c;所以代码线程安全&#xff0c;多线程环境下调用 <code>generate</code>函数不存在并发问题</p> </li><li> <p>ID 的生成不依赖外部存储&#xff0c;在内存中生成&#xff0c;并且日志的打印频率也不会很高&#xff0c;所以性能没有大问题&#xff0c;有些小问题</p>
+  <ul><li>每次生成 ID 都需要获取本机名&#xff0c;获取主机名会比较耗时&#xff0c;这部分可以考虑优化一下。</li><li>randomAscii 的范围是 <code>0&#xff5e;122</code>&#xff0c;但可用数字仅包含三段子区间<code>&#xff08;0~9&#xff0c;a~z&#xff0c;A~Z&#xff09;</code>&#xff0c;极端情况下会随机生成很多三段区间之外的无效数字&#xff0c;需要循环很多次才能生成随机字符串&#xff0c;所以随机字符串的生成算法也可以优化一下</li></ul> </li><li> <p>没有输入参数&#xff0c;没有大的安全漏洞。</p> </li></ol>
+<p>经过常规和业务两轮代码诊断后&#xff0c;可以着手重构处理这些问题</p>
+<h2><a rel="noopener noreferrer" id="_119"></a>代码重构</h2>
+<p>问题分析出来后&#xff0c;开始基于重构的手段进行重构。重构要循序渐进、小步快跑&#xff0c;每次改动一点点&#xff0c;改好之后&#xff0c;再进行下一轮的优化&#xff0c;保证每次对代码的改动不会过大&#xff0c;能在很短的时间内完成。</p>
+<ul><li>第一轮重构&#xff1a;提高代码的可读性&#xff1a;扩展接口&#xff0c;命名优化&#xff0c;代码优化</li><li>第二轮重构&#xff1a;提高代码的可测试性&#xff1a;干掉静态方法&#xff0c;剥离依赖&#xff0c;减少方法未决行为</li><li>第三轮重构&#xff1a;编写完善的单元测试</li><li>第四轮重构&#xff1a;提高代码的可读性&#xff1a;重构拆分方法后添加注释</li><li>第五轮重构&#xff1a;正确处理异常和抛出异常</li></ul>
+<p>接下来按照重构计划有序执行&#xff01;</p>
+<h3><a rel="noopener noreferrer" id="_128"></a>第一轮重构&#xff1a;提高代码可读性</h3>
+<p>首先&#xff0c;要解决最明显、最急需改进的代码可读性问题。具体有下面几点&#xff1a;</p>
+<ol><li>对 IdGenerator 类重命名&#xff0c;并且抽象出对应的接口。<strong><code>IdGenerator</code>为整体功能接口&#xff0c;<code>LogTraceIdGenerator</code>继承<code>IdGenerator</code>&#xff0c;从功能的角度上进行细分&#xff0c;然后实现类从实现方式的角度实现接口 <code>LogTraceIdGenerator</code>&#xff0c;命名为 <code>RandomIdGenerator</code>即可</strong>&#xff0c;实现方式还可以拓展&#xff0c;例如&#xff1a;<code>SequenceIdGenerator</code></li><li>hostName 变量不应该被重复使用&#xff0c;尤其当这两次使用时的含义还不同的时候&#xff1b;</li><li>将获取 hostName 的代码抽离出来&#xff0c;定义为 <code>getLastfieldOfHostName</code> 函数&#xff1b;<font color="red"><strong>把代码分割成更小的单元块</strong></font></li><li>删除代码中的魔法数&#xff0c;比如&#xff0c;57、90、97、122&#xff1b;<font color="red"><strong>使用解释型变量</strong></font></li><li>将随机数生成的代码抽离出来&#xff0c;定义为 <code>generateRandomAlphameric</code>函数&#xff1b;<font color="red"><strong>把代码分割成更小的单元块</strong></font></li><li>generate() 函数中的三个 if 逻辑重复且实现过于复杂&#xff0c;要对其进行简化&#xff1b;<font color="red"><strong>使用解释型变量</strong></font></li></ol>
+<p>这部分对应于上篇规范相关Blog: <a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/127024008?spm&#61;1001.2014.3001.5501"><strong>【Java设计模式 规范与重构】 四 小型重构的手段&#xff1a;规范的二十条军规</strong></a>&#xff0c;整体代码重构如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>service</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2022/9/24
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IdGenerator</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>service</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2022/9/24
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">LogTraceIdGenerator</span> <span class="token keyword">extends</span> <span class="token class-name">IdGenerator</span><span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>service</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>org<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>internal<span class="token punctuation">.</span></span><span class="token class-name">Logger</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>org<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>internal<span class="token punctuation">.</span></span><span class="token class-name">LoggerFactory</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>net<span class="token punctuation">.</span></span><span class="token class-name">InetAddress</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>net<span class="token punctuation">.</span></span><span class="token class-name">UnknownHostException</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Random</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2022/9/24
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RandomIdGenerator</span> <span class="token keyword">implements</span> <span class="token class-name">LogTraceIdGenerator</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Logger</span> logger <span class="token operator">&#61;</span> <span class="token class-name">LoggerFactory</span><span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span><span class="token class-name">RandomIdGenerator</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">String</span> substrOfHostName <span class="token operator">&#61;</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">long</span> currentTimeMillis <span class="token operator">&#61;</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> randomString <span class="token operator">&#61;</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">&#34;%s-%d-%s&#34;</span><span class="token punctuation">,</span> substrOfHostName<span class="token punctuation">,</span> currentTimeMillis<span class="token punctuation">,</span> randomString<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">String</span> hostName <span class="token operator">&#61;</span> <span class="token class-name">InetAddress</span><span class="token punctuation">.</span><span class="token function">getLocalHost</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tokens <span class="token operator">&#61;</span> hostName<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">&#34;\\.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> tokens<span class="token punctuation">[</span>tokens<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">UnknownHostException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            logger<span class="token punctuation">.</span><span class="token function">warn</span><span class="token punctuation">(</span><span class="token string">&#34;Failed to get the host name.&#34;</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token keyword">int</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span> randomChars <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">char</span><span class="token punctuation">[</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token class-name">Random</span> random <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>count <span class="token operator">&lt;</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> randomAscii <span class="token operator">&#61;</span> random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span><span class="token char">&#39;z&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> isDigit <span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;0&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;9&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> isUppercase <span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;A&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;Z&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> isLowercase <span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;a&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>isDigit <span class="token operator">||</span> isUppercase <span class="token operator">||</span> isLowercase<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                randomChars<span class="token punctuation">[</span>count<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>randomAscii<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token operator">&#43;&#43;</span>count<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span>randomChars<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<pre><code class="prism language-java">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">IdGenerator</span> idGenerator <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RandomIdGenerator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>idGenerator<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>打印结果为&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/127027308-02-3e41b4a517.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_228"></a>第二轮重构&#xff1a;提高代码可测试性</h3>
+<p>关于代码可测试性的问题&#xff0c;主要包含下面两个方面&#xff1a;</p>
+<ul><li><code>generate</code> 函数定义为静态函数&#xff0c;会影响使用该函数的代码的可测试性&#xff0c;第一个问题已经解决&#xff0c;调用时可以在外部创建好IdGenerator然后实现。</li><li><code>generate</code>函数的代码实现依赖运行环境&#xff08;本机名&#xff09;、时间函数、随机函数&#xff0c;所以 <code>generate</code> 函数本身的可测试性也不好。</li></ul>
+<p>对于第二点&#xff0c;我们需要对RandomIdGenerator 进一步处理&#xff1a;</p>
+<ul><li>从 <code>getLastFieldOfHostName</code>函数中&#xff0c;将逻辑比较复杂的那部分代码剥离出来&#xff0c;定义为 <code>getLastSubstrSplitByDot</code> 函数。因为 <code>getLastFieldOfHostName</code>函数依赖本地主机名&#xff0c;所以&#xff0c;剥离出主要代码之后这个函数变得非常简单&#xff0c;可以不用测试。重点测试 <code>getLastSubstrSplitByDot</code>函数即可。</li><li>将 <code>generateRandomAlphameric</code>和<code>getLastSubstrSplitByDot</code>这两个函数的访问权限设置为 protected。这样做的目的是&#xff0c;可以直接在单元测试中通过对象来调用两个函数进行测试。</li><li>给 <code>generateRandomAlphameric</code>和<code>getLastSubstrSplitByDot</code>两个函数添加 Google Guava 的 annotation <code>&#64;VisibleForTesting</code>。这个 annotation 没有任何实际的作用&#xff0c;只起到标识的作用&#xff0c;告诉其他人说&#xff0c;这两个函数本该是 private 访问权限的&#xff0c;之所以提升访问权限到 protected&#xff0c;只是为了测试&#xff0c;只能用于单元测试中。</li></ul>
+<p>重构后代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>jackson<span class="token punctuation">.</span>service</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>org<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>internal<span class="token punctuation">.</span></span><span class="token class-name">Logger</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>org<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>internal<span class="token punctuation">.</span></span><span class="token class-name">LoggerFactory</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>net<span class="token punctuation">.</span></span><span class="token class-name">InetAddress</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>net<span class="token punctuation">.</span></span><span class="token class-name">UnknownHostException</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Random</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin004
+ * &#64;date 2022/9/24
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RandomIdGenerator</span> <span class="token keyword">implements</span> <span class="token class-name">LogTraceIdGenerator</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Logger</span> logger <span class="token operator">&#61;</span> <span class="token class-name">LoggerFactory</span><span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span><span class="token class-name">RandomIdGenerator</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">String</span> substrOfHostName <span class="token operator">&#61;</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">long</span> currentTimeMillis <span class="token operator">&#61;</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> randomString <span class="token operator">&#61;</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">&#34;%s-%d-%s&#34;</span><span class="token punctuation">,</span> substrOfHostName<span class="token punctuation">,</span> currentTimeMillis<span class="token punctuation">,</span> randomString<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">String</span> hostName <span class="token operator">&#61;</span> <span class="token class-name">InetAddress</span><span class="token punctuation">.</span><span class="token function">getLocalHost</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token function">getLastSubstrSplitByDot</span><span class="token punctuation">(</span>hostName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">UnknownHostException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            logger<span class="token punctuation">.</span><span class="token function">warn</span><span class="token punctuation">(</span><span class="token string">&#34;Failed to get the host name.&#34;</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token annotation punctuation">&#64;VisibleForTesting</span>
+    <span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">getLastSubstrSplitByDot</span><span class="token punctuation">(</span><span class="token class-name">String</span> hostName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tokens <span class="token operator">&#61;</span> hostName<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">&#34;\\.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> tokens<span class="token punctuation">[</span>tokens<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token annotation punctuation">&#64;VisibleForTesting</span>
+    <span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token keyword">int</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span> randomChars <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">char</span><span class="token punctuation">[</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token class-name">Random</span> random <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>count <span class="token operator">&lt;</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> randomAscii <span class="token operator">&#61;</span> random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span><span class="token char">&#39;z&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> isDigit <span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;0&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;9&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> isUppercase <span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;A&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;Z&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">boolean</span> isLowercase <span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;a&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>isDigit <span class="token operator">||</span> isUppercase <span class="token operator">||</span> isLowercase<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                randomChars<span class="token punctuation">[</span>count<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>randomAscii<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token operator">&#43;&#43;</span>count<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span>randomChars<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>打印日志的 Logger 对象被定义为 static final 的&#xff0c;并且在类内部创建&#xff0c;这是否影响到代码的可测试性&#xff1f;是否应该将 Logger 对象通过依赖注入的方式注入到类中呢&#xff1f;依赖注入之所以能提高代码可测试性&#xff0c;主要是因为&#xff0c;通过这样的方式能轻松地用 mock 对象替换依赖的真实对象。而mock对象的原因是这个对象参与逻辑执行&#xff08;比如要依赖它输出的数据做后续的计算&#xff09;但又不可控。对于 Logger 对象来说&#xff0c;<strong>只往里<font color="red"><strong>写入数据&#xff0c;并不读取数据&#xff0c;不参与业务逻辑的执行&#xff0c;不会影响代码逻辑的正确性</strong></font>&#xff0c;所以没有必要 mock Logger 对象。除此之外&#xff0c;一些只是为了存储数据的值对象&#xff0c;比如 String、Map、UseVo&#xff0c;也没必要通过依赖注入的方式来创建&#xff0c;直接在类中通过 new 创建就可以</strong></p>
+<h3><a rel="noopener noreferrer" id="_299"></a>第三轮重构&#xff1a;编写完善的单元测试</h3>
+<p>经过上面的重构之后&#xff0c;代码存在的比较明显的问题&#xff0c;基本上都已经解决了。现在为代码补全单元测试。RandomIdGenerator 类中有 4 个函数</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 不需要测试</span>
+<span class="token annotation punctuation">&#64;VisibleForTesting</span>
+<span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">getLastSubstrSplitByDot</span><span class="token punctuation">(</span><span class="token class-name">String</span> hostName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token annotation punctuation">&#64;VisibleForTesting</span>
+<span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token keyword">int</span> length<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>设计的单元测试如下&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RandomIdGeneratorTest</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token annotation punctuation">&#64;Test</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testGetLastSubstrSplittedByDot</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">RandomIdGenerator</span> idGenerator <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RandomIdGenerator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> actualSubstr <span class="token operator">&#61;</span> idGenerator<span class="token punctuation">.</span><span class="token function">getLastSubstrSplittedByDot</span><span class="token punctuation">(</span><span class="token string">&#34;field1.field2.field3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">assertEquals</span><span class="token punctuation">(</span><span class="token string">&#34;field3&#34;</span><span class="token punctuation">,</span> actualSubstr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    actualSubstr <span class="token operator">&#61;</span> idGenerator<span class="token punctuation">.</span><span class="token function">getLastSubstrSplittedByDot</span><span class="token punctuation">(</span><span class="token string">&#34;field1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">assertEquals</span><span class="token punctuation">(</span><span class="token string">&#34;field1&#34;</span><span class="token punctuation">,</span> actualSubstr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    actualSubstr <span class="token operator">&#61;</span> idGenerator<span class="token punctuation">.</span><span class="token function">getLastSubstrSplittedByDot</span><span class="token punctuation">(</span><span class="token string">&#34;field1#field2#field3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">assertEquals</span><span class="token punctuation">(</span><span class="token string">&#34;field1#field2#field3&#34;</span><span class="token punctuation">,</span> actualSubstr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token annotation punctuation">&#64;Test</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testGenerateRandomAlphameric</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">RandomIdGenerator</span> idGenerator <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RandomIdGenerator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> actualRandomString <span class="token operator">&#61;</span> idGenerator<span class="token punctuation">.</span><span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">assertNotNull</span><span class="token punctuation">(</span>actualRandomString<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">assertEquals</span><span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">,</span> actualRandomString<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">char</span> c <span class="token operator">:</span> actualRandomString<span class="token punctuation">.</span><span class="token function">toCharArray</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">assertTrue</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token char">&#39;0&#39;</span> <span class="token operator">&lt;&#61;</span> c <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;9&#39;</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span><span class="token char">&#39;a&#39;</span> <span class="token operator">&lt;&#61;</span> c <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;z&#39;</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span><span class="token char">&#39;A&#39;</span> <span class="token operator">&lt;&#61;</span> c <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;Z&#39;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>主要看我们该怎么为generate设计单元测试&#xff1a;<font color="red"><strong>写单元测试的时候&#xff0c;测试对象是函数定义的功能&#xff0c;而非具体的实现逻辑。这样我们才能做到&#xff0c;函数的实现逻辑改变了之后&#xff0c;单元测试用例仍然可以工作</strong></font></p>
+<p>比如&#xff0c;针对同一份 generate函数的代码实现&#xff0c;可以有 3 种不同的功能定义&#xff0c;对应 3 种不同的单元测试。</p>
+<ul><li>如果把 generate() 函数的功能定义为&#xff1a;“生成一个随机唯一 ID”&#xff0c;那只要测试多次调用 generate() 函数生成的 ID 是否唯一即可</li><li>如果把 generate() 函数的功能定义为&#xff1a;“生成一个只包含数字、大小写字母和中划线的唯一 ID”&#xff0c;那不仅要测试 ID 的唯一性&#xff0c;还要测试生成的 ID 是否只包含数字、大小写字母和中划线。</li><li>如果把 generate() 函数的功能定义为&#xff1a;“生成唯一 ID&#xff0c;格式为&#xff1a;<code>{主机名 substr}-{时间戳}-{8 位随机数}</code>。在主机名获取失败时&#xff0c;返回&#xff1a;null-{时间戳}-{8 位随机数}”&#xff0c;那不仅要测试 ID 的唯一性&#xff0c;还要测试生成的 ID 是否完全符合格式要求。</li></ul>
+<p><strong>总结一下&#xff0c;单元测试用例如何写&#xff0c;关键看如何定义函数</strong>。针对 generate函数的前两种定义&#xff0c;不需要 mock 获取主机名函数、随机函数、时间函数等&#xff0c;但对于第 3 种定义&#xff0c;需要 mock 获取主机名函数&#xff0c;让其返回 null&#xff0c;测试代码运行是否符合预期</p>
+<h3><a rel="noopener noreferrer" id="_351"></a>第四轮重构&#xff1a;增加注释</h3>
+<p>类或函数包含的逻辑往往比较复杂&#xff0c;单纯靠命名很难清晰地表明实现了什么功能&#xff0c;这个时候就需要通过注释来补充。比如&#xff0c;前面提到的对于 generate函数的 3 种功能定义&#xff0c;就无法用命名来体现&#xff0c;需要补充到注释里面</p>
+<pre><code class="prism language-java">
+<span class="token comment">/**
+ * Id Generator that is used to generate random IDs.
+ *
+ * &lt;p&gt;
+ * The IDs generated by this class are not absolutely unique,
+ * but the probability of duplication is very low.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RandomIdGenerator</span> <span class="token keyword">implements</span> <span class="token class-name">LogTraceIdGenerator</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">Logger</span> logger <span class="token operator">&#61;</span> <span class="token class-name">LoggerFactory</span><span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span><span class="token class-name">RandomIdGenerator</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token comment">/**
+   * Generate the random ID. The IDs may be duplicated only in extreme situation.
+   *
+   * &#64;return an random ID
+   */</span>
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * Get the local hostname and
+   * extract the last field of the name string splitted by delimiter &#39;.&#39;.
+   *
+   * &#64;return the last field of hostname. Returns null if hostname is not obtained.
+   */</span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * Get the last field of {&#64;hostName} splitted by delemiter &#39;.&#39;.
+   *
+   * &#64;param hostName should not be null
+   * &#64;return the last field of {&#64;hostName}. Returns empty string if {&#64;hostName} is empty string.
+   */</span>
+  <span class="token annotation punctuation">&#64;VisibleForTesting</span>
+  <span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">getLastSubstrSplitByDot</span><span class="token punctuation">(</span><span class="token class-name">String</span> hostName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * Generate random string which
+   * only contains digits, uppercase letters and lowercase letters.
+   *
+   * &#64;param length should not be less than 0
+   * &#64;return the random string. Returns empty string if {&#64;length} is 0
+   */</span>
+  <span class="token annotation punctuation">&#64;VisibleForTesting</span>
+  <span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token keyword">int</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>总的来说主要就是写清楚&#xff1a;<font color="red"><strong>做什么、为什么、怎么做、怎么用&#xff0c;对一些边界条件、特殊情况进行说明&#xff0c;以及对函数输入、输出、异常进行说明</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_412"></a>第五轮重构&#xff1a;异常处理</h3>
+<p>函数的运行结果分为两类。一类是预期的结果&#xff0c;也就是函数在正常情况下输出的结果。一类是非预期的结果&#xff0c;也就是函数在异常&#xff08;或叫出错&#xff09;情况下输出的结果&#xff0c;非预期结果可以包括这么几种&#xff1a;<strong>类似 UnknownHostException 的异常对象&#xff0c;错误码、NULL 值、特殊值&#xff08;比如 -1&#xff09;、空对象&#xff08;比如空字符串、空集合&#xff09;等</strong></p>
+<ul><li><strong>返回NULL值</strong>&#xff1a;在多数编程语言中&#xff0c;用 NULL 来表示“不存在”这种语义。对于查找函数来说&#xff0c;数据不存在并非一种异常情况&#xff0c;是一种正常行为&#xff0c;所以返回表示不存在语义的 NULL 值比返回异常更加合理。<font color="red"><strong>没找到就是应该返回NULL</strong></font></li><li><strong>返回空对象</strong>, 当函数返回的数据是<strong>字符串类型</strong>或者<strong>集合类型</strong>的时候&#xff0c;可以用空字符串或空集合替代 NULL 值&#xff0c;来表示不存在的情况。这样&#xff0c;我们在使用函数的时候&#xff0c;就可以不用做 NULL 值判断</li><li><strong>抛出异常对象</strong>&#xff0c;对于函数抛出的异常&#xff0c;我们有三种处理方法&#xff1a;直接吞掉、直接往上抛出、包裹成新的异常抛出</li></ul>
+<p>关于三种抛出异常处理方式</p>
+<blockquote>
+ <p><strong>直接吞掉异常并加日志</strong></p>
+</blockquote>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func1</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception1</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ...</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func2</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//...</span>
+  <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">func1</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">Exception1</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    log<span class="token punctuation">.</span><span class="token function">warn</span><span class="token punctuation">(</span><span class="token string">&#34;...&#34;</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//吞掉&#xff1a;try-catch打印日志</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">//...</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>如果 func1() 抛出的异常是可以恢复&#xff0c;且 func2() 的<strong>调用方并不关心此异常</strong>&#xff0c;我们完全可以在 func2() 内将 func1() 抛出的异常吞掉</p>
+<blockquote>
+ <p><strong>原封不动地 re-throw</strong></p>
+</blockquote>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func1</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception1</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ...</span>
+<span class="token punctuation">}</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func2</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception1</span> <span class="token punctuation">{<!-- --></span><span class="token comment">//原封不动的re-throw Exception1</span>
+  <span class="token comment">//...</span>
+  <span class="token function">func1</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">//...</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>如果 func1() 抛出的异常<strong>对 func2() 的调用方来说&#xff0c;也是可以理解的、关心的 &#xff0c;并且在业务概念上有一定的相关性</strong>&#xff0c;可以选择直接将 func1 抛出的异常 re-throw</p>
+<blockquote>
+ <p><strong>包装成新的异常 re-throw</strong></p>
+</blockquote>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func1</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception1</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// ...</span>
+<span class="token punctuation">}</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">func2</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception2</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//...</span>
+  <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">func1</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">Exception1</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+   <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception2</span><span class="token punctuation">(</span><span class="token string">&#34;...&#34;</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// wrap成新的Exception2然后re-throw</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">//...</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>如果 func1() 抛出的异常太底层&#xff0c;对 func2() 的调用方来说&#xff0c;缺乏背景去理解、且业务概念上无关&#xff0c;可以<strong>将它重新包装成调用方可以理解的新异常&#xff0c;然后 re-throw</strong>。接下来解决异常处理的几个问题&#xff1a;</p>
+<ul><li> <p>对于 <code>getLastSubstrSplittedByDot(String hostName)</code> 函数&#xff0c;如果 hostName 为 NULL 或者是空字符串&#xff0c;这个函数应该返回什么&#xff1f;</p> </li><li> <p>对于 <code>getLastFiledOfHostName()</code> 函数&#xff0c;是否应该将 UnknownHostException 异常在函数内部吞掉&#xff08;try-catch 并打印日志&#xff09;&#xff1f;还是应该将异常继续往上抛出&#xff1f;如果往上抛出的话&#xff0c;是直接把 UnknownHostException 异常原封不动地抛出&#xff0c;还是封装成新的异常抛出&#xff1f;</p> </li><li> <p>对于 <code>generate()</code> 函数&#xff0c;如果本机名获取失败&#xff0c;函数返回什么&#xff1f;这样的返回值是否合理&#xff1f;</p> </li><li> <p>对于 <code>generateRandomAlphameric(int length)</code> 函数&#xff0c;如果 length 小于 0 或者等于 0&#xff0c;这个函数应该返回什么&#xff1f;</p> </li></ul>
+<h4><a rel="noopener noreferrer" id="_485"></a>入参校验&#xff1a;异常、空值、空对象</h4>
+<p>理论上讲&#xff0c;参数传递的正确性应该由调用者&#xff0c;我们无需做 NULL 值或者空字符串的判断和特殊处理&#xff0c;但没法保证&#xff0c;所以可以按如下方式规定&#xff1a;</p>
+<ul><li><strong>如果函数是 private 类私有的&#xff0c;只在类内部被调用</strong>&#xff0c;完全在自己的掌控之下&#xff0c;自己保证在调用这个 private 函数的时候&#xff0c;不要传递 NULL 值或空字符串就可以了。所以&#xff0c;可以不在 private 函数中做 NULL 值或空字符串的判断。</li><li><strong>如果函数是 public 的&#xff0c;无法掌控会被谁调用以及如何调用</strong>&#xff08;有可能某个同事一时疏忽&#xff0c;传递进了 NULL 值&#xff0c;这种情况也是存在的&#xff09;&#xff0c;为了尽可能提高代码的健壮性&#xff0c;最好在 public 函数中做 NULL 值或空字符串的判断</li></ul>
+<p>事实上除了private作用域&#xff0c;我们最好对参数都做一下校验&#xff1a;</p>
+<blockquote>
+ <p>重构 <code>getLastSubstrSplittedByDot(String hostName)</code></p>
+</blockquote>
+<pre><code class="prism language-java">
+  <span class="token annotation punctuation">&#64;VisibleForTesting</span>
+  <span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">getLastSubstrSplittedByDot</span><span class="token punctuation">(</span><span class="token class-name">String</span> hostName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>hostName <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> hostName<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">throw</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span><span class="token string">&#34;...&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//运行时异常</span>
+    <span class="token punctuation">}</span>
+    <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tokens <span class="token operator">&#61;</span> hostName<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">&#34;\\.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> substrOfHostName <span class="token operator">&#61;</span> tokens<span class="token punctuation">[</span>tokens<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> substrOfHostName<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+ <p>重构 <code>generateRandomAlphameric</code></p>
+</blockquote>
+<pre><code class="prism language-java">  <span class="token annotation punctuation">&#64;VisibleForTesting</span>
+  <span class="token keyword">protected</span> <span class="token class-name">String</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token keyword">int</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>length <span class="token operator">&lt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span><span class="token string">&#34;...&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span> randomChars <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">char</span><span class="token punctuation">[</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token class-name">Random</span> random <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span>count <span class="token operator">&lt;</span> length<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">int</span> maxAscii <span class="token operator">&#61;</span> <span class="token char">&#39;z&#39;</span><span class="token punctuation">;</span>
+      <span class="token keyword">int</span> randomAscii <span class="token operator">&#61;</span> random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>maxAscii<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">boolean</span> isDigit<span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;0&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;9&#39;</span><span class="token punctuation">;</span>
+      <span class="token keyword">boolean</span> isUppercase<span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;A&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;Z&#39;</span><span class="token punctuation">;</span>
+      <span class="token keyword">boolean</span> isLowercase<span class="token operator">&#61;</span> randomAscii <span class="token operator">&gt;&#61;</span> <span class="token char">&#39;a&#39;</span> <span class="token operator">&amp;&amp;</span> randomAscii <span class="token operator">&lt;&#61;</span> <span class="token char">&#39;z&#39;</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>isDigit<span class="token operator">||</span> isUppercase <span class="token operator">||</span> isLowercase<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        randomChars<span class="token punctuation">[</span>count<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>randomAscii<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token operator">&#43;&#43;</span>count<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span>randomChars<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这里如果参数校验异常&#xff0c;既可以把它定义为一种异常行为&#xff0c;抛出 IllegalArgumentException 异常&#xff0c;也可以把它定义为一种正常行为&#xff0c;让函数在入参不正确的情况下直接返回空字符串。不管选择哪种处理方式&#xff0c;<strong>最关键的一点是&#xff0c;要在函数注释中&#xff0c;明确告知什么异常的情况下&#xff0c;会返回什么样的数据</strong></p>
+<h4><a rel="noopener noreferrer" id="_rethrow__534"></a>原封不动地 re-throw 异常</h4>
+<p><code>getLastFieldOfHostName()</code> 函数用来获取主机名的最后一个字段&#xff0c;<code>UnknownHostException</code> 异常表示主机名获取失败&#xff0c;两者算是业务相关&#xff0c;所以可以直接将 <code>UnknownHostException</code> 抛出&#xff0c;不需要重新包裹成新的异常&#xff0c;此外&#xff0c;由于调用了<code>getLastSubstrSplittedByDot</code>&#xff0c;所以我们自己也要保证入参的准确性&#xff0c;如下&#xff1a;</p>
+<pre><code class="prism language-java">
+ <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">UnknownHostException</span><span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> substrOfHostName <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> hostName <span class="token operator">&#61;</span> <span class="token class-name">InetAddress</span><span class="token punctuation">.</span><span class="token function">getLocalHost</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>hostName <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> hostName<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token comment">// 此处做判断</span>
+      <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">UnknownHostException</span><span class="token punctuation">(</span><span class="token string">&#34;...&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    substrOfHostName <span class="token operator">&#61;</span> <span class="token function">getLastSubstrSplittedByDot</span><span class="token punctuation">(</span>hostName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> substrOfHostName<span class="token punctuation">;</span>
+ <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_rethrow__549"></a>包装成新的异常 re-throw 异常</h4>
+<p>对于generate函数&#xff0c;如果获取失败&#xff0c;最好需要让业务感知到&#xff0c;函数应该抛出异常&#xff0c;而且由于<code>getLastFieldOfHostName</code>抛出了<code>UnknownHostException</code>异常&#xff0c;所以我们需要捕获&#xff0c;但捕获到后最好再封装一层&#xff0c;而不是直接抛出</p>
+<pre><code class="prism language-java">
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">IdGenerationFailureException</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> substrOfHostName <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+      substrOfHostName <span class="token operator">&#61;</span> <span class="token function">getLastFieldOfHostName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">UnknownHostException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IdGenerationFailureException</span><span class="token punctuation">(</span><span class="token string">&#34;host name is empty.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">long</span> currentTimeMillis <span class="token operator">&#61;</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> randomString <span class="token operator">&#61;</span> <span class="token function">generateRandomAlphameric</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> id <span class="token operator">&#61;</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">&#34;%s-%d-%s&#34;</span><span class="token punctuation">,</span>substrOfHostName<span class="token punctuation">,</span> currentTimeMillis<span class="token punctuation">,</span> randomString<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> id<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+</code></pre>
+<ul><li>调用者在使用 generate() 函数的时候&#xff0c;只需要知道它生成的是随机唯一 ID&#xff0c;并不关心 ID 是如何生成的。也就说是&#xff0c;这是<strong>依赖抽象而非实现编程。如果 generate() 函数直接抛出 UnknownHostException 异常&#xff0c;实际上是暴露了实现细节</strong>。</li><li>从代码封装的角度来讲&#xff0c;<strong>不希望将 UnknownHostException 这个比较底层的异常&#xff0c;暴露给更上层的代码</strong>&#xff0c;也就是调用 generate() 函数的代码。而且&#xff0c;调用者拿到这个异常的时候&#xff0c;并不能理解这个异常到底代表了什么&#xff0c;也不知道该如何处理。</li><li><strong>UnknownHostException 异常跟 generate() 函数&#xff0c;在业务概念上没有相关性</strong>。</li></ul>
+<p>基于以上考虑&#xff0c;我们需要二次封装异常。</p>
+<h2><a rel="noopener noreferrer" id="_571"></a>总结一下</h2>
+<p>用一句话总结一下&#xff0c;重构就是发现代码质量问题&#xff0c;并且对其进行优化的过程。面对一段看起来烂但又不能准确全面的分析的代码时&#xff0c;先依次通过代码诊断的常规检查CheckList和业务检查CheckList将代码问题罗列出来并分类&#xff0c;然后制定多轮重构计划&#xff0c;小步快跑的一轮一轮的重构解决代码问题。这个流程其实也适用于代码CR&#xff0c;在给别人CR代码的时候其实也能按这个方法流程来。</p>

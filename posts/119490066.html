@@ -1,0 +1,201 @@
+<p>在<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/category_10785410.html"><strong>Java Web编程</strong></a>系列的Blog中&#xff0c;我们学习了使用JDBC去通过代码操作数据库&#xff0c;我们知道JDBC是一组规范&#xff0c;一组API&#xff0c;也在使用的过程中发现一些代码控制上的不友好感&#xff0c;例如我们需要自己去写代码控制连接的生命周期&#xff1b;获取到结果集需要自己去转换数据类型再进行模型的设置&#xff1b;sql语句强嵌入到代码中不好维护等等诸多问题。其实这些也是可以理解的&#xff0c;<strong>JDBC只是提供了一组规范&#xff0c;细粒度的解决代码访问数据库这个问题</strong>&#xff0c;最佳实践还仰赖ORM框架来实现&#xff0c;所以其实后续有很多封装的ORM框架作为DAO层和数据库Model的管理者。例如我早期在5年前使用过的Hibernate。当然今时不同往日&#xff0c;现在技术上比较留下的是MyBatis这种半ORM框架&#xff0c;再加上5年前的记忆和理解程度都不算太深了&#xff0c;这次通过MyBatis来再次对这些内容进行一个梳理吧。</p>
+<h2><a rel="noopener noreferrer" id="_2"></a>业务对象和数据对象</h2>
+<p>什么是业务对象&#xff0c;什么又是数据对象&#xff0c;这两个为什么要区分开呢&#xff1f;其实在<a href="https://tianmaolin.blog.csdn.net/article/details/119277565" rel="nofollow"><strong>【Java Web编程 十四】深入理解MVC架构模式</strong></a>中我就将Model有意的区分为两个Model&#xff1a;<br /> <img src="./posts/assets/119490066-ext-49ee84f5bab9.png" alt="在这里插入图片描述"><br /> 这两个Model也就是业务对象和数据对象&#xff1a;</p>
+<ul><li><strong>业务对象&#xff0c;也就是Service Model是面向对象的</strong>&#xff0c;它本身是一个对象&#xff0c;包含一些属性和基本的方法&#xff0c;在上层更符合程序员的认知&#xff0c;因为我们是面向对象开发的。比如Person这个Model就是包含了人的一些属性&#xff0c;姓名、年龄、手机号、银行账号、兴趣爱好等&#xff0c;我们从业务使用上去理解和构造这个Model。</li><li><strong>数据对象&#xff0c;也就是DAO Model是面向关系的&#xff08;关系型数据库&#xff09;</strong>&#xff0c;它虽然也是一个对象&#xff0c;但其实是对数据表的映射&#xff0c;表间并没有对象的认知&#xff0c;它们只是一组组关系&#xff0c;例如业务的Person对应过来&#xff0c;可能会对应好几个DAO Model&#xff0c;例如PersonInfo【人员基本信息表】、PersonAccount【人员账户表】、PersonLike【人员兴趣表】&#xff0c;它们可能都是通过人员主键关联的&#xff0c;但如果不是熟悉的开发人员&#xff0c;从这些定义想象不出一个完备的业务对象是什么样的</li></ul>
+<p>所以其实我们下文中提到的对象都是<strong>数据对象</strong>&#xff0c;一般而言&#xff0c;一个数据类对应一张表&#xff0c;一个数据对象对应于表中的一条数据。</p>
+<h2><a rel="noopener noreferrer" id="_12"></a>持久层的概念</h2>
+<p>数据为什么要持久化&#xff1f;持久化是<strong>将程序数据从瞬时状态向持久状态和间转换的机制</strong></p>
+<ul><li><strong>方式</strong>&#xff1a;把数据&#xff08;如内存中的对象&#xff09;保存到可永久保存的存储设备中&#xff08;如磁盘&#xff09;</li><li><strong>过程</strong>&#xff1a;将内存中的对象存储在数据库中&#xff0c;或者存储在磁盘文件中、XML数据文件中等</li><li><strong>实现</strong>&#xff1a;JDBC就是一种持久化机制。文件IO也是一种持久化机制。</li></ul>
+<p>为什么需要持久化服务呢&#xff1f;那是由于内存本身的缺陷引起的&#xff0c;内存断电后数据会丢失&#xff0c;但有一些数据是无论如何都不能丢失的&#xff0c;比如用户信息、银行账号等&#xff0c;但是我们无法保证内存永不掉电&#xff0c;所以我们需要持久化&#xff0c;那么什么是持久层呢&#xff1f;</p>
+<ul><li><strong>完成持久化工作的代码块</strong>&#xff0c;也就是上图的 DAO层 &#xff0c;DAO (Data Access Object) 数据访问对象</li></ul>
+<p>我们的系统架构中&#xff0c;应该有一个相对独立的逻辑层面&#xff0c;专注于数据持久化逻辑的实现&#xff0c;与系统其他部分相对而言&#xff0c;这个层面应该具有一个较为清晰和严格的逻辑边界&#xff0c;说白了就是<strong>用来操作数据库存在的</strong>。</p>
+<h2><a rel="noopener noreferrer" id="MyBatis_23"></a>为什么使用MyBatis</h2>
+<p>除了JDBC可以做DAO层外&#xff0c;我们知道还有很多基于JDBC规范的ORM框架</p>
+<h3><a rel="noopener noreferrer" id="ORM_25"></a>ORM框架的优势</h3>
+<p>什么是ORM框架呢&#xff1f;ORM&#xff08;Object Relational Mapping&#xff09;框架采用元数据来描述<strong>对象与关系映射的细节</strong>&#xff0c;元数据一般采用XML格式&#xff0c;并且存放在专门的对象一映射文件中&#xff0c;简单理解为一种框架的格式。使用ORM框架后&#xff0c;应用程序不再直接访问底层数据库&#xff0c;而是<strong>以面向对象的方式来操作持久化对象&#xff0c;而ORM框架则会通过映射关系将这些面向对象的操作转换成底层的SQL操作</strong>。<br /> <img src="./posts/assets/119490066-ext-78bc590b1390.png" alt="在这里插入图片描述"><br /> 那么比起JDBC&#xff0c;ORM的优势是什么呢&#xff1f;</p>
+<ul><li>传统的JDBC操作 , 有很多<strong>重复代码</strong>。比如 : 数据取出时的封装 , 数据库的建立连接等。通过框架可以减少重复代码&#xff0c;提高开发效率</li><li>传统的JDBC操作 , sql语句与代码紧耦合&#xff0c;<strong>不利于维护</strong>&#xff0c;如果数据表结构变了&#xff0c;那么得全局搜索相关表调整sql语句</li><li>传统的JDBC操作&#xff0c;<strong>不能让程序员像面向对象一样的方式操作数据</strong>。</li></ul>
+<p>而ORM框架就可以轻松的解决以上的问题&#xff0c;更多区别参照<a href="https://www.cnblogs.com/zhoanghua/articles/9292171.html" rel="nofollow">为什么使用MyBatis</a></p>
+<h3><a rel="noopener noreferrer" id="HibernateMyBatis_36"></a>Hibernate和MyBatis比较</h3>
+<p>MyBatis比起Hibernate来说其实是半自动的ORM框架&#xff0c;sql语句还是需要我们来维护的&#xff0c;它的优势如下&#xff1a;</p>
+<ul><li><strong><font color="red">简单易学</font></strong>&#xff1a;本身就很小且简单。没有任何第三方依赖&#xff0c;安装只要两个jar文件&#43;配置几个sql映射文件即可&#xff0c;易于学习&#xff0c;易于使用&#xff0c;通过文档和源代码&#xff0c;可以比较完全的掌握它的设计思路和实现</li><li><strong>代码解耦</strong>&#xff1a;mybatis不会对应用程序或者数据库的现有设计强加任何影响。sql写在xml里&#xff0c;便于统一管理和优化。通过sql语句可以满足操作数据库的所有需求&#xff0c;sql和代码的分离&#xff0c;提高了可维护性。</li><li><strong>映射标签</strong>&#xff1a;提供映射标签&#xff0c;支持对象与数据库的orm字段关系映射&#xff1b;提供对象关系映射标签&#xff0c;支持对象关系组建维护</li><li><strong><font color="red">动态sql</font></strong>&#xff1a;提供xml标签&#xff0c;支持编写动态sql</li></ul>
+<p>Hibernate是一个全自动的ORM框架&#xff0c;它的优点如下&#xff1a;</p>
+<ul><li><strong><font color="red">配置全面</font></strong>&#xff1a;消除了代码的映射规则&#xff0c;它全部被分离到XML或者注解里面去配置&#xff0c;无需再管理数据库连接&#xff0c;它也配置到XML里面。</li><li><strong>操作简单</strong>&#xff1a;一个会话中&#xff0c;不需要操作多个对象&#xff0c;只要操作Sesison即可&#xff0c;关闭资源只需要关闭一个Session即可。</li></ul>
+<p>我们知道框架没有最好&#xff0c;只有最合适的&#xff0c;技术往往对应于某种业务场景&#xff0c;那么该如何依照需求选用框架呢&#xff1f;</p>
+<ul><li>Hibernate作为Java ORM框架&#xff0c;编程简易&#xff0c;消除了代码的映射规则&#xff0c;完全通过配置实现。同时<strong>无需编写SQL确实开发效率优于MyBatis</strong>。而且它也提供了缓存、日志、级联、等强大的功能&#xff0c;但是Hibernate的缺陷也是十分的明显的。就是在多表关联复杂的SQL时、数据系统权限限制时、需要动态SQL时、存储过程使用用时Hibernate十分不便&#xff0c;而性能又难以通过SQL来优化。所以Hibernate一般只适用于<font color="red"><strong>场景不太复杂的、性能要求不太苛刻的系统</strong>。</font></li><li>MyBatis 是一个灵活的、可以动态生成映射关系的框架&#xff0c;它几乎可以替代JDBC。拥有动态列、动态表名&#xff0c;存储过程都支持。同时提供了简易的缓存&#xff08;如(默认)一级缓存&#xff0c;还有二级缓存&#xff09;、日志、级联。但是它的缺陷是需要自己<strong>提供映射规则和SQL</strong>&#xff0c;所以它的开发工作量一般要比Hibernate略大一些&#xff0c;适用于<font color="red"><strong>场景复杂&#xff0c;使用灵活的大型系统</strong></font></li></ul>
+<p>总之需要根据项目的实际情况去选择框架。MyBatis具有高度灵活、可优化、易维护等特点。生产环境下系统的复杂度一般较高&#xff0c;所以我们更多的是在使用MyBatis</p>
+<h2><a rel="noopener noreferrer" id="MyBatis_53"></a>MyBatis框架使用步骤</h2>
+<p>最终实现的项目结构如下&#xff0c;包含核心配置文件&#xff0c;mapper配置文件&#xff0c;核心配置文件读取类&#xff0c;mapper对应的Dao接口&#xff0c;Model和测试类以及数据库表。<br /> <img src="./posts/assets/119490066-ext-36f95d3ae70b.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="1_Java_Web_57"></a>1 创建一个Java Web项目</h3>
+<p>首先第一步还是创建一个Java Web项目&#xff0c;创建步骤和之前一样&#xff0c;我们创建一个名为MyBatis的项目&#xff1a;<br /> <img src="./posts/assets/119490066-ext-033e26493d9d.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="2__61"></a>2 搭建数据库表</h3>
+<p>我们继续使用在之前的Java Web部分使用的库表来进行学习&#xff1a;<br /> <img src="./posts/assets/119490066-ext-2609fef51a80.png" alt="在这里插入图片描述"><br /> 并且我们提前插入两条数据。</p>
+<h3><a rel="noopener noreferrer" id="3_Maven_65"></a>3 配置Maven依赖</h3>
+<p>然后再pom.xml中配置Maven依赖&#xff0c;来获取MyBatis的包导入到项目中来&#xff0c;我使用的数据库是MySQL8的版本&#xff0c;而mybatis当前的最新版本是3.5.7【2021年8月8日】&#xff1a;</p>
+<pre><code class="prism language-java">        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>org<span class="token punctuation">.</span>mybatis<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>mybatis<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">3.5</span><span class="token number">.7</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>mysql<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>mysql<span class="token operator">-</span>connector<span class="token operator">-</span>java<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">8.0</span><span class="token number">.18</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4__80"></a>4 编写核心配置文件</h3>
+<p>在资源目录下创建<code>mybatis-config.xml</code>的核心配置文件&#xff0c;该配置文件主要用于全局的读取数据库连接</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34; ?&gt;</span>
+<span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">configuration</span>
+        <span class="token name">PUBLIC</span> <span class="token string">&#34;-//mybatis.org//DTD Config 3.0//EN&#34;</span>
+        <span class="token string">&#34;http://mybatis.org/dtd/mybatis-3-config.dtd&#34;</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--configuration核心配置文件--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>configuration</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>environments</span> <span class="token attr-name">default</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>development<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>environment</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>development<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>transactionManager</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>JDBC<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dataSource</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>POOLED<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>driver<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.mysql.cj.jdbc.Driver<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>url<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>jdbc:mysql://localhost:3306/test?userSSL&#61;true<span class="token entity named-entity" title="&amp;">&amp;amp;</span>useUnicode&#61;true<span class="token entity named-entity" title="&amp;">&amp;amp;</span>characterEncoding&#61;UTF-8<span class="token entity named-entity" title="&amp;">&amp;amp;</span>serverTimezone&#61;UTC<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>username<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>root<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>password<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>root<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dataSource</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>environment</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>environments</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>configuration</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="5__103"></a>5 编写核心配置读取类</h3>
+<p>有了核心配置文件后我们还需要配置文件的读取类&#xff0c;二者结合起来类似于JDBC之前使用的JdbcUtils类&#xff0c;只不过我们这里做了解耦操作&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//sqlSessionFactory --&gt; sqlSession</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MybatisUtils</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">static</span> <span class="token class-name">SqlSessionFactory</span> sqlSessionFactory <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//使用Mybatis第一步 &#xff1a;获取sqlSessionFactory对象</span>
+            <span class="token class-name">String</span> resource <span class="token operator">&#61;</span> <span class="token string">&#34;mybatis-config.xml&#34;</span><span class="token punctuation">;</span>
+            <span class="token class-name">InputStream</span> inputStream <span class="token operator">&#61;</span> <span class="token class-name">Resources</span><span class="token punctuation">.</span><span class="token function">getResourceAsStream</span><span class="token punctuation">(</span>resource<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            sqlSessionFactory <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">SqlSessionFactoryBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span>inputStream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">//既然有了 SqlSessionFactory&#xff0c;顾名思义&#xff0c;我们可以从中获得 SqlSession 的实例.</span>
+    <span class="token comment">// SqlSession 提供了在数据库执行 SQL 命令所需的所有方法。</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">SqlSession</span> <span class="token function">getSqlSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> sqlSessionFactory<span class="token punctuation">.</span><span class="token function">openSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>这里涉及两个重要对象&#xff1a;</p>
+<ul><li><strong>SqlSessionFactory</strong>&#xff1a;是<strong>单个数据库映射关系经过编译后的内存镜像&#xff0c;其主要作用是创建SqlSession对象</strong>。SqlSessionFactory对象的实例可以通过SqlSessionFactoryBuilder对象来构建&#xff0c;而SqlSessionFactoryBuilder则可以通过XML配置文件或一个预先定义好的Configuration实例构建出SqlSessionFactory的实例。SqlSessionFactory对象是线程安全的&#xff0c;它一旦被创建&#xff0c;在整个应用执行期间都会存在。如果我们多次地创建同一个数据库的SqlSessionFactory&#xff0c;那么此数据库的资源将很容易被耗尽。为了解决此问题&#xff0c;通常每一个数据库都会对应一个SqlSessionFactory&#xff0c;所以在构建SqlSessionFactory实例时&#xff0c;建议使用单例模式。</li><li><strong>SqlSession</strong>&#xff1a;是<strong>应用程序与持久层之间执行交互操作的一个单线程对象&#xff0c;其主要作用是执行持久化操作</strong>。SqlSession对象包含了数据库中所有执行SQL操作的方法&#xff0c;由于其底层封装了JDBC连接&#xff0c;所以可以直接使用其实例来执行已映射的SQL语句。每一个线程都应该有一个自己的SqlSession实例&#xff0c;并且该实例是不能被共享的。同时&#xff0c;SqlSession实例也是线程不安全的&#xff0c;因此其使用范围最好在一次请求或一个方法中&#xff0c;决不能将其放在一个类的静态字段、实例字段或任何类型的管理范围&#xff08;如Servlet的HttpSession&#xff09;中使用。使用完SqlSession对象之后&#xff0c;要及时关闭它&#xff0c;通常可以将其放在finally块中关闭。</li></ul>
+<p>可以理解为会话对象&#xff0c;在一次会话操作中需要使用该对象开启连接和操作。</p>
+<h3><a rel="noopener noreferrer" id="6__136"></a>6 编写数据对象实体类</h3>
+<p>我们需要创建一个数据对象实体类来和数据表Person进行映射匹配。</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyBatis</span><span class="token punctuation">.</span>dao<span class="token punctuation">.</span>model<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Data</span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * person表对应对象
+ * */</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Person</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> id<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> username<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> password<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> age<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> phone<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> email<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="7_Mapper_158"></a>7 编写Mapper接口</h3>
+<p>接下来就是编写实体类对应的操作接口&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyBatis</span><span class="token punctuation">.</span>dao<span class="token punctuation">.</span>mapper<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyBatis</span><span class="token punctuation">.</span>dao<span class="token punctuation">.</span>model<span class="token punctuation">.</span>Person<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">List</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">PersonDao</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> <span class="token function">getPersonList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="8_Mapper_170"></a>8 编写Mapper接口实现类</h3>
+<p>由原来的UserDaoImpl转变为一个Mapper配置文件进行读取和生成。</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34; ?&gt;</span>
+<span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">mapper</span>
+        <span class="token name">PUBLIC</span> <span class="token string">&#34;-//mybatis.org//DTD Mapper 3.0//EN&#34;</span>
+        <span class="token string">&#34;http://mybatis.org/dtd/mybatis-3-mapper.dtd&#34;</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!--namespace&#61;绑定一个指定的Dao/Mapper接口--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mapper</span> <span class="token attr-name">namespace</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.example.MyBatis.dao.mapper.PersonDao<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>select</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>getPersonList<span class="token punctuation">&#34;</span></span> <span class="token attr-name">resultType</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.example.MyBatis.dao.model.Person<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        select * from person
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>select</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>mapper</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>我们编写好mapper配置文件后需要注册到核心配置文件中&#xff1a;</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34; ?&gt;</span>
+<span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">configuration</span>
+        <span class="token name">PUBLIC</span> <span class="token string">&#34;-//mybatis.org//DTD Config 3.0//EN&#34;</span>
+        <span class="token string">&#34;http://mybatis.org/dtd/mybatis-3-config.dtd&#34;</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--configuration核心配置文件--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>configuration</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>environments</span> <span class="token attr-name">default</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>development<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>environment</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>development<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>transactionManager</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>JDBC<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dataSource</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>POOLED<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>driver<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.mysql.cj.jdbc.Driver<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>url<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>jdbc:mysql://localhost:3306/test?userSSL&#61;true<span class="token entity named-entity" title="&amp;">&amp;amp;</span>useUnicode&#61;true<span class="token entity named-entity" title="&amp;">&amp;amp;</span>characterEncoding&#61;UTF-8<span class="token entity named-entity" title="&amp;">&amp;amp;</span>serverTimezone&#61;UTC<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>username<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>root<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>password<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>root<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dataSource</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>environment</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>environments</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mappers</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mapper</span> <span class="token attr-name">resource</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>mappers/personMapper.xml<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>mappers</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>configuration</span><span class="token punctuation">&gt;</span></span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="9__213"></a>9 编写测试类</h3>
+<p>最后我们编写一个测试类&#xff0c;测试一下效果&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyBatis</span><span class="token punctuation">.</span>dao<span class="token punctuation">.</span>mapper<span class="token punctuation">.</span>PersonDao<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyBatis</span><span class="token punctuation">.</span>dao<span class="token punctuation">.</span>model<span class="token punctuation">.</span>Person<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyBatis</span><span class="token punctuation">.</span>utils<span class="token punctuation">.</span>MybatisUtils<span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>ibatis<span class="token punctuation">.</span>session<span class="token punctuation">.</span></span><span class="token class-name">SqlSession</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>junit<span class="token punctuation">.</span>jupiter<span class="token punctuation">.</span>api<span class="token punctuation">.</span></span><span class="token class-name">Test</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">List</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonTest</span>  <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Test</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">//1.获取SqlSession对象</span>
+        <span class="token class-name">SqlSession</span> sqlSession <span class="token operator">&#61;</span> <span class="token class-name">MybatisUtils</span><span class="token punctuation">.</span><span class="token function">getSqlSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//2.执行SQL</span>
+        <span class="token class-name">PersonDao</span> personDao <span class="token operator">&#61;</span> sqlSession<span class="token punctuation">.</span><span class="token function">getMapper</span><span class="token punctuation">(</span><span class="token class-name">PersonDao</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> personList <span class="token operator">&#61;</span> personDao<span class="token punctuation">.</span><span class="token function">getPersonList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Person</span> person <span class="token operator">:</span> personList<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>person<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">//关闭sqlSession</span>
+        sqlSession<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+
+</code></pre>
+<p>打印结果如下&#xff0c;可以看到数据库内的两条数据被打印出来了&#xff1a;<br /> <img src="./posts/assets/119490066-ext-1c5aa4dc938a.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="Mybatis_247"></a>Mybatis框架操作数据库过程总结</h2>
+<p>依据以上过程我们可以梳理Mybatis框架操作数据库步骤</p>
+<ol><li>读取Mybatis配置文件<code>mybatis-config.xml</code>。<code>mybatis-config.xml</code>作为Mybatis的全局配置文件&#xff0c;配置Mybatis的运行环境等信息&#xff0c;其中主要内容是获取数据库连接。</li><li>加载映射文件<code>Mapper.xml</code>。<code>Mapper.xml</code>文件即SQL映射文件&#xff0c;该文件中配置了操作数据库的SQL语句&#xff0c;需要在<code>mybatis-config.xml</code>中注册才能执行。<code>mybatis-config.xml</code>可以加载多个配置文件&#xff0c;每个配置文件对应数据库中的一张表。</li><li>构建会话工厂。通过Mybatis的环境等配置信息构建会话工厂SqlSessionFactory。</li><li>创建SqlSession对象。由会话工厂创建SqlSession对象&#xff0c;该对象中包含执行SQL的所有方法。</li></ol>
+<p>到这里一个连接数据库的会话就创建完成了&#xff0c;因为拥有数据库的账号密码所以会话可以连接数据库成功&#xff0c;模拟我们登录数据库成功&#xff0c;又因为它内部注册了PersonMapper&#xff0c;所以可以通过getMapper获取到PersonDao对象实例&#xff0c;然后调用getPersonList方法&#xff0c;该方法的实现由我们编写的sql语句提供。</p>
+<ol start="5"><li>Mybatis底层定义了一个Executor接口来操作数据库&#xff0c;它会根据SqlSession传递的参数动态地生成需要执行的SQL语句&#xff0c;同时负责查询缓存的维护。</li><li>在Executor接口的执行方法中&#xff0c;包含一个MappedStatement类型的参数&#xff0c;该参数对映射信息的封装&#xff0c;用于存储要映射的SQL语句的id、参数等。Mapper.xml文件中一个SQL对应一个MappedStatement对象&#xff0c;SQL的id即是MappedStatement的id。</li><li>输入<strong>参数映射</strong>。在执行方法时&#xff0c;MappedStatement对象会对用户执行SQL语句的输入参数进行定义&#xff08;可以定义为Map、List类型、基本类型和POJO类型&#xff09;&#xff0c;Executor执行器会通过MappedStatement对象在执行SQL前&#xff0c;将输入的Java对象映射到SQL语句中。这里对输入参数的映射过程就类似于JDBC编程中对preparedStatement对象设置参数的过程。</li><li>输入<strong>结果映射</strong>。在数据库中执行完SQL语句后&#xff0c;MappedStatement对象会对SQL执行输出的结果进行定义&#xff08;可以定义为Map和List类型、基本类型、POJO类型&#xff09;&#xff0c;Executor执行器会通过MappedStatement对象在执行SQL语句后&#xff0c;将输出结果映射至Java对象中。这种将输出结果映射到Java对象的过程就类似于JDBC编程中对结果的解析处理过程。</li></ol>
+<p>这里我们没有用到参数映射&#xff0c;通过id的定义我们能找到方法的映射&#xff0c;然后执行完对应sql语句后&#xff0c;将返回对象映射到结果Model上即可。</p>
+<h2><a rel="noopener noreferrer" id="_265"></a>总结一下</h2>
+<p>MyBatis使用过之后才发现确实灵活&#xff0c;因为具体的某个方法的实现都是通过我们编写sql脚本实现的&#xff0c;它做到了sql与代码的解耦&#xff0c;也做到了我们自定义sql的能力&#xff0c;确实非常灵活可维护。对比Hibernate我们可以看到二者是有很强的相似性&#xff0c;从核心配置到Model类到Model类的配置文件。最重要的区别是&#xff1a;<strong>Hibernate操作都是通过Hibernate自己封装的HQL语言或者Session实现的&#xff0c;相当于Hibernate提供了一组封装了对sql的api给DAO层&#xff0c;而MyBatis则还是通过sql语句实现的</strong>。</p>

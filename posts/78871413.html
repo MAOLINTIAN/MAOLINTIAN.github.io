@@ -1,0 +1,304 @@
+<p>近期参与了工作台开发任务&#xff0c;亲身实践了mvc一个流程&#xff1a;&#xff08;Model层&#xff09;创建数据表—&#xff08;Model层&#xff09;创建Entity实体类—&#xff08;Model层&#xff09;创建数据表和实体的映射关系或调用通用的映射关系—&#xff08;Model层&#xff09;创建存储过程—&#xff08;Model层&#xff09;创建Dao层代码—&#xff08;Model层&#xff09;创建Provider层代码—&#xff08;Controller层&#xff09;在控制层写业务逻辑接口调用Model的provider,并返回给前端&#xff08;View&#xff09;—&#xff08;View层&#xff09;前端。体会了MVC全流程实践&#xff0c;也体会了团队合作如何实现。</p>
+
+<h3 id="model层">Model层</h3>
+
+<p>Model层相当于一块功能的封装&#xff0c;为控制层接口提供服务。一般会涉及到对数据表的操作&#xff0c;那么一般会涉及到以下操作。</p>
+
+<h4 id="创建数据表">创建数据表</h4>
+
+<pre class="prettyprint"><code class=" hljs sql">USE [***LandingSite]
+GO
+
+<span class="hljs-comment">/****** Object:  Table [dbo].[WorkBenchScene]    Script Date: 2017/12/22 11:39:25 ******/</span>
+<span class="hljs-operator"><span class="hljs-keyword">SET</span> ANSI_NULLS <span class="hljs-keyword">ON</span>
+<span class="hljs-keyword">GO</span>
+
+<span class="hljs-keyword">SET</span> QUOTED_IDENTIFIER <span class="hljs-keyword">ON</span>
+<span class="hljs-keyword">GO</span>
+
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> [dbo].[WorkBenchScene](
+    [ID] [uniqueidentifier] <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+    [Name] [nvarchar](<span class="hljs-number">200</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+    [PID] [uniqueidentifier] <span class="hljs-keyword">NULL</span>,
+    [Application] [nvarchar](<span class="hljs-number">50</span>) <span class="hljs-keyword">NULL</span>,
+    [TenantID] [<span class="hljs-keyword">int</span>] <span class="hljs-keyword">NULL</span>,
+    [MetaObjectName] [<span class="hljs-keyword">varchar</span>](<span class="hljs-number">100</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+    [CreatedBy] [<span class="hljs-keyword">int</span>] <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+    [CreatedTime] [datetime] <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+    [ModifiedBy] [<span class="hljs-keyword">int</span>] <span class="hljs-keyword">NULL</span>,
+    [ModifiedTime] [datetime] <span class="hljs-keyword">NULL</span>,
+    [ProcessJson] [nvarchar](<span class="hljs-aggregate">max</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+    [IsEnabled] [<span class="hljs-keyword">bit</span>] <span class="hljs-keyword">NULL</span>,
+ <span class="hljs-keyword">CONSTRAINT</span> [PK_WorkBenchScene] <span class="hljs-keyword">PRIMARY</span> <span class="hljs-keyword">KEY</span> CLUSTERED
+(
+    [ID] <span class="hljs-keyword">ASC</span>
+)<span class="hljs-keyword">WITH</span> (PAD_INDEX &#61; OFF, STATISTICS_NORECOMPUTE &#61; OFF, IGNORE_DUP_KEY &#61; OFF, ALLOW_ROW_LOCKS &#61; <span class="hljs-keyword">ON</span>, ALLOW_PAGE_LOCKS &#61; <span class="hljs-keyword">ON</span>) <span class="hljs-keyword">ON</span> [<span class="hljs-keyword">PRIMARY</span>]
+) <span class="hljs-keyword">ON</span> [<span class="hljs-keyword">PRIMARY</span>] TEXTIMAGE_ON [<span class="hljs-keyword">PRIMARY</span>]
+<span class="hljs-keyword">GO</span>
+
+
+</span></code></pre>
+
+
+
+<pre class="prettyprint"><code class=" hljs scss"><span class="hljs-comment">/****** Script for SelectTopNRows command from SSMS  ******/</span>
+<span class="hljs-tag">SELECT</span> <span class="hljs-attribute">TOP</span> (1000) <span class="hljs-attr_selector">[ID]</span>
+      ,<span class="hljs-attr_selector">[Name]</span>
+      ,<span class="hljs-attr_selector">[PID]</span>
+      ,<span class="hljs-attr_selector">[Application]</span>
+      ,<span class="hljs-attr_selector">[TenantID]</span>
+      ,<span class="hljs-attr_selector">[MetaObjectName]</span>
+      ,<span class="hljs-attr_selector">[CreatedBy]</span>
+      ,<span class="hljs-attr_selector">[CreatedTime]</span>
+      ,<span class="hljs-attr_selector">[ModifiedBy]</span>
+      ,<span class="hljs-attr_selector">[ModifiedTime]</span>
+      ,<span class="hljs-attr_selector">[ProcessJson]</span>
+      ,<span class="hljs-attr_selector">[IsEnabled]</span>
+  FROM <span class="hljs-attr_selector">[***LandingSite]</span>.<span class="hljs-attr_selector">[dbo]</span>.<span class="hljs-attr_selector">[WorkBenchScene]</span></code></pre>
+
+<h4 id="创建实体类">创建实体类</h4>
+
+<pre class="prettyprint"><code class=" hljs cs"><span class="hljs-keyword">using</span> System;
+<span class="hljs-keyword">using</span> System.Runtime.Serialization;
+
+namespace ***.Implementation.Entity.WorkBench
+{
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 场景表对应的实体类</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> WorkBenchScene : BaseEntity
+    {
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 场景名</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        [DataMember]
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> Name { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 场景父ID</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> Guid PID { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 应用名</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> Application { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 租户ID</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> TenantID { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 实体名</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> MetaObjectName { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 创建人</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> CreatedBy { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 修改人</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> ModifiedBy { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 修改时间</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> DateTime ModifiedTime { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 流程json字符串ProcessJson</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> ProcessJson { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 是否启用</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">bool</span> IsEnabled { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+    }
+}</code></pre>
+
+<h4 id="创建数据表和实体的映射关系">创建数据表和实体的映射关系</h4>
+
+
+
+<h5 id="创建自定义映射关系">创建自定义映射关系</h5>
+
+<pre class="prettyprint"><code class=" hljs avrasm">  <span class="hljs-preprocessor">#region 私有 mapper</span>
+
+        private ***<span class="hljs-preprocessor">.Data</span><span class="hljs-preprocessor">.MapperDelegates</span><span class="hljs-preprocessor">.RecordMapper</span>&lt;API&gt; GetMapper()
+        {
+            return delegate (IRecord record, API model)
+            {
+                model<span class="hljs-preprocessor">.ID</span> &#61; record<span class="hljs-preprocessor">.Get</span>&lt;Guid&gt;(<span class="hljs-string">&#34;ID&#34;</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.Application</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;string&gt;(<span class="hljs-string">&#34;Application&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.ApiType</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;int&gt;(<span class="hljs-string">&#34;ApiType&#34;</span>, <span class="hljs-number">0</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.ResourceCode</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;string&gt;(<span class="hljs-string">&#34;ResourceCode&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.ResourceName</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;string&gt;(<span class="hljs-string">&#34;ResourceName&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.GetListAPI</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;string&gt;(<span class="hljs-string">&#34;GetListAPI&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.ImportDataAPI</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;string&gt;(<span class="hljs-string">&#34;ImportDataAPI&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.Enabled</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;bool&gt;(<span class="hljs-string">&#34;Enabled&#34;</span>, true)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.CreatedTime</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>&lt;DateTime&gt;(<span class="hljs-string">&#34;CreatedTime&#34;</span>, DateTime<span class="hljs-preprocessor">.MinValue</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.ShowFields</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>(<span class="hljs-string">&#34;ShowFields&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+                model<span class="hljs-preprocessor">.WhiteList</span> &#61; record<span class="hljs-preprocessor">.GetOrDefault</span>(<span class="hljs-string">&#34;WhiteList&#34;</span>, string<span class="hljs-preprocessor">.Empty</span>)<span class="hljs-comment">;</span>
+            }<span class="hljs-comment">;</span>
+        }
+
+        <span class="hljs-preprocessor">#endregion 私有 mapper</span></code></pre>
+
+<h5 id="调用默认的映射关系">调用默认的映射关系</h5>
+
+<p>注意&#xff0c;默认的映射规则&#xff0c;实体的属性名和数据表的列名一定要对的上。</p>
+
+<pre class="prettyprint"><code class=" hljs cs">  <span class="hljs-keyword">protected</span> ***.Data.MapperDelegates.RecordMapper&lt;T&gt; <span class="hljs-title">GetMapper</span>()
+        {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">delegate</span> (IRecord record, T model)
+            {
+                <span class="hljs-keyword">if</span> (Properties !&#61; <span class="hljs-keyword">null</span>)
+                {
+                    <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> item <span class="hljs-keyword">in</span> Properties)
+                    {
+                        <span class="hljs-keyword">try</span>
+                        {
+                            SetValue(item, record, <span class="hljs-keyword">ref</span> model);
+                        }
+                        <span class="hljs-keyword">catch</span> (Exception e)
+                        {
+                            System.Console.WriteLine($<span class="hljs-string">&#34;error: {EntityName}.{ item.Name}&#34;</span>); <span class="hljs-comment">//todo ....logger</span>
+                        }
+                    }
+                }
+            };
+        }
+
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">SetValue</span>(PropertyInfo item, IRecord record, <span class="hljs-keyword">ref</span> T model)
+        {
+            <span class="hljs-keyword">var</span> fieldName &#61; item.Name;
+            <span class="hljs-keyword">switch</span> (item.PropertyType.FullName)
+            {
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.Int32&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;<span class="hljs-keyword">int</span>&gt;(fieldName, <span class="hljs-number">0</span>));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.String&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;<span class="hljs-keyword">string</span>&gt;(fieldName, <span class="hljs-keyword">string</span>.Empty));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.Boolean&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;Boolean&gt;(fieldName, <span class="hljs-keyword">false</span>));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.DateTime&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;DateTime&gt;(fieldName, DateTime.MinValue));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.Float&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;<span class="hljs-keyword">float</span>&gt;(fieldName, <span class="hljs-number">0</span>));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.Double&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;Double&gt;(fieldName, <span class="hljs-number">0</span>));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">case</span> <span class="hljs-string">&#34;System.Guid&#34;</span>:
+                    item.SetValue(model, record.GetOrDefault&lt;Guid&gt;(fieldName, Guid.Empty));
+                    <span class="hljs-keyword">break</span>;
+
+                <span class="hljs-keyword">default</span>:
+                    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> TypeLoadException($<span class="hljs-string">&#34;未知字段类型异常.fieldName:{fieldName},type:{item.PropertyType.FullName}&#34;</span>);
+            }
+        }
+
+</code></pre>
+
+<h4 id="创建存储过程">创建存储过程</h4>
+
+<pre class="prettyprint"><code class=" hljs sql">USE [***LandingSite]
+GO
+<span class="hljs-comment">/****** Object:  StoredProcedure [dbo].[WorkBenchScene_GetByMetaObjectName]    Script Date: 2017/12/22 12:09:45 ******/</span>
+<span class="hljs-operator"><span class="hljs-keyword">SET</span> ANSI_NULLS <span class="hljs-keyword">ON</span>
+<span class="hljs-keyword">GO</span>
+<span class="hljs-keyword">SET</span> QUOTED_IDENTIFIER <span class="hljs-keyword">ON</span>
+<span class="hljs-keyword">GO</span>
+-- &#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
+-- Author:      tianmaolin
+-- <span class="hljs-keyword">Create</span> <span class="hljs-keyword">date</span>: <span class="hljs-number">2017</span>-<span class="hljs-number">12</span>-<span class="hljs-number">22</span>
+-- Description: 根据实体编码获取场景
+-- &#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">PROCEDURE</span> [dbo].[WorkBenchScene_GetByMetaObjectName](
+&#64;MetaObjectName <span class="hljs-keyword">varchar</span>(<span class="hljs-number">100</span>)
+)
+<span class="hljs-keyword">AS</span>
+
+<span class="hljs-keyword">SELECT</span>  *  <span class="hljs-keyword">FROM</span> dbo.WorkBenchScene <span class="hljs-keyword">where</span> MetaObjectName&#61;&#64;MetaObjectName
+
+</span></code></pre>
+
+<h4 id="创建dao层代码">创建Dao层代码</h4>
+
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78871413-ext-8c505507e93e.png" loading="lazy"></p>
+
+<h4 id="创建provider层代码">创建Provider层代码</h4>
+
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78871413-ext-56e841ccdb6e.png" loading="lazy"></p>
+
+<h3 id="controller层">Controller层</h3>
+
+<pre class="prettyprint"><code class=" hljs cs"> <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 公有方法&#xff1a;通过实体名获取场景名和场景ID列表组</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;param name&#61;&#34;metaObjectName&#34;&gt;</span><span class="hljs-xmlDocTag">&lt;/param&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+        [HttpGet]   <span class="hljs-comment">//通过get方式获取</span>
+        <span class="hljs-keyword">public</span> JsonResult <span class="hljs-title">GetByMetaObjectName</span>(<span class="hljs-keyword">string</span> metaObjectName)
+        {
+            <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">string</span>.IsNullOrEmpty(metaObjectName))
+            {
+                List&lt;WorkBenchScene&gt; lw &#61; WorkBenchSceneProvider.Instance.GetByMetaObjectName(metaObjectName);  <span class="hljs-comment">//获取场景列表</span>
+                <span class="hljs-keyword">if</span> (lw &#61;&#61; <span class="hljs-keyword">null</span> || lw.Count &#61;&#61; <span class="hljs-number">0</span>)
+                {
+                    <span class="hljs-keyword">return</span> Json(<span class="hljs-keyword">new</span> Helper.OperationResult { code &#61; (<span class="hljs-keyword">int</span>)CodeType.Failure, message &#61; <span class="hljs-string">&#34;场景列表获取失败&#34;</span> }, JsonRequestBehavior.AllowGet);
+                }
+
+                List&lt;WorkBenchDic&gt; list &#61; <span class="hljs-keyword">new</span> List&lt;WorkBenchDic&gt;();
+                <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> item <span class="hljs-keyword">in</span> lw)
+                {
+                    list.Add(<span class="hljs-keyword">new</span> WorkBenchDic(item.ID.ToString(), item.Name));
+                }
+
+                <span class="hljs-keyword">return</span> Json(<span class="hljs-keyword">new</span> Helper.OperationResult { code &#61; (<span class="hljs-keyword">int</span>)CodeType.Success, message &#61; <span class="hljs-string">&#34;获取成功&#34;</span>, param &#61; list }, JsonRequestBehavior.AllowGet);
+            }
+
+            <span class="hljs-keyword">return</span> Json(<span class="hljs-keyword">new</span> Helper.OperationResult { code &#61; (<span class="hljs-keyword">int</span>)CodeType.Failure, message &#61; <span class="hljs-string">&#34;参数为空&#34;</span> }, JsonRequestBehavior.AllowGet);
+        }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 公有方法&#xff1a;通过场景id获取该场景详情</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;param name&#61;&#34;id&#34;&gt;</span><span class="hljs-xmlDocTag">&lt;/param&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+        [HttpGet]
+        <span class="hljs-keyword">public</span> JsonResult <span class="hljs-title">GetByID</span>(Guid id)
+        {
+            <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">string</span>.IsNullOrEmpty(id.ToString()))
+            {
+                WorkBenchScene wbs &#61; WorkBenchSceneProvider.Instance.GetById(id); <span class="hljs-comment">//获取确定场景</span>
+                <span class="hljs-keyword">if</span> (wbs &#61;&#61; <span class="hljs-keyword">null</span>)
+                {
+                    <span class="hljs-keyword">return</span> Json(<span class="hljs-keyword">new</span> Helper.OperationResult { code &#61; (<span class="hljs-keyword">int</span>)CodeType.Failure, message &#61; <span class="hljs-string">&#34;场景获取失败&#34;</span> }, JsonRequestBehavior.AllowGet);
+                }
+
+                <span class="hljs-keyword">return</span> Json(<span class="hljs-keyword">new</span> Helper.OperationResult { code &#61; (<span class="hljs-keyword">int</span>)CodeType.Success, message &#61; <span class="hljs-string">&#34;获取成功&#34;</span>, param &#61; wbs.ProcessJson }, JsonRequestBehavior.AllowGet);
+            }
+
+            <span class="hljs-keyword">return</span> Json(<span class="hljs-keyword">new</span> Helper.OperationResult { code &#61; (<span class="hljs-keyword">int</span>)CodeType.Failure, message &#61; <span class="hljs-string">&#34;参数为空&#34;</span> }, JsonRequestBehavior.AllowGet);
+        }</code></pre>
+
+<h3 id="view层">View层</h3>
+
+<p>SettingValue是页面</p>
+
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78871413-ext-6981137315e4.png" loading="lazy"></p>

@@ -1,0 +1,54 @@
+<p>其实可以这么理解&#xff0c;Web开发就是计算机网络应用层里开发的一个专供Http协议使用的应用程序。在<a href="https://tianmaolin.blog.csdn.net/article/details/77769192" rel="nofollow"><strong>应用层</strong></a> 这篇Blog里我们提到过应用层的定义</p>
+<blockquote>
+ <p>应用层是为了解决某一类应用问题&#xff0c;而问题的解决又是通过位于不同主机中的多个应用进程之间的通信和协同工作来完成的。这些服务通常使用对应的协议&#xff0c;常见的几种服务协议有&#xff08;<strong>HTTP</strong>&#xff0c;FTP/TFTP, TELENT&#xff09;无论是哪种服务&#xff0c;都需要域名服务器(DNS)来解析ip地址才能通信以提供服务</p>
+</blockquote>
+<p>所以其实Web请求实际上是<strong>客户使用浏览器充当客户端&#xff0c;通过http协议与部署了Web应用程序的服务器进行数据通信的过程</strong>&#xff0c;那么Web开发其实就是我们开发出能通过http协议与之通信的应用程序&#xff08;这种架构我们叫B/S架构&#xff09;。本质上与我们使用foxmail充当客户端&#xff0c;通过SMTP及POP3协议与部署了邮件应用程序的服务器进行数据通信没有什么区别&#xff08;这种架构我们叫C/S架构&#xff09;。之所以Web开发比较普遍是因为相比于其它通信协议的单一性&#xff0c;http能够传送的数据内容更丰富也更全面。</p>
+<h2><a rel="noopener noreferrer" id="Web_6"></a>Web应用程序概述</h2>
+<p>我们上边提到了Web应用程序开发的两种架构模式&#xff0c;接下来详细讨论下并且关注下静态网站和动态网站的异同。</p>
+<h3><a rel="noopener noreferrer" id="BSCS_9"></a>B/S架构和C/S架构</h3>
+<p>B/S 体系结构相对于 C/S 体系结构而言具有更多的优势&#xff0c;目前大量的应用程序开始转移到应用 B/S 体系结构&#xff0c;其主要优势在于以下几点</p>
+<ul><li>安装维护升级方便&#xff0c;仅部署服务器&#xff0c;客户端有各种各样的浏览器开箱即用&#xff0c;例如谷歌&#xff0c;Edge</li><li>对客户机配置要求不高&#xff0c;满足服务器配置即可&#xff0c;服务器我们也有较为通用的部署工具&#xff0c;Tomcat</li><li>访问范围更广&#xff0c;超文本传输协议传递的内容更丰富</li></ul>
+<p>所以其实要搞清一个概念&#xff0c;<strong>Web开发不是独立的一个分支&#xff0c;而只是应用层开发里最火的一个分支</strong>。简单的可以这么认为&#xff0c;B/S架构是使用浏览器作为客户端的C/S架构。</p>
+<h3><a rel="noopener noreferrer" id="_17"></a>静态网站和动态网站</h3>
+<p>Web 应用程序大致可以分为两种&#xff0c;即静态网站和动态网站&#xff0c;静态网站采用Html语言编写&#xff0c;放置于 Web 服务器上&#xff0c;用户通过浏览器直接请求解析显示&#xff0c;缺点&#xff1a;内容固定不变&#xff0c;改变显示必须修改html代码<br /> <img alt="在这里插入图片描述" src="./posts/assets/118652929-01-da10abcd7e.png" loading="lazy"><br /> 随着网络技术的发展&#xff0c;基于 Internet 的 Web 应用程序也变得越来越复杂&#xff0c;更多的内容需根据用户的请求动态生成页面信息&#xff0c;即动态网站&#xff0c;动态网站指在Html静态页面中嵌入Java、C#、Php等脚本代码&#xff0c;将编写后的页面放入Web服务器&#xff0c;由服务器编译转换为最终Html返回给客户端<br /> <img alt="解析当然是调用" src="./posts/assets/118652929-02-2a0d883481.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="Http_22"></a>Http协议概述</h2>
+<p>HTTP全称超级文本传输协议&#xff08;Hypertext Transfer Protocol&#xff09;是关于如何在网络上传输超级文本及HTML 文档的协议&#xff08;规范&#xff09;&#xff0c;<strong>Web 浏览器按照 HTTP 协议的规定向 Web 服务器发送请求信息&#xff0c;Web 服务器接收到浏览器的请求后&#xff0c;再按照 HTTP 协议的要求将结果发送给 Web 浏览器解析显示</strong>。</p>
+<h3><a rel="noopener noreferrer" id="URL_25"></a>统一资源定位符URL</h3>
+<p>URL 相当于一个文件名在网络范围的扩展&#xff0c;URL是与互联网相连的机器上的任何可访问对象的一个指针。由于访问不同对象所使用的协议不同&#xff0c;所以URL还指出读取某个对象时所使用的协议&#xff0c;URL的统一格式为&#xff1a;<code>&lt;协议&gt;://&lt;主机&gt;:&lt;端口&gt;/&lt;路径&gt;</code>&#xff1a;</p>
+<ul><li>&lt;协议&gt;就是指出<strong>使用什么协议来获取该万维网文档</strong>。现在最常用的协议就是http(超文本传送协议HTTP )以及https(简单讲是HTTP的安全版)&#xff0c;其次是ftp(文件传送协议FTP)</li><li>在&lt;协议&gt;后面的://是规定的格式&#xff0c;: 也是固定格式。它的右边是第二部分&lt;主机&gt;&#xff0c;它指出<strong>这个万维网文档是在哪一台主机上。这里的&lt;主机&gt;就是指该主机在互联网上的域名</strong>。</li><li>再后面是第三和第四部分<code>&lt;端口&gt;和&lt;路径&gt;</code>&#xff0c;有时可省略</li></ul>
+<p>对应例如&#xff1a;http://localhost:8080/AIR/index.jsp端口和路径有时可以省略。HTTP的默认端口号是80&#xff0c;通常可省略。若再省略文件的&lt;路径&gt;项&#xff0c;则URL就指到互联网上的<strong>某个主页</strong>(home page)</p>
+<h3><a rel="noopener noreferrer" id="HTTP_33"></a>超文本传送协议HTTP</h3>
+<p>HTTP 协议定义了浏览器(即万维网客户进程)怎样向万维网服务器请求万维网文档&#xff0c;以及服务器怎样把文档传送给浏览器。从层次的角度看&#xff0c;HTTP是<strong>面向事务的无状态的(transaction-oriented)应用层协议</strong>&#xff0c;它是<strong>万维网上能够可靠地交换文件(包括文本、声音、图像等各种多媒体文件)的重要基础</strong>。请注意&#xff0c;HTTP不仅传送完成超文本跳转所必需的信息&#xff0c;而且也传送任何可从互联网上得到的信息&#xff0c;如文本、超文本、声音和图像等<br /> <img alt="在这里插入图片描述" src="./posts/assets/118652929-03-38294d6065.png" loading="lazy"><br /> 这是一个逻辑上的通信过程&#xff0c;实际通信还依赖下三层&#xff08;物理层&#xff0c;数据链路层&#xff0c;网络层&#xff09;&#xff1a;</p>
+<ul><li>HTTP使用了面向连接的TCP作为运输层协议&#xff0c;保证了数据的可靠传输。HTTP不必考虑数据在传输过程中被丢弃后又怎样被重传。但是&#xff0c;<strong>HTTP协议本身是无连接的</strong>。这就是说&#xff0c;虽然HTTP使用了TCP连接&#xff0c;但通信的双方在交换HTTP报文之前不需要先建立HTTP连接</li><li><strong>HTTP协议是无状态的(stateless)</strong>。也就是说&#xff0c;同一个客户第二次访问同一个服务器上的页面时&#xff0c;服务器的响应与第一次被访问时的相同(假定现在服务器还没有把该页面更新)&#xff0c;因为服务器并不记得曾经访问过的这个客户&#xff0c;也不记得为该客户曾经服务过多少次。HTTP的无状态特性简化了服务器的设计&#xff0c;使服务器更容易支持大量并发的HTTP请求</li></ul>
+<p>HTTP的无状态可以理解为<strong>幂等的</strong>。</p>
+<h3><a rel="noopener noreferrer" id="Http_42"></a>Http协议工作流程</h3>
+<p>一次完整的请求响应过程分为以下几个步骤&#xff0c;主要是四个步骤&#xff0c;在这个过程中交互载体为协议包。</p>
+<ol><li>浏览器发起连接&#xff08;通过dns把域名转为ip&#xff0c;ip通过ip路由找到服务器地址&#xff09;</li><li>建立连接后&#xff0c;客户发送请求&#xff08;第一条肯定是对该页面请求&#xff09;</li><li>服务器响应请求&#xff08;返回一个html页面&#xff0c;由浏览器把该html解析为网页&#xff0c;按请求顺序响应&#xff09;</li><li>关闭连接&#xff08;1.1版本开始持续连接&#xff0c;在一定时间内连接不会断开&#xff0c;只需建立一条连接&#xff09;</li></ol>
+<p>更详细的过程可以参照我的这篇Blog<a href="https://tianmaolin.blog.csdn.net/article/details/111147317" rel="nofollow">【计算机网络基础 七】输入URL到浏览器发生了什么</a>&#xff0c;我们讨论下整个过程中的连接双方&#xff08;浏览器、Http服务器&#xff09;和传递载体&#xff08;Http请求协议包&#xff0c;Http响应协议包&#xff09;。</p>
+<h4><a rel="noopener noreferrer" id="Http_52"></a>Http请求协议包</h4>
+<p>在浏览器准备发送请求时&#xff0c;由浏览器负责生成一个Http请求协议包&#xff0c;并将请求信息写入Http请求协议包&#xff0c;然后将Http请求协议包推送给Http服务器。包括四部分内容&#xff1a;</p>
+<ul><li>请求行&#xff1a;包括三部分&#xff0c;即方法&#xff0c;请求资源的URL&#xff0c;以及http的版本</li><li>请求头&#xff1a;如果浏览器以GET方式发送请求&#xff0c;则请求参数存放在请求头中。</li><li>空白行&#xff1a;无内容&#xff0c;但是必须存在。可以理解为用来分隔请求头和请求体。</li><li>请求体&#xff1a;如果浏览器以POST方式发送请求&#xff0c;则请求参数存放在请求体中</li></ul>
+<p>我们重点关注下请求行里的请求方式&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118652929-04-c536526a67.png" loading="lazy"><br /> 重点关注Post和Get即可&#xff1a;</p>
+<ul><li><strong>Get是从服务器上获取数据&#xff0c;是安全的和幂等的&#xff0c;POST是修改服务器上的数据</strong>&#xff0c;<strong>安全的</strong>意味着该操作用于获取信息而非修改信息。换句话说&#xff0c;GET请求一般不应产生副作用。就是说&#xff0c;它仅仅是获取资源信息&#xff0c;就像数据库查询一样&#xff0c;不会修改&#xff0c;增加数据&#xff0c;不会影响资源的状态&#xff1b;<strong>幂等的</strong>意味着对同一URL的多个请求应该返回同样的结果。</li><li><strong>GET请求的数据会附在URL之后&#xff0c;POST把提交的数据则放置在是HTTP包的包体中。POST的安全性更高</strong></li><li>GET方式提交的数据最多只能是2048字节&#xff0c;理论上<strong>POST没有限制&#xff0c;可传较大量的数据</strong></li><li>GET支持缓存&#xff08;取到的资源&#xff09;&#xff0c;<strong>POST不支持缓存</strong></li></ul>
+<p>总的来说&#xff0c;Get是向服务器发索取数据的一种请求&#xff0c;而Post是向服务器提交数据的一种请求。</p>
+<h4><a rel="noopener noreferrer" id="Http_69"></a>Http响应协议包</h4>
+<p>在Http服务器准备返回结果时&#xff0c;由Http服务器负责生成一个Http响应协议包&#xff0c;调用输出流将文件内容&#xff08;文字、数字、像素、帧&#xff09;写入到Http响应协议包&#xff0c;然后将Http响应协议包推送给发起请求的浏览器。也包括四部分内容&#xff1a;</p>
+<ul><li>响应行&#xff08;状态行&#xff09;&#xff1a;http版本&#xff0c;状态码&#xff0c;以及解释状态码的简单短语。</li><li>响应头&#xff1a;content-type&#xff0c;指定浏览器使用对应的解析器或者编译器&#xff0c;将从Http服务器返回过来的相应的二进制信息进行解析或者编译。</li><li>空白行&#xff1a;无内容&#xff0c;但是必须存在。</li><li>响应体&#xff1a;本次索要的文件内容。</li></ul>
+<p>状态码的含义如下&#xff1a;</p>
+<ul><li>1XX Informational(信息性状态码)&#xff0c;服务器收到请求&#xff0c;需要请求者继续执行</li><li>2XX Success(成功状态码)。例如&#xff1a;200 OK 表示从客户端发来的请求在服务器端被正常处理了。</li><li>3XX Redirection(重定向状态码) 例如&#xff1a;302&#xff0c;客户请求的文档转移到了一个新的地址&#xff0c;请求被重定向了。</li><li>4XX Client Error(客户端错误状态码)。例如&#xff1a;404 Not Found 该状态码表明服务器上无法找到请求的资源。除此之外&#xff0c;也可以在服务器端拒绝请求且不想说明理由时使用。
+  <ul><li>网站名不对。</li><li>网站名正确&#xff0c;但是资源文件名不对。</li><li>tomcat没有在网站定位默认欢迎资源文件。&#xff08;标签 <code>&lt;welcome-file-list&gt;...&lt;/welcome-file-list&gt;</code>&#xff09;</li><li>请求地址没有按照 uri 的标准格式进行设置。</li><li>IDEA没有将最新网站内容交给tomcat。</li></ul> </li><li>5XX Server Error(服务器错误状态码)。例如&#xff1a;500 Internal Server Error 该状态码表明服务器端在执行请求时发生了错误</li></ul>
+<p>这里只列举大概含义&#xff0c;还有一些别的例如405&#xff1a;Http服务器通知浏览器本次索要的资源文件已经被找到了&#xff0c;但是这个资源文件对于浏览器请求方式无法接收。&#xff08;get、post&#xff09;。</p>
+<h4><a rel="noopener noreferrer" id="Http_90"></a>Http服务器作用</h4>
+<p>在这个交互过程中浏览器不需要过多关注&#xff0c;对于我们后端开发来说&#xff0c;主要关注我们编写的服务端程序&#xff0c;所以我们关注Http服务器&#xff1a;</p>
+<ul><li>对于一个Java程序员来说&#xff0c;所有的Http服务器都是由Java编程语言开发的应用程序。</li><li>Http服务器可以<strong>接收</strong>由浏览器发出的Http请求协议包。</li><li>Http服务器可以<strong>解析</strong>由浏览器发来的Http请求协议包&#xff0c;将该协议包解析为二进制数据&#xff0c;以便了解用户的请求。</li><li>Http服务器可以<strong>自动定位</strong>被访问的资源文件。</li><li>Http服务器可以自动将被访问的文件内容或者运行结果通过输出流以二进制形式<strong>写入</strong>到Http响应协议包中。</li><li>Http服务器可以自动将Http响应协议包<strong>推送</strong>给发起请求的浏览器</li></ul>
+<p>所以一个合格的Http服务器是可以<strong>自动接收、解析请求并定位资源文件&#xff0c;并且可以将响应写入并推送给发起请求的浏览器</strong>。</p>
+<h2><a rel="noopener noreferrer" id="Tomcat_101"></a>Tomcat服务器概述</h2>
+<p>Tomcat就是上文提到的Http服务器中应用最广泛的一种。在另一篇Blog<a href="https://tianmaolin.blog.csdn.net/article/details/105972696" rel="nofollow">【Java SE基础 零】Java开发环境初始化</a>里我详细介绍了Tomcat是如何与IDEA集成起来使用的&#xff0c;这里就不再赘述了&#xff0c;同时MAC版本的安装方式这篇博客有介绍<a href="https://www.jianshu.com/p/69496fb3495e" rel="nofollow">Mac安装Tomcat</a>【打开Finder窗口&#xff0c;输入shift &#43; Command &#43; G&#xff0c;再输入/Library&#xff0c;进入此目录后&#xff0c;将Tomcat文件夹复制到此目录下】&#xff0c;这里我们主要聊聊Tomcat的结构和它是如何工作的&#xff0c;可以看下目录的组成结构&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118652929-05-353a232ac0.png" loading="lazy"><br /> 各个文件目录的主要作用如下&#xff1a;</p>
+<ul><li><strong>bin</strong>&#xff1a;tomcat 管理命令&#xff0c;所有的可执行命令存放在这里&#xff0c;启动和关闭服务器的命令就在此文件夹中</li><li><strong>conf</strong>&#xff1a;tomcat 配置文件。其中 server.xml是 tomcat 的核心配置文件。</li><li><strong>lib</strong>&#xff1a;tomcat 应用程序在运行时依赖的第三方jar。</li><li><strong>logs</strong>&#xff1a;存放 tomcat 的运行日志。</li><li><strong>temp</strong>&#xff1a;存放 tomcat 运行时生成的临时文件。</li><li><strong>webapps</strong>&#xff1a;tomcat 在默认情况下&#xff0c;接收到请求之后到 webapps下定位资源文件&#xff0c;Web 应用程序存放的目录&#xff0c;Web 项目保存到此目录中即可发布</li><li><strong>work</strong>&#xff1a;tomcat在默认情况下&#xff0c;在work文件夹下将jsp文件编辑为java文件&#xff0c;并编译为.class文件。</li></ul>
+<p>在接下来要聊到的JSP和Servlet两种文件类型&#xff0c;其是运行到Tomcat这种Web服务器上来进行工作的。请求到达后先匹配到项目目录&#xff0c;然后去加载webapps里对应的项目的资源。后边我们会提到。</p>
+<h2><a rel="noopener noreferrer" id="JSPServlet_115"></a>JSP&amp;Servlet文件</h2>
+<p>JSP&amp;Servlet是Java Web编程最常用的两种文件&#xff0c;非常重要&#xff0c;这里我们先简单了解下他们的区别和联系以及用途&#xff0c;后边详细说明&#xff1a;</p>
+<ul><li>JSP经编译后就变成了Servlet&#xff0c;JSP的本质就是Servlet&#xff0c;JVM只能识别java的类&#xff0c;不能识别JSP的代码&#xff0c;Web容器将JSP的代码编译成JVM能够识别的java类</li><li>JSP更擅长表现于页面显示&#xff0c;Servlet更擅长于逻辑控制.</li><li>Servlet中没有内置对象&#xff0c;JSP中的内置对象都是必须通过HttpServletRequest对象&#xff0c;HttpServletResponse对象以及HttpServlet对象得到.</li><li>JSP是Servlet的一种简化&#xff0c;使用Jsp只需要完成程序员需要输出到客户端的内容&#xff0c;JSP中的Java脚本如何镶嵌到一个类中&#xff0c;由JSP容器完成&#xff0c;而Servlet则是个完整的Java类&#xff0c;这个类的Service方法用于生成对客户端的响应。</li></ul>
+<p>Servlet和JSP最主要的不同点在于&#xff1a;<strong>Servlet的应用逻辑是在Java文件中&#xff0c;并且完全从表示层中的HTML里分离开来。而JSP的情况是Java和HTML可以组合成一个扩展名为.jsp的文件&#xff0c;JSP侧重于视图&#xff0c;Servlet主要用于控制逻辑</strong></p>
+<h2><a rel="noopener noreferrer" id="_125"></a>总结一下</h2>
+<p>说白了Web开发就是一个普通的应用程序开发&#xff0c;BS和CS架构的不同点就是客户端为浏览器&#xff0c;我们无需关系如何进行客户端的升级和开发&#xff0c;只要按照标准开发服务端程序即可&#xff1b;而Web开发也没什么神秘的&#xff0c;就是依赖http协议在获取到请求后给予响应即可&#xff0c;和依赖smtp协议开发的邮件程序没什么本质区别。更进一步我们甚至不用开发服务器&#xff0c;tomcat已经帮我们做好了一切&#xff0c;我们只需要按照tomcat的规范编写jsp&amp;servlet这些文件和代码即可&#xff0c;换句话说专注业务逻辑即可。</p>

@@ -1,0 +1,724 @@
+<p>最近在借助AI学习一些跨栈的知识&#xff0c;发现学习逻辑都变了&#xff0c;不再需要一点点啃了&#xff0c;可以让AI快速指导&#xff0c;当然学习的方法论还是没有变化&#xff0c;先了解框架模块&#xff0c;再了解工作流程&#xff0c;最后再深挖具体概念。最大的变化就是深挖这一块可以不必做的很细了&#xff0c;本身学习新的知识栈就是为了更好的让AI明确我的意图以及做代码checker&#xff0c;代码编写是由AI完成的&#xff0c;如果到时哪块不是很了解&#xff0c;再让AI介绍即可。当然对于AI的提示词也可以由AI完成。</p>
+<h2><a rel="noopener noreferrer" id="AIPrompt_1"></a>AI生成速通Prompt</h2>
+<p>这个可以让https://ai-bot.cn/promptpilot/ 给你优化prompt&#xff0c;总之就是让AI在基于Java背景基础下快速掌握React18的基本语法和操作&#xff1a;</p>
+<p>下面给出一份「为 Java 程序员量身定制的 45 分钟 React 18 速通」DeepSeek 专用 prompt。<br />
+下面给出一份「为 Java 程序员量身定制的 45 分钟 React 18 速通」DeepSeek 专用 prompt。<br />
+直接把整段话丢给 DeepSeek&#xff0c;它会按「Java 思维 → 前端映射」的方式输出&#xff1a;语法对照表、带类型约束的代码骨架、以及一键可跑的 Vite 项目。</p>
+<hr />
+<p><strong>中文指令</strong><br />
+你是一名同时写 Java&#xff08;Spring Boot&#xff09;和 React 的 10 年全栈架构师。<br />
+学员情况&#xff1a;</p>
+<ul><li>0 基础 Vue/React&#xff0c;但写过 HTML/CSS&#xff1b;</li><li>精通 Java&#xff08;类、接口、泛型、Spring 注解、Maven 多模块&#xff09;。</li></ul>
+<p>目标&#xff1a;45 分钟内让我把「Java 后端思维」平移到 React 18 &#43; TypeScript&#xff0c;能独立跑通「用户列表」小项目&#xff08;AJAX 调用 /api/users&#xff0c;增删改查&#xff0c;Bootstrap 样式&#xff09;。</p>
+<p>请按下面 4 步输出&#xff0c;全部给出可复制粘贴的代码与命令&#xff0c;且每段都加上「Java 等价映射」注释&#xff0c;让我一眼看懂前端概念对应的后端知识。</p>
+<ol><li>
+<p>环境 5 min<br />
+a. 单条命令安装 Node 20 LTS &#43; pnpm&#xff08;类比 Maven Wrapper&#xff09;。<br />
+b. 用 pnpm create vite 创建 react-ts 项目&#xff0c;解释「package.json ≈ pom.xml」「vite.config.ts ≈ application.yml」。<br />
+c. VSCode 必备插件清单 &#43; 调试 F5 配置&#xff08;launch.json&#xff09;。</p>
+</li><li>
+<p>语法 10 min<br />
+给出「Java 类 ↔ React 函数组件」「接口 ↔ TypeScript 类型别名」「Spring &#64;RestController ↔ fetch」「Bean 注入 ↔ props 传参」4 组对照表&#xff1b;用 20 行代码展示「UserDTO → UserComponent」的完整映射。</p>
+</li><li>
+<p>状态与生命周期 15 min<br />
+a. 用 <code>useState&lt;User[]&gt;</code> 实现「查询/新增/删除」三连&#xff0c;对比 Java 集合 List 操作。<br />
+b. 用 <code>useEffect</code> 模拟 Spring 的 <code>&#64;PostConstruct</code>&#xff0c;组件挂载时拉取 /api/users&#xff1b;返回清理函数&#xff0c;对比「&#64;PreDestroy」。<br />
+c. 自定义 hook <code>useUsers()</code> 封装 CRUD&#xff0c;类比「Service 层 &#43; &#64;Transactional」。</p>
+</li><li>
+<p>路由与部署 15 min<br />
+a. 安装 react-router-dom&#xff0c;配置 2 个路由&#xff1a;/users 列表、/user/:id 详情&#xff0c;对比 Spring &#64;RequestMapping。<br />
+b. 用 MSW&#xff08;Mock Service Worker&#xff09;mock 后端 /api/users&#xff0c;脱离后台也能开发&#xff0c;类比「&#64;Profile(“local”)」。<br />
+c. pnpm build 生成静态文件&#xff0c;丢到 Spring Boot 的 /static 目录&#xff0c;实现「前后端一体 jar 启动」&#xff1b;再附 Netlify 一键部署方案。</p>
+</li></ol>
+<p>额外福利&#xff1a;</p>
+<ul><li>每步末尾附 1 道「Java → React 易错点」&#43; 答案&#xff08;如「setState 异步 vs Java setter 同步」「闭包旧值陷阱 vs 线程封闭」&#xff09;。</li><li>ASCII 思维导图&#xff1a;把「组件-状态-路由-HTTP」画成 1 张图&#xff0c;方便截图保存。</li></ul>
+<p>输出格式&#xff1a;<br />
+「命令行 → 代码块&#xff08;带 Java 映射注释&#xff09;→ 易错点 → 导图」四段式&#xff0c;杜绝废话&#xff0c;全部可运行。<br />
+直接把整段话丢给 DeepSeek&#xff0c;它会按「Java 思维 → 前端映射」的方式输出&#xff1a;语法对照表、带类型约束的代码骨架、以及一键可跑的 Vite 项目。</p>
+<hr />
+<h2><a rel="noopener noreferrer" id="React__47"></a>React 前端架构&#xff1a;页面效果对照与分层详解</h2>
+<h3><a rel="noopener noreferrer" id="__49"></a>&#x1f3a8; 页面效果展示与分层对应</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│                   用户管理系统                            │
+├─────────────────────────────────────────────────────────┤
+│  [搜索用户...]        [&#xff0b;添加用户]                        │
+├─────────────────────────────────────────────────────────┤
+│  ┌───┬─────────────┬─────────────────┬──────────────┐   │
+│  │ID │ 姓名        │ 邮箱            │ 操作         │   │
+│  ├───┼─────────────┼─────────────────┼──────────────┤   │
+│  │ 1 │ 张三        │ zh&#64;example.com  │ [编辑][删除] │   │
+│  │ 2 │ 李四        │ li&#64;example.com  │ [编辑][删除] │   │
+│  │ 3 │ 王五        │ wang&#64;example.com│ [编辑][删除] │   │
+│  └───┴─────────────┴─────────────────┴──────────────┘   │
+├─────────────────────────────────────────────────────────┤
+│  第 1 页&#xff0c;共 5 页 | 显示 1-3 条&#xff0c;共 15 条               │
+│  [首页] [上页] [1] [2] [3] [4] [5] [下页] [末页]       │
+└─────────────────────────────────────────────────────────┘
+</code></pre>
+<h3><a rel="noopener noreferrer" id="__69"></a>&#x1f3d7;️ 完整的分层架构</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│                   配置层 (Configuration)                 │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;管理应用配置、环境变量、全局常量、类型定义         │
+│ 包含&#xff1a;环境变量、API配置、类型定义、构建配置             │
+└─────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────┐
+│                   路由层 (Routing)                       │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;管理页面路由、导航、权限控制、懒加载              │
+│ 包含&#xff1a;路由配置、布局组件、路由守卫、嵌套路由            │
+└─────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────┐
+│                   组件层 (Components)                    │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;渲染用户界面、处理用户交互、展示数据              │
+│ 包含&#xff1a;页面组件、业务组件、UI组件、布局组件              │
+└─────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────┐
+│                   Hooks 层 (Custom Hooks)               │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;封装业务逻辑、状态管理、数据获取、副作用处理       │
+│ 包含&#xff1a;状态管理Hook、业务逻辑Hook、数据获取Hook          │
+└─────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────┐
+│                   服务层 (Services)                      │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;封装业务API调用、数据转换、缓存逻辑               │
+│ 包含&#xff1a;API服务类、数据转换器、工具函数                   │
+└─────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────┐
+│                  HTTP 客户端层 (HTTP Client)             │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;处理HTTP通信、请求拦截、响应处理、错误统一         │
+│ 包含&#xff1a;HTTP客户端、拦截器、错误处理、认证管理            │
+└─────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────┐
+│                   后端系统 (Backend)                     │
+├─────────────────────────────────────────────────────────┤
+│ 作用&#xff1a;提供数据API、业务逻辑处理、数据持久化             │
+│ 包含&#xff1a;Spring Boot应用、数据库、业务逻辑                 │
+└─────────────────────────────────────────────────────────┘
+</code></pre>
+<h4><a rel="noopener noreferrer" id="1__Configuration_Layer_123"></a>1. <strong>配置层 (Configuration Layer)</strong></h4>
+<p><strong>作用</strong>&#xff1a;管理应用配置、环境变量、类型定义和构建配置</p>
+<pre><code class="prism language-typescript"><span class="token comment">// &#x1f525; User 模型定义位置 - src/types/user.ts</span>
+<span class="token keyword">export</span> <span class="token keyword">interface</span> <span class="token class-name">User</span> <span class="token punctuation">{<!-- --></span>
+  id<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>           <span class="token comment">// 用户ID</span>
+  name<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>         <span class="token comment">// 用户名</span>
+  email<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>        <span class="token comment">// 邮箱</span>
+  avatar<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>      <span class="token comment">// 头像URL&#xff08;可选&#xff09;</span>
+  createdAt<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>    <span class="token comment">// 创建时间</span>
+  updatedAt<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>    <span class="token comment">// 更新时间</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">export</span> <span class="token keyword">interface</span> <span class="token class-name">CreateUserRequest</span> <span class="token punctuation">{<!-- --></span>
+  name<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+  email<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+  avatar<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">export</span> <span class="token keyword">interface</span> <span class="token class-name">UpdateUserRequest</span> <span class="token punctuation">{<!-- --></span>
+  name<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+  email<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+  avatar<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">export</span> <span class="token keyword">interface</span> <span class="token class-name">UserQueryParams</span> <span class="token punctuation">{<!-- --></span>
+  page<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+  pageSize<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+  keyword<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">export</span> <span class="token keyword">interface</span> <span class="token class-name">PaginatedResponse<span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+  data<span class="token operator">:</span> <span class="token constant">T</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  total<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+  page<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+  pageSize<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+  totalPages<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-typescript"><span class="token comment">// 环境变量配置 - .env.development</span>
+<span class="token constant">VITE_API_BASE_URL</span><span class="token operator">&#61;</span>http<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>localhost<span class="token operator">:</span><span class="token number">8080</span><span class="token operator">/</span>api
+<span class="token constant">VITE_APP_TITLE</span><span class="token operator">&#61;</span>用户管理系统 <span class="token operator">-</span> 开发环境
+
+<span class="token comment">// 环境变量配置 - .env.production  </span>
+<span class="token constant">VITE_API_BASE_URL</span><span class="token operator">&#61;</span>https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>api<span class="token punctuation">.</span>production<span class="token punctuation">.</span>com<span class="token operator">/</span>api
+<span class="token constant">VITE_APP_TITLE</span><span class="token operator">&#61;</span>用户管理系统
+</code></pre>
+<pre><code class="prism language-typescript"><span class="token comment">// Vite 构建配置 - vite.config.ts</span>
+<span class="token keyword">import</span> <span class="token punctuation">{<!-- --></span> defineConfig <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">&#39;vite&#39;</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> react <span class="token keyword">from</span> <span class="token string">&#39;&#64;vitejs/plugin-react&#39;</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{<!-- --></span> resolve <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">&#39;path&#39;</span><span class="token punctuation">;</span>
+
+<span class="token keyword">export</span> <span class="token keyword">default</span> <span class="token function">defineConfig</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span>
+  plugins<span class="token operator">:</span> <span class="token punctuation">[</span><span class="token function">react</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  resolve<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    alias<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#39;&#64;&#39;</span><span class="token operator">:</span> <span class="token function">resolve</span><span class="token punctuation">(</span>__dirname<span class="token punctuation">,</span> <span class="token string">&#39;src&#39;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+      <span class="token string">&#39;&#64;components&#39;</span><span class="token operator">:</span> <span class="token function">resolve</span><span class="token punctuation">(</span>__dirname<span class="token punctuation">,</span> <span class="token string">&#39;src/components&#39;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  server<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    port<span class="token operator">:</span> <span class="token number">3000</span><span class="token punctuation">,</span>
+    proxy<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#39;/api&#39;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        target<span class="token operator">:</span> <span class="token string">&#39;http://localhost:8080&#39;</span><span class="token punctuation">,</span>
+        changeOrigin<span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  build<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    outDir<span class="token operator">:</span> <span class="token string">&#39;dist&#39;</span><span class="token punctuation">,</span>
+    sourcemap<span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<pre><code class="prism language-typescript"><span class="token comment">// 应用配置 - src/config/app.ts</span>
+<span class="token keyword">export</span> <span class="token keyword">const</span> AppConfig <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span>
+  appName<span class="token operator">:</span> <span class="token keyword">import</span><span class="token punctuation">.</span>meta<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">VITE_APP_TITLE</span> <span class="token operator">||</span> <span class="token string">&#39;用户管理系统&#39;</span><span class="token punctuation">,</span>
+  apiBaseUrl<span class="token operator">:</span> <span class="token keyword">import</span><span class="token punctuation">.</span>meta<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">VITE_API_BASE_URL</span><span class="token punctuation">,</span>
+  isDevelopment<span class="token operator">:</span> <span class="token keyword">import</span><span class="token punctuation">.</span>meta<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">DEV</span><span class="token punctuation">,</span>
+  version<span class="token operator">:</span> <span class="token string">&#39;1.0.0&#39;</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">export</span> <span class="token keyword">const</span> ApiConfig <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span>
+  baseURL<span class="token operator">:</span> <span class="token keyword">import</span><span class="token punctuation">.</span>meta<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">VITE_API_BASE_URL</span><span class="token punctuation">,</span>
+  timeout<span class="token operator">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
+  endpoints<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    users<span class="token operator">:</span> <span class="token string">&#39;/users&#39;</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p><strong>Java 映射</strong>&#xff1a;</p>
+<ul><li><code>.env</code> 文件 ≈ Spring Boot 的 <code>application.yml</code></li><li>类型定义 ≈ Java 的 DTO 类和接口</li><li>Vite 配置 ≈ Maven/Gradle 构建配置</li></ul>
+<h4><a rel="noopener noreferrer" id="2__Routing_Layer_228"></a>2. <strong>路由层 (Routing Layer)</strong></h4>
+<p><strong>作用</strong>&#xff1a;管理页面路由、导航、布局和懒加载</p>
+<pre><code class="prism language-tsx">// 路由配置 - src/router/index.tsx
+import { createBrowserRouter, RouterProvider } from &#39;react-router-dom&#39;;
+import { lazy, Suspense } from &#39;react&#39;;
+import AppLayout from &#39;../layouts/AppLayout&#39;;
+import LoadingSpinner from &#39;../components/LoadingSpinner&#39;;
+
+// 懒加载页面组件
+const UserManagement &#61; lazy(() &#61;&gt; import(&#39;../pages/UserManagement&#39;));
+const UserDetail &#61; lazy(() &#61;&gt; import(&#39;../pages/UserDetail&#39;));
+
+const router &#61; createBrowserRouter([
+  {
+    path: &#39;/&#39;,
+    element: &lt;AppLayout /&gt;,
+    children: [
+      {
+        index: true,
+        element: &lt;Navigate to&#61;&#34;/users&#34; replace /&gt;,
+      },
+      {
+        path: &#39;users&#39;,
+        children: [
+          {
+            index: true,
+            element: (
+              &lt;Suspense fallback&#61;{&lt;LoadingSpinner /&gt;}&gt;
+                &lt;UserManagement /&gt;
+              &lt;/Suspense&gt;
+            ),
+          },
+          {
+            path: &#39;:userId&#39;,
+            element: (
+              &lt;Suspense fallback&#61;{&lt;LoadingSpinner /&gt;}&gt;
+                &lt;UserDetail /&gt;
+              &lt;/Suspense&gt;
+            ),
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+export const AppRouter: React.FC &#61; () &#61;&gt; {
+  return &lt;RouterProvider router&#61;{router} /&gt;;
+};
+</code></pre>
+<pre><code class="prism language-tsx">// 布局组件 - src/layouts/AppLayout.tsx
+import { Outlet } from &#39;react-router-dom&#39;;
+import Header from &#39;../components/Header&#39;;
+import Sidebar from &#39;../components/Sidebar&#39;;
+
+const AppLayout: React.FC &#61; () &#61;&gt; {
+  return (
+    &lt;div className&#61;&#34;app-layout&#34;&gt;
+      &lt;Header /&gt;
+      &lt;div className&#61;&#34;layout-content&#34;&gt;
+        &lt;Sidebar /&gt;
+        &lt;main className&#61;&#34;main-content&#34;&gt;
+          &lt;Outlet /&gt; {/* 子路由渲染位置 */}
+        &lt;/main&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+};
+</code></pre>
+<p><strong>Java 映射</strong>&#xff1a;</p>
+<ul><li>React Router ≈ Spring MVC 的 <code>&#64;Controller</code> &#43; <code>&#64;RequestMapping</code></li><li>布局组件 ≈ Spring 的模板布局</li><li>懒加载 ≈ Spring 的 <code>&#64;Lazy</code> 注解</li></ul>
+<h4><a rel="noopener noreferrer" id="3__Components_Layer___310"></a>3. <strong>组件层 (Components Layer) - 直接对应页面元素</strong></h4>
+<pre><code class="prism language-tsx">// &#x1f525; 对应&#xff1a;页面标题、搜索框、添加按钮
+const PageHeader: React.FC &#61; () &#61;&gt; {
+  return (
+    &lt;div className&#61;&#34;page-header&#34;&gt;
+      &lt;h1&gt;用户管理系统&lt;/h1&gt;
+      &lt;div className&#61;&#34;header-actions&#34;&gt;
+        &lt;SearchInput /&gt;
+        &lt;button className&#61;&#34;btn-primary&#34;&gt;&#xff0b;添加用户&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+};
+
+// &#x1f525; 对应&#xff1a;用户表格
+const UserTable: React.FC&lt;{ users: User[] }&gt; &#61; ({ users }) &#61;&gt; {
+  return (
+    &lt;table className&#61;&#34;user-table&#34;&gt;
+      &lt;thead&gt;
+        &lt;tr&gt;
+          &lt;th&gt;ID&lt;/th&gt;
+          &lt;th&gt;姓名&lt;/th&gt;
+          &lt;th&gt;邮箱&lt;/th&gt;
+          &lt;th&gt;操作&lt;/th&gt;
+        &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody&gt;
+        {users.map(user &#61;&gt; (
+          &lt;UserTableRow key&#61;{user.id} user&#61;{user} /&gt;
+        ))}
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  );
+};
+
+// &#x1f525; 对应&#xff1a;表格中的每一行
+const UserTableRow: React.FC&lt;{ user: User }&gt; &#61; ({ user }) &#61;&gt; {
+  return (
+    &lt;tr&gt;
+      &lt;td&gt;{user.id}&lt;/td&gt;
+      &lt;td&gt;{user.name}&lt;/td&gt;
+      &lt;td&gt;{user.email}&lt;/td&gt;
+      &lt;td&gt;
+        &lt;button className&#61;&#34;btn-edit&#34;&gt;编辑&lt;/button&gt;
+        &lt;button className&#61;&#34;btn-delete&#34;&gt;删除&lt;/button&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  );
+};
+
+// &#x1f525; 对应&#xff1a;底部页码信息
+const Pagination: React.FC &#61; () &#61;&gt; {
+  return (
+    &lt;div className&#61;&#34;pagination&#34;&gt;
+      &lt;span&gt;第 1 页&#xff0c;共 5 页&lt;/span&gt;
+      &lt;div className&#61;&#34;pagination-controls&#34;&gt;
+        &lt;button&gt;首页&lt;/button&gt;
+        &lt;button&gt;上页&lt;/button&gt;
+        &lt;button className&#61;&#34;active&#34;&gt;1&lt;/button&gt;
+        &lt;button&gt;2&lt;/button&gt;
+        &lt;button&gt;3&lt;/button&gt;
+        &lt;button&gt;4&lt;/button&gt;
+        &lt;button&gt;5&lt;/button&gt;
+        &lt;button&gt;下页&lt;/button&gt;
+        &lt;button&gt;末页&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+};
+</code></pre>
+<p><strong>Java 映射</strong>&#xff1a;</p>
+<ul><li>React 组件 ≈ Java 类&#xff08;有状态、有方法、可复用&#xff09;</li><li>JSX 返回的 HTML ≈ Java 类的 <code>toString()</code> 或模板引擎输出</li><li>Props 参数 ≈ 构造器参数或 setter 方法</li></ul>
+<h4><a rel="noopener noreferrer" id="4_Hooks__Hooks_Layer___388"></a>4. <strong>Hooks 层 (Hooks Layer) - 管理页面状态和逻辑</strong></h4>
+<pre><code class="prism language-tsx">// &#x1f525; 对应&#xff1a;整个页面的数据管理逻辑
+const useUserManagement &#61; () &#61;&gt; {
+  // 状态声明&#xff1a;对应页面上的各种数据
+  const [users, setUsers] &#61; useState&lt;User[]&gt;([]);        // 用户列表数据
+  const [loading, setLoading] &#61; useState(false);         // 加载状态
+  const [searchKeyword, setSearchKeyword] &#61; useState(&#39;&#39;); // 搜索关键词
+  const [pagination, setPagination] &#61; useState({         // 分页信息
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+
+  // &#x1f50d; 核心概念&#xff1a;useEffect - 副作用处理
+  // 类似 Java 的 &#64;PostConstruct&#xff0c;组件挂载时执行
+  useEffect(() &#61;&gt; {
+    loadUsers(); // 页面加载时自动获取数据
+  }, []);
+
+  // &#x1f50d; 核心概念&#xff1a;async/await - 异步数据获取
+  const loadUsers &#61; async () &#61;&gt; {
+    setLoading(true);
+    try {
+      // await&#xff1a;等待后端API返回数据
+      const response &#61; await userService.getUsers({
+        page: pagination.current,
+        pageSize: pagination.pageSize,
+        keyword: searchKeyword
+      });
+
+      // 数据返回后更新状态&#xff0c;触发页面重新渲染
+      setUsers(response.data);
+      setPagination(prev &#61;&gt; ({
+        ...prev,
+        total: response.total
+      }));
+    } catch (error) {
+      console.error(&#39;加载用户失败:&#39;, error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 搜索功能
+  const handleSearch &#61; async (keyword: string) &#61;&gt; {
+    setSearchKeyword(keyword);
+    setPagination(prev &#61;&gt; ({ ...prev, current: 1 }));
+    // 搜索关键词改变后重新加载数据
+    await loadUsers();
+  };
+
+  // 分页切换
+  const handlePageChange &#61; async (page: number) &#61;&gt; {
+    setPagination(prev &#61;&gt; ({ ...prev, current: page }));
+    await loadUsers();
+  };
+
+  // 删除用户
+  const handleDeleteUser &#61; async (userId: number) &#61;&gt; {
+    try {
+      await userService.deleteUser(userId);
+      // 删除成功后重新加载数据
+      await loadUsers();
+    } catch (error) {
+      console.error(&#39;删除用户失败:&#39;, error);
+    }
+  };
+
+  return {
+    // 状态数据&#xff08;供组件显示用&#xff09;
+    users,
+    loading,
+    pagination,
+
+    // 操作方法&#xff08;供组件交互用&#xff09;
+    handleSearch,
+    handlePageChange,
+    handleDeleteUser,
+    loadUsers
+  };
+};
+</code></pre>
+<p><strong>Java 映射</strong>&#xff1a;</p>
+<ul><li><code>useState</code> ≈ 类的成员变量 &#43; getter/setter</li><li><code>useEffect</code> ≈ <code>&#64;PostConstruct</code> &#43; <code>&#64;PreDestroy</code></li><li>自定义 Hook ≈ Service 业务逻辑类</li></ul>
+<h4><a rel="noopener noreferrer" id="5__Services_Layer___481"></a>5. <strong>服务层 (Services Layer) - 数据获取和业务逻辑</strong></h4>
+<pre><code class="prism language-tsx">// &#x1f525; 对应&#xff1a;与后端API的通信逻辑
+class UserService {
+  // &#x1f50d; 核心概念&#xff1a;Promise - 异步操作的结果容器
+  async getUsers(params: UserQueryParams): Promise&lt;UserListResponse&gt; {
+    // 实际发送HTTP请求到后端
+    const response &#61; await httpClient.get(&#39;/api/users&#39;, { params });
+    return response.data;
+  }
+
+  async deleteUser(userId: number): Promise&lt;void&gt; {
+    // DELETE 请求到后端
+    await httpClient.delete(&#96;/api/users/${userId}&#96;);
+  }
+
+  async createUser(userData: CreateUserRequest): Promise&lt;User&gt; {
+    // POST 请求创建用户
+    const response &#61; await httpClient.post(&#39;/api/users&#39;, userData);
+    return response.data;
+  }
+
+  async updateUser(userId: number, userData: UpdateUserRequest): Promise&lt;User&gt; {
+    // PUT 请求更新用户
+    const response &#61; await httpClient.put(&#96;/api/users/${userId}&#96;, userData);
+    return response.data;
+  }
+}
+
+// &#x1f50d; 核心概念&#xff1a;async 函数总是返回 Promise
+// 使用示例&#xff1a;
+const userService &#61; new UserService();
+
+// 方法1&#xff1a;使用 then/catch&#xff08;传统Promise方式&#xff09;
+userService.getUsers({ page: 1, pageSize: 10 })
+  .then(users &#61;&gt; {
+    console.log(&#39;获取到的用户:&#39;, users);
+  })
+  .catch(error &#61;&gt; {
+    console.error(&#39;获取用户失败:&#39;, error);
+  });
+
+// 方法2&#xff1a;使用 async/await&#xff08;推荐&#xff0c;更清晰&#xff09;
+const loadData &#61; async () &#61;&gt; {
+  try {
+    const users &#61; await userService.getUsers({ page: 1, pageSize: 10 });
+    console.log(&#39;获取到的用户:&#39;, users);
+  } catch (error) {
+    console.error(&#39;获取用户失败:&#39;, error);
+  }
+};
+</code></pre>
+<p>其中User的定义如下</p>
+<pre><code class="prism language-tsx">// src/services/user-service.ts
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  avatar?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+</code></pre>
+<p><strong>Java 映射</strong>&#xff1a;</p>
+<ul><li>Service 类 ≈ Spring 的 <code>&#64;Service</code> 组件</li><li>HTTP 请求 ≈ Spring 的 <code>RestTemplate</code> 或 <code>WebClient</code></li><li>Promise ≈ Java 的 <code>CompletableFuture</code> 或 <code>Future</code></li></ul>
+<h4><a rel="noopener noreferrer" id="6_HTTP__HTTP_Client_Layer_552"></a>6. <strong>HTTP 客户端层 (HTTP Client Layer)</strong></h4>
+<p><strong>作用</strong>&#xff1a;处理所有HTTP通信&#xff0c;包含请求拦截、响应处理、错误统一</p>
+<pre><code class="prism language-typescript"><span class="token comment">// HTTP客户端配置 - src/services/httpClient.ts</span>
+<span class="token keyword">import</span> axios<span class="token punctuation">,</span> <span class="token punctuation">{<!-- --></span> AxiosInstance<span class="token punctuation">,</span> AxiosRequestConfig<span class="token punctuation">,</span> AxiosResponse <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">&#39;axios&#39;</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{<!-- --></span> ApiConfig <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">&#39;../config/app&#39;</span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">HttpClient</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> instance<span class="token operator">:</span> AxiosInstance<span class="token punctuation">;</span>
+
+  <span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>instance <span class="token operator">&#61;</span> axios<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span>
+      baseURL<span class="token operator">:</span> ApiConfig<span class="token punctuation">.</span>baseURL<span class="token punctuation">,</span> <span class="token comment">// 使用配置层的后端域名</span>
+      timeout<span class="token operator">:</span> ApiConfig<span class="token punctuation">.</span>timeout<span class="token punctuation">,</span>
+      headers<span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#39;Content-Type&#39;</span><span class="token operator">:</span> <span class="token string">&#39;application/json&#39;</span><span class="token punctuation">,</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">setupInterceptors</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">private</span> <span class="token function">setupInterceptors</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token keyword">void</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 请求拦截器</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>instance<span class="token punctuation">.</span>interceptors<span class="token punctuation">.</span>request<span class="token punctuation">.</span><span class="token function">use</span><span class="token punctuation">(</span>
+      <span class="token punctuation">(</span>config<span class="token punctuation">)</span> <span class="token operator">&#61;&gt;</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">&#96;</span><span class="token string">&#x1f680; 发送请求: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>config<span class="token punctuation">.</span>method<span class="token operator">?.</span><span class="token function">toUpperCase</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token interpolation-punctuation punctuation">}</span></span><span class="token string"> </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>config<span class="token punctuation">.</span>url<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">&#96;</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 添加认证token</span>
+        <span class="token keyword">const</span> token <span class="token operator">&#61;</span> localStorage<span class="token punctuation">.</span><span class="token function">getItem</span><span class="token punctuation">(</span><span class="token string">&#39;auth_token&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>token<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+          config<span class="token punctuation">.</span>headers<span class="token punctuation">.</span>Authorization <span class="token operator">&#61;</span> <span class="token template-string"><span class="token template-punctuation string">&#96;</span><span class="token string">Bearer </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>token<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">&#96;</span></span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> config<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">(</span>error<span class="token punctuation">)</span> <span class="token operator">&#61;&gt;</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">&#39;❌ 请求配置错误:&#39;</span><span class="token punctuation">,</span> error<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token builtin">Promise</span><span class="token punctuation">.</span><span class="token function">reject</span><span class="token punctuation">(</span>error<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 响应拦截器</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>instance<span class="token punctuation">.</span>interceptors<span class="token punctuation">.</span>response<span class="token punctuation">.</span><span class="token function">use</span><span class="token punctuation">(</span>
+      <span class="token punctuation">(</span>response<span class="token operator">:</span> AxiosResponse<span class="token punctuation">)</span> <span class="token operator">&#61;&gt;</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">&#96;</span><span class="token string">✅ 请求成功: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>response<span class="token punctuation">.</span>status<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string"> </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>response<span class="token punctuation">.</span>config<span class="token punctuation">.</span>url<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">&#96;</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> response<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">(</span>error<span class="token punctuation">)</span> <span class="token operator">&#61;&gt;</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">&#96;</span><span class="token string">❌ 请求失败: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>error<span class="token punctuation">.</span>response<span class="token operator">?.</span>status<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string"> </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>error<span class="token punctuation">.</span>config<span class="token operator">?.</span>url<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">&#96;</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 统一错误处理</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>error<span class="token punctuation">.</span>response<span class="token operator">?.</span>status <span class="token operator">&#61;&#61;&#61;</span> <span class="token number">404</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token string">&#39;请求的资源不存在&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>error<span class="token punctuation">.</span>response<span class="token operator">?.</span>status <span class="token operator">&#61;&#61;&#61;</span> <span class="token number">500</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token string">&#39;服务器内部错误&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>error<span class="token punctuation">.</span>request<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token string">&#39;网络错误&#xff0c;请检查网络连接&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span>error<span class="token punctuation">.</span>message <span class="token operator">||</span> <span class="token string">&#39;未知错误&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">// HTTP方法封装</span>
+  <span class="token keyword">public</span> <span class="token keyword">async</span> <span class="token keyword">get</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>url<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">,</span> config<span class="token operator">?</span><span class="token operator">:</span> AxiosRequestConfig<span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">const</span> response <span class="token operator">&#61;</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span>instance<span class="token punctuation">.</span><span class="token keyword">get</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> response<span class="token punctuation">.</span>data<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">async</span> <span class="token generic-function"><span class="token function">post</span><span class="token generic class-name"><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">(</span>url<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">,</span> data<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">any</span><span class="token punctuation">,</span> config<span class="token operator">?</span><span class="token operator">:</span> AxiosRequestConfig<span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">const</span> response <span class="token operator">&#61;</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span>instance<span class="token punctuation">.</span><span class="token generic-function"><span class="token function">post</span><span class="token generic class-name"><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> data<span class="token punctuation">,</span> config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> response<span class="token punctuation">.</span>data<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">async</span> <span class="token generic-function"><span class="token function">put</span><span class="token generic class-name"><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">(</span>url<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">,</span> data<span class="token operator">?</span><span class="token operator">:</span> <span class="token builtin">any</span><span class="token punctuation">,</span> config<span class="token operator">?</span><span class="token operator">:</span> AxiosRequestConfig<span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">const</span> response <span class="token operator">&#61;</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span>instance<span class="token punctuation">.</span><span class="token generic-function"><span class="token function">put</span><span class="token generic class-name"><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> data<span class="token punctuation">,</span> config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> response<span class="token punctuation">.</span>data<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">async</span> <span class="token keyword">delete</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>url<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">,</span> config<span class="token operator">?</span><span class="token operator">:</span> AxiosRequestConfig<span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">const</span> response <span class="token operator">&#61;</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span>instance<span class="token punctuation">.</span><span class="token keyword">delete</span><span class="token operator">&lt;</span><span class="token constant">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> response<span class="token punctuation">.</span>data<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">export</span> <span class="token keyword">const</span> httpClient <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HttpClient</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p><strong>Java 映射</strong>&#xff1a;</p>
+<ul><li>Axios 实例 ≈ Spring 的 <code>RestTemplate</code> 或 <code>WebClient</code></li><li>拦截器 ≈ Spring 的 <code>ClientHttpRequestInterceptor</code></li><li>错误处理 ≈ Spring 的全局异常处理</li></ul>
+<h4><a rel="noopener noreferrer" id="7__649"></a>7. <strong>完整的页面组件集成</strong></h4>
+<pre><code class="prism language-tsx">// &#x1f525; 对应&#xff1a;整个用户管理页面
+const UserManagementPage: React.FC &#61; () &#61;&gt; {
+  // 使用自定义Hook管理所有状态和逻辑
+  const {
+    users,
+    loading,
+    pagination,
+    handleSearch,
+    handlePageChange,
+    handleDeleteUser
+  } &#61; useUserManagement();
+
+  // &#x1f50d; 核心概念&#xff1a;条件渲染 - 根据状态显示不同内容
+  if (loading &amp;&amp; users.length &#61;&#61;&#61; 0) {
+    return (
+      &lt;div className&#61;&#34;loading-container&#34;&gt;
+        &lt;div className&#61;&#34;spinner&#34;&gt;加载中...&lt;/div&gt;
+      &lt;/div&gt;
+    );
+  }
+
+  return (
+    &lt;div className&#61;&#34;user-management-page&#34;&gt;
+      {/* 页面头部 */}
+      &lt;PageHeader onSearch&#61;{handleSearch} /&gt;
+
+      {/* 用户表格 */}
+      &lt;UserTable
+        users&#61;{users}
+        onDeleteUser&#61;{handleDeleteUser}
+      /&gt;
+
+      {/* 分页组件 */}
+      &lt;Pagination
+        current&#61;{pagination.current}
+        total&#61;{pagination.total}
+        pageSize&#61;{pagination.pageSize}
+        onPageChange&#61;{handlePageChange}
+      /&gt;
+
+      {/* &#x1f50d; 核心概念&#xff1a;状态提升 - 加载状态提示 */}
+      {loading &amp;&amp; users.length &gt; 0 &amp;&amp; (
+        &lt;div className&#61;&#34;loading-overlay&#34;&gt;
+          更新数据中...
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+};
+</code></pre>
+<h3><a rel="noopener noreferrer" id="__703"></a>&#x1f504; 数据流动示意图&#xff1a;删除为例</h3>
+<h4><a rel="noopener noreferrer" id="1__704"></a>1 删除操作的完整跨层流程&#xff1a;</h4>
+<pre><code>1. 用户点击删除按钮 (组件层)
+   ↓
+2. 触发删除事件处理函数 (组件层)
+   ↓
+3. 调用Hooks层的删除方法 (Hooks层)
+   ↓
+4. Hooks层调用服务层API (服务层)
+   ↓
+5. 服务层使用HTTP客户端发送请求 (HTTP客户端层)
+   ↓
+6. HTTP客户端处理后端通信 (HTTP客户端层)
+   ↓
+7. 后端Spring Boot处理删除逻辑 (后端系统)
+   ↓
+8. 返回响应结果 (HTTP客户端层)
+   ↓
+9. Hooks层更新前端状态 (Hooks层)
+   ↓
+10. 组件层重新渲染界面 (组件层)
+</code></pre>
+<pre><code>用户操作触发 → 组件调用Hook方法 → Hook调用Service → HTTP请求后端
+    ↓
+界面更新 ← 组件重新渲染 ← Hook更新状态 ← Service返回数据
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2__733"></a>2 具体流程示例&#xff08;删除用户&#xff09;&#xff1a;</h4>
+<ol><li>
+<p><strong>用户点击删除按钮</strong>&#xff08;组件层&#xff09;</p>
+<pre><code class="prism language-tsx">&lt;button onClick&#61;{() &#61;&gt; onDeleteUser(user.id)}&gt;删除&lt;/button&gt;
+</code></pre>
+</li><li>
+<p><strong>调用Hook删除方法</strong>&#xff08;Hooks层&#xff09;</p>
+<pre><code class="prism language-tsx">const handleDeleteUser &#61; async (userId: number) &#61;&gt; {
+  await userService.deleteUser(userId);
+  await loadUsers(); // 重新加载数据
+};
+</code></pre>
+</li><li>
+<p><strong>调用Service方法</strong>&#xff08;服务层&#xff09;</p>
+<pre><code class="prism language-tsx">async deleteUser(userId: number): Promise&lt;void&gt; {
+  await httpClient.delete(&#96;/api/users/${userId}&#96;);
+}
+</code></pre>
+</li><li>
+<p><strong>HTTP客户端发送请求</strong>&#xff08;HTTP层&#xff09;</p>
+<pre><code class="prism language-tsx">// 实际发送&#xff1a;DELETE http://api.example.com/api/users/123
+</code></pre>
+</li><li>
+<p><strong>后端处理并返回</strong>&#xff08;后端系统&#xff09;</p>
+<pre><code class="prism language-tsx">// 返回&#xff1a;204 No Content
+</code></pre>
+</li><li>
+<p><strong>更新界面显示</strong>&#xff08;状态更新&#xff09;</p>
+<pre><code class="prism language-tsx">// loadUsers() 重新获取数据&#xff0c;users状态更新&#xff0c;组件自动重新渲染
+</code></pre>
+</li></ol>
+<h4><a rel="noopener noreferrer" id="3__772"></a>3 具体代码实现&#xff1a;</h4>
+<pre><code class="prism language-typescript"><span class="token comment">// 1. 组件层触发删除</span>
+<span class="token operator">&lt;</span>UserTableRow
+  user<span class="token operator">&#61;</span><span class="token punctuation">{<!-- --></span>user<span class="token punctuation">}</span>
+  onDeleteUser<span class="token operator">&#61;</span><span class="token punctuation">{<!-- --></span>handleDeleteUser<span class="token punctuation">}</span> <span class="token comment">// 来自Hooks层的方法</span>
+<span class="token operator">/</span><span class="token operator">&gt;</span>
+
+<span class="token comment">// 2. Hooks层处理删除逻辑</span>
+<span class="token keyword">const</span> <span class="token function-variable function">handleDeleteUser</span> <span class="token operator">&#61;</span> <span class="token keyword">async</span> <span class="token punctuation">(</span>userId<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">)</span> <span class="token operator">&#61;&gt;</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token function">setDeletingId</span><span class="token punctuation">(</span>userId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">await</span> userService<span class="token punctuation">.</span><span class="token function">deleteUser</span><span class="token punctuation">(</span>userId<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 调用服务层</span>
+    <span class="token comment">// 乐观更新</span>
+    <span class="token function">setUsers</span><span class="token punctuation">(</span>prev <span class="token operator">&#61;&gt;</span> prev<span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span>user <span class="token operator">&#61;&gt;</span> user<span class="token punctuation">.</span>id <span class="token operator">!&#61;&#61;</span> userId<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span>error<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">setError</span><span class="token punctuation">(</span><span class="token string">&#39;删除失败&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">setDeletingId</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 3. 服务层API调用</span>
+<span class="token keyword">class</span> <span class="token class-name">UserService</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">async</span> <span class="token function">deleteUser</span><span class="token punctuation">(</span>userId<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token keyword">void</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> httpClient<span class="token punctuation">.</span><span class="token keyword">delete</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">&#96;</span><span class="token string">/users/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${<!-- --></span>userId<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">&#96;</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 使用HTTP客户端</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 4. HTTP客户端发送请求</span>
+<span class="token comment">// 实际发送: DELETE http://localhost:8080/api/users/123</span>
+<span class="token comment">// 包含认证头、错误处理、日志记录等</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="__807"></a>&#x1f3af; 核心概念总结</h3>
+
+<table><thead><tr><th>前端概念</th><th>对应页面效果</th><th>Java映射&#xff08;近似&#xff09;</th><th>作用</th></tr></thead><tbody><tr><td><strong>组件</strong></td><td>页面上的各个UI块</td><td>类/对象</td><td>构建用户界面</td></tr><tr><td><strong>useState</strong></td><td>页面上的动态数据</td><td>成员变量</td><td>管理组件状态</td></tr><tr><td><strong>useEffect</strong></td><td>页面加载时的数据获取</td><td>&#64;PostConstruct</td><td>处理副作用</td></tr><tr><td><strong>async/await</strong></td><td>异步操作等待</td><td>CompletableFuture</td><td>处理异步操作</td></tr><tr><td><strong>Props</strong></td><td>组件间的数据传递</td><td>方法参数</td><td>组件通信</td></tr><tr><td><strong>自定义Hook</strong></td><td>复杂页面的业务逻辑</td><td>Service类</td><td>逻辑复用</td></tr></tbody></table><h2><a rel="noopener noreferrer" id="_819"></a>总结一下</h2>
+<p>React框架的一个初步了解&#xff0c;其实核心还是掌握框架分层及工作流程&#xff0c;主要有这么几层&#xff1a;配置层统一管理环境变量和类型定义&#xff0c;确保应用配置一致性&#xff08;<strong>yml文件</strong>&#xff09;&#xff1b;路由层负责页面导航和布局管理&#xff0c;实现单页应用流畅体验&#xff1b;组件层专注UI渲染和用户交互&#xff0c;构建直观的界面展示&#xff08;<strong>Controller层</strong>&#xff09;&#xff1b;Hooks层封装状态管理和业务逻辑&#xff0c;提供响应式数据流&#xff08;<strong>Service层</strong>&#xff09;&#xff1b;服务层处理API调用和数据转换&#xff0c;隔离前端与后端通信细节&#xff08;<strong>Repo层</strong>&#xff09;&#xff1b;HTTP客户端层统一处理网络请求&#xff0c;确保通信可靠性和错误处理&#xff08;<strong>RPC服务</strong>&#xff09;。整体和Java强行对应可能生搬硬套&#xff0c;但大概是有些对应关系</p>

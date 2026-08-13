@@ -1,0 +1,90 @@
+<p>本篇BLOG为DDD流程的第一步&#xff0c;在模型的建立阶段&#xff0c;领域专家与技术人员通过业务事件风暴进行需求分析&#xff0c;也叫做行为需求捕获。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-01-1f913fd2c3.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_2"></a>事件风暴目的</h2>
+<p>在真实项目&#xff0c;尤其是敏捷项目里&#xff0c;<strong>领域专家很可能不会一开始就把需求都一一列出来</strong>&#xff0c;需求可能仅仅停留在领域专家的脑子里。<strong>即便领域专家已经把需求写出来&#xff0c;我们也很难保证没有遗漏</strong>&#xff0c;保证开发人员都彻底理解了。而事件风暴不仅能<font color="red"><strong>帮助我们尽量把需求补充完全&#xff0c;而且还能以协作的方式保证业务人员和技术人员对需求理解一致</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-02-2318171abf.png" loading="lazy"></font></p>
+<h2><a rel="noopener noreferrer" id="_5"></a>事件风暴准备</h2>
+<p>在正式开始事件风暴之前&#xff0c;要先做一些准备工作&#xff0c;包括人员准备与场地准备&#xff0c;也就是把参与方拉齐&#xff0c;组会进行讨论。</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>人员准备</h3>
+<p>事件风暴要求业务和技术人员共同协作。</p>
+<ul><li><strong>业务人员</strong>&#xff0c;也就是领域专家&#xff0c;在实践中一般由<strong>业务部门的专家</strong>&#xff0c;或者<strong>PM、PMO、BA</strong>等角色来担任。</li><li><strong>技术人员</strong>&#xff0c;首先要有<strong>架构师</strong>&#xff0c;其次也可以有<strong>技术经理</strong>&#xff0c;以及其它的<strong>RD、QA、FE</strong></li></ul>
+<p>在商户的实践中&#xff0c;我们的领域专家需要有<strong>PM、PMO、BA、PA、运营、业务策略</strong>等角色&#xff0c;而技术人员需要<strong>部门负责人及各方向核心RD</strong></p>
+<h3><a rel="noopener noreferrer" id="_13"></a>场地准备</h3>
+<p>找个会议室&#xff0c;在白墙上或者在线协作站点上进行绘制。</p>
+<h2><a rel="noopener noreferrer" id="_15"></a>事件风暴步骤</h2>
+<p>事件风暴主要有三个步骤&#xff0c;第一步是<strong>识别领域事件</strong>&#xff0c;在这一步&#xff0c;我们要找到业务流程中发生了哪些事情&#xff1b;第二步是<strong>识别命令</strong>&#xff0c;进一步说明是什么角色&#xff0c;做了什么操作&#xff0c;导致上述事情的发生&#xff1b;而第三步是<strong>识别领域名词</strong>&#xff0c;从领域事件和命令中找到名词性概念&#xff0c;为进一步的领域建模打下基础<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-03-223b5c914d.png" loading="lazy"><br />
+详细的XMIND展开如下<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-04-06d3b9b952.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="1__20"></a>1 识别领域事件</h3>
+<p>业务事件风暴的第一步是识别领域事件</p>
+<h4><a rel="noopener noreferrer" id="_22"></a>什么是领域事件</h4>
+<p>所谓领域事件&#xff0c;就是在业务过程中&#xff0c;业务人员要关注的那些已经发生的事儿&#xff0c;实际上&#xff0c;<font color="red"><strong>领域事件表示的是&#xff0c;业务流程中每个步骤引发的结果</strong></font>&#xff0c;这种结果导向的思维方式更容易理清业务。命名一般是<font color="red"><strong>完成时 &#43; 被动语态&#xff0c;例如【门店已联网】</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_24"></a>领域事件识别步骤</h4>
+<p>领域事件识别步骤是<strong>先发散再收敛</strong>&#xff0c;分为两个步骤&#xff1a;</p>
+<ol><li>参加的人按照自己的理解&#xff0c;各自写出领域事件</li><li>一起讨论&#xff0c;统一理解看如何明确一个领域事件&#xff0c;明确的过程一般分为三种&#xff1a;对同一事件形成统一语言&#xff1b; 互相查漏补缺对方的事件&#xff1b;关注必然事件&#xff0c;同时枚举可选事件和业务规则<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-05-dc2353c6f4.png" loading="lazy"></li></ol>
+<h5><a rel="noopener noreferrer" id="1__30"></a>1 对同一事件形成统一语言</h5>
+<p>例如对于客户添加和创建形成统一认知&#xff0c;业务上用添加更合适&#xff0c;创建是个数据的概念&#xff0c;在此阶段用业务概念表达更合适&#xff0c;这样就已经是在建立“<strong>统一语言</strong>”了<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-06-f716e3f269.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="2__34"></a>2 互相查漏补缺对方的事件</h5>
+<p>查漏补缺对方的业务事件梳理&#xff0c;例如其实合同签订的时候未必马上生效&#xff0c;比如 1 月 1 日签了合同&#xff0c;但合同中可以约定&#xff0c;真正生效是在 2 月 1 日&#xff0c;所以需要一个单独的步骤让合同生效&#xff0c;还有个生效事件&#xff0c;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-07-d9a44dfd35.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="3__38"></a>3 关注必然事件&#xff0c;同时枚举可选事件和业务规则</h5>
+<p>有些领域事件的运行需要基本规则&#xff0c;所以需要增加业务规则&#xff0c;还有一些事非必选的业务事件&#xff0c;另起一行描述<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-08-d8956dc327.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_41"></a>领域事件识别注意事项</h4>
+<p>识别领域事件的过程中有两个重要的注意事项</p>
+<ul><li><font color="red"><strong>不要把技术事件当成领域事件</strong></font>&#xff0c;领域事件一定要是领域专家所关注的&#xff0c;用的是业务术语。像数据库事务已回滚、缓存已命中之类的技术术语&#xff0c;不是领域事件</li><li><font color="red"><strong>查询功能不算领域事件</strong></font>,领域事件应该是对某样事物产生了影响&#xff0c;并被记录的事情。一般是某个事物的创建、修改和删除、以及消息发送等</li></ul>
+<p>例如客户信息已查询”这些就不算领域事件&#xff0c;因为<strong>还没有对事物产生实际影响</strong>。不过&#xff0c;这并不代表查询功能不重要&#xff0c;查询功能也要以某种方式体现</p>
+<h4><a rel="noopener noreferrer" id="_47"></a>识别领域事件的目的</h4>
+<p>识别领域事件的主要目的是<font color="red"><strong>明确数据变更内容和规范</strong></font>&#xff0c;领域事件最终会改变数据库中的数据&#xff1b;同时在事件驱动架构中一个领域事件可能会表现为一个向外部发布的异步消息</p>
+<h3><a rel="noopener noreferrer" id="2__49"></a>2 识别命令</h3>
+<p>业务事件风暴的第二步是识别命令</p>
+<h4><a rel="noopener noreferrer" id="_51"></a>什么是命令</h4>
+<p>所谓命令&#xff08;command&#xff09;&#xff0c;就是<strong>引发领域事件的操作</strong>&#xff0c;我们可以通过分析领域事件得到</p>
+<h4><a rel="noopener noreferrer" id="_53"></a>命令的识别步骤</h4>
+<p>识别命令有三个步骤。<font color="red"><strong>除了识别出命令本身以外&#xff0c;我们通常还要识别出谁执行的命令&#xff0c;以及为了执行命令我们要查询出什么数据</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-09-a0d6aaf2b0.png" loading="lazy"></font></p>
+<h5><a rel="noopener noreferrer" id="1__57"></a>1 识别命令</h5>
+<p>识别命令本身&#xff0c;例如对于领域事件【合同已签订】&#xff0c;对应的命令就是【签订合同】<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-10-ae9cc8b4c7.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="2__61"></a>2 识别命令执行者&#xff08;人&#xff08;人的角色&#xff09;还是系统&#xff09;</h5>
+<p>比方说签订合同的命令执行者是销售&#xff0c;注意<font color="red"><strong>如果命令执行者是人&#xff0c;那么命令执行者是角色名词而不是具体的人名</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-11-cd9cb1093e.png" loading="lazy"></font></p>
+<h5><a rel="noopener noreferrer" id="3__65"></a>3 为了执行命令需要查询的数据有哪些</h5>
+<p>有的命令会有多个查询数据。比如说为项目分配员工&#xff0c;要查出项目和员工两个信息<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-12-93233751f3.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_69"></a>识别命令的目的</h4>
+<p>主要有以下三个目的&#xff0c;<font color="red"><strong>明确操作功能点&#xff0c;帮助识别领域对象和权限管理角色&#xff0c;查漏查询功能点</strong></font></p>
+<ol><li><strong>领域建模时&#xff0c;我们可以通过对命令的走查&#xff08;walkthrough&#xff09;&#xff0c;细化和验证领域模型。在实现层面&#xff0c;一个命令可能对应前端的一个操作</strong>&#xff0c;例如按下按钮&#xff1b;对于后端而言&#xff0c;一个命令可能对应一个 API</li><li>识别领域对象或进行权限管理在领域建模时&#xff0c;<strong>命令的执行者可能本身就是一个领域对象&#xff0c;也可能是领域对象充当的角色</strong>&#xff0c;或者是<strong>权限管理中的一个角色</strong></li><li>帮助保证查询操作不遗漏&#xff0c;<strong>每个查询数据&#xff0c;就对应着一个查询功能</strong></li></ol>
+<h3><a rel="noopener noreferrer" id="3__74"></a>3 识别领域名词</h3>
+<p>业务事件风暴的第三步是识别领域名词</p>
+<h4><a rel="noopener noreferrer" id="_76"></a>什么领域名词</h4>
+<p>领域名词&#xff0c;指的是从<strong>命令、领域事件、执行者、查询数据</strong>里找到的名词性概念</p>
+<h4><a rel="noopener noreferrer" id="_78"></a>领域名词的识别步骤</h4>
+<p>找到领域名词的方法是&#xff1a;</p>
+<ul><li>1 <strong>把围绕同一个名词的命令、事件、执行者、查询数据摆在一起</strong></li><li>2 <strong>把领域名词写中间放大&#xff0c;命令、事件、执行者、查询数据围绕在旁边</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-13-75c5361597.png" loading="lazy"><br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-14-e5f57a8a73.png" loading="lazy"></li></ul>
+<h4><a rel="noopener noreferrer" id="_89"></a>识别领域名词的目的</h4>
+<p><strong>识别领域名词的目的帮助找到领域模型中的对象</strong>&#xff0c;当然在这一步里识别出的名词&#xff0c;虽然很可能就是领域对象&#xff0c;但也未必。一个名词有可能只是一个对象充当的角色&#xff0c;或者对象的属性&#xff0c;还有些名词需要经过合并或拆解后&#xff0c;才是合理的领域对象</p>
+<h2><a rel="noopener noreferrer" id="_91"></a>事件风暴产出</h2>
+<p>事件风暴结束后&#xff0c;我们需要将讨论结果落下来方便回溯&#xff0c;有两项内容需要记录</p>
+<h3><a rel="noopener noreferrer" id="1__93"></a>1 事件风暴结果</h3>
+<p>使用电子表格描绘事件风暴的结果<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-15-3211f8d99b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="2__97"></a>2 业务规则明细</h3>
+<p>使用电子表格记录业务规则明细<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141501796-16-4d09210433.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_101"></a>事件风暴常见问题</h2>
+<p>有如下几个重点问题需要明确</p>
+<h3><a rel="noopener noreferrer" id="1__103"></a>1 事件风暴里是否要列出所有的领域事件和命令</h3>
+<p>为了保证简洁&#xff0c;<strong>在事件风暴里只列出主要的、足以用于表达和交流领域知识的步骤&#xff0c;不必列出所有的领域事件和命令</strong>&#xff0c;例如签订合同、生效合同等等。而像修改合同和删除合同这样的步骤是显而易见的&#xff0c;可以结合用户故事或者传统的功能列表等方法保存系统功能的全集</p>
+<h3><a rel="noopener noreferrer" id="2__105"></a>2 各个领域事件需要体现严格的时间顺序吗</h3>
+<p>各个领域事件不需要体现严格的时间顺序&#xff0c;只需要按照大致的顺序&#xff0c;贴出领域事件就可以了&#xff0c;我们应该关注点分离。如果要体现严格的时间顺序&#xff0c;我们可以用流程图、用顺序图等方法&#xff0c;但事件风暴不必关注这一点</p>
+<h3><a rel="noopener noreferrer" id="3__107"></a>3 每个领域事件及命令的颗粒度应该有多大</h3>
+<p>每个步骤&#xff08;一对领域事件和命令&#xff09;的颗粒度原则上<strong>宜粗不宜细&#xff0c;可以先采用比较大的颗粒度</strong>。后面必要的时候&#xff0c;再拆细&#xff0c;就可以了。</p>
+<p>例如&#xff1a;“签订合同”这个命令&#xff0c;在具体操作的时候&#xff0c;可能分成录入合同基本信息、录入合同明细、上传附件等等更小的步骤</p>
+<h2><a rel="noopener noreferrer" id="_111"></a>总结一下</h2>
+<p>事件风暴不仅能帮助我们尽量把需求补充完全&#xff0c;而且还能以协作的方式保证业务人员和技术人员对需求理解一致。实践过程中有点儿像模型推演&#xff0c;先识别流程&#xff0c;例如入驻流程&#xff0c;然后识别领域事件&#xff0c;例如【门店已联网】&#xff0c;同时明确业务规则&#xff0c;门店一旦有了联网时间不能重置&#xff1b;再识别命令&#xff0c;例如A&#43;开启导致门店联网&#xff0c;同时明确命令执行者是系统&#xff0c;执行时需要查询门店信息。当然可能还有可选领域事件&#xff0c;例如【门店维护人变更】不影响主流程。诸如此类串联完一系列领域事件、命令、查询、执行者之后总结出了【门店】这个领域名词。一个深的体会是过程中的UL语言建立以及结果导向从事件倒推命令、查询&#xff0c;执行者的梳理方式&#xff0c;实践中需要通过事件风暴表和业务规则留存。</p>

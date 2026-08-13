@@ -1,0 +1,193 @@
+<p>年前最后一篇技术博客了&#xff0c;由于近期的上线&#xff0c;自学进度严重滞后&#xff0c;年后还是得拾起来啊&#xff0c;闲言少叙&#xff0c;书归正传&#xff0c;经过艰苦的学习奋斗&#xff0c;终于来到了中级部分知识的最后一篇内容《异常处理》&#xff0c;其实之前学习Java的时候就了解过&#xff0c;在本质论系列的第五章也了解过&#xff0c;但是始终没有明确它的定位&#xff0c;它是干嘛的&#xff0c;什么时候用。综合日常的实战&#xff0c;我可以这么定义异常处理&#xff1a;<font color="RED"><strong>异常处理通常和日志紧密配合&#xff0c;在可能出现问题的地方捕获系统抛出的异常然后打出对应的日志&#xff0c;方便系统稳定运行和程序员排查问题</strong></font>&#xff0c;搞明白了基础定位和作用之后&#xff0c;再来详细看看异常体系怎么运作。</p>
+<h3><a rel="noopener noreferrer" id="_1"></a>多异常类型</h3>
+<p>程序不是抛出System.Exception&#xff0c;而是抛出更合适的ArgumentException。</p>
+<h4><a rel="noopener noreferrer" id="_3"></a>抛出具体的异常类型</h4>
+<p>具体的异常类型本身<strong>指出什么地方出错</strong>&#xff08;参数异常&#xff09;&#xff0c;<strong>并包含了特殊的参数来指出具体是哪一个参数出错</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">sealed</span> <span class="token keyword">class</span> <span class="token class-name">TextNumberParser</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">Parse</span><span class="token punctuation">(</span><span class="token keyword">string</span> textDigit<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> digitTexts <span class="token operator">&#61;</span>
+                <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;zero&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;one&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;two&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;three&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;four&#34;</span><span class="token punctuation">,</span>
+                  <span class="token string">&#34;five&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;six&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;seven&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;eight&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;nine&#34;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token preprocessor property">#<span class="token directive keyword">if</span> !PRECSHARP7</span>
+            <span class="token keyword">int</span> result <span class="token operator">&#61;</span> Array<span class="token punctuation">.</span><span class="token function">IndexOf</span><span class="token punctuation">(</span>
+                digitTexts<span class="token punctuation">,</span>
+                <span class="token comment">// Leveraging C# 2.0’s null coelesce operator</span>
+                <span class="token punctuation">(</span>textDigit <span class="token operator">?</span><span class="token operator">?</span>
+                  <span class="token comment">// Leveraging C# 7.0’s throw expression</span>
+                  <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentNullException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>textDigit<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToLower</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token preprocessor property">#<span class="token directive keyword">else</span></span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>textDigit <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentNullException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>textDigit<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token keyword">int</span> result <span class="token operator">&#61;</span> Array<span class="token punctuation">.</span><span class="token function">IndexOf</span><span class="token punctuation">(</span>
+                digitTexts<span class="token punctuation">,</span> textDigit<span class="token operator">?</span><span class="token punctuation">.</span><span class="token function">ToLower</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token preprocessor property">#<span class="token directive keyword">endif</span></span>
+
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>result <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+<span class="token preprocessor property">#<span class="token directive keyword">if</span> !PRECSHARP6</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentException</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;The argument did not represent a digit&#34;</span><span class="token punctuation">,</span> <span class="token function">nameof</span><span class="token punctuation">(</span>textDigit<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token preprocessor property">#<span class="token directive keyword">else</span></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentException</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;The argument did not represent a digit&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;textDigit&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token preprocessor property">#<span class="token directive keyword">endif</span></span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>以上部分的代码就是抛出了一个参数为null的处理方案&#xff0c;更具体的方式有&#xff1a;</p>
+<ul><li>ArgumentNullException和NullReferenceException这两个异常很相似。前者应在错误传递了空值时抛出。空值是无效参数的特例。<strong>非空的无效参数则应抛出ArgumentException或ArgumentOutOfRangeException</strong>。一般只有在底层“运行时”解引用null值&#xff08;想调用对象的成员&#xff0c;但发现对象的值为空&#xff09;时才抛出<strong>NullReferenceException</strong>。</li><li><strong>开发人员不要自己抛出NullReferenceException</strong>。相反&#xff0c;应在访问参数前检查它们是否为空&#xff0c;为空就抛出ArgumentNullException&#xff0c;这样能提供更具体的上下文信息&#xff0c;比如参数名等。如果在实参为空时可以无害地继续&#xff0c;请一定使用C#6.0的空条件操作符&#xff08;&#xff1f;.&#xff09;来避免“运行时”抛出NullReferenceException。</li></ul>
+<p>也就是说&#xff0c;如果<font color="red"><strong>预期参数要求必须不为null否则程序无法进行下去了&#xff0c;则通过ArgumentNullException来给使用者抛出异常&#xff0c;如果为null程序也能继续&#xff0c;咱就别抛异常了&#xff0c;通过操作符来控制参数为null时候的代码走向&#xff0c;避免抛出不想要的如NullReferenceException的异常</strong></font>。总之就是看你想要的是什么了。</p>
+<h4><a rel="noopener noreferrer" id="_51"></a>异常抛出规范</h4>
+<p>不要抛出System.Exception或System.ApplicationException这种过于宽泛的异常&#xff0c;这种异常没有任何有用信息&#xff0c;同时有几个直接或间接从System.SystemException派生的异常仅供“运行时”抛出&#xff0c;其中包括&#xff1a;</p>
+<pre><code class="prism language-csharp">System<span class="token punctuation">.</span>StackOverflowException【堆栈溢出】
+System<span class="token punctuation">.</span>OutOfMemoryException【内存溢出】
+System<span class="token punctuation">.</span>Runtime<span class="token punctuation">.</span>InteropServices<span class="token punctuation">.</span>COMException【服务器意外终止】
+System<span class="token punctuation">.</span>ExecutionEngineException【执行引擎异常】
+System<span class="token punctuation">.</span>Runtime<span class="token punctuation">.</span>InteropServices<span class="token punctuation">.</span>SEHException【服务器意外终止】
+</code></pre>
+<p>这些异常时万万不能自己抛出的&#xff0c;所以有些这样的规范&#xff1a;</p>
+<ul><li>要在向成员传递了错误参数时抛出ArgumentException或者它的某个子类型。抛出尽可能具体的异常&#xff08;例如ArgumentNullException&#xff09;&#xff0c;并且要<strong>在抛出ArgumentException或者它的某个子类时设置ParamName属性</strong>&#xff0c;便于定位问题参数</li><li>要为传给参数异常类型的<strong>paramName实参使用nameof操作符</strong>。接收这种实参的异常类型包括ArgumentException&#xff0c;ArgumentOutOfRangeException和ArgumentNullException。</li><li>要抛出最能说明问题的异常&#xff08;<strong>最具体或者派生得最远的异常</strong>&#xff09;。</li><li>不要抛出NullReferenceException。相反&#xff0c;在值意外为空时抛出ArgumentNullException。</li><li>不要抛出System.SystemException或者它的派生类型。</li><li>不要抛出System.Exception或者System.ApplicationException。</li><li><strong>考虑在程序继续执行会变得不安全时调用System.Environment.FailFast&#xff08;&#xff09;来终止进程</strong>。</li></ul>
+<p>简单点总结就是&#xff0c;<font color="red"><strong>要抛出具体的能让你定位问题的异常&#xff0c;同时如果捕获了异常让系统再走下去也依然有问题&#xff0c;那么尽早终止就好了</strong></font>。</p>
+<h4><a rel="noopener noreferrer" id="_73"></a>新特性</h4>
+<p>以上的代码部分还有两个特性&#xff0c;一个是当参数名发生变更也能获取硬编码的nameof&#xff0c;一个是异常开始支持表达式类型</p>
+<ul><li>C#6.0开始支持使用<strong>nameof</strong>来获取变量的字面值&#xff0c;通过IDE修改参数&#xff0c;nameof也会打出最新的参数硬编码</li><li>C#7.0开始支持表达式异常&#xff0c;如果textDigit 为null则抛出异常&#xff0c;而在7.0之前必须使用if分支来进行判断&#xff1a;</li></ul>
+<pre><code class="prism language-csharp">result <span class="token operator">&#61;</span> Array<span class="token punctuation">.</span><span class="token function">IndexOf</span><span class="token punctuation">(</span> digitTexts<span class="token punctuation">,</span> <span class="token punctuation">(</span>textDigit <span class="token operator">?</span><span class="token operator">?</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentNullException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>textDigit<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_83"></a>捕捉异常</h3>
+<p>异常发生时&#xff0c;会跳转到与异常类型最匹配的catch块执行&#xff0c;<strong>匹配度由继承链决定</strong>&#xff0c;通常是继承链最远端来处理&#xff0c;例如&#xff0c;抛出的<code>InvalidOperationException</code>异常就会由 <code>catch(InvalidOperationException exception)</code>捕获。</p>
+<pre><code class="prism language-csharp">   <span class="token keyword">public</span> <span class="token keyword">sealed</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Win32Exception</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//TextNumberParser.Parse(&#34;negative forty-two&#34;);</span>
+                <span class="token comment">// ...</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">InvalidOperationException</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;Arbitrary exception&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// ...</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">//条件表达式</span>
+            <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">Win32Exception</span> exception<span class="token punctuation">)</span>
+                <span class="token function">when</span><span class="token punctuation">(</span>args<span class="token punctuation">.</span>Length <span class="token operator">&#61;&#61;</span> exception<span class="token punctuation">.</span>NativeErrorCode<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">NullReferenceException</span> exception<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle NullReferenceException</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">ArgumentException</span> exception<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle ArgumentException</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">InvalidOperationException</span> exception<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle ApplicationException</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">Exception</span> exception<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle Exception</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">finally</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle any cleanup code here as it runs</span>
+                <span class="token comment">// regardless of whether there is an exception</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>有几点需要注意&#xff0c;也可以说是异常捕获的规范和新特性&#xff1a;</p>
+<ul><li>C#6.0起&#xff0c;catch块支持一个<strong>额外的条件表达式</strong>。不是只根据异常类型来匹配&#xff0c;现在可以添加when子句来提供一个Boolean表达式。条件为true&#xff0c;catch块才处理异常。当然可以在catch主体中用if语句执行条件检查。<strong>但这样做会造成该catch块先成为异常的“处理程序”&#xff0c;再执行条件检查&#xff0c;造成难以在条件不满足时改为使用一个不同的catch块</strong>。而使用异常条件表达式&#xff0c;就可先检查程序状态&#xff08;包括异常&#xff09;&#xff0c;而不需要先捕捉再重新抛出异常。</li><li>条件子句使用需谨慎:  <strong>如条件表达式本身抛出异常&#xff0c;新异常会被忽略&#xff0c;且条件被视为false</strong>。所以&#xff0c;要避免异常条件表达式抛出异常。</li><li><strong>catch块必须按从最具体到最常规的顺序排列以避免编译错误</strong>。例如&#xff0c;将catch&#xff08;Exception…&#xff09;块移到其他任何一种异常之前都会造成编译错误。因为之前的所有异常都直接或间接从System.Exception派生。</li><li><strong>catch块并非一定需要具名参数</strong>&#xff0c;例如catch&#xff08;SystemException&#xff09;{…}。事实上&#xff0c;如下一节所述&#xff0c;最后一个catch甚至连类型参数都可以不要&#xff0c;这样的catch块叫做常规catch块</li><li><strong>在catch里使用throw来重新抛出异常而不替换堆栈信息&#xff0c;throw后边不能跟任何内容</strong>。</li></ul>
+<p>还有包装异常这样的高级特性&#xff0c;不是很懂&#xff0c;暂时先不了解了&#xff0c;之后用的时候再学习下。</p>
+<h3><a rel="noopener noreferrer" id="catch_138"></a>常规catch块</h3>
+<p>C#还支持常规catch块&#xff0c;即catch{}&#xff0c;<strong>其行为和catch&#xff08;System.Exception exception&#xff09;块完全一致</strong>&#xff0c;只是没有类型名或变量名。此外&#xff0c;<strong>常规catch块必须是所有catch块的最后一个</strong>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// ...</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">InvalidOperationException</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;Arbitrary exception&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// ...</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">NullReferenceException</span> <span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle NullReferenceException</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">ArgumentException</span> <span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle ArgumentException</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InvalidOperationException</span> <span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle ApplicationException</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> <span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle Exception</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// Disabled warning as this code is demonstrating the general catch block</span>
+            <span class="token comment">// following a catch(Exception ) block</span>
+            <span class="token preprocessor property">#<span class="token directive keyword">pragma</span> warning disable 1058</span>
+            <span class="token keyword">catch</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Any unhandled exception</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">finally</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Handle any cleanup code here as it runs</span>
+                <span class="token comment">// regardless of whether there is an exception</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>感觉这个功能就是<font color="red"><strong>兼容C#1.0中不属于System.Exception的&#xff0c;因为从C#2.0开始才支持所有异常包装为派生自System.Exception&#xff0c;所以在1.0时代用常规catch块来覆盖全部异常情况&#xff0c;从2.0时代&#xff0c;常规catch块就和catch&#xff08;System.Exception exception&#xff09;的行为一致了</strong></font>。当然其实在原理上&#xff0c;catch块捕获的是object类型&#xff0c;也就是万类始祖&#xff0c;所以当然可以捕获任何异常喽&#xff1a;在CIL层面它的实质就是&#xff1a;<strong>catch(object)</strong>.</p>
+<h3><a rel="noopener noreferrer" id="_182"></a>异常处理规范</h3>
+<p>异常处理的一些最佳实践规范&#xff0c;这里的调用栈较高的位置就是上层方法&#xff0c;越高越面向用户&#xff0c;调用栈高的位置捕获调用栈低的位置的异常。&#xff1a;</p>
+<ul><li><strong>只捕捉能处理的异常</strong>。只应捕捉那些已知怎么处理的异常。其他异常类型应留给栈中较高的调用者去处理。</li><li><strong>不要隐藏&#xff08;bury&#xff09;不能完全处理的异常</strong>。catch&#xff08;System.Exception&#xff09;和常规catch块大多数时候应放在调用栈中较高的位置&#xff0c;除非在块的末尾重新抛出异常。</li><li><strong>尽量少用System.Exception和常规catch块</strong></li><li><strong>避免在调用栈较低的位置报告或记录异常</strong>。这样记录下来的异常信息不全&#xff0c;而且用户也看不懂&#xff0c;继续向上抛就好了。而且抛的时候使用throw&#xff1b;</li><li><strong>在catch块中使用throw&#xff1b;而不是throw&lt;异常对象&gt;语句</strong>。只要不是重新抛出不同的异常类型&#xff0c;或者不是想故意隐藏原始调用栈&#xff0c;<strong>就应使用throw&#xff1b;语句&#xff0c;允许相同的异常在调用栈中向上传播</strong>。</li><li><strong>想好异常条件来避免在catch块中重新抛出异常</strong>&#xff0c;如果发现会捕捉到不能恰当处理、所以需要重新抛出的异常&#xff0c;那么最好优化异常条件&#xff0c;从一开始就避免捕捉。</li><li><strong>避免在异常条件表达式中抛出异常&#xff0c;避免以后可能变化的异常条件表达式</strong></li></ul>
+<p>以上就是主要规范&#xff0c;还有一个特殊规范体系是重新抛异常的规范&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_194"></a>重新抛出异常</h4>
+<p>重新抛出异常的时候有两种情况&#xff0c;<font color="red">一<strong>种就是同一种异常类型&#xff0c;要保留原始堆栈信息&#xff0c;咱就一直throw;另一种情况是捕获到栈低位置的异常后不想抛这种&#xff0c;想换一种那么更改异常类型&#xff0c;这个时候又要区分&#xff0c;是否要保留原始堆栈信息&#xff0c;如果要保留&#xff0c;就要使用包装异常&#xff0c;不保留就直接截断</strong></font>。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span> url <span class="token operator">&#61;</span> <span class="token string">&#34;http://www.IntelliTect.com&#34;</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>args<span class="token punctuation">.</span>Length <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                url <span class="token operator">&#61;</span> args<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">Task</span> task <span class="token operator">&#61;</span> <span class="token function">WriteWebRequestSizeAsync</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>task<span class="token punctuation">.</span><span class="token function">Wait</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span><span class="token string">&#34;.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">AggregateException</span> exception<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                exception <span class="token operator">&#61;</span> exception<span class="token punctuation">.</span><span class="token function">Flatten</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                ExceptionDispatchInfo<span class="token punctuation">.</span><span class="token function">Capture</span><span class="token punctuation">(</span>exception<span class="token punctuation">.</span>InnerException<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Throw</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>这里的<code>ExceptionDispatchInfo.Capture(exception.InnerException).Throw();</code>就是抛出包装异常。</p>
+<p><strong>重新抛出不同异常时要小心</strong>&#xff1a;在catch块中重新抛出不同的异常&#xff0c;<strong>不仅会重置抛出点&#xff0c;还会隐藏原始异常。要保留原始异常&#xff0c;需设置新异常的InnerException属性&#xff08;该属性通常可通过构造函数来赋值&#xff09;</strong>。只有以下情况才可重新抛出不同的异常。</p>
+<ul><li><strong>更改异常类型可更好地澄清问题</strong>。例如&#xff0c;在对Logon&#xff08;User user&#xff09;的一个调用中&#xff0c;如遇到用户列表文件不能访问的情况&#xff0c;那么重新抛出一个不同的异常类型&#xff0c;要比传播System.IO.IOException更合适。</li><li><strong>私有数据是原始异常的一部分</strong>。在上例中&#xff0c;如文件路径包含在原始的System.IO.IOException中&#xff0c;就会暴露敏感的系统信息&#xff0c;所以应该使用其他异常类型来包装它&#xff08;当然前提是<strong>原始异常没有设置InnerException属性</strong>&#xff09;</li><li><strong>异常类型过于具体&#xff0c;以至于调用者不能恰当地处理</strong>。例如&#xff0c;不要抛出数据库系统的专有异常&#xff0c;而应抛出一个较常规的异常&#xff0c;避免在调用栈较高的位置写数据库的专有代码。</li></ul>
+<p>只有以上这三种情况的时候才不用throw&#xff1b;语句而是throw Exception来进行操作</p>
+<h5><a rel="noopener noreferrer" id="_234"></a>自定义异常设计规范</h5>
+<p>如果框架的异常类型不能满足自身需求&#xff0c;可以使用自定义异常&#xff0c;其全部继承自System.Exception&#xff0c;设计规范如下&#xff1a;</p>
+<ul><li>所有异常都应该<strong>使用“Exception”后缀</strong>&#xff0c;彰显其用途。</li><li>所有异常通常都应包含以下三个构造函数&#xff1a;<strong>无参构造函数、获取一个string参数的构造函数以及同时获取一个字符串和一个内部异常作为参数的构造函数</strong>。另外&#xff0c;由于异常通常在抛出它们的那个语句中构造&#xff0c;所以还应允许其他任何异常数据成为构造函数的一部分。</li></ul>
+<p>在继承体系上也需要注意&#xff0c;避免使用深的继承层次结构&#xff08;一般应小于5级&#xff09;。<img alt="在这里插入图片描述" src="./posts/assets/104053586-01-7abdbad64c.png" loading="lazy"></p>
+<p>本篇博客主要介绍了异常的多种类型&#xff0c;如何抛出&#xff0c;以及如何捕获&#xff0c;特别介绍了常规catch块、nameof、异常条件表达式的新特性&#xff0c;以及异常的一些使用规范&#xff0c;2019封箱之作&#xff0c;以飨诸位&#xff01;</p>

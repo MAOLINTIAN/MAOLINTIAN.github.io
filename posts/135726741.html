@@ -1,0 +1,15 @@
+<p>关于MySQL部分的核心知识进行一网打尽，包括三部分：<strong>基础知识考察、核心机制策略、性能优化策略</strong>，通过一篇文章串联面试重点，并且帮助加强日常基础知识的理解，全局思维导图如下所示<br> <img alt="在这里插入图片描述" src="./posts/assets/135726741-01-c1ee4c4954.png" loading="lazy"></p>
+<p>本篇Blog为第二部分：核心机制策略，子节点表示追问或同级提问<br> <img alt="在这里插入图片描述" src="./posts/assets/135726741-02-e7d315f7b7.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_7"></a>日志机制</h2>
+<p>关于MySQL的几种日志以及依托于日志提供的能力</p>
+<h3><a rel="noopener noreferrer" id="MySQL_9"></a>MySQL有哪几种日志</h3>
+<p>直接一个流程图讲清楚日志<br> <img alt="在这里插入图片描述" src="./posts/assets/135726741-03-4f6ebc36ff.png" loading="lazy"><br> 在数据库系统中，尤其是在MySQL中，binlog（二进制日志）和redolog（重做日志）是两种重要的日志文件，它们各自承担不同的角色和功能。以下是一个简单的表格来展示它们之间的主要区别：</p>
+<table>
+ <thead>
+  <tr>
+   <th>特性</th>
+   <th>binlog (二进制日志)</th>
+   <th>redolog (重做日志)</th> &lt;/
+  </tr>
+ </thead>
+</table>

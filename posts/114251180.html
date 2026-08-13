@@ -1,0 +1,471 @@
+<p>本篇是《深入理解JVM》系列博客的第一篇&#xff0c;旨在全局把控&#xff0c;先对整体流程有个认识&#xff0c;然后再分阶段详解。程序从编写到执行整体可以划分为以下几个步骤&#xff1a;编辑源码-&gt;编译生成class文件-&gt;(加载class文件、运行class字节码文件、垃圾回收)&#xff0c;其中后两个步骤都是在jvm虚拟机上执行的&#xff0c;整体的执行流程如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-01-22212c4728.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_3"></a>编辑生成源代码</h2>
+<p>编辑源代码是经历的第一个环节&#xff0c;编辑源代码&#xff0c;就是我们在任何一个工具上编写源代码&#xff0c;可以是记事本&#xff0c;也可以是IDE&#xff0c;这部分相当于我们在IDEA上 <strong>新建一个.java的Class</strong> 然后写内容&#xff0c;这里我们创建几个类和接口&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//父类Person</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Person</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//成员变量</span>
+    <span class="token keyword">private</span> String name<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> age<span class="token punctuation">;</span>
+
+    <span class="token comment">//构造方法</span>
+    <span class="token keyword">public</span> <span class="token function">Person</span><span class="token punctuation">(</span><span class="token keyword">int</span> age<span class="token punctuation">,</span> String name<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>age <span class="token operator">&#61;</span> age<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//成员方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token comment">//接口IStudy </span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IStudy</span> <span class="token punctuation">{<!-- --></span>
+     <span class="token keyword">int</span> <span class="token function">study</span><span class="token punctuation">(</span><span class="token keyword">int</span> a<span class="token punctuation">,</span> <span class="token keyword">int</span> b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>真正的Strudent类&#xff0c;实现接口IStudy 和继承父类Person:</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Student</span> <span class="token keyword">extends</span> <span class="token class-name">Person</span> <span class="token keyword">implements</span> <span class="token class-name">IStudy</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//私有静态成员变量</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> cnt<span class="token operator">&#61;</span><span class="token number">5</span><span class="token punctuation">;</span>
+    <span class="token comment">//静态方法块</span>
+    <span class="token keyword">static</span><span class="token punctuation">{<!-- --></span>
+        cnt<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//私有成员变量</span>
+    <span class="token keyword">private</span> String sid<span class="token punctuation">;</span>
+    <span class="token comment">//构造方法</span>
+    <span class="token keyword">public</span> <span class="token function">Student</span><span class="token punctuation">(</span><span class="token keyword">int</span> age<span class="token punctuation">,</span> String name<span class="token punctuation">,</span> String sid<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//继承父类构造方法</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span>age<span class="token punctuation">,</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>sid <span class="token operator">&#61;</span> sid<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//父类方法重写</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;run()...&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+    <span class="token comment">//实现接口方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">study</span><span class="token punctuation">(</span><span class="token keyword">int</span> a<span class="token punctuation">,</span> <span class="token keyword">int</span> b<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> c <span class="token operator">&#61;</span> <span class="token number">10</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> d <span class="token operator">&#61;</span> <span class="token number">20</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a<span class="token operator">&#43;</span>b<span class="token operator">*</span>c<span class="token operator">-</span>d<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//成员方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> cnt<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">//方法加载入口</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        Student s <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Student</span><span class="token punctuation">(</span><span class="token number">28</span><span class="token punctuation">,</span><span class="token string">&#34;tml&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;20210201&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//接口方法调用</span>
+        s<span class="token punctuation">.</span><span class="token function">study</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//成员方法调用</span>
+        Student<span class="token punctuation">.</span><span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//父类重写方法调用 </span>
+        s<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>可以从文件路径看到已经有三个Java文件生成了&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-02-ab3f9f10b8.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_82"></a>编译生成字节码</h2>
+<p>编译的过程就是生成<code>.class</code>字节码文件&#xff0c;输入命令<code>javac Student.java</code>将该源码文件<code>.java</code>编译生成<code>.class</code>字节码文件。由于在源码文件中定义了两个类&#xff0c;一个接口&#xff0c;所以生成了3个.clsss文件。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-03-4821fd9494.png" loading="lazy"><br /> 字节码文件是真正实现Java语言跨平台的基石&#xff0c;JVM运行的是class字节码文件&#xff0c;只要是这种格式的文件就行</p>
+<ul><li>各种不同平台的虚拟机都统一使用这种相同的程序存储格式 <font color="red"><strong>跨平台</strong></font></li><li>其他语言编写的源码编译成字节码文件&#xff0c;交给jvm去运行&#xff0c;只要是合法的字节码文件&#xff0c;JVM都会正确地跑起来。 <font color="red"><strong>跨语言</strong></font></li></ul>
+<p>所以其实可以看的出它实现了跨平台和跨语言&#xff0c;用一张图可以描述清楚<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-04-f22be32f79.png" loading="lazy"></p>
+<p>在类文件夹目录下可以执行类问题&#xff0c;用命令<code>javap -c Student</code> 执行类class文件结构如下 &#xff1a;</p>
+<pre><code class="prism language-java"><span class="token string">&#34;C:\Program Files\Java\jdk1.8.0_251\bin\javap.exe&#34;</span> <span class="token operator">-</span>c Student<span class="token punctuation">.</span><span class="token keyword">class</span>
+<span class="token class-name">Compiled</span> from <span class="token string">&#34;Student.java&#34;</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">com<span class="token punctuation">.</span>company<span class="token punctuation">.</span>Student</span> <span class="token keyword">extends</span> <span class="token class-name">com<span class="token punctuation">.</span>company<span class="token punctuation">.</span>Person</span> <span class="token keyword">implements</span> <span class="token class-name">com<span class="token punctuation">.</span>company<span class="token punctuation">.</span>IStudy</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> com<span class="token punctuation">.</span>company<span class="token punctuation">.</span><span class="token function">Student</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">,</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">,</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> aload_0
+       <span class="token number">1</span><span class="token operator">:</span> iload_1
+       <span class="token number">2</span><span class="token operator">:</span> aload_2
+       <span class="token number">3</span><span class="token operator">:</span> invokespecial #<span class="token number">1</span>                  <span class="token comment">// Method com/company/Person.&#34;&lt;init&gt;&#34;:(ILjava/lang/String;)V</span>
+       <span class="token number">6</span><span class="token operator">:</span> aload_0
+       <span class="token number">7</span><span class="token operator">:</span> aload_3
+       <span class="token number">8</span><span class="token operator">:</span> putfield      #<span class="token number">2</span>                  <span class="token comment">// Field sid:Ljava/lang/String;</span>
+      <span class="token number">11</span><span class="token operator">:</span> <span class="token keyword">return</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> getstatic     #<span class="token number">3</span>                  <span class="token comment">// Field java/lang/System.out:Ljava/io/PrintStream;</span>
+       <span class="token number">3</span><span class="token operator">:</span> ldc           #<span class="token number">4</span>                  <span class="token comment">// String run()...</span>
+       <span class="token number">5</span><span class="token operator">:</span> invokevirtual #<span class="token number">5</span>                  <span class="token comment">// Method java/io/PrintStream.println:(Ljava/lang/String;)V</span>
+       <span class="token number">8</span><span class="token operator">:</span> <span class="token keyword">return</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">study</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">,</span> <span class="token keyword">int</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> bipush        <span class="token number">10</span>
+       <span class="token number">2</span><span class="token operator">:</span> istore_3
+       <span class="token number">3</span><span class="token operator">:</span> bipush        <span class="token number">20</span>
+       <span class="token number">5</span><span class="token operator">:</span> istore        <span class="token number">4</span>
+       <span class="token number">7</span><span class="token operator">:</span> iload_1
+       <span class="token number">8</span><span class="token operator">:</span> iload_2
+       <span class="token number">9</span><span class="token operator">:</span> iload_3
+      <span class="token number">10</span><span class="token operator">:</span> imul
+      <span class="token number">11</span><span class="token operator">:</span> iadd
+      <span class="token number">12</span><span class="token operator">:</span> iload         <span class="token number">4</span>
+      <span class="token number">14</span><span class="token operator">:</span> isub
+      <span class="token number">15</span><span class="token operator">:</span> ireturn
+
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> getstatic     #<span class="token number">6</span>                  <span class="token comment">// Field cnt:I</span>
+       <span class="token number">3</span><span class="token operator">:</span> ireturn
+
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> <span class="token keyword">new</span>           #<span class="token number">7</span>                  <span class="token comment">// class com/company/Student</span>
+       <span class="token number">3</span><span class="token operator">:</span> dup
+       <span class="token number">4</span><span class="token operator">:</span> bipush        <span class="token number">28</span>
+       <span class="token number">6</span><span class="token operator">:</span> ldc           #<span class="token number">8</span>                  <span class="token comment">// String tml</span>
+       <span class="token number">8</span><span class="token operator">:</span> ldc           #<span class="token number">9</span>                  <span class="token comment">// String 20210201</span>
+      <span class="token number">10</span><span class="token operator">:</span> invokespecial #<span class="token number">10</span>                 <span class="token comment">// Method &#34;&lt;init&gt;&#34;:(ILjava/lang/String;Ljava/lang/String;)V</span>
+      <span class="token number">13</span><span class="token operator">:</span> astore_1
+      <span class="token number">14</span><span class="token operator">:</span> aload_1
+      <span class="token number">15</span><span class="token operator">:</span> iconst_5
+      <span class="token number">16</span><span class="token operator">:</span> bipush        <span class="token number">6</span>
+      <span class="token number">18</span><span class="token operator">:</span> invokevirtual #<span class="token number">11</span>                 <span class="token comment">// Method study:(II)I</span>
+      <span class="token number">21</span><span class="token operator">:</span> pop
+      <span class="token number">22</span><span class="token operator">:</span> invokestatic  #<span class="token number">12</span>                 <span class="token comment">// Method getCnt:()I</span>
+      <span class="token number">25</span><span class="token operator">:</span> pop
+      <span class="token number">26</span><span class="token operator">:</span> aload_1
+      <span class="token number">27</span><span class="token operator">:</span> invokevirtual #<span class="token number">13</span>                 <span class="token comment">// Method run:()V</span>
+      <span class="token number">30</span><span class="token operator">:</span> <span class="token keyword">return</span>
+
+  <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> iconst_5
+       <span class="token number">1</span><span class="token operator">:</span> putstatic     #<span class="token number">6</span>                  <span class="token comment">// Field cnt:I</span>
+       <span class="token number">4</span><span class="token operator">:</span> getstatic     #<span class="token number">6</span>                  <span class="token comment">// Field cnt:I</span>
+       <span class="token number">7</span><span class="token operator">:</span> iconst_1
+       <span class="token number">8</span><span class="token operator">:</span> iadd
+       <span class="token number">9</span><span class="token operator">:</span> putstatic     #<span class="token number">6</span>                  <span class="token comment">// Field cnt:I</span>
+      <span class="token number">12</span><span class="token operator">:</span> <span class="token keyword">return</span>
+<span class="token punctuation">}</span>
+
+Process finished with exit code <span class="token number">0</span>
+
+</code></pre>
+<p>可以看到字节码文件<strong>存放了这个类的各种信息&#xff1a;字段、方法、父类、实现的接口等各种信息</strong></p>
+<h3><a rel="noopener noreferrer" id="IDEA_173"></a>IDEA配置字节码查看方式</h3>
+<p>在IDEA的Settings里进行相关配置即可&#xff0c;配置截图如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-05-c2e2210edb.png" loading="lazy"><br /> 填写的相关属性信息如下&#xff1a;</p>
+<ol><li>其中Name为工具的名称&#xff0c;可以随意填写&#xff0c;这里我命名&#xff1a;<code>ShowByteCode</code></li><li>Program表示你所使用的程序&#xff0c;这里我们选择jdk里面的javap工具。点击文件夹找到路径即可&#xff0c;我的路径为&#xff1a;<code>C:\Program Files\Java\jdk1.8.0_251\bin\javap.exe</code></li><li>Arguments表示你使用Program程序时跟随的参数&#xff0c;这里直接填写<code>-c $FileNameWithoutExtension$.class</code></li><li>Working directory表示当前工作目录&#xff0c;这里直接填写&#xff1a;<code>$OutputPath$\$FileDirRelativeToSourcepath$</code></li></ol>
+<p>配置好以上信息在对应的类右键查看字节码即可&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-06-8c72177600.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="IDEAJclasslib_185"></a>IDEA集成Jclasslib</h3>
+<p>File -&gt; setting -&gt; plugins路径下直接安装jclasslib&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-07-ac114722b8.png" loading="lazy"><br /> 重启后直接打开view 查看&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-08-2c85952c36.png" loading="lazy"><br /> 可以直观的看到每个方法调用时局部变量表的内容以及操作数栈的操作&#xff0c;如果用Jclasslib来查看字节码比IDEA集成的看起来更清晰一些&#xff0c;内容如下&#xff0c;</p>
+<pre><code class="prism language-java"><span class="token comment">// class version 52.0 (52)</span>
+<span class="token comment">// access flags 0x21</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">com</span><span class="token operator">/</span>company<span class="token operator">/</span>Student <span class="token keyword">extends</span> <span class="token class-name">com</span><span class="token operator">/</span>company<span class="token operator">/</span>Person <span class="token keyword">implements</span> <span class="token class-name">com</span><span class="token operator">/</span>company<span class="token operator">/</span>IStudy <span class="token punctuation">{<!-- --></span>
+
+  <span class="token comment">// compiled from: Student.java</span>
+
+  <span class="token comment">// access flags 0xA</span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> I cnt
+
+  <span class="token comment">// access flags 0x2</span>
+  <span class="token keyword">private</span> Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span> sid
+
+  <span class="token comment">// access flags 0x1</span>
+  <span class="token keyword">public</span> <span class="token generics function"><span class="token punctuation">&lt;</span>init<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>ILjava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span>Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span><span class="token punctuation">)</span>V
+   L0
+    LINENUMBER <span class="token number">15</span> L0
+    ALOAD <span class="token number">0</span>
+    ILOAD <span class="token number">1</span>
+    ALOAD <span class="token number">2</span>
+    INVOKESPECIAL com<span class="token operator">/</span>company<span class="token operator">/</span>Person<span class="token punctuation">.</span><span class="token generics function"><span class="token punctuation">&lt;</span>init<span class="token punctuation">&gt;</span></span> <span class="token punctuation">(</span>ILjava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span><span class="token punctuation">)</span>V
+   L1
+    LINENUMBER <span class="token number">16</span> L1
+    ALOAD <span class="token number">0</span>
+    ALOAD <span class="token number">3</span>
+    PUTFIELD com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>sid <span class="token operator">:</span> Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span>
+   L2
+    LINENUMBER <span class="token number">17</span> L2
+    RETURN
+   L3
+    LOCALVARIABLE <span class="token keyword">this</span> Lcom<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">;</span> L0 L3 <span class="token number">0</span>
+    LOCALVARIABLE age I L0 L3 <span class="token number">1</span>
+    LOCALVARIABLE name Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span> L0 L3 <span class="token number">2</span>
+    LOCALVARIABLE sid Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span> L0 L3 <span class="token number">3</span>
+    MAXSTACK <span class="token operator">&#61;</span> <span class="token number">3</span>
+    MAXLOCALS <span class="token operator">&#61;</span> <span class="token number">4</span>
+
+  <span class="token comment">// access flags 0x1</span>
+  <span class="token keyword">public</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span>V
+   L0
+    LINENUMBER <span class="token number">21</span> L0
+    GETSTATIC java<span class="token operator">/</span>lang<span class="token operator">/</span>System<span class="token punctuation">.</span>out <span class="token operator">:</span> Ljava<span class="token operator">/</span>io<span class="token operator">/</span>PrintStream<span class="token punctuation">;</span>
+    LDC <span class="token string">&#34;run()...&#34;</span>
+    INVOKEVIRTUAL java<span class="token operator">/</span>io<span class="token operator">/</span>PrintStream<span class="token punctuation">.</span>println <span class="token punctuation">(</span>Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span><span class="token punctuation">)</span>V
+   L1
+    LINENUMBER <span class="token number">23</span> L1
+    RETURN
+   L2
+    LOCALVARIABLE <span class="token keyword">this</span> Lcom<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">;</span> L0 L2 <span class="token number">0</span>
+    MAXSTACK <span class="token operator">&#61;</span> <span class="token number">2</span>
+    MAXLOCALS <span class="token operator">&#61;</span> <span class="token number">1</span>
+
+  <span class="token comment">// access flags 0x1</span>
+  <span class="token keyword">public</span> <span class="token function">study</span><span class="token punctuation">(</span>II<span class="token punctuation">)</span>I
+   L0
+    LINENUMBER <span class="token number">26</span> L0
+    BIPUSH <span class="token number">10</span>
+    ISTORE <span class="token number">3</span>
+   L1
+    LINENUMBER <span class="token number">27</span> L1
+    BIPUSH <span class="token number">20</span>
+    ISTORE <span class="token number">4</span>
+   L2
+    LINENUMBER <span class="token number">28</span> L2
+    ILOAD <span class="token number">1</span>
+    ILOAD <span class="token number">2</span>
+    ILOAD <span class="token number">3</span>
+    IMUL
+    IADD
+    ILOAD <span class="token number">4</span>
+    ISUB
+    IRETURN
+   L3
+    LOCALVARIABLE <span class="token keyword">this</span> Lcom<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">;</span> L0 L3 <span class="token number">0</span>
+    LOCALVARIABLE a I L0 L3 <span class="token number">1</span>
+    LOCALVARIABLE b I L0 L3 <span class="token number">2</span>
+    LOCALVARIABLE c I L1 L3 <span class="token number">3</span>
+    LOCALVARIABLE d I L2 L3 <span class="token number">4</span>
+    MAXSTACK <span class="token operator">&#61;</span> <span class="token number">3</span>
+    MAXLOCALS <span class="token operator">&#61;</span> <span class="token number">5</span>
+
+  <span class="token comment">// access flags 0x9</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span>I
+   L0
+    LINENUMBER <span class="token number">32</span> L0
+    GETSTATIC com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>cnt <span class="token operator">:</span> I
+    IRETURN
+    MAXSTACK <span class="token operator">&#61;</span> <span class="token number">1</span>
+    MAXLOCALS <span class="token operator">&#61;</span> <span class="token number">0</span>
+
+  <span class="token comment">// access flags 0x9</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">[</span>Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span><span class="token punctuation">)</span>V
+   L0
+    LINENUMBER <span class="token number">38</span> L0
+    NEW <span class="token class-name">com</span><span class="token operator">/</span>company<span class="token operator">/</span>Student
+    DUP
+    BIPUSH <span class="token number">28</span>
+    LDC <span class="token string">&#34;tml&#34;</span>
+    LDC <span class="token string">&#34;20210201&#34;</span>
+    INVOKESPECIAL com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span><span class="token generics function"><span class="token punctuation">&lt;</span>init<span class="token punctuation">&gt;</span></span> <span class="token punctuation">(</span>ILjava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span>Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span><span class="token punctuation">)</span>V
+    ASTORE <span class="token number">1</span>
+   L1
+    LINENUMBER <span class="token number">40</span> L1
+    ALOAD <span class="token number">1</span>
+    ICONST_5
+    BIPUSH <span class="token number">6</span>
+    INVOKEVIRTUAL com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>study <span class="token punctuation">(</span>II<span class="token punctuation">)</span>I
+    POP
+   L2
+    LINENUMBER <span class="token number">42</span> L2
+    INVOKESTATIC com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>getCnt <span class="token punctuation">(</span><span class="token punctuation">)</span>I
+    POP
+   L3
+    LINENUMBER <span class="token number">44</span> L3
+    ALOAD <span class="token number">1</span>
+    INVOKEVIRTUAL com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>run <span class="token punctuation">(</span><span class="token punctuation">)</span>V
+   L4
+    LINENUMBER <span class="token number">46</span> L4
+    RETURN
+   L5
+    LOCALVARIABLE args <span class="token punctuation">[</span>Ljava<span class="token operator">/</span>lang<span class="token operator">/</span>String<span class="token punctuation">;</span> L0 L5 <span class="token number">0</span>
+    LOCALVARIABLE s Lcom<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">;</span> L1 L5 <span class="token number">1</span>
+    MAXSTACK <span class="token operator">&#61;</span> <span class="token number">5</span>
+    MAXLOCALS <span class="token operator">&#61;</span> <span class="token number">2</span>
+
+  <span class="token comment">// access flags 0x8</span>
+  <span class="token keyword">static</span> <span class="token generics function"><span class="token punctuation">&lt;</span>clinit<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>V
+   L0
+    LINENUMBER <span class="token number">5</span> L0
+    ICONST_5
+    PUTSTATIC com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>cnt <span class="token operator">:</span> I
+   L1
+    LINENUMBER <span class="token number">8</span> L1
+    GETSTATIC com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>cnt <span class="token operator">:</span> I
+    ICONST_1
+    IADD
+    PUTSTATIC com<span class="token operator">/</span>company<span class="token operator">/</span>Student<span class="token punctuation">.</span>cnt <span class="token operator">:</span> I
+   L2
+    LINENUMBER <span class="token number">9</span> L2
+    RETURN
+    MAXSTACK <span class="token operator">&#61;</span> <span class="token number">2</span>
+    MAXLOCALS <span class="token operator">&#61;</span> <span class="token number">0</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h2><a rel="noopener noreferrer" id="JVM_339"></a>JVM加载执行字节码文件</h2>
+<p>在命令行中输入<code>java Student</code>这个命令&#xff0c;就启动了一个java虚拟机&#xff0c;然后加载Student.class字节码文件到内存&#xff0c;然后运行内存中的字节码指令了。这部分的操作就相当于我们在IDEA这样的ide上 <strong>点击运行按钮</strong>。整个字节码class文件执行的整体宏观如图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-09-fcc6078a3d.png" loading="lazy"><br /> 虚拟机JVM负责核心的<strong>加载.class文件、将.class文件转为机器码&#xff0c;最终执行机器码</strong>。JVM的功能模块主要包括<strong>类加载器、执行引擎</strong>和<strong>垃圾回收系统</strong>。同时JVM有自己的内存模型。</p>
+<h3><a rel="noopener noreferrer" id="JVM_343"></a>JVM内存模型</h3>
+<p>JVM中把内存分为<strong>方法区、Java栈、Java堆、本地方法栈、PC寄存器</strong> 5部分数据区域&#xff1a;</p>
+<ol><li><strong>方法区</strong>&#xff1a;用于存放类、接口、常量以及静态变量等元数据信息&#xff0c;加载进来的字节码数据都存储在方法区</li><li><strong>虚拟机栈</strong> &#xff1a;执行引擎运行字节码时的运行时内存区&#xff0c;采用栈帧的形式保存每个方法的调用运行数据</li><li><strong>本地方法栈</strong>&#xff1a;执行引擎调用本地方法时的运行时内存区</li><li><strong>Java堆</strong>&#xff1a;运行时数据区&#xff0c;各种对象一般都存储在堆上</li><li><strong>PC寄存器&#xff08;程序计数器&#xff09;</strong>&#xff1a;功能如同CPU中的PC寄存器&#xff0c;指示要执行的字节码指令。</li></ol>
+<p>这部分内容在<a href="https://tianmaolin.blog.csdn.net/article/details/76976027" rel="nofollow">Jvm运行时内存分析</a>这篇blog详细解析</p>
+<h3><a rel="noopener noreferrer" id="_355"></a>类加载过程</h3>
+<p>类从被加载到虚拟机内存中开始&#xff0c;到卸载出内存为止&#xff0c;它的整个生命周期包括&#xff1a;<strong>加载、验证、准备、解析、初始化</strong>五个阶段&#xff0c;其中验证、准备、解析三个部分统称<strong>链接</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-10-4cf506a35c.png" loading="lazy"></p>
+<p>各个阶段需要对代码操作内容如下&#xff1a;</p>
+<ol><li><strong>加载阶段</strong><br /> 1&#xff09;类加载器会在指定的classpath中找到Student.class&#xff08;通过类的全限定名&#xff09;这个文件&#xff0c;然后读取字节流中的数据&#xff0c;将其存储在方法区中。<br /> 2&#xff09;类加载器根据Student.class的信息建立一个Class对象&#xff0c;这个对象比较特殊&#xff0c;一般也存放在方法区中&#xff0c;用于作为运行时访问Student类的各种数据的接口。</li><li><strong>验证阶段</strong>&#xff1a;必要的验证工作&#xff0c;格式、语义等</li><li><strong>准备阶段</strong>&#xff1a; 为Student中的静态字段分配内存空间&#xff0c;也是在方法区中&#xff0c;并进行零初始化&#xff0c;即数字类型初始化为0&#xff0c;boolean初始化为false&#xff0c;引用类型初始化为null等。<code>private static int cnt&#61;5;</code> 此时&#xff0c;并不会执行赋值为5的操作&#xff0c;而是将其初始化为0。</li><li><strong>解析阶段</strong>&#xff1a;由于已经加载到内存了&#xff0c;所以原来字节码文件中存放的部分方法、字段等的符号引用可以解析为其在内存中的直接引用了&#xff0c;而不一定非要等到真正运行时才进行解析。</li><li><strong>初始化阶段</strong>&#xff1a;初始化阶段是执行类构造器()方法的过程&#xff0c;是真正意义上开始执行阶段</li></ol>
+<p>类加载过程中主要是将class文件&#xff08;准确地讲&#xff0c;应该是类的二进制字节流&#xff09;加载到虚拟机内存中&#xff0c;真正执行字节码的操作&#xff0c;在加载完成后才真正开始</p>
+<h3><a rel="noopener noreferrer" id="_371"></a>运行字节码指令</h3>
+<p>执行引擎找到<strong>main</strong>这个入口方法&#xff0c;执行其中的字节码指令&#xff0c;这里就依赖到了Java栈&#xff0c;也就是虚拟机栈&#xff0c;其结构如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-11-9f05eb0273.png" loading="lazy"><br /> 每一个方法从调用开始至执行完成的过程&#xff0c;都对应着<strong>一个栈帧在虚拟机栈里面从入栈到出栈</strong>的过程。在活动线程中&#xff0c;<strong>只有位于栈顶的栈帧才是有效的</strong>&#xff0c;称为当前栈帧&#xff08;Current Stack Frame&#xff09;&#xff0c;与这个栈帧相关联的方法称为当前方法&#xff08;Current Method&#xff09;。执行引 擎运行的所有字节码指令都只针对当前栈帧进行操作</p>
+<ul><li>当前正在运行的方法的栈帧位于栈顶&#xff0c;当前方法返回&#xff0c;则当前方法对应的栈帧出栈&#xff0c;当前方法的调用者的栈帧变为栈顶</li><li><strong>当前方法的方法体中若是调用了其他方法&#xff0c;则为被调用的方法创建栈帧&#xff0c;并将其压入栈顶</strong>。简单查看我们上述方法的运行过程&#xff1a;</li></ul>
+<p>注意当存在方法调用关系时遵循以上两个原则</p>
+<h4><a rel="noopener noreferrer" id="main_381"></a>main方法执行</h4>
+<p>main方法对应的下面是我们执行的代码&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token comment">//方法加载入口</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        Student s <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Student</span><span class="token punctuation">(</span><span class="token number">28</span><span class="token punctuation">,</span><span class="token string">&#34;tml&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;20210201&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//接口方法调用</span>
+        s<span class="token punctuation">.</span><span class="token function">study</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//成员方法调用</span>
+        Student<span class="token punctuation">.</span><span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//父类重写方法调用 </span>
+        s<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>其对应的字节码指令如下&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> <span class="token keyword">new</span>           #<span class="token number">7</span>                  <span class="token comment">// class com/company/Student</span>
+       <span class="token number">3</span><span class="token operator">:</span> dup
+       <span class="token number">4</span><span class="token operator">:</span> bipush        <span class="token number">28</span>
+       <span class="token number">6</span><span class="token operator">:</span> ldc           #<span class="token number">8</span>                  <span class="token comment">// String tml</span>
+       <span class="token number">8</span><span class="token operator">:</span> ldc           #<span class="token number">9</span>                  <span class="token comment">// String 20210201</span>
+      <span class="token number">10</span><span class="token operator">:</span> invokespecial #<span class="token number">10</span>                 <span class="token comment">// Method &#34;&lt;init&gt;&#34;:(ILjava/lang/String;Ljava/lang/String;)V</span>
+      <span class="token number">13</span><span class="token operator">:</span> astore_1
+      <span class="token number">14</span><span class="token operator">:</span> aload_1
+      <span class="token number">15</span><span class="token operator">:</span> iconst_5
+      <span class="token number">16</span><span class="token operator">:</span> bipush        <span class="token number">6</span>
+      <span class="token number">18</span><span class="token operator">:</span> invokevirtual #<span class="token number">11</span>                 <span class="token comment">// Method study:(II)I</span>
+      <span class="token number">21</span><span class="token operator">:</span> pop
+      <span class="token number">22</span><span class="token operator">:</span> invokestatic  #<span class="token number">12</span>                 <span class="token comment">// Method getCnt:()I</span>
+      <span class="token number">25</span><span class="token operator">:</span> pop
+      <span class="token number">26</span><span class="token operator">:</span> aload_1
+      <span class="token number">27</span><span class="token operator">:</span> invokevirtual #<span class="token number">13</span>                 <span class="token comment">// Method run:()V</span>
+      <span class="token number">30</span><span class="token operator">:</span> <span class="token keyword">return</span>
+</code></pre>
+<p>首先会在虚拟机栈中为main方法创建栈帧&#xff0c;局部变量表长度为2&#xff0c;slot0存放参数args&#xff0c;slot1存放局部变量Student s&#xff0c;操作数栈最大深度为5&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-12-22fe22c653.png" loading="lazy"></p>
+<p>然后执行<code>new#7</code>指令&#xff0c;在java堆中创建一个Student对象&#xff0c;并将其引用值放入main栈帧中<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-13-0f4757ff77.png" loading="lazy"><br /> 最后初始化一个对象所需的参数入操作数栈&#xff08;通过实例构造的方式&#xff09;&#xff1a;</p>
+<ol><li><code>up</code>&#xff1a;复制栈顶的值&#xff0c;然后将复制的结果入操作数栈。</li><li><code>bipush 28</code>&#xff1a;将单字节常量值28入操作数栈。</li><li><code>ldc #8</code>&#xff1a;将#8这个常量池中的常量即<code>tml</code>取出&#xff0c;并入操作数栈。</li><li><code>ldc #9</code>&#xff1a;将#9这个常量池中的常量即<code>20210201</code>取出&#xff0c;并入操作数栈。</li></ol>
+<p>入栈后的整体效果如下</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114251180-14-b66fb81bbe.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="Strudent_436"></a>Strudent构造方法执行</h4>
+<p><code>invokespecial #10</code>&#xff1a;调用#10这个常量所代表的方法&#xff0c;即<code>Student.&lt;init&gt;()</code>这个方法&#xff0c;这步是为了初始化对象s的各项值&#xff0c;<code>&lt;init&gt;()</code>方法&#xff0c;是编译器将<strong>调用父类的<code>&lt;init&gt;()</code>的语句、构造代码块、实例字段赋值语句&#xff0c;以及自己编写的构造方法中的语句整合在一起生成的一个方法</strong>。保证调用父类的<code>&lt;init&gt;()</code>方法在最开头&#xff0c;自己编写的构造方法语句在最后&#xff0c;而构造代码块及实例字段赋值语句按出现的顺序按序整合到<code>&lt;init&gt;()</code>方法中。此时需注意&#xff1a;上边从dup到ldc #9这四条指令向栈中添加了4个数据&#xff0c;而Student.()方法刚好也需要4个参数&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token comment">//构造方法</span>
+    <span class="token keyword">public</span> <span class="token function">Student</span><span class="token punctuation">(</span><span class="token keyword">int</span> age<span class="token punctuation">,</span> String name<span class="token punctuation">,</span> String sid<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//继承父类构造方法</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span>age<span class="token punctuation">,</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>sid <span class="token operator">&#61;</span> sid<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>其对应的字节码文件为&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token keyword">public</span> com<span class="token punctuation">.</span>company<span class="token punctuation">.</span><span class="token function">Student</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">,</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">,</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> aload_0
+       <span class="token number">1</span><span class="token operator">:</span> iload_1
+       <span class="token number">2</span><span class="token operator">:</span> aload_2
+       <span class="token number">3</span><span class="token operator">:</span> invokespecial #<span class="token number">1</span>                  <span class="token comment">// Method com/company/Person.&#34;&lt;init&gt;&#34;:(ILjava/lang/String;)V</span>
+       <span class="token number">6</span><span class="token operator">:</span> aload_0
+       <span class="token number">7</span><span class="token operator">:</span> aload_3
+       <span class="token number">8</span><span class="token operator">:</span> putfield      #<span class="token number">2</span>                  <span class="token comment">// Field sid:Ljava/lang/String;</span>
+      <span class="token number">11</span><span class="token operator">:</span> <span class="token keyword">return</span>
+</code></pre>
+<p>虽然定义中只显式地定义了传入3个参数&#xff0c;而实际上会隐含传入一个当前对象的引用作为第一个参数&#xff0c;所以四个参数依次为<strong>this&#xff0c;age&#xff0c;name&#xff0c;sid</strong>。上面的4条指令刚好把这四个参数的值依次入栈&#xff0c;进行参数传递&#xff0c;然后调用了<code>Student.&lt;init&gt;()</code>方法&#xff0c;会创建该方法的栈帧&#xff0c;并入栈。栈帧中的局部变量表的第0到4个slot分别保存着入栈的那四个参数值。创建<code>Studet.&lt;init&gt;()</code>方法的栈帧&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-15-9401bec87f.png" loading="lazy"></p>
+<p>Student.<code>&lt;init&gt;()</code>方法中的字节码指令如下&#xff1a;</p>
+<ol><li> <p><code>aload_0</code>&#xff1a;将局部变量表slot0处的引用值入操作数栈</p> </li><li> <p><code>aload_1</code>&#xff1a;将局部变量表slot1处的int值入操作数栈</p> </li><li> <p><code>aload_2</code>&#xff1a;将局部变量表slot2处的引用值入操作数栈<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-16-b64b1e4a5c.png" loading="lazy"></p> </li><li> <p><code>invokespecial #1</code>&#xff1a;调用<code>Person.&lt;init&gt;()</code>方法&#xff0c;同调用<code>Student.&lt;init&gt;</code>过程类似&#xff0c;创建栈帧&#xff0c;将三个参数的值存放到局部变量表等&#xff0c;并且给堆上的对象赋值<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-17-23eb065f1b.png" loading="lazy"></p> </li><li> <p>从<code>Person.&lt;init&gt;()</code>返回之后&#xff0c;用于传参的操作数栈的3个值被回收了, Person栈帧的使命完成。</p> </li><li> <p><code>aload_0</code>&#xff1a;将slot0处的引用值入栈&#xff0c;也就是父类构造好的引用。</p> </li><li> <p><code>aload_3</code>&#xff1a;将slot3处的引用值入栈&#xff0c;也就是子类独有的参数sid。</p> </li><li> <p><code>putfield #2</code>&#xff1a;将当前栈顶的值”20210201”赋值给0x2222所引用对象的sid字段&#xff0c;然后两个参数出栈。</p> </li><li> <p><code>return</code>&#xff1a;返回调用方即main()方法&#xff0c;当前方法栈帧出栈&#xff0c;main栈帧上操作数栈上使用的几个slot销毁&#xff0c;只保留了最底部的引用0x222<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-18-ce58ee05ae.png" loading="lazy"></p> </li></ol>
+<h4><a rel="noopener noreferrer" id="main_483"></a>回到main方法中</h4>
+<p>重新回到main()方法中&#xff0c;继续执行下面的字节码指令&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> <span class="token keyword">new</span>           #<span class="token number">7</span>                  <span class="token comment">// class com/company/Student</span>
+       <span class="token number">3</span><span class="token operator">:</span> dup
+       <span class="token number">4</span><span class="token operator">:</span> bipush        <span class="token number">28</span>
+       <span class="token number">6</span><span class="token operator">:</span> ldc           #<span class="token number">8</span>                  <span class="token comment">// String tml</span>
+       <span class="token number">8</span><span class="token operator">:</span> ldc           #<span class="token number">9</span>                  <span class="token comment">// String 20210201</span>
+      <span class="token number">10</span><span class="token operator">:</span> invokespecial #<span class="token number">10</span>                 <span class="token comment">// Method &#34;&lt;init&gt;&#34;:(ILjava/lang/String;Ljava/lang/String;)V</span>
+      <span class="token number">13</span><span class="token operator">:</span> astore_1
+      <span class="token number">14</span><span class="token operator">:</span> aload_1
+      <span class="token number">15</span><span class="token operator">:</span> iconst_5
+      <span class="token number">16</span><span class="token operator">:</span> bipush        <span class="token number">6</span>
+      <span class="token number">18</span><span class="token operator">:</span> invokevirtual #<span class="token number">11</span>                 <span class="token comment">// Method study:(II)I</span>
+      <span class="token number">21</span><span class="token operator">:</span> pop
+      <span class="token number">22</span><span class="token operator">:</span> invokestatic  #<span class="token number">12</span>                 <span class="token comment">// Method getCnt:()I</span>
+      <span class="token number">25</span><span class="token operator">:</span> pop
+      <span class="token number">26</span><span class="token operator">:</span> aload_1
+      <span class="token number">27</span><span class="token operator">:</span> invokevirtual #<span class="token number">13</span>                 <span class="token comment">// Method run:()V</span>
+      <span class="token number">30</span><span class="token operator">:</span> <span class="token keyword">return</span>
+</code></pre>
+<p><code>astore_1</code>&#xff1a;将当前栈顶引用类型的值赋值给slot1处的局部变量&#xff0c;然后出栈。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-19-81875fcfa1.png" loading="lazy"></p>
+<p>接下来继续执行main方法的相关指令&#xff1a;</p>
+<ol><li><code>aload_1</code>&#xff1a;slot1处的引用类型的值入栈&#xff0c;也就是要开始使用s对象的方法&#xff0c;所以先将引用入栈</li><li><code>iconst_5</code>&#xff1a;将常数5入栈&#xff0c;int型常数只有0-5有对应的iconst_x指令</li><li><code>bipush 6</code>&#xff1a;将变量6入栈</li><li><code>invokevirtual #11</code>&#xff1a;调用虚方法study()&#xff0c;这个方法是重写的接口中的方法&#xff0c;需要动态分派&#xff0c;所以使用了invokevirtual指令。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-20-b8b1086657.png" loading="lazy"></li></ol>
+<h4><a rel="noopener noreferrer" id="Study_518"></a>Study方法的执行</h4>
+<p>构造方法执行完成后&#xff0c;即顺序执行study方法的调用&#xff0c;代码如下&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token comment">//实现接口方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">study</span><span class="token punctuation">(</span><span class="token keyword">int</span> a<span class="token punctuation">,</span> <span class="token keyword">int</span> b<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> c <span class="token operator">&#61;</span> <span class="token number">10</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> d <span class="token operator">&#61;</span> <span class="token number">20</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a<span class="token operator">&#43;</span>b<span class="token operator">*</span>c<span class="token operator">-</span>d<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>字节码如下&#xff1a;</p>
+<pre><code class="prism language-java">
+  <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">study</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">,</span> <span class="token keyword">int</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> bipush        <span class="token number">10</span>
+       <span class="token number">2</span><span class="token operator">:</span> istore_3
+       <span class="token number">3</span><span class="token operator">:</span> bipush        <span class="token number">20</span>
+       <span class="token number">5</span><span class="token operator">:</span> istore        <span class="token number">4</span>
+       <span class="token number">7</span><span class="token operator">:</span> iload_1
+       <span class="token number">8</span><span class="token operator">:</span> iload_2
+       <span class="token number">9</span><span class="token operator">:</span> iload_3
+      <span class="token number">10</span><span class="token operator">:</span> imul
+      <span class="token number">11</span><span class="token operator">:</span> iadd
+      <span class="token number">12</span><span class="token operator">:</span> iload         <span class="token number">4</span>
+      <span class="token number">14</span><span class="token operator">:</span> isub
+      <span class="token number">15</span><span class="token operator">:</span> ireturn
+
+</code></pre>
+<p>最大栈深度3&#xff0c;局部变量表5<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-21-07e3321e65.png" loading="lazy"></p>
+<p>字节码指令执行如下&#xff1a;</p>
+<ol><li>bipush 10&#xff1a;将10入栈</li><li>istore_3&#xff1a;将栈顶的10赋值给slot3处的int局部变量&#xff0c;即c&#xff0c;出栈。</li><li>bipush 20&#xff1a;将20入栈</li><li>istore 4&#xff1a;将栈顶的20赋值给slot4处的int局部变量&#xff0c;即d&#xff0c;出栈。上面4条指令&#xff0c;完成对c和d的赋值工作。<code>iload_1、iload_2、iload_3</code>这三条指令将slot1、slot2、slot3这三个局部变量入栈&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-22-305e2169c1.png" loading="lazy"></li><li><code>imul</code>&#xff1a;将栈顶的两个值出栈&#xff0c;相乘的结果入栈&#xff0c;也就是计算b*c&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-23-582c23ea43.png" loading="lazy"></li><li><code>iadd</code>&#xff1a;将当前栈顶的两个值出栈&#xff0c;相加的结果入栈&#xff0c;也就是计算a&#43;b*c</li><li><code>iload 4</code>&#xff1a;将slot4处的int型的局部变量入栈&#xff0c;也就是将d入栈</li><li><code>isub</code>&#xff1a;将栈顶两个值出栈&#xff0c;相减结果入栈&#xff0c;也就是计算a&#43;b*c-d&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114251180-24-24bce0d499.png" loading="lazy"></li><li><code>ireturn</code>&#xff1a;将当前栈顶的值返回到调用方&#xff0c;到这里为止study方法执行完毕&#xff0c;study栈帧出虚拟机栈&#xff0c;main栈帧上的操作数栈清空&#xff0c;方法继续向下执行。</li></ol>
+<p>以上study的方法就执行完成了。</p>
+<h4><a rel="noopener noreferrer" id="main_569"></a>回到main方法中</h4>
+<p>重新回到main()方法中&#xff0c;继续执行下面的字节码指令&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Code<span class="token operator">:</span>
+       <span class="token number">0</span><span class="token operator">:</span> <span class="token keyword">new</span>           #<span class="token number">7</span>                  <span class="token comment">// class com/company/Student</span>
+       <span class="token number">3</span><span class="token operator">:</span> dup
+       <span class="token number">4</span><span class="token operator">:</span> bipush        <span class="token number">28</span>
+       <span class="token number">6</span><span class="token operator">:</span> ldc           #<span class="token number">8</span>                  <span class="token comment">// String tml</span>
+       <span class="token number">8</span><span class="token operator">:</span> ldc           #<span class="token number">9</span>                  <span class="token comment">// String 20210201</span>
+      <span class="token number">10</span><span class="token operator">:</span> invokespecial #<span class="token number">10</span>                 <span class="token comment">// Method &#34;&lt;init&gt;&#34;:(ILjava/lang/String;Ljava/lang/String;)V</span>
+      <span class="token number">13</span><span class="token operator">:</span> astore_1
+      <span class="token number">14</span><span class="token operator">:</span> aload_1
+      <span class="token number">15</span><span class="token operator">:</span> iconst_5
+      <span class="token number">16</span><span class="token operator">:</span> bipush        <span class="token number">6</span>
+      <span class="token number">18</span><span class="token operator">:</span> invokevirtual #<span class="token number">11</span>                 <span class="token comment">// Method study:(II)I</span>
+      <span class="token number">21</span><span class="token operator">:</span> pop
+      <span class="token number">22</span><span class="token operator">:</span> invokestatic  #<span class="token number">12</span>                 <span class="token comment">// Method getCnt:()I</span>
+      <span class="token number">25</span><span class="token operator">:</span> pop
+      <span class="token number">26</span><span class="token operator">:</span> aload_1
+      <span class="token number">27</span><span class="token operator">:</span> invokevirtual #<span class="token number">13</span>                 <span class="token comment">// Method run:()V</span>
+      <span class="token number">30</span><span class="token operator">:</span> <span class="token keyword">return</span>
+</code></pre>
+<p>下面的字节码指令就不再重复画图示意了&#xff1a;</p>
+<ol><li><code>invokestatic #12</code> 调用静态方法getCnt()不需要传任何参数</li><li><code>pop</code>&#xff1a;getCnt()方法有返回值&#xff0c;将其出栈</li><li><code>aload_1</code>&#xff1a;将slot1处的引用值入栈</li><li><code>invokevirtual #13</code>&#xff1a;调用0x2222对象的<code>run()</code>方法&#xff0c;重写自父类的方法&#xff0c;需要动态分派&#xff0c;所以使用invokevirtual指令</li><li><code>return</code>&#xff1a;main()返回&#xff0c;程序运行结束。</li></ol>
+<p>这样整体的main方法也执行完毕&#xff0c;整个程序调用完毕。</p>
+<h2><a rel="noopener noreferrer" id="_603"></a>总结</h2>
+<p>总结而言&#xff0c;从一个Java程序被编写&#xff0c;最后一直到创建的对象被垃圾回收&#xff0c;全流程包括以下几步&#xff0c;加粗部分为本系列接下来的blog重点讲解内容&#xff1a;</p>
+<ol><li>编辑生成源代码.java文件</li><li>编译&#xff08;<strong>javac编译和jit编译</strong>&#xff09;生成字节码文件</li><li>类文件被加载到虚拟机&#xff08;<strong>类Class文件结构&#xff0c;虚拟机运行时内存分析&#xff0c;类加载机制</strong>&#xff09;</li><li>虚拟机执行二进制字节码&#xff08;<strong>虚拟机字节码执行系统</strong>&#xff09;</li><li>垃圾回收&#xff08;<strong>JVM垃圾回收机制</strong>&#xff09;</li></ol>
+<p>虚拟机发挥作用的部分从第3步到第5步之间&#xff1a;</p>
+<ol><li><strong>类加载阶段</strong>&#xff1a;一个类文件首先加载到方法区&#xff0c;一些符号引用被解析&#xff08;静态解析&#xff09;为直接引用或者等到运行时分派&#xff08;动态绑定&#xff09;&#xff0c;经过一系列的加载过程&#xff08;class文件的常量池被加载到方法区的运行时常量池&#xff0c;各种其它的静态存储结构被加载为方法区运行时数据解构等等&#xff09;&#xff0c;程序通过Class对象来访问方法区里的各种类型数据</li><li><strong>字节码执行阶段</strong>&#xff1a;当加载完之后&#xff0c;程序发现了main方法&#xff0c;也就是程序入口&#xff0c;那么程序就在栈里创建了一个栈帧&#xff0c;逐行读取方法里的代码所转换为的指令&#xff0c;而这些指令大多已经被解析为直接引用了&#xff0c;那么程序通过持有这些直接引用使用指令去方法区中寻找<strong>变量对应的字面量</strong>来进行方法操作。</li><li><strong>JVM垃圾回收阶段</strong>&#xff1a;操作完成后方法返回给调用方&#xff0c;该栈帧出栈。内存空间被GC回收&#xff0c;堆里被new的那些也就被垃圾回收机制GC了。</li></ol>
+<p>以上就是整个Java程序的生命周期。</p>

@@ -1,0 +1,265 @@
+<p>工作三周了&#xff0c;深深理解了学校和工作中处理问题的不同&#xff0c;从武哥这里得到了四字经验&#xff1a;最佳实践&#xff0c;而这个最佳实践是先投入工作&#xff0c;而后获取结论&#xff0c;改变之前先理论后实践的做法。于是产生了写一系列的博文的想法&#xff0c;积累工作中的经验&#xff0c;希望以后少踩坑&#xff0c;本篇为开篇第一篇&#xff0c;涉及到我这两周真正有所实践的学习–单元测试。本系列最佳实践每一篇博文都长期更新&#xff0c;而且每一篇都会分两方面来讲&#xff1a;1&#xff0c;知识的通用性&#xff0c;2&#xff0c;知识在工作中的最佳实践。</p>
+
+
+
+<h2 id="单元测试">单元测试</h2>
+
+<p>注意&#xff1a;本篇只针对C#&#xff0c;适用版本vs2015</p>
+
+
+
+<h3 id="定义">定义</h3>
+
+<p>是指对软件中的最小可测试单元进行检查和验证。对于单元测试中单元的含义&#xff0c;Java里单元指一个类&#xff0c;C#中&#xff0c;一个方法&#xff0c;一个类&#xff0c;一个窗口的测试。即单元测试。<strong>单元</strong>就是人为规定的最小的被测功能模块。单元测试是在软件开发过程中 要进行的最低级别的测试活动&#xff0c;软件的独立单元将在与程序的其他部分相隔离的情况下进行测试。</p>
+
+
+
+<h3 id="一些常识">一些常识</h3>
+
+<p><strong>测试范围</strong>&#xff1a;单元测试一般针对公共方法&#xff0c;例如public修饰的方法 <br />
+<strong>测试人</strong>&#xff1a;编写者自身 <br />
+<strong>测试时机</strong>&#xff1a;在函数编写之前&#xff0c;并<strong>随着功能增加不断增加测试用例</strong></p>
+
+
+
+<h3 id="通用操作">通用操作</h3>
+
+
+
+<h4 id="创建和运行">创建和运行</h4>
+
+<p><strong>1&#xff0c;创建单元测试项目</strong></p>
+
+<p><strong>2&#xff0c;依据要测试的项目&#xff0c;各级对应创建相应的文件夹</strong></p>
+
+<p><strong>3&#xff0c;在文件夹下添加单元测试</strong></p>
+
+<p><strong>4&#xff0c;注意待测方法前要加[Test Method],否则不能生成单元测试</strong></p>
+
+<p><strong>5&#xff0c;第一次测试的时候要生成解决方案&#xff0c;然后才能运行或调试单元测试</strong></p>
+
+<p><img title="" alt="这里写图片描述" src="./posts/assets/78563929-ext-bd927a9502d3.png" loading="lazy"></p>
+
+
+
+<h4 id="常用测试方法">常用测试方法</h4>
+
+<p><strong>常用测试方法测试&#xff1a;</strong></p>
+
+<p>Assert.IsNull() 测试指定的对象是否为空引用&#xff0c;如果为空&#xff0c;则测试通过&#xff1b;</p>
+
+<p>Assert.IsNotNull() 测试指定的对象是否为非空&#xff0c;如果不为空&#xff0c;则测试通过&#xff1b;</p>
+
+<p>Assert.IsTrue() 测试指定的条件是否为True&#xff0c;如果为True&#xff0c;则测试通过&#xff1b;</p>
+
+<p>Assert.AreEqual() 测试指定的值是否相等&#xff0c;如果相等&#xff0c;则测试通过&#xff1b;</p>
+
+<p><strong>对于不同返回类型需要做哪些测试</strong></p>
+
+<p>**对于int型&#xff1a;**Assert.AreEqual()方法来测试是否和预期值相等&#xff0c;一般测试是否为1</p>
+
+<p><strong>对于String类型的</strong>&#xff1a;先测是否为<code>null---Assert.IsNull()&#xff0c;</code>然后测是否为空串Assert.AreEqual()&#xff0c;最后测和预期值是否相符Assert.AreEqual()</p>
+
+<p><strong>对于list类型</strong>&#xff1a;先测是否为null–Assert.IsNull()&#xff0c;然后测list.Count&gt;0是否为真Assert.IsTrue() &#xff0c;最后测返回列表个数list.Count是否和预期相同Assert.AreEqual() </p>
+
+
+
+<h2 id="最佳实践">最佳实践</h2>
+
+<p>随着单元测试的深入&#xff0c;持续进行&#xff0c;会涉及到各个方面&#xff1a;首先&#xff0c;DAO层的单元测试最佳实践</p>
+
+
+
+<h3 id="最佳实践规则">最佳实践规则</h3>
+
+<p>1&#xff0c;单元测试<strong>原子性</strong>&#xff0c;没有switch&#xff0c;没有分支&#xff0c;总体来说&#xff0c;<strong>圈复杂度为1</strong>–ps(<strong>vs2015可安装CodeMetrics插件检测圈复杂度</strong>)</p>
+
+<p>2&#xff0c;<strong>单一职责</strong>&#xff0c;指<strong>行为</strong>不是方法&#xff0c;类例如数据库里的增删改查&#xff0c;CRU和SafeCRU&#xff0c;一个整体行为&#xff0c;而不是多个方法&#xff0c;这样可以减少代码量&#xff0c;而且也对整个行为进行了测试</p>
+
+<p>3&#xff0c;独立无耦合&#xff0c;单元测试间不能相互调用&#xff0c;否则有可能出现无限循环错误</p>
+
+<p>4&#xff0c;<strong>属性值不共享</strong>&#xff0c;每个独立单元都要准备自己的数据&#xff0c;虽然复用低&#xff0c;但是能保证一致</p>
+
+<p>5&#xff0c;<strong>测试驱动开发</strong>&#xff0c;单元测试越早越好&#xff0c;我之后写代码也要记住这一点</p>
+
+
+
+<h3 id="最佳实践结构">最佳实践结构</h3>
+
+<p>依照个人经验总结以下结构&#xff1a;</p>
+
+
+
+<h4 id="1测试类内准备的公共数据">1&#xff0c;测试类内准备的公共数据</h4>
+
+<p>该测试准备数据修饰为<strong>private static</strong>  <br />
+<strong>1&#xff0c;公共待测数据</strong>&#xff1a;公有的&#xff0c;各个方法都会使用到的测试数据</p>
+
+<p><strong>2&#xff0c;公共的预期值</strong>&#xff1a;公有的&#xff0c;约定好的各个待测方法的执行预期值</p>
+
+
+
+<h4 id="2测试类内准备的继承自父类方法的测试">2&#xff0c;测试类内准备的继承自父类方法的测试</h4>
+
+<p>由于一些类可能会共用一些方法&#xff0c;所以可以抽象出一个公共父类&#xff0c;这样我们把所有<strong>公共父类所有的方法</strong>单独拿出来测试&#xff0c;这样每一个子类测试的时候测试到公有父类的方法可以减少错误的发生&#xff0c;甚至可以直接copy代码</p>
+
+<p>该测试方法修饰为 <strong>public void 待测方法名&#xff08;&#xff09;</strong>注意&#xff0c;一定要为public&#xff0c;否则测试无法进行</p>
+
+<p><strong>1&#xff0c;该方法私有的待测数据</strong>&#xff1a;私有的&#xff0c;该方法测试需要用到的数据 <strong>类型一般为var</strong></p>
+
+<p><strong>2&#xff0c;该方法私有的业务测试</strong>&#xff1a;私有的&#xff0c;该方法核心功能的测试&#xff08;例如一个更新操作函数&#xff0c;就不需要对其它诸如创建等做过多assert&#xff09;</p>
+
+<p><strong>3&#xff0c;销毁为测试准备的所有数据&#xff08;公有&#43;私有&#xff09;</strong></p>
+
+
+
+<h4 id="3测试类内准备的自身实现的方法的测试">3&#xff0c;测试类内准备的自身实现的方法的测试</h4>
+
+<p>不是从父类继承的公用方法&#xff0c;也主要包括三个步骤</p>
+
+<p>该测试方法修饰为 <strong>public void 待测方法名&#xff08;&#xff09;</strong>注意&#xff0c;一定要为public&#xff0c;否则测试无法进行</p>
+
+<p><strong>1&#xff0c;该方法私有的待测数据</strong>&#xff1a;私有的&#xff0c;该方法测试需要用到的数据     <strong>类型一般为var</strong></p>
+
+<p><strong>2&#xff0c;该方法私有的业务测试</strong>&#xff1a;私有的&#xff0c;该方法核心功能的测试&#xff08;例如一个更新操作函数&#xff0c;就不需要对其它诸如创建等做过多assert&#xff09;</p>
+
+<p><strong>3&#xff0c;销毁为测试准备的所有数据&#xff08;公有&#43;私有&#xff09;</strong></p>
+
+
+
+<h3 id="最佳实践操作">最佳实践操作</h3>
+
+<p><strong>tip:</strong>还可以做代码覆盖率检测哦。利用vs自带的代码覆盖率检测可以看到有哪些方法还没有被测试</p>
+
+
+
+<h4 id="dao层进行的最佳实践">DAO层进行的最佳实践</h4>
+
+<p>dao层一般用于和数据库的存储过程进行交互&#xff0c;操作无外乎<strong>增删改查</strong>&#xff0c;且大多数的<strong>增删都是通过id</strong>来操作&#xff0c;而<strong>更新和删除则是通过id和一些相应的参数</strong>来实现。</p>
+
+
+
+<h5 id="公有的准备数据">公有的准备数据</h5>
+
+<p>对应于准备数据的最佳实践&#xff1a;一般先不做公共准备数据&#xff0c;而是先写各个方法自己存在的准备数据&#xff0c;最后发现统一的可以抽象成公共数据。经过实践&#xff0c;我们可以这么准备数据</p>
+
+
+
+<pre class="prettyprint"><code class=" hljs cs">  <span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 公共的准备数据</span>
+
+        <span class="hljs-comment">// *************************************************************公共的准备数据</span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> age&#61; <span class="hljs-number">2345</span>;   <span class="hljs-comment">//例如下边的方法用到了age&#xff0c;所以抽象出来</span>
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 创建方法,如果每个测试方法都用到了Create&#xff0c;则把它抽象出来实现复用&#xff08;但不能再将其视为单元测试方法&#xff09;</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> <span class="hljs-title">Create</span>(Guid id)
+        {
+            <span class="hljs-keyword">var</span> model &#61; Build(id);
+            <span class="hljs-keyword">return</span> UserDao.Instance.Create(model);
+        }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 实例构造方法</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+        <span class="hljs-keyword">private</span> User <span class="hljs-title">Build</span>(Guid id)
+        {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> User()
+            {
+                ID &#61; id,
+                UserName &#61; <span class="hljs-string">&#34;tianmaolin&#34;</span>,
+                Age&#61;age
+             };
+        }
+
+        <span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 公共的准备数据</span>
+
+        <span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 公共的预期值</span>
+
+        <span class="hljs-comment">//*************************************************************公共的预期参数值</span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> checkDataRight &#61; <span class="hljs-number">1</span>;
+
+        <span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 公共的预期值</span></code></pre>
+
+
+
+<h5 id="对方法进行单元测试">对方法进行单元测试</h5>
+
+
+
+<pre class="prettyprint"><code class=" hljs cs">
+        <span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 继承自父类的方法进行的单元测试</span>
+
+        <span class="hljs-comment">//********************继承自父类的方法进行的单元测试***********************************</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 基于id测试用户的增删改查</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;param name&#61;&#34;id&#34;/&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        [TestMethod]
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">UserCRUD</span>()
+        {
+            <span class="hljs-comment">//准备数据&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;SetUp</span>
+            <span class="hljs-keyword">var</span> id &#61; Guid.NewGuid();
+            <span class="hljs-keyword">var</span> model &#61; Build(id);
+            <span class="hljs-keyword">var</span> create &#61; Create(id);
+            <span class="hljs-comment">//准备好的更新状态</span>
+            <span class="hljs-keyword">var</span> modelupdate &#61; <span class="hljs-keyword">new</span> User()
+            {
+                ID &#61; id,
+                UserName &#61; <span class="hljs-string">&#34;tttttttt&#34;</span>,
+
+            };
+            <span class="hljs-comment">//测试创建&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61; C</span>
+            <span class="hljs-comment">//测试是否创建成功</span>
+            Assert.AreEqual(checkDataRight, create);
+
+            <span class="hljs-comment">//测试是否查询成功&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;R</span>
+            <span class="hljs-keyword">var</span> read &#61; UserDao.Instance.GetById(id);
+            Assert.IsNotNull(read);  <span class="hljs-comment">//非空测试</span>
+            Assert.IsTrue(read.ID &#61;&#61; id);<span class="hljs-comment">//Guid一致性测试</span>
+            Assert.IsTrue(read.UserName &#61;&#61; <span class="hljs-string">&#34;tianmaolin&#34;</span>);<span class="hljs-comment">//创建者姓名一致    </span>
+            Assert.IsTrue(read.Age &#61;&#61; age);<span class="hljs-comment">//创建者年龄一致性测试</span>
+
+
+            <span class="hljs-comment">//测试是否更新成功(依据新model更新) &#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61; U</span>
+            <span class="hljs-keyword">var</span> update &#61; UserDao.Instance.Update(modelupdate);
+            Assert.AreEqual(checkDataRight, update);<span class="hljs-comment">//更新成功测试</span>
+            <span class="hljs-keyword">var</span> readupdate &#61; UserDao.Instance.GetById(id);<span class="hljs-comment">//更新后获取</span>
+            Assert.IsTrue(read.UserName &#61;&#61; <span class="hljs-string">&#34;tttttttt&#34;</span>),创建者姓名更新测试
+
+
+            <span class="hljs-comment">//测试删除&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;D</span>
+            <span class="hljs-keyword">var</span> delete &#61; UserDao.Instance.Delete(id);
+            Assert.AreEqual(checkDataRight, delete);<span class="hljs-comment">//是否删除成功</span>
+            <span class="hljs-keyword">var</span> readagain &#61; UserDao.Instance.GetById(id);<span class="hljs-comment">//再次查询</span>
+            Assert.IsNull(readagain);<span class="hljs-comment">//为空则删除成功</span>
+            <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;TearDown</span>
+        }
+
+        <span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 继承自父类的方法进行的单元测试</span></code></pre>
+
+
+
+<h5 id="踩过的坑">踩过的坑</h5>
+
+<p>1&#xff0c;如果两张表有主外键关联关系&#xff0c;对从表的数据进行单元测试的时候先要创建主表的数据&#xff0c;最后还要记得销毁主表里的数据&#xff0c;例如student的插入依赖class。</p>
+
+<p>2&#xff0c;写单元测试之前&#xff0c;一定要看代码的具体实现&#xff0c;我写代码发现存储过程里的操作之前有查重操作&#xff0c;然而自己并没有看好&#xff0c;导致每次都插入失败&#xff0c;血淋淋的教训&#xff0c;一定要先看好待测函数的功能实现&#xff0c;避免采坑&#xff01;&#xff01;&#xff01;&#xff0c;尤其是涉及到模糊查询的时候&#xff0c;创建第二条数据的时候一定要改变要求非重复的值&#xff0c;否则会创建失败。</p>
+
+<p>3&#xff0c;涉及到更新的单元测试&#xff0c;提前准备好更新数据&#xff0c;还得注意哪些数据无需更新&#xff0c;不是所有传入的参数都是要更新的&#xff0c;不要导致一直报错</p>
+
+
+
+<h5 id="建议测试过程">建议测试过程</h5>
+
+<p>1&#xff0c;先看函数要实现什么功能&#xff0c;一定要理解他要的输入和期望的输出&#xff0c;如果有分支流程还得注意准备两套数据&#xff0c;如果有更新要提前准备更新数据</p>
+
+<p>2&#xff0c;再看存储过程需要什么参数&#xff0c;存储过程里是否有查重等条件限定&#xff0c;要创建满足条件限定的准备数据</p>
+
+<p>3&#xff0c;然后要准备好数据&#xff0c;发现多个方法有公有数据&#xff0c;统一拿出来&#xff0c;创建这种通用操作抽离出来</p>
+
+<p>4&#xff0c;测试之后一定要记得销毁数据</p>
+
+<p>5&#xff0c;出错要耐心调试&#xff0c;注意表间关系</p>

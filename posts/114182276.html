@@ -1,0 +1,204 @@
+<p>首先搞清楚一个概念&#xff0c;什么是内存模型&#xff1f;首先来看看如何定义&#xff0c;<strong>内存模型</strong>&#xff1a;<strong>在特定的操作协议下对特定的内存或高速缓存进行读写访问的过程抽象</strong>。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>处理器内存模型</h2>
+<p>多数运算中&#xff0c;处理器都要和内存进行交互&#xff0c;如读取数据、存储结果等。由于计算机存储设备和处理器运算速度有几个数量级的差距&#xff0c;所以现代计算机系统都不得不加入一层读写速度尽可能接近处理器运算速度的<strong>高缓存Cache</strong>来作为内存与处理器之间的缓冲&#xff1a;<strong>将运算需要使用的数据复制到缓存中&#xff0c;让运算能快速进行&#xff0c;当运算结束后再从缓存中同步回内存&#xff0c;这样处理器就无须等待缓慢的内存读写了。</strong> 解决运算冲突却导致了高速缓存的一致性问题。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-01-91cade758a.png" loading="lazy"></p>
+<p>高缓存Cache引入了缓存的一致性<strong>Cache Coherence</strong>的问题。在多处理器系统中&#xff0c;<strong>每个处理器都有自己的高速缓存&#xff0c;又共享同一主内存&#xff0c;可能导致各自的缓存数据不一致</strong>【<font color="red"><strong>可见性问题</strong></font>】。需要各处理器访问缓存时遵循一些协议&#xff0c;在读写时根据协议来操作&#xff0c;如MSI&#xff0c;MESI&#xff0c;MOSI&#xff0c;Snapse,Firefly,dRAGON Protocol等。<strong>处理器还可能会对输入的代码进行乱序执行优化&#xff0c;之后又将乱序结果重组&#xff0c;保证该结果与顺序执行结果一致&#xff0c;还有指令重排序优化</strong>【<font color="red"><strong>有序性问题</strong></font>】。</p>
+<h2><a rel="noopener noreferrer" id="_6"></a>并发编程中两个关键问题</h2>
+<p>在并发编程中&#xff0c;需要处理两个关键问题&#xff1a;<strong>线程之间如何通信</strong>及<strong>线程之间如何同步</strong>&#xff08;这里的线程是指并发执行的活动实体&#xff09;。在命令式编程中&#xff1a;</p>
+<p>通信是指线程之间以何种机制来交换信息线程之间的通信机制有两种&#xff1a;<strong>共享内存和消息传递</strong>。</p>
+<ul><li>在共享内存的并发模型里&#xff0c;<strong>线程之间共享程序的公共状态&#xff0c;通过写-读内存中的公共状态进行隐式通信</strong>。<font color="red"><strong>共享变量可见性</strong></font></li><li>在消息传递的并发模型里&#xff0c;线程之间没有公共状态&#xff0c;线程之间必须通过发送消息来显式进行通信。</li></ul>
+<p>同步是指程序中用于控制不同线程间操作发生相对顺序的机制。</p>
+<ul><li>在共享内存并发模型里&#xff0c;同步是显式进行的。<strong>程序员必须显式指定某个方法或某段代码需要在线程之间互斥执行</strong>。<font color="red"><strong>执行操作有序性</strong></font></li><li>在消息传递的并发模型里&#xff0c;由于消息的发送必须在消息的接收之前&#xff0c;因此同步是隐式进行的。</li></ul>
+<p>Java的并发采用的是<font color="red"><strong>共享内存模型&#xff0c;Java线程之间的通信总是隐式进行&#xff0c;整个通信过程对程序员完全透明&#xff0c;而同步总是显式执行</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="_18"></a>内存交互操作的三大特性</h2>
+<p>在正式介绍JMM内存模型之前介绍一下操作的3个特性&#xff0c;Java内存模型是围绕着在并发过程中如何处理这3个特性来建立的&#xff0c;这里先给出定义和基本实现的简单介绍&#xff0c;后面会逐步展开分析。</p>
+<ul><li><strong>原子性(Atomicity)</strong>&#xff0c; 即一个操作或者多个操作 要么全部执行并且执行的过程不会被任何因素打断&#xff0c;要么就都不执行。即使在多个线程一起执行的时候&#xff0c;一个操作一旦开始&#xff0c;就不会被其他线程所干扰。</li><li><strong>可见性(Visibility)</strong> &#xff0c;是指当多个线程访问同一个变量时&#xff0c;一个线程修改了这个变量的值&#xff0c;其他线程能够立即看得到修改的值。</li><li><strong>有序性(Ordering)</strong>&#xff0c; 有序性规则表现在以下两种场景: 线程内和线程间
+<ul><li><strong>线程内</strong>&#xff0c;从某个线程的角度看方法的执行&#xff0c;指令会按照一种叫<strong>串行</strong>&#xff08;as-if-serial&#xff09;的方式执行&#xff0c;此种方式已经应用于顺序编程语言。</li><li><strong>线程间</strong>&#xff0c;这个线程观察到其他线程并发地执行非同步的代码时&#xff0c;由于指令重排序优化&#xff0c;<strong>任何代码都有可能交叉执行</strong>。</li></ul>
+</li></ul>
+<p>Java内存模型的一系列运行规则看起来有点繁琐&#xff0c;但总结起来&#xff0c;是围绕原子性、可见性、有序性特征建立。归根究底&#xff0c;是为<strong>实现共享变量的在多个线程的工作内存的数据一致性&#xff0c;多线程并发&#xff0c;指令重排序优化的环境中程序能如预期运行</strong>。接下来我们先了解下JMM内存的基本构造再来看它如何处理这一系列问题。</p>
+<h2><a rel="noopener noreferrer" id="JMM_28"></a>JMM基本结构</h2>
+<p>在Java中&#xff08;JDK1.7&#xff09;&#xff0c;所有<strong>实例域、静态域和数组元素</strong>都存储在堆内存中&#xff0c;堆内存在线程之间共享&#xff08;<strong>共享变量</strong>代指实例域&#xff0c;静态域和数组元素&#xff09;。局部变量&#xff08;Local Variables&#xff09;&#xff0c;方法定义参数和异常处理器参数等不会在线程之间共享&#xff0c;它们不会有内存可见性问题&#xff0c;也不受内存模型的影响。</p>
+<p>JMM&#xff0c;Java Memory Model&#xff0c;<strong>用来屏蔽掉各种硬件和操作系统之间的内存访问差异&#xff0c;以实现让Java程序在各平台下都能达到一致的内存访问效果</strong>。</p>
+<p>在此之前&#xff0c;<strong>主流程序语言&#xff08;如C/C&#43;&#43;等&#xff09;直接使用物理硬件和操作系统的内存模型</strong>&#xff0c;因此&#xff0c;会由于不同平台上内存模型的差异&#xff0c;有可能导致程序在一套平台上并发完全正常&#xff0c;而在另外一套平台上并发访问却经常出错&#xff0c;因此在某些场景就必须针对不同的平台来编写程序。</p>
+<p><strong>JMM主要目标</strong>&#xff1a;定义程序中各个共享变量的访问规则&#xff0c;即<strong>在虚拟机中将变量存储到内存和从内存取出变量这样的底层细节。</strong></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114182276-02-8d41a9a8b5.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_38"></a>主内存与工作内存</h3>
+<p>如上图所示&#xff0c;JMM中区分为主内存和工作内存&#xff1a;</p>
+<ul><li><strong>JMM规定所有共享变量均存储在主内存&#xff08;虚拟机内存的一部分&#xff09;中</strong>。每条线程还有自己的工作内存&#xff0c;类比高速缓存。</li><li><strong>线程对共享变量的所有操作都在工作内存中&#xff0c;不能直接在主内存中读写操作</strong></li><li><strong>不同线程之间也不能直接访问对方的工作内存中的共享变量。只能通过主内存来传递变量值</strong></li></ul>
+<p><strong>注意</strong>&#xff1a;主内存与工作内存和Java内存区域的堆栈方法区等并不是同一个层次的内存划分。<strong>工作内存可以理解为本地处理器的高速缓冲区</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_46"></a>内存间交互操作</h3>
+<p><strong>主内存与工作内存之间具体的交互协议</strong>&#xff1a;一个变量如何从主内存拷贝到工作内存、如何从工作内存同步回主内存等的细节。</p>
+<p>Java内存模型定义了8种操作来完成&#xff0c;虚拟机实现时必须保证下面提及的每一种操作都是<strong>原子操作</strong>。对于long 和double类型的变量&#xff0c;store&#xff0c;read&#xff0c;write&#xff0c;load操作在某些平台上允许有例外。</p>
+<ul><li><strong>lock(锁定)</strong>&#xff1a;作用于<strong>主内存</strong>的变量&#xff0c;它把一个共享变量<strong>标志为一条线程独占的状态。</strong></li><li><strong>unlock(解锁)</strong>&#xff1a;作用于<strong>主内存</strong>中的变量&#xff0c;它<strong>把一个处于锁定状态的共享变量释放出来&#xff0c;释放后的共享变量才可以被其他线程锁定。</strong></li><li><strong>read(读取)</strong>&#xff1a;作用于<strong>主内存</strong>的变量&#xff0c;它<strong>把一个共享变量的值从主内存传输到线程的工作内存中</strong>&#xff0c;以便随后的load动作使用。</li><li><strong>load(载入)</strong>&#xff1a;作用于<strong>工作内存</strong>的变量&#xff0c;它<strong>把read操作从主内存中得到的共享变量值放入工作内存的共享变量副本中。</strong></li><li><strong>use(使用)</strong>&#xff1a;作用于<strong>工作内存</strong>的变量&#xff0c;它<strong>把工作内存中一个共享变量的值传递给执行引擎&#xff0c;每当虚拟机遇到一个需要使用到共享变量的字节码指令时将执行这个操作</strong>。</li><li><strong>assign(赋值)</strong>&#xff1a;作用于<strong>工作内存</strong>的变量&#xff0c;它<strong>把一个从执行引擎接受到的值赋给工作内存的共享变量&#xff0c;遇到赋值的字节码时执行</strong>。</li><li><strong>store(存储)</strong>&#xff1a;作用于<strong>工作内存</strong>的变量&#xff0c;它<strong>把工作内存中一个共享变量变量的值传送到主内存中</strong>&#xff0c;以便随后的write操作使用。</li><li><strong>write(写入)</strong>&#xff1a;作用于<strong>主内存</strong>中的变量&#xff0c;它<strong>把store操作从主内存中得到的变量值放入主内存的变量中</strong>。</li></ul>
+<p>整体执行的流程如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-03-2300d3ba05.png" loading="lazy"></p>
+<p>以上操作&#xff0c;仅保持顺序执行即可&#xff0c;不用保证连续执行。如可能发生 read a read b load b load a。</p>
+<h3><a rel="noopener noreferrer" id="_65"></a>交互操作冲突</h3>
+<pre><code class="prism language-java">变量操作相关的<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+</code></pre>
+<ul><li>不允许read和load、store和write操作之一单独出现&#xff0c;<strong>即不允许一个变量从主内存读取了但工作内存不接受&#xff0c;或者从工作内存发起回写了但主内存不接受的情况</strong></li><li>不允许一个线程丢弃它的最近assign操作&#xff0c;<strong>即变量在工作内存中改变了之后必须把该变化同步回主内存</strong></li><li>不允许一个线程无原因的&#xff08;没有发生过任何assign操作&#xff09;把数据从线程的工作内存同步回主内存中&#xff0c;<strong>即不能对变量没做任何操作却无原因的同步回主内存</strong></li><li>一个新的变量只能在主内存中诞生&#xff0c;不允许在工作内存中直接使用一个未被初始化&#xff08;load或assign&#xff09;的变量&#xff0c;<strong>就是对一个变量执行use和store之前必须先执行过了load和assign操作</strong></li></ul>
+<pre><code class="prism language-java">lock操作相关的<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+</code></pre>
+<ul><li><strong>一个变量在同一个时刻只允许一条线程对其进行lock操作&#xff0c;但lock操作可以被同一条线程重复执行多次</strong>&#xff0c;多次执行lock后&#xff0c;只有执行相同次数的unlock操作&#xff0c;变量才会被解锁&#xff0c;<font color="red"><strong>synchronized实现可重入锁的基石</strong></font></li><li>如果<strong>对一个变量执行lock操作&#xff0c;将会清空工作内存中此变量的值&#xff0c;在执行引擎使用这个变量前&#xff0c;需要重新执行load或assign操作初始化变量的值</strong>&#xff0c;<font color="red"><strong>synchronized实现可见性的基石</strong></font></li><li><strong>如果一个变量事先没有被lock操作锁定&#xff0c;则不允许对它执行unlock操作&#xff0c;也不允许去unlock一个被其他线程锁定住的变量</strong>&#xff0c;<font color="red"><strong>synchronized实现锁的基石</strong></font></li><li><strong>对一个变量执行unlock操作之前&#xff0c;必须先把此变量同步回主内存中&#xff08;执行store write&#xff09;</strong><font color="red"><strong>synchronized实现可见性的基石</strong></font></li></ul>
+<p>以上可以完全确定Java程序中哪些内存访问操作在并发下是安全的。</p>
+<h2><a rel="noopener noreferrer" id="_87"></a>指令重排序</h2>
+<p>重排序是指编译器和处理器为了优化程序性能而对指令序列进行重新排序的一种手段&#xff0c;也叫做指令重排。接下来分别介绍下指令重排的概念、数据依赖性以及顺序一致性</p>
+<h3><a rel="noopener noreferrer" id="_89"></a>指令重排序</h3>
+<p>在执行程序时&#xff0c;为了提高性能&#xff0c;编译器和处理器常常会对指令做重排序。重排序分3种类型。</p>
+<ul><li><strong>编译器优化的重排序</strong>。编译器在不改变单线程程序语义的前提下&#xff0c;可以重新安排语句的执行顺序。</li><li><strong>指令级并行的重排序</strong>。现代处理器采用了指令级并行技术&#xff08;Instruction-LevelParallelism&#xff0c;ILP&#xff09;来将多条指令重叠执行。如果不存在数据依赖性&#xff0c;处理器可以改变语句对应机器指令的执行顺序。</li><li><strong>内存系统的重排序</strong>。由于处理器使用缓存和读/写缓冲区&#xff0c;这使得加载和存储操作看上去可能是在乱序执行</li></ul>
+<p>从Java源代码到最终实际执行的指令序列&#xff0c;会分别经历下面3种重排序<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-04-5fb0014de5.png" loading="lazy"><br />
+上述的1属于编译器重排序&#xff0c;2和3属于处理器重排序。这些<strong>重排序可能会导致多线程程序出现内存可见性问题</strong>。</p>
+<ul><li>对于编译器&#xff0c;JMM的编译器重排序规则会禁止特定类型的编译器重排序&#xff08;不是所有的编译器重排序都要禁止&#xff09;。</li><li>对于处理器重排序&#xff0c;JMM的处理器重排序规则会要求Java编译器在生成指令序列时&#xff0c;插入特定类型的内存屏障&#xff08;<code>Memory Barriers</code>&#xff09;指令&#xff0c;通过<strong>内存屏障</strong>指令来<strong>禁止特定类型的处理器重排序</strong>。</li></ul>
+<p>JMM属于语言级的内存模型&#xff0c;它确保在<strong>不同的编译器和不同的处理器平台之上&#xff0c;通过禁止特定类型的编译器重排序和处理器重排序</strong>&#xff0c;为程序员提供一致的内存可见性保证</p>
+<p>现代的处理器使用<strong>写缓冲区</strong>&#xff08;工作内存&#xff09;临时保存向内存写入的数据。写缓冲区可以保证指令流水线持续运行&#xff0c;它可以避免由于处理器停顿下来等待向内存写入数据而产生的延迟。同时&#xff0c;通过以批处理的方式刷新写缓冲区&#xff0c;以及合并写缓冲区中对同一内存地址的多次写&#xff0c;减少对内存总线的占用。虽然写缓冲区有这么多好处&#xff0c;但每个处理器上的写缓冲区&#xff0c;仅仅对它所在的处理器可见&#xff0c;所以存在内存不可见性。这也是我们上一篇Blog中讲到的Volatile的作用&#xff0c;让内存可见&#xff0c;其实它还有个作用就是禁止指令重排&#xff0c;我们可以看看指令重排的问题&#xff1a;a&#61;b&#61;0&#xff0c;初始状态</p>
+<pre><code class="prism language-java">a<span class="token operator">&#61;</span><span class="token number">1</span><span class="token comment">//A1</span>
+x<span class="token operator">&#61;</span>b<span class="token comment">//A2</span>
+b<span class="token operator">&#61;</span><span class="token number">2</span><span class="token comment">//B1</span>
+y<span class="token operator">&#61;</span>a<span class="token comment">//B2</span>
+</code></pre>
+<p>如果顺序执行&#xff0c;结果应该为</p>
+<pre><code class="prism language-java">x<span class="token operator">&#61;</span><span class="token number">0</span><span class="token punctuation">,</span>y<span class="token operator">&#61;</span><span class="token number">1</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114182276-05-6ce0cada12.png" loading="lazy"><br />
+但实际结果可能是&#xff1a;</p>
+<pre><code class="prism language-java">x<span class="token operator">&#61;</span>y<span class="token operator">&#61;</span><span class="token number">0</span>
+</code></pre>
+<p>这里处理器A和处理器B可以同时把共享变量写入自己的写缓冲区&#xff08;A1&#xff0c;B1&#xff09;&#xff0c;然后从内存中读取另一个共享变量&#xff08;A2&#xff0c;B2&#xff09;&#xff0c;最后才把自己写缓存区中保存的脏数据刷新到内存中&#xff08;A3&#xff0c;B3&#xff09;。当以这种时序执行时&#xff0c;程序就可以得到x&#61;y&#61;0的结果</p>
+<pre><code class="prism language-java"><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;</span>A和B分别对a&#xff0c;b改值但没有刷新到主内存
+a<span class="token operator">&#61;</span><span class="token number">1</span>  <span class="token comment">//A</span>
+b<span class="token operator">&#61;</span><span class="token number">2</span>  <span class="token comment">//B</span>
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;</span>A和B分别从主内存读取
+b<span class="token operator">&#61;</span><span class="token number">0</span>  <span class="token comment">//A</span>
+a<span class="token operator">&#61;</span><span class="token number">0</span>  <span class="token comment">//B</span>
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>执行运算
+x<span class="token operator">&#61;</span>b<span class="token operator">&#61;</span><span class="token number">0</span> <span class="token comment">//A</span>
+y<span class="token operator">&#61;</span>a<span class="token operator">&#61;</span><span class="token number">0</span> <span class="token comment">//B</span>
+</code></pre>
+<p>从内存操作实际发生的顺序来看&#xff0c;直到处理器A执行A3来刷新自己的写缓存区&#xff0c;写操作A1才算真正执行了。虽然处理器A执行内存操作的顺序为&#xff1a;A1→A2&#xff0c;但内存操作实际发生的顺序却是A2→A1。此时&#xff0c;处理器A的内存操作顺序被重排序了。先读到了b&#61;0</p>
+<h3><a rel="noopener noreferrer" id="_135"></a>重排序原则</h3>
+<p>单线程重排序中遵守<strong>as-if-serial</strong>语义&#xff0c;也就是单线程的重排序是被允许的&#xff0c;但是要求执行结果不能被影响&#xff0c;据此反推&#xff0c;对于存在数据依赖性的操作不能重排&#xff0c;在多线程中这种重排原则会被打破。</p>
+<h4><a rel="noopener noreferrer" id="_137"></a>数据依赖性</h4>
+<p>如果两个操作访问同一个<strong>共享变量</strong>&#xff0c;且这两个操作中有<strong>一个为写</strong>操作&#xff0c;此时这两个操作之间就存在<strong>数据依赖性</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-06-92045910c9.png" loading="lazy"><br />
+上面3种情况&#xff0c;只要重排序两个操作的执行顺序&#xff0c;程序的执行结果就会被改变。前面提到过&#xff0c;编译器和处理器可能会对操作做重排序。</p>
+<ul><li>单线程或单处理器下&#xff0c;编译器和处理器在重排序时&#xff0c;会遵守数据依赖性&#xff0c;编译器和处理器不会改变存在数据依赖关系的两个操作的执行顺序。</li><li>多处理器之间或多线程之间的数据依赖性不被编译器和处理器考虑</li></ul>
+<p>那么在并发编程中&#xff0c;数据依赖性其实得不到满足。</p>
+<h4><a rel="noopener noreferrer" id="asifserial_146"></a>as-if-serial语义</h4>
+<p>as-if-serial语义的意思是&#xff1a;不管怎么重排序&#xff08;编译器和处理器为了提高并行度&#xff09;&#xff0c;<strong>&#xff08;单线程&#xff09;程序的执行结果不能被改变</strong>。编译器、runtime和处理器都必须遵守as-if-serial语义。为了遵守as-if-serial语义&#xff0c;<strong>编译器和处理器不会对存在数据依赖关系的操作做重排序&#xff0c;因为这种重排序会改变执行结果</strong>。但是&#xff0c;如果操作之间不存在数据依赖关系&#xff0c;这些操作就可能被编译器和处理器重排序</p>
+<pre><code class="prism language-java"><span class="token keyword">double</span> pi <span class="token operator">&#61;</span> <span class="token number">3.14</span><span class="token punctuation">;</span> <span class="token comment">// A</span>
+<span class="token keyword">double</span> r <span class="token operator">&#61;</span> <span class="token number">1.0</span><span class="token punctuation">;</span> <span class="token comment">// B</span>
+<span class="token keyword">double</span> area <span class="token operator">&#61;</span> pi <span class="token operator">*</span> r <span class="token operator">*</span> r<span class="token punctuation">;</span> <span class="token comment">// C</span>
+</code></pre>
+<p>执行指令的依赖关系如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-07-b30293406a.png" loading="lazy"><br />
+A和C之间存在数据依赖关系&#xff0c;同时B和C之间也存在数据依赖关系。因此在最终执行的指令序列中&#xff0c;C不能被重排序到A和B的前面&#xff08;C排到A和B的前面&#xff0c;程序的结果将会被改变&#xff09;。但A和B之间没有数据依赖关系&#xff0c;编译器和处理器可以重排序A和B之间的执行顺序</p>
+<h3><a rel="noopener noreferrer" id="_157"></a>多线程重排序问题</h3>
+<p>flag变量是个标记&#xff0c;用来标识变量a是否已被写入。这里假设有两个线程A和B&#xff0c;A首先执行writer()方法&#xff0c;随后B线程接着执行reader()方法。线程B在执行操作4时&#xff0c;能否看到线程A在操作1对共享变量a的写入呢&#xff1f;答案是不一定。</p>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">ReorderExample</span> <span class="token punctuation">{<!-- --></span>
+     <span class="token keyword">int</span> a <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+     <span class="token keyword">boolean</span> flag <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+     <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">writer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+         a <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> <span class="token comment">// 1</span>
+         flag <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span> <span class="token comment">// 2</span>
+     <span class="token punctuation">}</span>
+     <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">reader</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>flag<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token comment">// 3</span>
+         <span class="token keyword">int</span> i <span class="token operator">&#61;</span> a <span class="token operator">*</span> a<span class="token punctuation">;</span> <span class="token comment">// 4</span>
+
+      <span class="token punctuation">}</span>
+   <span class="token punctuation">}</span>
+</code></pre>
+<p>由于操作1和操作2没有数据依赖关系&#xff0c;编译器和处理器可以对这两个操作重排序&#xff1b;同样&#xff0c;操作3和操作4没有数据依赖关系&#xff0c;编译器和处理器也可以对这两个操作重排序&#xff0c;假设操作1和操作2进行了重排序&#xff0c;因为没有读取到a的赋值&#xff0c;那么最终结果是i&#61;0<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-08-fbbc207d01.png" loading="lazy"><br />
+当操作3和操作4重排序时会产生什么效果&#xff08;借助这个重排序&#xff0c;可以顺便说明控制依赖性&#xff09;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-09-d7a8fb48c8.png" loading="lazy"><br />
+在程序中&#xff0c;操作3和操作4存在控制依赖关系。当代码中存在控制依赖性时&#xff0c;会影响指令序列执行的并行度。为此&#xff0c;编译器和处理器会采用猜测&#xff08;Speculation&#xff09;执行来克服控制相关性对并行度的影响。以处理器的猜测执行为例&#xff0c;执行线程B的处理器可以提前读取并计算a*a&#xff0c;然后把计算结果临时保存到一个名为重排序缓冲&#xff08;Reorder Buffer&#xff0c;ROB&#xff09;的硬件缓存中。当操作3的条件判断为真时&#xff0c;就把该计算结果写入变量i中。</p>
+<p>在单线程程序中&#xff0c;对存在控制依赖的操作重排序&#xff0c;不会改变执行结果&#xff08;这也是as-if-serial语义允许对存在控制依赖的操作做重排序的原因&#xff09;【程序次序规则】&#xff1b;但在多线程程序中&#xff0c;对存在控制依赖的操作重排序&#xff0c;可能会改变程序的执行结果</p>
+<h2><a rel="noopener noreferrer" id="_184"></a>先行发生原则</h2>
+<p>先行发生是<strong>Java内存模型中定义的两项操作之间的偏序关系</strong>。JMM模型中的一个重点原则——<strong>先行发生原则&#xff08;Happens-Before&#xff09;</strong>&#xff0c;使用这个原则作为依据&#xff0c;来指导你判断是否存在线程安全和竞争问题。在JMM中&#xff0c;如果一个操作执行的结果需要对另一个操作可见&#xff0c;那么这两个操作之间必须要存在happens-before关系。这里提到的两个操作既可以是在一个线程之内&#xff0c;也可以是在不同线程之间。</p>
+<h3><a rel="noopener noreferrer" id="HappensBefore_186"></a>Happens-Before的语义</h3>
+<p>两个操作之间具有 happens-before 关系, 并不意味着前一个操作必须要在后一个操作之前执行&#xff0c;happens-before <strong>仅仅要求前一个操作(执行的结果)对后一个操作可见</strong></p>
+<ol><li>如果一个操作happens-before另一个操作&#xff0c;那么<strong>第一个操作的执行结果将对第二个操作可见&#xff0c;而且第一个操作的执行顺序排在第二个操作之前</strong>。如果A happens-before B&#xff0c;那么Java内存模型将向程序员保证——A操作的结果将对B可见&#xff0c;且A的执行顺序排在B之前。注意&#xff0c;这只是Java内存模型向程序员做出的保证&#xff01;</li><li>两个操作之间存在happens-before关系&#xff0c;并不意味着Java平台的具体实现必须要按照&#xff0c;happens-before关系指定的顺序来执行。<strong>如果重排序之后的执行结果&#xff0c;与按happens-before关系来执行的结果一致&#xff0c;那么这种重排序并不非法</strong>&#xff08;也就是说&#xff0c;JMM允许这种重排序&#xff09;。</li></ol>
+<p>JMM其实是在遵循一个基本原则&#xff1a;<strong>只要不改变程序的执行结果&#xff08;指的是单线程程序和正确同步的多线程程序&#xff09;&#xff0c;编译器和处理器怎么优化都行</strong>。JMM这么做的原因是&#xff1a;程序员对于这两个操作是否真的被重排序并不关心&#xff0c;程序员关心的是程序执行时的语义不能被改变&#xff08;即执行结果不能被改变&#xff09;。因此&#xff0c;happens-before关系本质上和as-if-serial语义是一回事</p>
+<ul><li>as-if-serial语义保证单线程内程序的<strong>执行结果不被改变</strong>&#xff0c;happens-before关系保证正确同步的多线程程序的执行结果不被改变。</li><li>as-if-serial语义给编写单线程程序的程序员创造了一个幻境&#xff1a;单线程程序是按程序的顺序来执行的。happens-before关系给编写正确同步的多线程程序的程序员创造了一个幻境&#xff1a;<strong>正确同步的多线程程序是按happens-before指定的顺序来执行的</strong>。</li><li>as-if-serial语义和happens-before这么做的目的&#xff0c;都是为了在<strong>不改变程序执行结果的前提下&#xff0c;尽可能地提高程序执行的并行度</strong></li></ul>
+<p>程序员可以依据Happens-Before原则来进行多线程正确同步下的执行顺序推演。</p>
+<h3><a rel="noopener noreferrer" id="_199"></a>八个原则</h3>
+<blockquote>
+<p>关于顺序执行的三个原则</p>
+</blockquote>
+<ul><li><strong>程序次序规则&#xff08;Program Order Rule&#xff09;</strong>&#xff1a;在<strong>一个线程内</strong>&#xff0c;按照程序代码顺序&#xff0c;书写在前面的操作先行发生于书写在后面的操作。准确地说&#xff0c;应该是<strong>控制流顺序而不是程序代码顺序</strong>&#xff0c;因为要考虑分支、循环等结构。&#xff08;同一个线程中前面的所有写操作对后面的操作可见&#xff09;</li><li><strong>传递性&#xff08;Transitivity&#xff09;</strong>&#xff1a;如果操作A先行发生于操作B&#xff0c;操作B先行发生于操作C&#xff0c;那就可以得出操作A先行发生于操作C的结论。</li><li><strong>对象终结规则&#xff08;Finalizer Rule&#xff09;</strong>&#xff1a;<strong>一个对象的初始化完成&#xff08;构造函数执行结束&#xff09;先行发生于它的finalize&#xff08;&#xff09;方法的开始</strong>。</li></ul>
+<blockquote>
+<p>关于锁定与读写的两个原则</p>
+</blockquote>
+<ul><li><strong>管程锁定规则&#xff08;Monitor Lock Rule&#xff09;</strong>&#xff1a;<strong>一个unlock操作先行发生于后面对同一个锁的lock操作</strong>。这里必须强调的是<strong>同一个锁</strong>&#xff0c;而“后面”是指时间上的先后顺序。&#xff08;如果线程1解锁了monitor a&#xff0c;接着线程2锁定了a&#xff0c;那么&#xff0c;线程1解锁a之前的写操作都对线程2可见&#xff08;线程1和线程2可以是同一个线程&#xff09;&#xff09;</li><li><strong>volatile变量规则&#xff08;Volatile Variable Rule&#xff09;</strong>&#xff1a;<strong>对一个volatile变量的写操作先行发生于后面对这个变量的读操作</strong>&#xff0c;这里的“后面”同样是指时间上的先后顺序。&#xff08;如果线程1写入了volatile变量v&#xff08;临界资源&#xff09;&#xff0c;接着线程2读取了v&#xff0c;那么&#xff0c;线程1写入v及之前的写操作都对线程2可见&#xff08;线程1和线程2可以是同一个线程&#xff09;&#xff09;</li></ul>
+<blockquote>
+<p>关于线程的三个原则</p>
+</blockquote>
+<ul><li><strong>线程启动规则&#xff08;Thread Start Rule&#xff09;</strong>&#xff1a;Thread对象的<strong>start&#xff08;&#xff09;方法先行发生于此线程的每一个动作</strong>。&#xff08;假定线程A在执行过程中&#xff0c;通过执行ThreadB.start()来启动线程B&#xff0c;那么线程A对共享变量的修改在接下来线程B开始执行前对线程B可见。注意&#xff1a;线程B启动之后&#xff0c;线程A在对变量修改线程B未必可见。&#xff09;</li><li><strong>线程终止规则&#xff08;Thread Termination Rule&#xff09;</strong>&#xff1a;线程中的所有操作都先行发生于对此线程的终止检测&#xff0c;我们可以通过Thread.join&#xff08;&#xff09;方法结束、Thread.isAlive&#xff08;&#xff09;的返回值等手段检测到线程已经终止执行。(线程t1写入的所有变量&#xff0c;在任意其它线程t2调用t1.join()&#xff0c;或者t1.isAlive() 成功返回后&#xff0c;都对t2可见。)</li><li><strong>线程中断规则&#xff08;Thread Interruption Rule&#xff09;</strong>&#xff1a;<strong>对线程interrupt&#xff08;&#xff09;方法的调用先行发生于被中断线程的代码检测到中断事件的发生</strong>&#xff0c;可以通过Thread.interrupted&#xff08;&#xff09;方法检测到是否有中断发生。(线程t1写入的所有变量&#xff0c;调用Thread.interrupt()&#xff0c;被打断的线程t2&#xff0c;可以看到t1的全部操作)&#xff08;A h-b B &#xff0c; B h-b C 那么可以得到 A h-b C&#xff09;</li></ul>
+<p><strong>以上先行发生关系无须任何同步器协助就已经存在</strong>&#xff0c;可以在编码中直接使用。如果两个操作之间的关系不在此列&#xff0c;并且无法从以上规则推导出来的话&#xff0c;它们就没有顺序性保障&#xff0c;虚拟机可以对它们随意地进行重排序。</p>
+<h3><a rel="noopener noreferrer" id="_216"></a>先行发生示例</h3>
+<p>一个操作<strong>时间上的先发生不代表这个操作会是先行发生</strong></p>
+<pre><code class="prism language-java"><span class="token keyword">private</span> <span class="token keyword">int</span> value <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setValue</span><span class="token punctuation">(</span><span class="token keyword">int</span> value<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>value <span class="token operator">&#61;</span> value<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> value<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>假设存在线程A和B&#xff0c;<strong>线程A先调用setValue(1)&#xff0c;然后线程B调用了同一个对象getValue()</strong>&#xff0c;那么线程B返回的值是什么&#xff1f;分析&#xff1a;</p>
+<ul><li>两个线程调用&#xff0c;不在一个线程中&#xff0c;所以程序次序规则不适用</li><li>没有同步块—管程锁定规则不适用</li><li>value没有被volatile修饰&#xff0c;所以volatile变量规则不适用</li><li>线程启动、终止、中断规则和对象终结规则也扯不上关系</li></ul>
+<p>所以尽管在时间上A先于B&#xff0c;但无法确定B中getValue()返回值结果&#xff0c;因此我们说这里的操作是线程不安全的。如何修复呢&#xff1f;可以<strong>为set、get方法定义为synchronized方法</strong>&#xff0c;这样可以使用管程锁定规则&#xff1b;或者把<strong>value设定为volatile变量</strong>&#xff0c;由于set方法对value的修改不依赖value的原值&#xff0c;满足volatile关键字使用场景。</p>
+<p>那如果一个操作<strong>先行发生</strong>是否就能推导出这个操作必定是“时间上的先发生”呢&#xff1f;很遗憾&#xff0c;这个推论也是不成立的&#xff0c;一个典型的例子就是接下来要提到的“<strong>指令重排序</strong>”。所以<strong>一个操作“先行发生”不代表这个操作会在时间上先发生</strong></p>
+<p><strong>时间先后顺序与先行发生原则之间基本没有太大的关系</strong></p>
+<h2><a rel="noopener noreferrer" id="_240"></a>顺序一致性模型</h2>
+<p>如果<strong>程序是正确同步的&#xff0c;程序的执行将具有顺序一致性</strong>&#xff08;Sequentially Consistent&#xff09;——即程序的执行结果与该程序在顺序一致性内存模型中的执行结果相同。这对于程序员来说是一个极强的保证。这里的同步是指广义上的同步&#xff0c;包括对常用同步原语&#xff08;synchronized、volatile和final&#xff09;的正确使用</p>
+<ol><li>一个线程中的所有操作必须按照程序的时间顺序来执行。<strong>也就是必须满足有序性</strong></li><li>&#xff08;不管程序是否同步&#xff09;所有线程都只能看到一个单一的操作执行顺序。在顺序一致性内存模型中&#xff0c;每个操作都必须<strong>原子执行</strong>且立刻对所有线程<strong>可见</strong>&#xff0c;<strong>也就是必须满足原子性、可见性</strong></li></ol>
+<p>而且前提是即使在多线程的情况下。</p>
+<h3><a rel="noopener noreferrer" id="_247"></a>可见性保证</h3>
+<p>假设这两个线程使用监视器锁来正确同步&#xff1a;A线程的3个操作执行后释放监视器锁&#xff0c;随后B线程获取同一个监视器锁。那么程序在顺序一致性模型为&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-10-4552d8727d.png" loading="lazy"><br />
+如果两个线程没有做同步&#xff0c;下面是这个未同步程序在顺序一致性模型中的执行示意图如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-11-3948f8898e.png" loading="lazy"><br />
+未同步程序在顺序一致性模型中虽然整体执行顺序是无序的&#xff0c;但所有线程都只能看到一个一致的整体执行顺序。以上图为例&#xff0c;线程A和B看到的执行顺序都是&#xff1a;<code>B1→A1→A2→B2→A3→B3</code>。之所以能得到这个保证是因为顺序一致性内存模型中的每个操作必须立即对任意线程可见</p>
+<p>在<strong>JMM中就没有这个保证</strong>。未同步程序在JMM中不但整体的执行顺序是无序的&#xff0c;而且所有线程看到的操作执行顺序也可能不一致。比如&#xff0c;在当前线程把写过的数据缓存在本地内存中&#xff0c;在没有刷新到主内存之前&#xff0c;这个写操作仅对当前线程可见&#xff1b;从其他线程的角度来观察&#xff0c;会认为这个写操作根本没有被当前线程执行。只有当前线程把本地内存中写过的数据刷新到主内存之后&#xff0c;这个写操作才能对其他线程可见。在这种情况下&#xff0c;当前线程和其他线程看到的操作执行顺序将不一致</p>
+<h3><a rel="noopener noreferrer" id="_256"></a>有序性保证</h3>
+<p>对前面的示例程序用锁来同步&#xff0c;看看正确同步的程序如何具有顺序一致性</p>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">ReorderExample</span> <span class="token punctuation">{<!-- --></span>
+     <span class="token keyword">int</span> a <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+     <span class="token keyword">boolean</span> flag <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+     <span class="token keyword">public</span> <span class="token keyword">synchronized</span> <span class="token keyword">void</span> <span class="token function">writer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+         a <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> <span class="token comment">// 1</span>
+         flag <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span> <span class="token comment">// 2</span>
+     <span class="token punctuation">}</span>
+     <span class="token keyword">public</span> <span class="token keyword">synchronized</span> <span class="token keyword">void</span> <span class="token function">reader</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>flag<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token comment">// 3</span>
+         <span class="token keyword">int</span> i <span class="token operator">&#61;</span> a <span class="token operator">*</span> a<span class="token punctuation">;</span> <span class="token comment">// 4</span>
+
+      <span class="token punctuation">}</span>
+   <span class="token punctuation">}</span>
+</code></pre>
+<p>顺序一致性模型中&#xff0c;所有操作完全按程序的顺序串行执行。而在JMM中&#xff0c;临界区内的代码可以重排序&#xff08;但JMM不允许临界区内的代码“逸出”到临界区之外&#xff0c;那样会破坏监视器的语义&#xff09;。JMM会在退出临界区和进入临界区这两个关键时间点做一些特别处理&#xff0c;使得<strong>线程在这两个时间点具有与顺序一致性模型相同的内存视图</strong>。虽然线程A在临界区内做了重排序&#xff0c;但由于监视器互斥执行的特性&#xff0c;这里的线程B根本无法“观察”到线程A在临界区内的重排序。这种重排序既提高了执行效率&#xff0c;又没有改变程序的执行结果<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114182276-12-ee98eaae63.png" loading="lazy"><br />
+JMM在具体实现上的基本方针为&#xff1a;在不改变&#xff08;正确同步的&#xff09;程序执行结果的前提下&#xff0c;尽可能地进行编译器处理器的优化</p>
+<h3><a rel="noopener noreferrer" id="JMM_277"></a>未同步JMM问题</h3>
+<p>JMM不保证未同步程序的执行结果与该程序在顺序一致性模型中的执行结果一致。因为如果想要保证执行结果一致&#xff0c;JMM需要禁止大量的处理器和编译器的优化&#xff0c;这对程序的执行性能会产生很大的影响</p>
+<p>未同步程序在JMM中的执行时&#xff0c;整体上是无序的&#xff0c;其执行结果无法预知。未同步程序在两个模型中的执行特性有如下几个差异。</p>
+<ol><li><strong>顺序一致性模型保证单线程内的操作会按程序的顺序执行&#xff0c;而JMM不保证</strong>单线程内的操作会按程序的顺序执行&#xff08;比如上面正确同步的多线程程序在临界区内的重排序&#xff09;</li><li><strong>顺序一致性模型保证所有线程只能看到一致的操作执行顺序&#xff0c;而JMM不保证所有线程能看到一致的操作执行顺序</strong></li><li><strong>JMM不保证对64位的long型和double型变量的写操作具有原子性&#xff0c;而顺序一致性模型保证对所有的内存读/写操作都具有原子性</strong></li></ol>
+<p>我们在前面的主内存与工作内存中提到&#xff0c;在一些32位的处理器上&#xff0c;如果要求对64位数据的写操作具有原子性&#xff0c;会有比较大的开销。为了照顾这种处理器&#xff0c;Java语言规范鼓励但不强求JVM对64位的long型变量和double型变量的写操作具有原子性。当JVM在这种处理器上运行时&#xff0c;可能会把一个64位long/double型变量的写操作拆分为两个32位的写操作来执行。<strong>这两个32位的写操作可能会被分配到不同的总线事务中执行&#xff0c;此时对这个64位变量的写操作将不具有原子性</strong></p>
+<h2><a rel="noopener noreferrer" id="JMM_290"></a>JMM实现三大特性</h2>
+<p>我们前文提到了并发编程中的三大特性&#xff0c;并发编程才是安全的&#xff0c;<strong>原子性、可见性与有序性</strong>&#xff0c;也探讨了顺序一致性模型是我们在并发编程中的理想模型&#xff0c;那么JMM模型需要补足或者使用哪些特殊机制来满足顺序一致性模型呢&#xff1f;</p>
+<ul><li>
+<p><strong>原子性&#xff08;Atomicity&#xff09;</strong>&#xff0c;Java内存模型来直接保证的原子性变量操作包括<strong>read、load、use、assign、store</strong>和<strong>write</strong>这六个&#xff0c;我们可以大致的认为基本数据类型的访问读写是具备原子性的&#xff08;64位的long和64位的double除外&#xff09;。</p>
+<ul><li><font color="red"><strong>synchronized关键字</strong></font>&#xff0c;Java内存模型还提供了<strong>lock</strong>和<strong>unlock</strong>操作来满足这种需求&#xff0c;尽管虚拟机未把lock和unlock操作直接开放给用户使用&#xff0c;但是却提供了更高层次的字节码指令monitorenter和monitorexit来隐式地使用这两个操作&#xff0c;这两个字节码指令反映到Java代码中就是同步块——<strong>synchronized</strong>关键字&#xff0c;因此在<strong>synchronized块之间的操作</strong>也具备原子性</li><li><font color="red"><strong>原子类</strong></font>进行的CAS操作也能满足原子性。</li></ul>
+</li><li>
+<p><strong>可见性&#xff08;Visibility&#xff09;</strong>&#xff0c;可见性是指当一个线程修改了共享变量的值&#xff0c;其他线程能够立即得知这个修改。Java内存模型是通过在变量修改后将新值同步回主内存&#xff0c;在变量读取前从主内存刷新变量值这种依赖主内存作为传递媒介的方式来实现可见性的&#xff0c;有以下三种方式满足可见性&#xff1a;</p>
+<ul><li><font color="red"><strong>volatile关键字</strong></font>&#xff0c;volatile修饰的共享变量保证新值能立即同步到主内存&#xff0c;以及每次使用前立即从主内存刷新。</li><li><font color="red"><strong>synchronized关键字</strong></font>&#xff0c;可见性是由<strong>对一个变量执行unlock操作之前&#xff0c;必须先把此变量同步回主内存&#xff08;执行store、write操作&#xff09;中</strong>这条规则获得的</li><li><font color="red"><strong>final关键字</strong></font>&#xff0c;可见性是指&#xff1a;被final修饰的字段在构造器中一旦初始化完成&#xff0c;并且构造器没有把“this”的引用传递出去&#xff08;this引用逃逸是一件很危险的事情&#xff0c;其他线程有可能通过这个引用访问到“初始化了一半”的对象&#xff09;&#xff0c;那在其他线程中就能看见final字段的值。</li></ul>
+</li><li>
+<p><strong>有序性&#xff08;Ordering&#xff09;</strong>&#xff0c;Java程序的天然有序性&#xff1a;在本线程内观察&#xff0c;所有操作都是有序的&#xff1b;在一个线程中观察另外一个线程&#xff0c;所有操作都是无序的。&#xff08;前半句是指线程内表现为串行的语义&#xff0c;后半句是<strong>指令重排序现象和工作内存与主内存同步延迟现象</strong>&#xff09;。有以下三种满足有序性</p>
+<ul><li><font color="red"><strong>volatile关键字</strong></font>&#xff0c;<strong>volatile本身就包含禁止指令重排序的语义</strong>来保证有序性&#xff0c;使用内存屏障&#xff0c;即重排序的指令不能放到内存屏障之前。</li><li><font color="red"><strong>synchronized关键字</strong></font>&#xff0c;因为<strong>一个变量在同一时刻只允许一条线程对其进行lock操作</strong>。这个规则决定了持有同一个锁的两个同步块只能串行的进入&#xff0c;指令在临界区内可以重排&#xff0c;但不会影响最终执行结果</li><li><font color="red"><strong>先行发生原则&#xff08;Happens-Before&#xff09;</strong></font>&#xff0c;如果Java内存模型中所有的有序性都只靠volatile和synchronized来完成&#xff0c;那么有一些操作将会变得很繁琐&#xff0c;在JMM中&#xff0c;如果一个操作执行的结果需要对另一个操作可见&#xff0c;这两个操作需要有一定的执行顺序&#xff0c;那么这两个操作之间必须要存在happens-before关系。这里提到的两个操作既可以是在一个线程之内&#xff0c;也可以是在不同线程之间</li></ul>
+</li></ul>
+<p>Java在底层使用volatile关键字和synchronized关键字来实现这三个特性&#xff0c;之后的高级并发包&#xff0c;也都是基于这两个关键字进行的扩展。下一篇Blog我们来详细探讨这两个关键字。</p>
+<h2><a rel="noopener noreferrer" id="_307"></a>总结</h2>
+<p>本篇Blog首先了解了处理器的内存模型&#xff0c;进而推演出JMM内存模型并且提出了并发编程需要满足的三大特性&#xff0c;接着了解了执行的先行发生原则&#xff08;满足可见性和有序性的原则&#xff09;&#xff0c;接着介绍了多线程编程中重排指令导致的问题对有序性、可见性的破坏的一些示例&#xff0c;在了解了理想的顺序一致性模型是什么样的之后&#xff0c;最终给出了JMM如何实现理想顺序一致性模型功能需要的底层语义和关键字来满足三大特性&#xff0c;为后文的并发机制底层关键字实现做好伏笔</p>

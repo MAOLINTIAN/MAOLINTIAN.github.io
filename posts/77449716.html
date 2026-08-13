@@ -1,0 +1,65 @@
+<p>##题目描述<br />
+请实现两个函数&#xff0c;分别用来序列化和反序列化二叉树<br />
+##解题思路<br />
+1&#xff0c;序列化和反序列化都可以通过前序遍历&#xff08;根左右&#xff09;来进行<br />
+2&#xff0c;序列化遇到null用“#”来标明<br />
+3&#xff0c;反序列化的时候遇到“#”则停止<br />
+##代码</p>
+<pre><code>/**
+ *
+ */
+package 二叉树;
+
+
+/**
+ * &lt;p&gt;
+ * Title:请实现两个函数&#xff0c;分别用来序列化和反序列化二叉树
+ *
+ *
+ */
+public class SerializeAndDeserialize {
+
+	/**
+	 * void
+	 *
+	 * &#64;param args
+	 */
+	public String Serialize(TreeNode root) {    //通过前序遍历来序列化二叉树&#xff0c;遇到null值则改为特殊符号
+		StringBuffer sb &#61; new StringBuffer();
+		if (root &#61;&#61; null) {
+			sb.append(&#34;#,&#34;);
+			return sb.toString();
+		}
+		sb.append(root.val &#43; &#34;,&#34;);    //根
+		sb.append(Serialize(root.left));//左
+		sb.append(Serialize(root.right));//右
+		return sb.toString();
+
+
+	}
+    public int index &#61;-1;
+	public TreeNode Deserialize(String str) {
+		index&#43;&#43;;
+		int len &#61; str.length();
+		if(index&gt;&#61;len){
+			return null;    //index从0开始&#xff0c;到末尾结束
+		}
+		String[] strs &#61; str.split(&#34;,&#34;);  //把字符串按照“&#xff0c;”分隔开
+		TreeNode node &#61;null;
+		if(!strs[index].equals(&#34;#&#34;)){
+			node &#61; new TreeNode(Integer.valueOf(strs[index]));
+			node.left &#61;Deserialize(str);
+			node.right &#61; Deserialize(str);
+		}
+		return node;
+
+	}
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}
+
+</code></pre>

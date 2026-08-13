@@ -1,0 +1,532 @@
+<p>上一篇文章简要概述了为什么要有类&#xff0c;面向对象模式的好处&#xff0c;并且详细说明了三大特性之一封装的重要性&#xff0c;这一篇文章我们就继续学习下面向对象三大特性之二的继承。本章的结构如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103486417-01-b3cb016f3e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_3"></a>宏观认知</h3>
+<p>1&#xff0c;为什么要有继承&#xff1f;&#xff08;<strong>爹给儿子的&#xff0c;有些儿子可以修改&#xff0c;有些不可以修改</strong>&#xff09;</p>
+<blockquote>
+<p>上一篇博客我提到&#xff0c;面向对象编程的好处&#xff1a;可以不必从头创建新程序&#xff0c;而是用现有的一个模板去复制、去扩展&#xff0c;或添加更多&#xff0c;而且整个代码还非常有条理&#xff0c;可以控制访问权限、组织起来不会乱&#xff0c;<font color="red"><strong>我们从一个模板new一个类出来就可以具备该类的全部功能是不是很方便&#xff0c;但有时候有些类不能满足我们的需求&#xff0c;但也不至于再因为一个小的功能就重新搞个类出来&#xff0c;没有必要&#xff0c;这个时候继承的好处就体现出来了&#xff0c;不仅全部基类代码可以复用&#xff0c;而且还可以在派生类上添加额外成员或修改&#xff08;重写&#xff09;基类成员</strong></font>。</p>
+</blockquote>
+<p>2&#xff0c;如何实现只让自己的派生类访问自己的成员&#xff1f;</p>
+<blockquote>
+<p>用protected&#xff0c;除了自己和自己的儿子&#xff0c;别人休想用我的成员实现&#xff01;</p>
+</blockquote>
+<p>3&#xff0c;为什么要重写&#xff1f;&#xff08;<strong>儿子用爹可修改的方法或属性并修改</strong>&#xff09;</p>
+<blockquote>
+<p>当基类的方法或者属性实现在不同的派生类中有不同的使用方式的时候&#xff0c;把基类的方法声明为虚方法&#xff0c;这样可以实现面向对象思想的另一个重要特性&#xff1a;多态。<font color="red"><strong>重写能让派生类自定义自己的实现&#xff0c;而不是统一使用父类的方法</strong></font>。</p>
+</blockquote>
+<p>4&#xff0c;啥时候用new操作符&#xff1f;&#xff08;<strong>儿子不用爹的&#xff0c;儿子自己实现</strong>&#xff09;</p>
+<blockquote>
+<p>简单而言就是如果<font color="red"><strong>从基类继承的某个方法和自己想要实现的方法同名&#xff08;同一个方法签名&#xff1a;包括参数量、参数类型、方法名&#xff09;&#xff0c;这个时候要显示的用new来表明自己要使用自己的方法实现&#xff0c;而不是基类的</strong></font>&#xff0c;不然的话会报警告。</p>
+</blockquote>
+<p>5&#xff0c;如何防止方法被重写&#xff1f;&#xff08;<strong>儿子用爹的可修改方法或属性并修改&#xff0c;孙子自己实现</strong>&#xff09;</p>
+<blockquote>
+<p>当派生类重写完基类的方法后&#xff0c;不想让该方法进一步被重写&#xff0c;所以使用sealed配合override使用<font color="red"><strong>重写能让派生类自定义自己的实现&#xff0c;而不是统一使用父类的方法</strong></font>。</p>
+</blockquote>
+<p>6&#xff0c;抽象类是干啥的&#xff1f;&#xff08;<strong>所有儿子必须用爹的抽象成员并修改和实现</strong>&#xff09;</p>
+<blockquote>
+<p>抽象类就是不能new对象&#xff0c;只能被其它类继承的类<font color="red"><strong>就是一个不可能拥有对象的可怜类&#xff0c;</strong></font>&#xff0c;但主要特点是强制所有派生类型提供对它定义的抽象方法的实现&#xff0c;<font color="red"><strong>当年我没考上大学&#xff0c;对孩子们寄予厚望&#xff0c;你可一定要考上啊&#xff01;</strong></font>。</p>
+</blockquote>
+<p>7&#xff0c;万物始祖Object&#xff08;<strong>所有爹的爹&#xff0c;众爹之爹</strong>&#xff09;</p>
+<blockquote>
+<p>所有类都隐式的从Object派生出来,</p>
+</blockquote>
+<p>8&#xff0c;如何判断类型并尝试转换为特定类型&#xff08;<strong>如何证明你爹是你爹</strong>&#xff09;</p>
+<blockquote>
+<p>使用is和as可以显式的判断在转换前该对象是否属于基础类型。</p>
+</blockquote>
+<h3><a rel="noopener noreferrer" id="_36"></a>派生</h3>
+<p>继承建立了“属于”&#xff08;is-a&#xff09;关系。派生类型总是隐式属于基类型。如同硬盘属于存储设备&#xff0c;<strong>从存储设备类型派生的其他任何类型都属于存储设备。反之则不成立</strong>。存储设备不一定是硬盘</p>
+<ul><li>派生/继承&#xff1a;对基类进行特化&#xff0c;添加额外成员或自定义基类成员。</li><li><strong>派生类型</strong>/子类型&#xff1a;继承了较常规类型的成员的特化类型。</li><li><strong>基</strong>/超/父类型&#xff1a;其成员由派生类型继承的常规类型。</li></ul>
+<p>派生中有以下几点需要注意&#xff1a;</p>
+<p>1&#xff0c;基类的每个成员都出现在派生类构成的链条中&#xff0c;也就是祖宗的东西<strong>每一代都在进行增量增加</strong>。<br />
+2&#xff0c;除非明确指定基类&#xff0c;否则所有类都默认从object派生&#xff0c;但是同时注意&#xff0c;如果明确指定了基类&#xff0c;就不算object直接派生了&#xff0c;因为&#xff1a;<strong>C#是单继承的&#xff01;</strong><br />
+3&#xff0c; 要想绕路实现多继承&#xff0c;<strong>可以通过聚合的方式&#xff0c;即派生类一方面继承自己基类的一切&#xff0c;又把另一个类当成自己的成员</strong>。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter07<span class="token punctuation">.</span>Listing07_08
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Person</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> LastName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Contact</span> <span class="token punctuation">:</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token class-name">Person</span> InternalPerson <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">return</span> InternalPerson<span class="token punctuation">.</span>FirstName<span class="token punctuation">;</span> <span class="token punctuation">}</span>
+            <span class="token keyword">set</span> <span class="token punctuation">{<!-- --></span> InternalPerson<span class="token punctuation">.</span>FirstName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> LastName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">return</span> InternalPerson<span class="token punctuation">.</span>LastName<span class="token punctuation">;</span> <span class="token punctuation">}</span>
+            <span class="token keyword">set</span> <span class="token punctuation">{<!-- --></span> InternalPerson<span class="token punctuation">.</span>LastName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>这样看起来就好像继承了Person的属性一样&#xff0c;<strong>这种方式显然不靠谱</strong></p>
+<p>4&#xff0c;<font color="red"><strong>派生类继承除构造函数和析构器之外的所有基类的成员&#xff0c;但继承并不意味着一定能访问&#xff01;</strong></font></p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _Name<span class="token punctuation">;</span>   <span class="token comment">//private修饰&#xff0c;当然访问不了</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Contact</span> <span class="token punctuation">:</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Contact</span> contact <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ERROR:  &#39;PdaItem. _Name&#39; is inaccessible</span>
+            <span class="token comment">// due to its protection level</span>
+            <span class="token comment">//contact._Name &#61; &#34;Inigo Montoya&#34;;  //uncomment this line and it will not compile</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>5&#xff0c;基类的受保护成员只能从<strong>基类及其派生链的其他类中访问</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter07<span class="token punctuation">.</span>Listing07_07
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">using</span> System<span class="token punctuation">;</span>
+    <span class="token keyword">using</span> System<span class="token punctuation">.</span>IO<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Contact</span> contact <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            contact<span class="token punctuation">.</span>Name <span class="token operator">&#61;</span> <span class="token string">&#34;Inigo Montoya&#34;</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ERROR:  &#39;PdaItem.ObjectKey&#39; is inaccessible</span>
+            <span class="token comment">// due to its protection level</span>
+            <span class="token comment">//contact.ObjectKey &#61; Guid.NewGuid(); //uncomment this line and it will not compile</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">protected</span> <span class="token class-name">Guid</span> ObjectKey <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Contact</span> <span class="token punctuation">:</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">void</span> <span class="token function">Save</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// Instantiate a FileStream using &lt;ObjectKey&gt;.dat</span>
+            <span class="token comment">// for the filename</span>
+            <span class="token class-name">FileStream</span> stream <span class="token operator">&#61;</span> System<span class="token punctuation">.</span>IO<span class="token punctuation">.</span>File<span class="token punctuation">.</span><span class="token function">OpenWrite</span><span class="token punctuation">(</span>
+                ObjectKey <span class="token operator">&#43;</span> <span class="token string">&#34;.dat&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">void</span> <span class="token function">Load</span><span class="token punctuation">(</span><span class="token class-name">PdaItem</span> pdaItem<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// ERROR:  &#39;pdaItem.ObjectKey&#39; is inaccessible</span>
+            <span class="token comment">// due to its protection level</span>
+            <span class="token comment">//pdaItem.ObjectKey &#61;...</span>
+
+            <span class="token class-name">Contact</span> contact <span class="token operator">&#61;</span> pdaItem <span class="token keyword">as</span> Contact<span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>contact <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                contact<span class="token punctuation">.</span>ObjectKey <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Guid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//... </span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// ...</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>//Contact.Load&#xff08;&#xff09;方法有一个容易被忽视的细节&#xff1a;即使Contact从PdaItem派生&#xff0c;从Contact类内部也无法访问一个PdaItem实例的受保护ObjectKey。<strong>这是由于万一PdaItem是一个Address&#xff0c;Contact不应访问Address的受保护成员。所以&#xff0c;封装成功阻止了Contact修改Address的ObjectKey。成功转型为Contact可绕过该限制</strong>。<font color="red"><strong>基本规则是&#xff0c;要从派生类中访问受保护成员&#xff0c;必须能在编译时确定它是派生类&#xff08;或者它的某个子类&#xff09;中的实例</strong></font>。</p>
+<p>6&#xff0c;扩展方法理论上不属于类型的成员&#xff0c;所以不可继承&#xff0c;但其实扩展方法也可以在派生类中用&#xff0c;<strong>所以如果继承链中有同名的方法&#xff0c;优先调用实例方法</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_170"></a>类型密封</h4>
+<p>如果不希望自己的类被派生&#xff0c;则可以使用sealed关键字对类进行密封&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter07<span class="token punctuation">.</span>Listing07_09
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">sealed</span> <span class="token keyword">class</span> <span class="token class-name">CommandLineParser</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// ERROR:  Sealed classes cannot be derived from</span>
+    <span class="token keyword">public</span> <span class="token keyword">sealed</span> <span class="token keyword">class</span> <span class="token class-name">DerivedCommandLineParser</span>
+    <span class="token comment">//: CommandLineParser //uncomment this line and it will not compile</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_190"></a>类型转换</h4>
+<p>派生类型可以隐式转为基类型&#xff0c;而基类型则需要显式转换。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Test</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">TestMethod</span><span class="token punctuation">(</span><span class="token class-name">Father</span> data<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Child</span> c <span class="token operator">&#61;</span> <span class="token punctuation">(</span>Child<span class="token punctuation">)</span>data<span class="token punctuation">;</span>  <span class="token comment">//向下转型&#xff0c;显式</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">TestMethod2</span><span class="token punctuation">(</span><span class="token class-name">Child</span> data<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Father</span> c <span class="token operator">&#61;</span> data<span class="token punctuation">;</span>      <span class="token comment">//向上转型&#xff0c;隐式</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>需要注意以下几点&#xff1a;</p>
+<ul><li>隐式转型为基类不会实例化新实例&#xff0c;<strong>而是将同一个实例引用为基类型&#xff0c;它现在提供的功能&#xff08;可访问的成员&#xff09;是基类型的</strong>。这类似于将CD-ROM驱动器说成是一种存储设备。由于并非所有存储设备都支持弹出操作&#xff0c;所以CDROM转型为存储设备后不再支持弹出</li><li>类似地&#xff0c;<strong>将基类向下转型为派生类会引用更具体的类型&#xff0c;类型可用的操作也会得到扩展</strong>。<font color="red"><strong>但这种转换有限制&#xff0c;被转换的必须确实是目标类型&#xff08;或者它的派生类型&#xff09;的实例</strong></font>。</li></ul>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BaseClass</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">virtual</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;BaseClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">BaseClass</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;DerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Set</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;不可能&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">BaseClass</span> baseClass1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">BaseClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">DerivedClass</span> dr <span class="token operator">&#61;</span> <span class="token punctuation">(</span>DerivedClass<span class="token punctuation">)</span>baseClass1<span class="token punctuation">;</span>
+        <span class="token comment">//这里虽然编译时没有问题&#xff0c;但运行时会报错&#xff0c;转换不成功&#xff0c;</span>
+       <span class="token comment">//因为该实例是基类的&#xff0c;即使转为派生类引用&#xff0c;也不能调用派生类自己的方法</span>
+        dr<span class="token punctuation">.</span><span class="token function">Set</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<ul><li>显式转型一定会在允运行时被CLR检查&#xff0c;<strong>即使侥幸能躲过编译检查&#xff0c;最终还是逃脱不了运行时检查</strong></li></ul>
+<p>类型转型时应该严格注意以上几点。<font color="red"><strong>向上转为基类&#xff0c;调用的方法是引用者本身的方法&#xff0c;例如Father c &#61;data&#xff0c;c调用的非虚成员为自己的&#xff0c;但是如果该方法或属性为虚&#xff0c;则调用派生的最远的&#xff08;这个最远的是派生链上最终指向的实例对象&#xff09;&#xff0c;因为遵循原则&#xff1a;运行时调用派生的最远的虚成员</strong>&lt;\font&gt;</font></p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Contact</span> contact<span class="token punctuation">;</span>   <span class="token comment">//派生类</span>
+            <span class="token class-name">PdaItem</span> item<span class="token punctuation">;</span>      <span class="token comment">//基类</span>
+
+            contact <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Contact</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            item <span class="token operator">&#61;</span> contact<span class="token punctuation">;</span>    <span class="token comment">//向上转型&#xff0c;隐式</span>
+
+            <span class="token comment">// Set the name via PdaItem variable</span>
+            item<span class="token punctuation">.</span>Name <span class="token operator">&#61;</span> <span class="token string">&#34;Inigo Montoya&#34;</span><span class="token punctuation">;</span>   <span class="token comment">//属性调用的为Contact.Name的实现</span>
+
+            <span class="token comment">// Display that FirstName &amp; LastName</span>
+            <span class="token comment">// properties were set</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+                $<span class="token string">&#34;{ contact.FirstName } { contact.LastName}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>调用如下&#xff0c;father调用的实例方法还是自己的&#xff0c;但是虚方法实现是child的实现。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103486417-02-d8cda92ed8.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_271"></a>重写</h3>
+<p>重写的概念已经很熟了&#xff0c;就像上文列举的&#xff0c;为了扩展而准备&#xff0c;需要注意以下几点&#xff1a;</p>
+<ul><li><strong>C#支持重写实例方法和属性、不支持字段和任何静态成员重写</strong></li><li>C#重写的成员必须显示添加virtual关键字&#xff0c;<strong>C#默认方法非虚</strong></li><li>如果派生类<strong>要重写方法&#xff0c;必须显式的使用override关键字&#xff01;</strong></li><li><strong>重写后的override修饰的方法还是虚方法&#xff0c;还能被继承重写</strong>。</li></ul>
+<p>还有一个重要的修饰符就是new&#xff0c;可以<strong>在派生类显式的隐藏从基类继承的成员&#xff01;</strong> 说白了new的一个重要作用是&#xff0c;如果派生类使用了和基类相同的方法签名&#xff0c;不管这个方法是虚方法还是实例方法&#xff0c;都会隐藏基类的方法而用自己的实现。</p>
+<h4><a rel="noopener noreferrer" id="new_280"></a>脆弱的基类&#xff1a;new修饰符</h4>
+<p>还有一点值得注意&#xff1a;虽然运行时调用派生的最远的虚成员&#xff0c;<strong>但如果遇到new就会变为&#xff0c;new之前的派生的最远的虚成员</strong></p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BaseClass</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;BaseClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">BaseClass</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// Compiler WARNING: DisplayName() hides inherited </span>
+            <span class="token comment">// member. Use the new keyword if hiding was intended</span>
+            <span class="token keyword">public</span> <span class="token keyword">virtual</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;DerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SubDerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">DerivedClass</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;SubDerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SuperSubDerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">SubDerivedClass</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">public</span> <span class="token keyword">new</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;SuperSubDerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">SuperSubDerivedClass</span> superSubDerivedClass
+                <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">SuperSubDerivedClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token class-name">SubDerivedClass</span> subDerivedClass <span class="token operator">&#61;</span> superSubDerivedClass<span class="token punctuation">;</span>
+            <span class="token class-name">DerivedClass</span> derivedClass <span class="token operator">&#61;</span> superSubDerivedClass<span class="token punctuation">;</span>
+            <span class="token class-name">BaseClass</span> baseClass <span class="token operator">&#61;</span> superSubDerivedClass<span class="token punctuation">;</span>
+
+            superSubDerivedClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//SuperSubDerivedClass</span>
+            subDerivedClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//SubDerivedClass</span>
+            derivedClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//SubDerivedClass</span>
+            baseClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//BaseClass</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>这里最远的是SuperSubDerivedClass &#xff0c;因为派生链最终指向了 <code>SuperSubDerivedClass superSubDerivedClass&#61; new SuperSubDerivedClass()</code>产生的实例对象&#xff0c;如果为&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">using</span> System<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BaseClass</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">virtual</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;BaseClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">BaseClass</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// Compiler WARNING: DisplayName() hides inherited</span>
+        <span class="token comment">// member. Use the new keyword if hiding wasb intended</span>
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;DerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SubDerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">DerivedClass</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;SubDerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SuperSubDerivedClass</span> <span class="token punctuation">:</span> <span class="token class-name">SubDerivedClass</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">new</span> <span class="token keyword">void</span> <span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;SuperSubDerivedClass&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">SuperSubDerivedClass</span> superSubDerivedClass
+            <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">SuperSubDerivedClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">DerivedClass</span> derivedClass1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">DerivedClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">SubDerivedClass</span> subDerivedClass <span class="token operator">&#61;</span> superSubDerivedClass<span class="token punctuation">;</span>
+        <span class="token class-name">DerivedClass</span> derivedClass <span class="token operator">&#61;</span> subDerivedClass<span class="token punctuation">;</span>
+        <span class="token class-name">BaseClass</span> baseClass <span class="token operator">&#61;</span> derivedClass1<span class="token punctuation">;</span>
+
+        superSubDerivedClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//SuperSubDerivedClass</span>
+        subDerivedClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//SubDerivedClass</span>
+        derivedClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//SubDerivedClass</span>
+        baseClass<span class="token punctuation">.</span><span class="token function">DisplayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//DerivedClass</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p><code>baseClass.DisplayName()</code>&#xff0c;  这里的最远就是DerivedClass里new出来的实例。</p>
+<h4><a rel="noopener noreferrer" id="_396"></a>密封方法&#xff0c;禁止重写</h4>
+<p>和密封类一样&#xff0c;也有密封方法&#xff0c;就是子类继承实现后&#xff0c;不允许孙类继续继承&#xff0c;<strong>sealed和override是紧密配合使用的&#xff01;</strong></p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter07<span class="token punctuation">.</span>Listing07_15
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">class</span> <span class="token class-name">A</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">virtual</span> <span class="token keyword">void</span> <span class="token function">Method</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">class</span> <span class="token class-name">B</span> <span class="token punctuation">:</span> <span class="token class-name">A</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">sealed</span> <span class="token keyword">void</span> <span class="token function">Method</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">class</span> <span class="token class-name">C</span> <span class="token punctuation">:</span> <span class="token class-name">B</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ERROR:  Cannot override sealed members</span>
+        <span class="token comment">//public override void Method()</span>
+        <span class="token comment">//{<!-- --></span>
+        <span class="token comment">//}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="base_426"></a>base修饰符</h4>
+<p>和this一样&#xff0c;base可以用于调用基类的成员&#xff0c;显式调用基类的实现&#xff0c;<strong>这个时候不用实现最远的派生&#xff0c;就是自己的方法实现&#xff08;即使这个方法是虚方法&#xff09;</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103486417-03-c9f69deca0.png" loading="lazy"><br />
+有了base修饰符&#xff0c;就能在代用派生类构造函数前确定要调用哪一个基类的构造函数。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">PdaItem</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// ...</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Contact</span> <span class="token punctuation">:</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Contact</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">)</span> <span class="token punctuation">:</span>
+            <span class="token keyword">base</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">new</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_454"></a>抽象类</h3>
+<p>抽象类说白了&#xff0c;就是仅供派生的类&#xff0c;无法实例化&#xff0c;与之相反的是&#xff0c;<strong>不抽象可直接实例化的是具体类</strong>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">PdaItem</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">PdaItem</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">virtual</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>  <span class="token comment">//虚成员已被基类实现&#xff0c;可以派生类被重写实现</span>
+        <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">string</span> <span class="token function">GetSummary</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>     <span class="token comment">//抽象方法未被基类实现&#xff0c;必须被派生类实现&#xff01;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>虚成员已被基类实现&#xff0c;<font color="red"><strong>可以</strong></font>派生类被重写实现&#xff0c;抽象成员未被基类实现&#xff0c;<font color="red"><strong>必须</strong></font>被派生类实现&#xff01;并且**抽象成员&#xff08;未被实现的方法或属性&#xff09;**自动为虚。</p>
+<h3><a rel="noopener noreferrer" id="SystemObject_471"></a>System.Object</h3>
+<p>在万类始祖提供的方法里&#xff0c;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103486417-04-17fe562614.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_474"></a>模式匹配</h3>
+<p>这部分内容主要聊聊两个操作符&#xff1a;<strong>is和as</strong></p>
+<h4><a rel="noopener noreferrer" id="is_476"></a>is操作符</h4>
+<p>is作用是<strong>检查一个对象是否兼容于其他指定的类型,并返回一个Bool值</strong>&#xff0c;<font color="red"><strong>如果一个对象是某个类型或是其父类型的话就返回为true&#xff0c;否则的话就会返回为false&#xff0c;永远不会抛出异常&#xff0c;如果对象引用为null&#xff0c;那么is操作符总是返回为false</strong></font>&#xff0c;因为没有对象可以检查其类型。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Save</span><span class="token punctuation">(</span><span class="token keyword">object</span> data<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//is操作符的一般用法是向下显式转型之前&#xff0c;使用is来确定实例对象是否兼容于对应类型&#xff1f;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token keyword">is</span> <span class="token keyword">string</span><span class="token punctuation">)</span>    <span class="token comment">//如果data为null也返回false</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">string</span> text <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">)</span>data<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>text<span class="token punctuation">.</span>Length <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    data <span class="token operator">&#61;</span> <span class="token function">Encrypt</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment">// ...</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span>
+
+</code></pre>
+<p>即使这个对象是类型的子类型&#xff0c;转型也会失败哦&#xff0c;易错点&#xff0c;记住了&#xff08;虽然编译的时候不会报错&#xff09;&#xff1a;<br />
+<img alt="![在这里插入图片" src="./posts/assets/103486417-05-1723eac1be.png" loading="lazy"><br />
+从C#7.0开始&#xff0c;is增加了模式匹配&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Save</span><span class="token punctuation">(</span><span class="token keyword">object</span> data<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token keyword">is</span> <span class="token keyword">string</span> text <span class="token operator">&amp;&amp;</span> text<span class="token punctuation">.</span>Length <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                data <span class="token operator">&#61;</span> <span class="token function">Encrypt</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// ...</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>data <span class="token keyword">is</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentNullException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// ...</span>
+
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p><code>data is string text</code>&#xff0c;如果data是string类型&#xff0c;则返回true&#xff0c;同时把值赋给text&#xff0c;这样就不需要两步操作了。<font color="red"><strong>主要用途就是判断一个数据项是否属于特定类型</strong></font>。</p>
+<h4><a rel="noopener noreferrer" id="switch_519"></a>switch对模式匹配的支持</h4>
+<p>之前的博客里简单聊过从C#7.0开始&#xff0c;支持模式匹配&#xff0c;但没有详细介绍过&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">static</span> <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Eject</span><span class="token punctuation">(</span><span class="token class-name">Storage</span> storage<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">switch</span> <span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">case</span> <span class="token keyword">null</span><span class="token punctuation">:</span> <span class="token comment">// The location of case null doesn&#39;t matter</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentNullException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// ** Causes compile error because case statments below</span>
+                <span class="token comment">// ** are unreachable</span>
+                <span class="token comment">// case Storage tempStorage:</span>
+                <span class="token comment">//    throw new Exception();</span>
+                <span class="token comment">//    break;</span>
+                <span class="token keyword">case</span> <span class="token class-name">UsbKey</span> usbKey when usbKey<span class="token punctuation">.</span>IsPluggedIn<span class="token punctuation">:</span>
+                    usbKey<span class="token punctuation">.</span><span class="token function">Unload</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;USB Drive Unloaded!&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token class-name">Dvd</span> dvd when dvd<span class="token punctuation">.</span>IsInserted<span class="token punctuation">:</span>
+                    dvd<span class="token punctuation">.</span><span class="token function">Eject</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;DVD Ejected!&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token class-name">Dvd</span> dvd when <span class="token operator">!</span>dvd<span class="token punctuation">.</span>IsInserted<span class="token punctuation">:</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentException</span><span class="token punctuation">(</span><span class="token string">&#34;There was no DVD present.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token class-name">HardDrive</span> hardDrive<span class="token punctuation">:</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">InvalidOperationException</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">default</span><span class="token punctuation">:</span>   <span class="token comment">// The location of case default doesn&#39;t matter</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>有以下几点需要注意&#xff1a;</p>
+<ul><li>和基本switch语句不同&#xff0c;模式匹配case子句不限于有常量值的类型&#xff08;string&#xff0c;int&#xff0c;long&#xff0c;enum等&#xff09;。相反&#xff0c;<strong>任何类型都可使用</strong>。</li><li>模式匹配case标签在类型后声明一个变量&#xff1a;<code>case HardDrive hardDrive&#xff1a;</code>该变量的作用域限于当前switch小节&#xff08;始于case标签&#xff0c;中间是一个或多个语句&#xff0c;结束于跳转语句。&#xff09;</li><li>模式匹配case标签支持条件表达式&#xff0c;允许对条件进行额外筛选&#xff0c;例如&#xff1a;<code>case UsbKey usbKey when usbKey.IsPluggedIn</code></li><li>模式匹配switch小节的顺序变得重要。<strong>为基类写一个case标签&#xff0c;且不添加任何条件表达式&#xff08;例如只写case Storage storage&#xff1a;&#xff09;&#xff0c;后面为派生类写的switch块都不会执行</strong>而且不写条件表达式&#xff0c;后边如果有case语句&#xff0c;编译器会报错。但如果基类的case标签写了条件表达式&#xff08;编译时解析不了&#xff09;&#xff0c;之后的派生类标签都会被屏蔽</li><li><strong>为null写的switch小节可在任意位置&#xff0c;它解析为true的条件总是具有唯一性</strong>。&#xff08;和基本switch语句一样&#xff0c;default标签位置还是随意。&#xff09;</li><li>允许针对相同类型写多个模式匹配case标签&#xff0c;前提是其中最多一个没有条件表达式&#xff0c;<strong>而且要想有条件表达式的执行&#xff0c;这个没有的要放到最后</strong></li><li><strong>常量switch小节可以和模式匹配switch小节混合使用</strong>。当然优先考虑简化</li><li>模式匹配switch小节仍然需要跳转语句。</li><li>case子句不允许使用可空类型&#xff08;例如int&#xff1f;&#xff09;。改为使用非可空版本。这是因为<strong>空值会匹配case null&#xff0c;永远不会匹配针对可空类型的case子句</strong></li></ul>
+<p>暂时不需要太深入的去了解&#xff0c;在实践中验证吧。</p>
+<h4><a rel="noopener noreferrer" id="as_565"></a>as操作符</h4>
+<p>比起is操作符&#xff0c;as操作符的不同是&#xff1a;直接进行转型&#xff0c;<strong>转型成功则直接使用该类型的引用&#xff0c;如果转型失败返回null</strong>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">static</span> <span class="token keyword">object</span> <span class="token function">Print</span><span class="token punctuation">(</span><span class="token class-name">IDocument</span> document<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>document <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Print document...</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">else</span>
+            <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">object</span> data <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">object</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+
+            <span class="token function">Print</span><span class="token punctuation">(</span>data <span class="token keyword">as</span> Document<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>as有个缺点就是不能判断基础类型&#xff0c;也就是不能用在值类型里&#xff1a;<strong>AS是引用类型类型的转换或者装箱转换&#xff0c;不能用与值类型的转换。如果是值类型只能结合is来强制转换</strong>。</p>
+<p>本篇博客详细介绍了继承这一特性&#xff0c;顺便梳理了下几个操作符的使用&#xff0c;对转型操作有了更深入的理解。</p>

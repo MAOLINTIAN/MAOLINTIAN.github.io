@@ -1,0 +1,486 @@
+<p>泛型&#xff0c;即“参数化类型”。就是将类型由原来的具体的类型参数化&#xff0c;类似于方法中的变量参数&#xff0c;此时<strong>类型也定义成参数形式&#xff08;可以称之为类型形参&#xff09;&#xff0c;然后在使用/调用时传入具体的类型&#xff08;类型实参&#xff09;</strong>&#xff0c;<font color="red"><strong>泛型的本质是参数化类型&#xff0c;也就是说所操作的数据类型被指定为一个参数</strong></font>。</p>
+<blockquote>
+<p>假定我们有这样一个需求&#xff1a;写一个排序方法&#xff0c;能够对整型数组、字符串数组甚至其他任何类型的数组进行排序&#xff0c;该如何实现&#xff1f;答案是可以使用 Java泛型。使用 Java泛型的概念&#xff0c;我们可以写一个泛型方法来对一个对象数组排序。然后&#xff0c;调用该泛型方法来对整型数组、浮点数数组、字符串数组等进行排序</p>
+</blockquote>
+<p>如果说Java的重写和重载是对方法的实现进行多态扩展&#xff0c;那么Java泛型就是对方法的参数类型进行多态化扩展。</p>
+<h2><a rel="noopener noreferrer" id="_5"></a>泛型优势</h2>
+<p>一种约束—规范类型&#xff08;常用名字&#xff1a;<strong>E &#61; Elememt、T &#61; Type、K &#61; Key、V &#61; Value</strong>&#xff09;&#xff0c;可以说任何类型都可以当做参数化的泛型。包括泛型类、泛型接口、泛型方法&#xff0c;它们的成员变量以及参数都可以使用泛型。为什么要使用泛型&#xff1f;</p>
+<p><strong>1&#xff0c;使用泛型可以避免过多的方法方法重载</strong>&#xff0c;更广泛的说&#xff0c;多种数据类型执行相同的代码时可以实现<strong>代码复用</strong></p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">NeedGeneric1</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">int</span> a<span class="token punctuation">,</span> <span class="token keyword">int</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>a <span class="token operator">&#43;</span> <span class="token string">&#34;&#43;&#34;</span> <span class="token operator">&#43;</span> b <span class="token operator">&#43;</span> <span class="token string">&#34;&#61;&#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>a <span class="token operator">&#43;</span> b<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a <span class="token operator">&#43;</span> b<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">float</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">float</span> a<span class="token punctuation">,</span> <span class="token keyword">float</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>a <span class="token operator">&#43;</span> <span class="token string">&#34;&#43;&#34;</span> <span class="token operator">&#43;</span> b <span class="token operator">&#43;</span> <span class="token string">&#34;&#61;&#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>a <span class="token operator">&#43;</span> b<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a <span class="token operator">&#43;</span> b<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">double</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">double</span> a<span class="token punctuation">,</span> <span class="token keyword">double</span> b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>a <span class="token operator">&#43;</span> <span class="token string">&#34;&#43;&#34;</span> <span class="token operator">&#43;</span> b <span class="token operator">&#43;</span> <span class="token string">&#34;&#61;&#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>a <span class="token operator">&#43;</span> b<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a <span class="token operator">&#43;</span> b<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token operator">&lt;</span>T <span class="token keyword">extends</span> <span class="token class-name">Number</span><span class="token operator">&gt;</span> <span class="token keyword">double</span> <span class="token function">add</span><span class="token punctuation">(</span>T a<span class="token punctuation">,</span> T b<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>a <span class="token operator">&#43;</span> <span class="token string">&#34;&#43;&#34;</span> <span class="token operator">&#43;</span> b <span class="token operator">&#43;</span> <span class="token string">&#34;&#61;&#34;</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>a<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> b<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> b<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//不使用泛型&#xff0c;add需要三个重载方法</span>
+        NeedGeneric1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        NeedGeneric1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token number">1f</span><span class="token punctuation">,</span> <span class="token number">2f</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        NeedGeneric1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token number">1d</span><span class="token punctuation">,</span> <span class="token number">2d</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//使用泛型&#xff0c;add只需要一个泛型方法</span>
+        NeedGeneric1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        NeedGeneric1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>Float<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> Float<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        NeedGeneric1<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>Double<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> Double<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>2&#xff0c;泛型中的类型在使用时指定&#xff0c;不需要强制类型转换&#xff08;类型安全&#xff0c;编译器会检查类型&#xff09;</strong>&#xff0c;将类型的明确工作提前到对象的创建以及方法调用。防止程序不安全泛型 :将类型的明确工作提前到对象的创建以及方法调用,防止程序不安全</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">NeedGeneric1</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">C</span><span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        List list<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;A&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;B&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">C</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//1.当我们将一个对象放入集合中&#xff0c;集合不会记住此对象的类型&#xff0c;当再次从集合中取出此对象时&#xff0c;该对象的编译类型变成了Object类型&#xff0c;但其运行时类型任然为其本身类型。</span>
+        <span class="token comment">//2.因此取出集合元素时需要人为的强制类型转化到具体的目标类型&#xff0c;且很容易出现“java.lang.ClassCastException”异常。</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> list<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            String value<span class="token operator">&#61;</span> <span class="token punctuation">(</span>String<span class="token punctuation">)</span> list<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>以上代码执行为&#xff1a;</p>
+<pre><code class="prism language-java">Exception in thread <span class="token string">&#34;main&#34;</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>ClassCastException<span class="token operator">:</span>
+    packageB<span class="token punctuation">.</span>NeedGeneric1$C cannot be cast to java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>String
+	at packageB<span class="token punctuation">.</span>NeedGeneric1<span class="token punctuation">.</span><span class="token function">main</span><span class="token punctuation">(</span>NeedGeneric1<span class="token punctuation">.</span>java<span class="token operator">:</span><span class="token number">20</span><span class="token punctuation">)</span>
+A
+B
+</code></pre>
+<p>如果我们使用泛型的话&#xff0c;将运行期的错误提前到编译期&#xff0c;提前发现问题<br />
+<img alt="在这里插入图片描述" src="./posts/assets/74231785-01-937ebec9c7.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_79"></a>泛型的使用</h2>
+<p>泛型支持泛型类、泛型接口以及泛型方法的调用&#xff0c;接下来详细说说这三种使用方式。</p>
+<h3><a rel="noopener noreferrer" id="_82"></a>泛型方法</h3>
+<p>可以写一个泛型方法&#xff0c;<strong>该方法在调用时可以接收不同类型的参数。根据传递给泛型方法的参数类型&#xff0c;编译器适当地处理每一个方法调用</strong>。下面是定义泛型方法的规则&#xff1a;</p>
+<ul><li>所有泛型方法声明都有一个类型参数声明部分&#xff08;由尖括号分隔&#xff09;&#xff0c;该类型参数声明部分在方法返回类型之前</li><li>每一个类型参数声明部分<strong>包含一个或多个类型参数&#xff0c;参数间用逗号隔开</strong>。一个泛型参数&#xff0c;也被称为一个类型变量&#xff0c;是用于指定一个泛型类型名称的标识符。</li><li><strong>类型参数能被用来声明返回值类型&#xff0c;并且能作为泛型方法得到的实际参数类型的占位符</strong>。</li><li>泛型方法体的声明和其他方法一样。</li></ul>
+<p>注意类型参数只能代表引用型类型&#xff0c;不能是原始类型&#xff08;像int,double,char的等&#xff09;&#xff0c;以下是一个泛型的定义&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">GenericMethodTest</span>
+<span class="token punctuation">{<!-- --></span>
+   <span class="token comment">// 泛型方法 printArray                         </span>
+   <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token generics function"><span class="token punctuation">&lt;</span>E<span class="token punctuation">&gt;</span></span> <span class="token keyword">void</span> <span class="token function">printArray</span><span class="token punctuation">(</span> E<span class="token punctuation">[</span><span class="token punctuation">]</span> inputArray <span class="token punctuation">)</span>
+   <span class="token punctuation">{<!-- --></span>
+      <span class="token comment">// 输出数组元素            </span>
+         <span class="token keyword">for</span> <span class="token punctuation">(</span> E element <span class="token operator">:</span> inputArray <span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">printf</span><span class="token punctuation">(</span> <span class="token string">&#34;%s &#34;</span><span class="token punctuation">,</span> element <span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token punctuation">}</span>
+         System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span> String args<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 创建不同类型数组&#xff1a; Integer, Double 和 Character</span>
+        Integer<span class="token punctuation">[</span><span class="token punctuation">]</span> intArray <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        Double<span class="token punctuation">[</span><span class="token punctuation">]</span> doubleArray <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token number">1.1</span><span class="token punctuation">,</span> <span class="token number">2.2</span><span class="token punctuation">,</span> <span class="token number">3.3</span><span class="token punctuation">,</span> <span class="token number">4.4</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        Character<span class="token punctuation">[</span><span class="token punctuation">]</span> charArray <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#39;H&#39;</span><span class="token punctuation">,</span> <span class="token string">&#39;E&#39;</span><span class="token punctuation">,</span> <span class="token string">&#39;L&#39;</span><span class="token punctuation">,</span> <span class="token string">&#39;L&#39;</span><span class="token punctuation">,</span> <span class="token string">&#39;O&#39;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span> <span class="token string">&#34;整型数组元素为:&#34;</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printArray</span><span class="token punctuation">(</span> intArray  <span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 传递一个整型数组</span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span> <span class="token string">&#34;\n双精度型数组元素为:&#34;</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printArray</span><span class="token punctuation">(</span> doubleArray <span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 传递一个双精度型数组</span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span> <span class="token string">&#34;\n字符型数组元素为:&#34;</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printArray</span><span class="token punctuation">(</span> charArray <span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 传递一个字符型数组</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java">整型数组元素为<span class="token operator">:</span>
+<span class="token number">1</span> <span class="token number">2</span> <span class="token number">3</span> <span class="token number">4</span> <span class="token number">5</span>
+
+双精度型数组元素为<span class="token operator">:</span>
+<span class="token number">1.1</span> <span class="token number">2.2</span> <span class="token number">3.3</span> <span class="token number">4.4</span>
+
+字符型数组元素为<span class="token operator">:</span>
+H E L L O
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_135"></a>泛型类</h3>
+<p>泛型类的定义方式如下&#xff0c;一般用作变化属性的定义。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Box</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> T t<span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">add</span><span class="token punctuation">(</span>T t<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>t <span class="token operator">&#61;</span> t<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">public</span> T <span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> t<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    Box<span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">&gt;</span></span> integerBox <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Box</span><span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    Box<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> stringBox <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Box</span><span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    integerBox<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Integer</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    stringBox<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span><span class="token string">&#34;字符串泛型&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">&#34;整型值为 :%d\n\n&#34;</span><span class="token punctuation">,</span> integerBox<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">&#34;字符串为 :%s\n&#34;</span><span class="token punctuation">,</span> stringBox<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这样定义好一个泛型类&#xff0c;就可以有多种当前类的类型实现方式&#xff0c;结果为&#xff1a;</p>
+<pre><code class="prism language-java">整型值为 <span class="token operator">:</span><span class="token number">10</span>
+字符串为 <span class="token operator">:</span>字符串泛型
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_165"></a>泛型接口</h3>
+<p>定义一个泛型接口&#xff0c;可以实现方法和参数类型的双扩展&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">GenericIntercace</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+     T <span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>接口的实现方式有两种&#xff0c;一种是<strong>实现类没有明确数据类型</strong></p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImplGenericInterface1</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token keyword">implements</span> <span class="token class-name">GenericIntercace</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> T <span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token number">10</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        ImplGenericInterface1<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> implGenericInterface1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ImplGenericInterface1</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//具体使用时再实例化&#xff0c;抽象类的概念</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>implGenericInterface1<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>另外一种为<strong>实现类已经明确数据类型</strong></p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImplGenericInterface2</span> <span class="token keyword">implements</span> <span class="token class-name">GenericIntercace</span><span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> String <span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token string">&#34;Generic Interface2&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        ImplGenericInterface2 implGenericInterface2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ImplGenericInterface2</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>implGenericInterface2<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_205"></a>泛型实例</h3>
+<p>了解了泛型类和泛型方法后可以看这样一个示例&#xff0c;dog继承自animal&#xff0c;可以看到在泛型类和泛型方法中有不同的表现。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">GenericMethod3</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Animal</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token annotation punctuation">&#64;Override</span>
+        <span class="token keyword">public</span> String <span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token string">&#34;Animal&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Dog</span> <span class="token keyword">extends</span> <span class="token class-name">Animal</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token annotation punctuation">&#64;Override</span>
+        <span class="token keyword">public</span> String <span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token string">&#34;Dog&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Fruit</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token annotation punctuation">&#64;Override</span>
+        <span class="token keyword">public</span> String <span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token string">&#34;Fruit&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">GenericClass</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">show01</span><span class="token punctuation">(</span>T t<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>t<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token keyword">void</span> <span class="token function">show02</span><span class="token punctuation">(</span>T t<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>t<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">&gt;</span></span> <span class="token keyword">void</span> <span class="token function">show03</span><span class="token punctuation">(</span>K k<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>k<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        Animal animal <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Animal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Dog dog <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Dog</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Fruit fruit <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Fruit</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Animal<span class="token punctuation">&gt;</span></span> genericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;泛型类在初始化时限制了参数类型&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        genericClass<span class="token punctuation">.</span><span class="token function">show01</span><span class="token punctuation">(</span>dog<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//genericClass.show01(fruit); //编译报错&#xff0c;fruit类型不正确</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;泛型方法的参数类型在使用时指定&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        genericClass<span class="token punctuation">.</span><span class="token function">show02</span><span class="token punctuation">(</span>dog<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        genericClass<span class="token punctuation">.</span><span class="token function">show02</span><span class="token punctuation">(</span>fruit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        genericClass<span class="token punctuation">.</span><span class="token function">show03</span><span class="token punctuation">(</span>animal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        genericClass<span class="token punctuation">.</span><span class="token generics function"><span class="token punctuation">&lt;</span>Animal<span class="token punctuation">&gt;</span></span><span class="token function">show03</span><span class="token punctuation">(</span>dog<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        genericClass<span class="token punctuation">.</span><span class="token function">show03</span><span class="token punctuation">(</span>fruit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//genericClass.&lt;Dog&gt;show03(animal);//编译报错&#xff0c;父类不能转为子类&#xff0c;需要强制转换</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_266"></a>泛型规范</h2>
+<p>包括泛型类型的一些限定以及泛型的一些<strong>类型限定、使用规范和继承规范</strong></p>
+<h3><a rel="noopener noreferrer" id="_268"></a>泛型类型限定</h3>
+<p>有时&#xff0c;类或方法需要对类型变量加以约束&#xff0c;否则传入类型可能不一定满足泛型使用条件&#xff1a;</p>
+<ul><li>对类的限定&#xff1a;<code>public class TypeLimitForClass&lt;T extends List &amp; Serializable&gt;{}</code></li><li>对方法的限定&#xff1a;<code>public static&lt;T extends Comparable&lt;T&gt;&gt;T getMin(T a, T b) {}</code></li></ul>
+<p>其中对方法的限定表示&#xff0c;泛型参数类型必须实现了Comparable接口&#xff0c;否则就没有办法进行比较了</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ArrayAlg</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token operator">&lt;</span>T <span class="token keyword">extends</span> <span class="token class-name">Comparable</span><span class="token operator">&gt;</span> T <span class="token function">min</span><span class="token punctuation">(</span>T<span class="token punctuation">[</span><span class="token punctuation">]</span> array<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>array <span class="token operator">&#61;&#61;</span> null <span class="token operator">||</span> array<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        T smallest <span class="token operator">&#61;</span> array<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token operator">&#61;</span><span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span>array<span class="token punctuation">.</span>length<span class="token punctuation">;</span>i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>smallest<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span>array<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token operator">&gt;</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                smallest <span class="token operator">&#61;</span> array<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> smallest<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>上述代码中的限制了用于实例化类型参数T的类型&#xff0c;必须是实现<strong>Comparable</strong>接口&#xff08;只含有compareTo方法的标准接口&#xff09;的类。如果没有对T进行限制&#xff0c;那么无法确保实例化T的类型具有compareTo方法。</p>
+<p>对于类的限定中&#xff1a;一个类型变量可以有多个限定&#xff0c;例如&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>T <span class="token keyword">extends</span> <span class="token class-name">Comparable</span> <span class="token operator">&amp;</span> Serializable <span class="token punctuation">,</span> U <span class="token keyword">extends</span> <span class="token class-name">Comparable</span><span class="token operator">&gt;</span><span class="token comment">//限定类型使用 “&amp;”分隔&#xff0c;而“,”用于分隔类型参数。</span>
+</code></pre>
+<p>在Java中&#xff0c;一个类可以实现多个接口&#xff0c;但只能有一个父类&#xff0c;所以在类型参数的限定中&#xff0c;可以有多个接口&#xff0c;但只能有一个类。</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>T <span class="token keyword">extends</span> 接口<span class="token number">1</span> <span class="token operator">&amp;</span> 接口<span class="token number">2</span> <span class="token operator">&amp;</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token operator">&amp;</span> 接口n <span class="token operator">&amp;</span> 类型<span class="token number">1</span><span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_307"></a>泛型使用规范</h3>
+<p>泛型有如下的使用规范&#xff0c;使用的时候需要注意&#xff1a;</p>
+<ol><li><strong>不能实例化泛型类</strong></li><li>静态变量或方法不能引用泛型类型变量&#xff0c;但是静态泛型方法是可以的&#xff0c;<strong>动态变量和方法可以直接引用泛型类型变量</strong></li><li><strong>基本类型无法作为泛型类型&#xff0c;例如int必须转为integer</strong></li><li><strong>无法使用instanceof关键字或&#61;&#61;判断泛型类的类型</strong></li><li><strong>泛型类的原生类型&#xff08;反射获取的类对象&#xff09;与所传递的泛型无关</strong>&#xff0c;无论传递什么类型&#xff0c;原生类是一样的</li><li><strong>泛型数组可以声明但无法实例化&#xff0c;只能具体的new一个数组</strong></li><li><strong>泛型类不能继承Exception或者Throwable</strong></li><li><strong>不能捕获泛型类型限定的异常但可以将泛型限定的异常抛出</strong></li></ol>
+<p>以上就是泛型的使用规范。其实 泛型仅仅是java的语法糖&#xff0c;它不会影响java虚拟机生成的汇编代码&#xff0c;<strong>在编译阶段&#xff0c;虚拟机就会把泛型的类型擦除&#xff0c;还原成没有泛型的代码</strong>&#xff0c;顶多编译速度稍微慢一些&#xff0c;执行速度是完全没有什么区别的.</p>
+<h3><a rel="noopener noreferrer" id="_321"></a>泛型的继承规则</h3>
+<p>泛型有如下三个继承规则&#xff1a;</p>
+<ol><li>对于泛型参数是继承关系的泛型类之间是没有继承关系的</li><li>泛型类可以继承其它泛型类&#xff0c;例如: <code>public class ArrayList&lt;E&gt; extends AbstractList&lt;E&gt;</code></li><li>泛型类的继承关系在使用中同样会受到泛型类型的影响</li></ol>
+<p>通过代码实现如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//继承泛型类</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">SubGenericInherit</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token keyword">extends</span> <span class="token class-name">GenericInherit</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+
+<span class="token punctuation">}</span>
+<span class="token comment">//父类泛型类</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">GenericInherit</span><span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> T data1<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> T data2<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> T <span class="token function">getData1</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> data1<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setData1</span><span class="token punctuation">(</span>T data1<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>data1 <span class="token operator">&#61;</span> data1<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> T <span class="token function">getData2</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> data2<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setData2</span><span class="token punctuation">(</span>T data2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>data2 <span class="token operator">&#61;</span> data2<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token generics function"><span class="token punctuation">&lt;</span>V<span class="token punctuation">&gt;</span></span> <span class="token keyword">void</span> <span class="token function">setData2</span><span class="token punctuation">(</span>GenericInherit<span class="token generics function"><span class="token punctuation">&lt;</span>Father<span class="token punctuation">&gt;</span></span> data2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//Son 继承自 Father&#xff0c;泛型参数是继承关系</span>
+        Father father <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Father</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Son son <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Son</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//泛型父类传递不同类型参数&#xff0c;一个是父类&#xff0c;一个是子类</span>
+        GenericInherit<span class="token generics function"><span class="token punctuation">&lt;</span>Father<span class="token punctuation">&gt;</span></span> fatherGenericInherit <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericInherit</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        GenericInherit<span class="token generics function"><span class="token punctuation">&lt;</span>Son<span class="token punctuation">&gt;</span></span> sonGenericInherit <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericInherit</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//泛型子类传递不同类型参数&#xff0c;一个是父类&#xff0c;一个是子类</span>
+        SubGenericInherit<span class="token generics function"><span class="token punctuation">&lt;</span>Father<span class="token punctuation">&gt;</span></span> fatherSubGenericInherit <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">SubGenericInherit</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        SubGenericInherit<span class="token generics function"><span class="token punctuation">&lt;</span>Son<span class="token punctuation">&gt;</span></span> sonSubGenericInherit <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">SubGenericInherit</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/**
+         * 对于传递的泛型类型是继承关系的泛型类之间是没有继承关系的
+         * GenericInherit&lt;Father&gt; 与GenericInherit&lt;Son&gt; 没有继承关系
+         * Incompatible types.
+         */</span>
+        father <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Son</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//fatherGenericInherit&#61;new GenericInherit&lt;Son&gt;();  //编译报错</span>
+
+        <span class="token comment">/**
+         * 泛型类可以继承其它泛型类&#xff0c;例如: public class ArrayList&lt;E&gt; extends AbstractList&lt;E&gt;
+         */</span>
+        fatherGenericInherit<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">SubGenericInherit</span><span class="token generics function"><span class="token punctuation">&lt;</span>Father<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/**
+         *泛型类的继承关系在使用中同样会受到泛型类型的影响
+         */</span>
+        <span class="token function">setData2</span><span class="token punctuation">(</span>fatherGenericInherit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+       <span class="token comment">// setData2(sonGenericInherit);  //泛型父类的setData2方法要求传递一个泛型父类对象</span>
+        <span class="token function">setData2</span><span class="token punctuation">(</span>fatherSubGenericInherit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+       <span class="token comment">// setData2(sonSubGenericInherit);</span>
+
+    <span class="token punctuation">}</span>
+
+
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_397"></a>通配符泛型</h2>
+<p>泛型中可以使用通配符来解决集合的不变性&#xff0c;先来解释下集合的不变性和数组的协变性&#xff1a; 假设有一个函数 <code>fun&#xff08;Animal animal&#xff09;</code>&#xff0c;如果我们传入一个<code>Dog d</code> 对象进去&#xff0c;编译器是不会报错的&#xff0c;这是多态的概念&#xff1b; 假设有一个函数 <code>fun&#xff08;Animal[] animals&#xff09;</code>&#xff0c;如果我们传如一个<code>Dog[] dogs</code>数组进去&#xff0c;编译器也不会报错&#xff0c;这就是数组的协变性&#xff1b;假设有一个函数 <code>fun&#xff08;List&lt;Animal&gt; animal&#xff09;</code>&#xff0c;如果我们传如一个<code>List &lt;Dog&gt; dog</code> 集合进去&#xff0c;编译器就会报错了&#xff0c;这就是<strong>集合泛型的不变性</strong>&#xff1b;那么该怎么办呢&#xff1f;我们可以将泛型改成这样</p>
+<ul><li><code>fun (List &lt;? extends Animal&gt; animal)</code>&#xff0c;这样之后&#xff0c;当我们再传入一个List   dog 集合进去&#xff0c;编译器就就不会报错了。也就是说可以传入包含Animal的子类的List了。</li></ul>
+<p>这里就用到了通配符的概念&#xff0c;通配符有三种指定方式&#xff1a;</p>
+<ol><li><code>&lt;? extends Parent&gt;</code> 指定了泛型类型的上届</li><li><code>&lt;? super Child&gt;</code> 指定了泛型类型的下届</li><li><code>&lt;?&gt;</code> 指定了没有限制的泛型类型</li></ol>
+<p>其实通配符解决的是<strong>同一泛型类中的泛型参数的继承关系</strong>&#xff0c;接下来以此下图的继承关系为例来介绍下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/74231785-02-fba1cd867a.png" loading="lazy"><br />
+代码逻辑如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">GenericByWildcard</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">print</span><span class="token punctuation">(</span>GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Fruit<span class="token punctuation">&gt;</span></span> fruitGenericClass<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>fruitGenericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getColor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">/**
+     * 问题的提出&#xff0c;因为泛型参数的继承关系在使用中并不表示泛型类的继承关系&#xff0c;而且还得遵守泛型规则&#xff0c;所以Orange传进去不认。
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">use</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Fruit<span class="token punctuation">&gt;</span></span> fruitGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">print</span><span class="token punctuation">(</span>fruitGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Orange<span class="token punctuation">&gt;</span></span> orangeGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//类型不匹配,可以使用&lt;? extends Parent&gt; 来解决</span>
+        <span class="token comment">//print(orangeGenericClass);</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * &lt;? extends Parent&gt; 指定了泛型类型的上届&#xff0c;子类可以正常使用
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">printExtends</span><span class="token punctuation">(</span>GenericClass<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Fruit</span><span class="token operator">&gt;</span> genericClass<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>genericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getColor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">useExtend</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Fruit<span class="token punctuation">&gt;</span></span> fruitGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printExtends</span><span class="token punctuation">(</span>fruitGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Orange<span class="token punctuation">&gt;</span></span> orangeGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printExtends</span><span class="token punctuation">(</span>orangeGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Food<span class="token punctuation">&gt;</span></span> foodGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//Food是Fruit的父类&#xff0c;超过了泛型上届范围&#xff0c;类型不匹配</span>
+        <span class="token comment">//printExtends(foodGenericClass);</span>
+
+        <span class="token comment">//表示GenericClass的类型参数的上届是Fruit</span>
+        GenericClass<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Fruit</span><span class="token operator">&gt;</span> extendFruitGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Apple apple <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Apple</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Fruit fruit <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Fruit</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">/*
+         * 道理很简单&#xff0c;&#xff1f; extends X  表示类型的上界&#xff0c;类型参数是X的子类&#xff0c;那么可以肯定的说&#xff0c;
+         * get方法返回的一定是个X&#xff08;不管是X或者X的子类&#xff09;编译器是可以确定知道的。
+         * 但是set方法只知道传入的是个X&#xff0c;至于具体是X的那个子类&#xff0c;不知道。
+         * 总结&#xff1a;主要用于安全地访问数据&#xff0c;可以访问X及其子类型&#xff0c;并且不能写入非null的数据。
+         */</span>
+<span class="token comment">//        extendFruitGenericClass.setData(apple);</span>
+<span class="token comment">//        extendFruitGenericClass.setData(fruit);</span>
+
+        fruit <span class="token operator">&#61;</span> extendFruitGenericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * &lt;? super Child&gt; 指定了泛型类型的下届
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">printSuper</span><span class="token punctuation">(</span>GenericClass<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Apple<span class="token operator">&gt;</span> genericClass<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>genericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">useSuper</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Food<span class="token punctuation">&gt;</span></span> foodGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printSuper</span><span class="token punctuation">(</span>foodGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Fruit<span class="token punctuation">&gt;</span></span> fruitGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printSuper</span><span class="token punctuation">(</span>fruitGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Apple<span class="token punctuation">&gt;</span></span> appleGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printSuper</span><span class="token punctuation">(</span>appleGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>HongFuShiApple<span class="token punctuation">&gt;</span></span> hongFuShiAppleGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// HongFuShiApple 是Apple的子类&#xff0c;达不到泛型下届&#xff0c;类型不匹配</span>
+        <span class="token comment">//printSuper(hongFuShiAppleGenericClass);</span>
+
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Orange<span class="token punctuation">&gt;</span></span> orangeGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// Orange和Apple是兄弟关系&#xff0c;没有继承关系&#xff0c;类型不匹配</span>
+       <span class="token comment">// printSuper(orangeGenericClass);</span>
+
+        <span class="token comment">//表示GenericClass的类型参数的下界是Apple</span>
+        GenericClass<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Apple<span class="token operator">&gt;</span> supperAppleGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        supperAppleGenericClass<span class="token punctuation">.</span><span class="token function">setData</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Apple</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        supperAppleGenericClass<span class="token punctuation">.</span><span class="token function">setData</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">HongFuShiApple</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">/*
+         * &#xff1f; super  X  表示类型的下界&#xff0c;类型参数是X的超类&#xff08;包括X本身&#xff09;&#xff0c;
+         * 那么可以肯定的说&#xff0c;get方法返回的一定是个X的超类&#xff0c;那么到底是哪个超类&#xff1f;不知道&#xff0c;
+         * 但是可以肯定的说&#xff0c;Object一定是它的超类&#xff0c;所以get方法返回Object。
+         * 编译器是可以确定知道的。对于set方法来说&#xff0c;编译器不知道它需要的确切类型&#xff0c;但是X和X的子类可以安全的转型为X。
+         * 总结&#xff1a;主要用于安全地写入数据&#xff0c;可以写入X及其子类型。
+         */</span>
+        <span class="token comment">//supperAppleGenericClass.setData(new Fruit());</span>
+
+        <span class="token comment">//get方法只会返回一个Object类型的值。</span>
+        Object data <span class="token operator">&#61;</span> supperAppleGenericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * &lt;?&gt; 指定了没有限定的通配符
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">printNonLimit</span><span class="token punctuation">(</span>GenericClass<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">&gt;</span> genericClass<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>genericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">useNonLimit</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Food<span class="token punctuation">&gt;</span></span> foodGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printNonLimit</span><span class="token punctuation">(</span>foodGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Fruit<span class="token punctuation">&gt;</span></span> fruitGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printNonLimit</span><span class="token punctuation">(</span>fruitGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Apple<span class="token punctuation">&gt;</span></span> appleGenericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">printNonLimit</span><span class="token punctuation">(</span>appleGenericClass<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        GenericClass<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">&gt;</span> genericClass <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//setData 方法不能被调用&#xff0c; 甚至不能用 Object 调用&#xff1b;</span>
+        <span class="token comment">//genericClass.setData(foodGenericClass);</span>
+        <span class="token comment">// genericClass.setData(new Object());</span>
+        <span class="token comment">//返回值只能赋给 Object</span>
+        Object object <span class="token operator">&#61;</span> genericClass<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>下列哪些继承关系是正确的&#xff1f;</p>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">B</span> <span class="token keyword">extends</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">C</span> <span class="token keyword">extends</span> <span class="token class-name">A</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+<span class="token keyword">class</span> <span class="token class-name">D</span> <span class="token keyword">extends</span> <span class="token class-name">B</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+Which four statements are <span class="token boolean">true</span> <span class="token operator">?</span>
+A<span class="token punctuation">,</span>The type List<span class="token generics function"><span class="token punctuation">&lt;</span>A<span class="token punctuation">&gt;</span></span>is assignable to List<span class="token punctuation">.</span>  <span class="token comment">//true</span>
+B<span class="token punctuation">,</span>The type List<span class="token generics function"><span class="token punctuation">&lt;</span>B<span class="token punctuation">&gt;</span></span>is assignable to List<span class="token generics function"><span class="token punctuation">&lt;</span>A<span class="token punctuation">&gt;</span></span><span class="token punctuation">.</span>
+C<span class="token punctuation">,</span>The type List<span class="token generics function"><span class="token punctuation">&lt;</span>Object<span class="token punctuation">&gt;</span></span>is assignable to List<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">&gt;</span><span class="token punctuation">.</span> <span class="token comment">//true</span>
+D<span class="token punctuation">,</span>The type List<span class="token generics function"><span class="token punctuation">&lt;</span>D<span class="token punctuation">&gt;</span></span>is assignable to List<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token keyword">extends</span> <span class="token class-name">B</span><span class="token operator">&gt;</span><span class="token punctuation">.</span><span class="token comment">//true</span>
+E<span class="token punctuation">,</span>The type List<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token keyword">extends</span> <span class="token class-name">A</span><span class="token operator">&gt;</span>is assignable to List<span class="token generics function"><span class="token punctuation">&lt;</span>A<span class="token punctuation">&gt;</span></span><span class="token punctuation">.</span>
+F<span class="token punctuation">,</span>The type List<span class="token generics function"><span class="token punctuation">&lt;</span>Object<span class="token punctuation">&gt;</span></span>is assignable to any List reference<span class="token punctuation">.</span>
+G<span class="token punctuation">,</span>The type List<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token keyword">extends</span> <span class="token class-name">B</span><span class="token operator">&gt;</span>is assignable to List<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token keyword">extends</span> <span class="token class-name">A</span><span class="token operator">&gt;</span><span class="token punctuation">.</span><span class="token comment">//true</span>
+</code></pre>
+<p>判断的时候有如下准则&#xff1a;</p>
+<ol><li>只看尖括号里边的&#xff0c;明确<strong>点和范围</strong>两个概念 &#xff0c;List既是点也是范围&#xff0c;当表示范围时&#xff0c;表示最大范围&#xff0c;List&lt;?&gt;和List 是相等的&#xff0c;都代表最大范围和最大点</li><li>如果尖括号里的是一个类&#xff0c;那么尖括号里的就是一个点&#xff0c;比如List,List<b>,List</b></li><li>如果尖括号里面带有问号&#xff0c;那么代表一个范围&#xff0c;&lt;? extends A&gt;代表小于等于A的范围&#xff0c;&lt;? super A&gt;代表大于等于A的范围&#xff0c;&lt;?&gt;代表全部范围</li><li>尖括号里的所有点之间互相继承都是错&#xff0c;除非是俩相同的点&#xff0c;因为泛型参数继承关系不代表泛型类有基础关系</li><li>尖括号小范围赋值给大范围&#xff0c;对&#xff0c;大范围赋值给小范围&#xff0c;错。如果某点包含在某个范围里&#xff0c;那么可以赋值&#xff0c;否则&#xff0c;不能赋值</li></ol>
+<p>以上就是在有通配符的情况下的泛型继承关系。</p>
+<h2><a rel="noopener noreferrer" id="_554"></a>泛型原理</h2>
+<p>虚拟机是如何实现泛型的&#xff0c;其实泛型在Java里更像是一种语法糖。Java泛型是Java1.5之后才引入的&#xff0c;为了向下兼容。Java采用了C&#43;&#43;完全不同的实现思想。<strong>Java中的泛型更多的看起来像是编译期用的&#xff0c;Java中泛型在运行期是不可见的&#xff0c;会被擦除为它的上级类型。如果是没有限定的泛型参数类型&#xff0c;就会被替换为Object</strong>.</p>
+<pre><code class="prism language-java">GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> stringGenericClass<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+GenericClass<span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">&gt;</span></span> integerGenericClass<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">GenericClass</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>CJava进行了类型擦除之后统一改为<code>GenericClass&lt;Object&gt;</code></p>

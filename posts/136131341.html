@@ -1,0 +1,28 @@
+<p>关于Java 并发部分的核心知识进行一网打尽，主要包括Java为什么会有并发问题，并发问题的解决方案，到最后的锁和JUC包的解决方案，通过一篇文章串联面试重点，并且帮助加强日常基础知识的理解，全局思维导图如下所示<br> <img alt="在这里插入图片描述" src="./posts/assets/136131341-01-d389587ca0.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_3"></a>基础概念</h2>
+<p>关于并发与并行，Java的内存模型，以及并发编程会有什么问题</p>
+<h3><a rel="noopener noreferrer" id="_5"></a>并发和并行的区别是什么</h3>
+<p>下面的表格展示了并发（Concurrency）、并行（Parallelism）和串行（Serial/Sequential）执行的主要区别：</p>
+<table>
+ <thead>
+  <tr>
+   <th>特性</th>
+   <th>并发（Concurrency）</th>
+   <th>并行（Parallelism）</th>
+   <th>串行（Serial/Sequential）</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><strong>定义</strong></td>
+   <td>同一时间段内，多个任务交替执行，不一定同时。</td>
+   <td>同一时刻，多个任务同时执行。</td>
+   <td>任务一个接一个地执行，每次只有一个任务在执行。</td>
+  </tr>
+  <tr>
+   <td><strong>处理器</strong></td>
+   <td>单核处理器可以实现并发。</td>
+   <td>并行执行通常需要多核处理器。</td>
+  </tr>
+ </tbody>
+</table>

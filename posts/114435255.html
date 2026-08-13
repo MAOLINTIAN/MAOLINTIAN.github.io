@@ -1,0 +1,276 @@
+<p>JUC包下的容器类分为两部分&#xff0c;一部分是<strong>并发集合类</strong>&#xff0c;一部分是<strong>并发队列类</strong>&#xff0c;其中并发集合类可以解决我们集合使用过程中的多线程并发问题&#xff0c;而并发队列类则主要被当做阻塞队列使用&#xff0c;是线程池中的关键参数之一。接下来我们分两部分来详细介绍下这部分内容。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114435255-01-3eaef246a6.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_2"></a>普通集合类</h2>
+<p>Java集合框架主体内容包括Collection集合和Map类&#xff1b;而Collection集合又可以划分为<strong>List(队列)、Set(集合)以及队列&#xff08;Queue&#xff09;</strong>&#xff0c;<strong>Map类</strong>也有自己的不同实现类。依据用途&#xff0c;我们可以把List、Set和Map理解为集合类&#xff0c;Queue当做队列类。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114435255-02-6a26af8290.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_5"></a>普通集合类概述</h3>
+<blockquote>
+<p><strong>List的实现类主要有: LinkedList、ArrayList、Vector、Stack。</strong></p>
+</blockquote>
+<ul><li>LinkedList是<strong>双向链表实现的双端队列</strong>&#xff1b;它<strong>不是线程安全</strong>的&#xff0c;只适用于单线程。</li><li>ArrayList是<strong>数组实现的队列&#xff0c;它是一个动态数组</strong>&#xff1b;它也<strong>不是线程安全</strong>的&#xff0c;只适用于单线程。</li><li>Vector是<strong>数组实现的矢量队列&#xff0c;它也一个动态数组</strong>&#xff1b;不过和ArrayList不同的是&#xff0c;Vector是<font color="red"><strong>线程安全的</strong></font>的&#xff0c;它支持并发。</li><li><strong>Stack是Vector实现的栈</strong>&#xff0c;和Vector一样&#xff0c;它也是<font color="red"><strong>线程安全的</strong></font>。</li></ul>
+<p>综上&#xff0c;Vector和Stack线程安全&#xff0c;LinkedList和ArrayList只适合单线程使用。</p>
+<blockquote>
+<p><strong>Set的实现类主要有: HastSet、LinkedHashSet、TreeSet</strong></p>
+</blockquote>
+<ul><li>HashSet <strong>是一个没有重复元素的集合&#xff0c;它通过HashMap实现的</strong>&#xff1b;HashSet不是线程安全的&#xff0c;只适用于单线程。</li><li>LinkedHashSet继承自HashSet&#xff0c;唯一的区别是LinkedHashSet内部使用的是LinkHashMap。这样做的意义或者好处就是LinkedHashSet中的元素顺序是可以保证的&#xff0c;也就是说<strong>遍历序和插入序</strong>是一致的</li><li>TreeSet也是一个没有重复元素的集合&#xff0c;不过和HashSet不同的是&#xff0c;<strong>TreeSet中的元素是有序的&#xff1b;它是通过TreeMap实现的</strong>&#xff1b;TreeSet也不是线程安全的&#xff0c;只适用于单线程。</li></ul>
+<p>综上&#xff0c; HastSet、TreeSet、LinkedHashSet都只适合单线程使用。</p>
+<blockquote>
+<p><strong>Map的实现类主要有: HashMap、LinkedHashMap、TreeMap、Hashtable、WeakHashMap,。</strong></p>
+</blockquote>
+<ul><li>HashMap是<strong>存储键-值对的哈希表</strong>&#xff1b;它不是线程安全的&#xff0c;只适用于单线程。</li><li>LinkedHashMap 是HashMap的一个子类,保存了记录的插入顺序&#xff0c;在用Iterator遍历LinkedHashMap时&#xff0c;先得到的记录肯定是先插入的</li><li>TreeMap也是哈希表&#xff0c;不过<strong>TreeMap中的“键-值对”是有序的&#xff0c;它是通过R-B Tree(红黑树)实现的</strong>&#xff1b;TreeMap不是线程安全的&#xff0c;只适用于单线程</li><li>WeakHashMap是也是哈希表&#xff1b;和HashMap不同的是&#xff0c;HashMap的“键”是强引用类型&#xff0c;而WeakHashMap的“键”是弱引用类型&#xff0c;也就是说<strong>当WeakHashMap 中的某个键不再正常使用时&#xff0c;会被从WeakHashMap中被自动移除</strong>&#xff0c;WeakHashMap也不是线程安全的&#xff0c;只适用于单线程。</li><li>Hashtable也是哈希表&#xff1b;和HashMap不同的是&#xff0c;Hashtable是<font color="red"><strong>线程安全的</strong></font>&#xff0c;支持并发。</li></ul>
+<p>综上&#xff0c; Map里只有Hashtable是线程安全的&#xff0c;支持并发。</p>
+<h3><a rel="noopener noreferrer" id="_33"></a>线程不安全的问题</h3>
+<p>如果使用线程不安全的集合极容易出现问题&#xff0c;例如两个线程同时往一个list里添加元素&#xff0c;他们同时判断一个索引上没有值&#xff0c;同时添加&#xff0c;那么实际上只添加了一次&#xff0c;我们举个例子看看&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThreadTest</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+
+        List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> list<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token operator">&#61;</span><span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span><span class="token number">500</span><span class="token punctuation">;</span>i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            Thread thread<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                    Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;线程添加的一个元素&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            thread<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">2000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;tml说在线程不安全条件下&#xff0c;500个线程并发后list只增加了&#34;</span><span class="token operator">&#43;</span>list<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;个元素&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>打印结果为&#xff1a;</p>
+<pre><code class="prism language-java">tml说在线程不安全条件下&#xff0c;<span class="token number">500</span>个线程并发后list只增加了<span class="token number">493</span>个元素
+</code></pre>
+<p>如果我们换成线程安全的Vector&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThreadTest</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+
+        Vector<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> vector<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Vector</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i<span class="token operator">&#61;</span><span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span><span class="token number">500</span><span class="token punctuation">;</span>i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            Thread thread<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                    Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                vector<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>Thread<span class="token punctuation">.</span><span class="token function">currentThread</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;线程添加的一个元素&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            thread<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">2000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;tml说在线程安全条件下&#xff0c;500个线程并发后vector也增加了&#34;</span><span class="token operator">&#43;</span>vector<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;个元素&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java">tml说在线程安全条件下&#xff0c;<span class="token number">500</span>个线程并发后vector也增加了<span class="token number">500</span>个元素
+</code></pre>
+<p>其实不光写会造成问题&#xff0c;在同一时间<strong>多个线程无法对同一个List进行读取和增删&#xff0c;否则就会抛出并发异常</strong>&#xff0c;因为在读的时候被别人改了</p>
+<pre><code class="prism language-java">Exception in thread <span class="token string">&#34;Thread-403&#34;</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>ArrayIndexOutOfBoundsException<span class="token operator">:</span> <span class="token number">366</span>
+	at java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>ArrayList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>ArrayList<span class="token punctuation">.</span>java<span class="token operator">:</span><span class="token number">463</span><span class="token punctuation">)</span>
+	at com<span class="token punctuation">.</span>company<span class="token punctuation">.</span>ThreadTest<span class="token punctuation">.</span>lambda$main$<span class="token function">0</span><span class="token punctuation">(</span>ThreadTest<span class="token punctuation">.</span>java<span class="token operator">:</span><span class="token number">18</span><span class="token punctuation">)</span>
+	at java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span>Thread<span class="token punctuation">.</span>java<span class="token operator">:</span><span class="token number">748</span><span class="token punctuation">)</span>
+tml说在线程不安全条件下&#xff0c;<span class="token number">500</span>个线程并发后list只增加了<span class="token number">491</span>个元素
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_100"></a>如何线程安全</h3>
+<p>综合以上考虑&#xff0c;<strong>线程安全的实现类有vector&#xff0c;stack&#xff0c;hashtable</strong>  为了方便&#xff0c;我们将前面介绍集合类统称为java集合包。<strong>java集合包大多是非线程安全的</strong>&#xff0c;虽然<strong>可以通过Collections工具类中的方法获取java集合包对应的同步类</strong>&#xff0c;但是这些同步类的并发效率并不是很高。为了更好的支持高并发任务&#xff0c;Java在JUC包中添加了java集合包中单线程类的对应的支持高并发的类。例如&#xff0c;<strong>ArrayList对应的高并发类是CopyOnWriteArrayList</strong>&#xff0c;<strong>HashMap对应的高并发类是ConcurrentHashMap</strong>&#xff0c;等等。</p>
+<h2><a rel="noopener noreferrer" id="_103"></a>并发集合类</h2>
+<p>考虑到普通集合类的问题&#xff0c;我们来看看并发集合类如何解决这样的问题。对应于普通集合类的List、Set以及Map&#xff0c;JUC包中都一一提供了对应的实现方式。在并发编程中使用HashMap可能导致程序死循环。而使用线程安全的HashTable效率又非常低下&#xff0c;基于以上两个原因&#xff0c;便有了ConcurrentHashMap的登场机会</p>
+<h3><a rel="noopener noreferrer" id="ConcurrentHashMap_105"></a>ConcurrentHashMap</h3>
+<p>ConcurrentHashMap是线程安全且高效的HashMap。一起了解下该容器是如何在保证线程安全的同时又能保证高效的操作。</p>
+<ul><li><strong>线程不安全的HashMap</strong>&#xff0c;在多线程环境下&#xff0c;使用HashMap进行put操作会引起死循环&#xff0c;导致CPU利用率接近100%&#xff0c;所以在并发情况下不能使用HashMap&#xff0c;因为多线程会导致HashMap的Entry链表形成环形数据结构&#xff0c;一旦形成环形数据结构&#xff0c;Entry的next节点永远不为空&#xff0c;就会产生死循环获取Entry</li><li><strong>效率低下的HashTable</strong>&#xff0c;HashTable容器使用synchronized来保证线程安全&#xff0c;但在线程竞争激烈的情况下HashTable的效率非常低下。因为当一个线程访问HashTable的同步方法&#xff0c;其他线程也访问HashTable的同步方法时&#xff0c;会进入阻塞或轮询状态。如线程1使用put进行元素添加&#xff0c;线程2不但不能使用put方法添加元素&#xff0c;也不能使用get方法来获取元素&#xff0c;所以竞争越激烈效率越低</li></ul>
+<p>HashTable容器在竞争激烈的并发环境下表现出效率低下的原因是所有访问HashTable的线程都必须竞争同一把锁&#xff0c;假如容器里有多把锁&#xff0c;每一把锁用于锁容器其中一部分数据&#xff0c;那么当多线程访问容器里不同数据段的数据时&#xff0c;线程间就不会存在锁竞争&#xff0c;从而可以有效提高并发访问效率&#xff0c;这就是ConcurrentHashMap所使用的锁分段技术。<strong>首先将数据分成一段一段地存储&#xff0c;然后给每一段数据配一把锁&#xff0c;当一个线程占用锁访问其中一个段数据的时候&#xff0c;其他段的数据也能被其他线程访问</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/114435255-03-bde3a3f520.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="ConcurrentHashMap_113"></a>ConcurrentHashMap结构</h4>
+<p>ConcurrentHashMap是由Segment数组结构和HashEntry数组结构组成。</p>
+<ul><li><strong>Segment</strong>&#xff0c;一个ConcurrentHashMap里包含一个Segment数组。Segment的结构和HashMap类似&#xff0c;是一种数组和链表结构&#xff0c;【JDK1.7】Segment是一种可重入锁&#xff08;<strong>ReentrantLock</strong>&#xff09;&#xff0c;在ConcurrentHashMap里扮演锁的角色</li><li><strong>HashEntry</strong>&#xff0c;则用于存储键值对数据。一个Segment里包含一个HashEntry数组&#xff0c;每个HashEntry是一个链表结构的元素&#xff0c;每个Segment守护着一个HashEntry数组里的元素&#xff0c;当对HashEntry数组的数据进行修改时&#xff0c;必须首先获得与它对应的Segment锁</li></ul>
+<p>整体结构如下&#xff0c;数据结构为&#xff1a;<strong>Segment&#43;HashEntry数组&#43;链表</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/114435255-04-a5a6bc4b59.png" loading="lazy"><br />
+JDK 1.8中ConcurrentHashMap的实现已经摒弃了Segment的概念&#xff0c;而是直接使用Node数组&#43;链表&#43;红黑树&#xff08;与HashMap的底层实现相同&#xff09;的数据结构实现&#xff0c;并发控制使用了synchronized和CAS操作。整体就像是优化过且线程安全的HashMap&#xff0c;虽然在JDK 1.8中还能看到Segment的数据结构&#xff0c;但已经简化了其属性&#xff0c;只是为了兼容旧版本<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114435255-05-844ed85f49.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="ConcurrentHashMap_123"></a>ConcurrentHashMap初始化</h4>
+<p>ConcurrentHashMap初始化方法是通过initialCapacity、loadFactor和concurrencyLevel等几个参数来初始化segment数组、段偏移量segmentShift、段掩码segmentMask和每个segment里的HashEntry数组来实现的</p>
+<ul><li><strong>initialCapacity</strong>&#xff0c;ConcurrentHashMap的初始容量&#xff0c;<strong>初始默认为16</strong></li><li><strong>concurrencyLevel/ssize</strong>&#xff0c;segments数组的大小&#xff0c;<strong>默认为16</strong>&#xff0c;最大为65536&#xff0c;concurrencyLevel 表示并发度&#xff0c;默认16。并发度可以理解为程序运行时能够同时更新ConccurentHashMap且不产生锁竞争的最大线程数&#xff0c;实际上就是ConcurrentHashMap中的分段锁个数&#xff0c;即segments数组的长度</li><li><strong>loadFactor</strong>, 扩容因子&#xff0c;默认0.75&#xff0c;当一个Segment存储的元素数量大于<code>threshold</code>时&#xff0c;该Segment会进行一次扩容</li><li><strong>cap</strong>&#xff0c;segment里HashEntry数组的长度&#xff0c;为<strong>initialCapacity除以ssize的倍数</strong>&#xff0c;如果c大于1&#xff0c;就会取大于等于c的2的N次方值&#xff0c;所以cap不是1就是2的N次方</li><li>threshold&#xff0c;单个segment的容量&#xff0c;值为<code>threshold &#61; (int)cap*loadFactor</code>。</li></ul>
+<p>那么我们计算的时候可以依据初始值来进行一系列计算。例如initialCapacity为16个元素&#xff0c;负载因子设置为0.75&#xff0c;ssize为16&#xff0c;则c&#61;16/16等于1&#xff0c;则cap为1&#xff0c;也就是每个segment数组长度为1&#xff0c;threshold 容量为&#xff08;int&#xff09;1*0.75&#61;0</p>
+<h5><a rel="noopener noreferrer" id="segments_132"></a>初始化segments数组</h5>
+<p>下面为初始化segments数组的源码</p>
+<pre><code class="prism language-java"><span class="token keyword">if</span><span class="token punctuation">(</span>concurrencyLevel <span class="token operator">&gt;</span> MAX_SEGMENTS<span class="token punctuation">)</span>
+	concurrencyLevel <span class="token operator">&#61;</span> MAX_SEGMENTS<span class="token punctuation">;</span>
+
+<span class="token keyword">int</span> sshift <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> ssize <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token keyword">while</span> <span class="token punctuation">(</span>ssize <span class="token operator">&lt;</span> concurrencyLevel<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token operator">&#43;&#43;</span>sshift<span class="token punctuation">;</span>
+    ssize <span class="token operator">&lt;&lt;&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+segmentShift <span class="token operator">&#61;</span> <span class="token number">32</span> <span class="token operator">-</span> sshift<span class="token punctuation">;</span>
+segmentMask <span class="token operator">&#61;</span> ssize <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token keyword">this</span><span class="token punctuation">.</span>segments <span class="token operator">&#61;</span> Segment<span class="token punctuation">.</span><span class="token function">newArray</span><span class="token punctuation">(</span>ssize<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>由上面代码可知&#xff0c;ssize用位运算来计算&#xff08;ssize &lt;&lt;&#61; 1&#xff09;&#xff0c;所以segments数组的大小取值为2的N次方&#xff0c;即为大于或等于concurrencyLevel的最低的N次方值来作为segment数组的长度。假如concurrencyLevel等于14、15或16&#xff0c;ssize都会等于16&#xff0c;即容器里锁的个数也是16</p>
+<p>当然concurrencyLevel最大只能用16位的二进制来表示&#xff0c;即65535&#xff0c;这意味着segments数组的长度最大为65536&#xff0c;对应的二进制为16位</p>
+<h5><a rel="noopener noreferrer" id="segmentShiftsegmentMask_152"></a>初始化segmentShift和segmentMask</h5>
+<p>这两个全局变量需要在定位segment的时的散列算法里使用&#xff0c;由初始化segments数组的代码中可知&#xff0c;</p>
+<ul><li><strong>sshift等于ssize从1向左移位的次数</strong>&#xff0c;在默认情况下concurrencyLevel等于16&#xff0c;则1需要向左移位移动4次&#xff0c;所以sshift等于4</li><li><strong>段偏移量segmentShift</strong>用于定位参与散列预算的位数&#xff0c;segmentShift &#61; 32 - sshift&#xff0c;所以默认为28.</li><li><strong>segmentMask是散列运算的掩码</strong>&#xff0c;segmentMask &#61; ssize -1&#xff0c;即默认为15&#xff0c;掩码的二进制各个位的值都是1。</li></ul>
+<p>因为ssize的最大长度为65536&#xff0c;所以segmentShift最大值为16&#xff0c;segmentMask最大值为65535&#xff0c;对应的二进制为16位&#xff0c;每个位都是1。</p>
+<h5><a rel="noopener noreferrer" id="segment_159"></a>初始化每个segment</h5>
+<p>输入参数initialCapacity是ConcurrentHashMap的初始化容量&#xff0c;loadfactor是每个segment的负载因子&#xff0c;在构造方法中需要通过这两个参数来初始化数组中的每个segment</p>
+<pre><code class="prism language-java"><span class="token keyword">if</span> <span class="token punctuation">(</span>initialCapacity <span class="token operator">&gt;</span> MAXIMUM_CAPACITY<span class="token punctuation">)</span>
+    initialCapacity <span class="token operator">&#61;</span> MAXIMUM_CAPACITY<span class="token punctuation">;</span>
+
+    <span class="token keyword">int</span> c <span class="token operator">&#61;</span> initialCapacity <span class="token operator">/</span> ssize<span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">*</span> ssize <span class="token operator">&lt;</span> initialCapacity<span class="token punctuation">)</span>
+        <span class="token operator">&#43;&#43;</span>c<span class="token punctuation">;</span>
+
+    <span class="token keyword">int</span> cap <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span>cap <span class="token operator">&lt;</span> c<span class="token punctuation">)</span>
+        cap <span class="token operator">&lt;&lt;&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token keyword">this</span><span class="token punctuation">.</span>segments<span class="token punctuation">.</span>length<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>i<span class="token punctuation">)</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>segments<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Segment</span><span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">,</span>V<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>cap<span class="token punctuation">,</span> loadFacotr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>上述代码中的cap是segment里HashEntry数组的长度&#xff0c;它等于initialCapacity除以ssize的倍数&#xff0c;如果c大于1&#xff0c;就会取大于等于c的2的N次方值&#xff0c;所以cap不是1就是2的N次方。segment的容量<code>threshold &#61; (int)cap*loadFactor</code>&#xff0c;默认情况下<code>initialCapacity</code>等于16&#xff0c;也就是容纳16个元素&#xff0c;<strong>loadFactor</strong>&#xff08;负载因子&#xff09;等于0.75&#xff0c;通过计算cap&#61;1&#xff0c;threshold&#61;0</p>
+<h4><a rel="noopener noreferrer" id="Segment_179"></a>定位Segment</h4>
+<p>ConcurrentHashMap使用分段所Segment来保护不同段的数据&#xff0c;那么在插入和获取元素的时候&#xff0c;必须先通过散列算法定位到某一个Segment。ConcurrentHashMap首先选用Wang/Jenkins hash的变种算法对元素的hashCode进行一次再散列。</p>
+<pre><code class="prism language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hash</span><span class="token punctuation">(</span><span class="token keyword">int</span> h<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	h <span class="token operator">&#43;&#61;</span> <span class="token punctuation">(</span>h <span class="token operator">&lt;&lt;</span> <span class="token number">15</span><span class="token punctuation">)</span> <span class="token operator">^</span> <span class="token number">0xffffcd7d</span><span class="token punctuation">;</span>
+	h <span class="token operator">^&#61;</span> <span class="token punctuation">(</span>h <span class="token operator">&gt;&gt;&gt;</span> <span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	h <span class="token operator">&#43;&#61;</span> <span class="token punctuation">(</span>h <span class="token operator">&lt;&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	h <span class="token operator">^&#61;</span> <span class="token punctuation">(</span>h <span class="token operator">&gt;&gt;&gt;</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	h <span class="token operator">&#43;&#61;</span> <span class="token punctuation">(</span>h <span class="token operator">&lt;&lt;</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token punctuation">(</span>h <span class="token operator">&lt;&lt;</span> <span class="token number">14</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+	<span class="token keyword">return</span> h <span class="token operator">^</span> <span class="token punctuation">(</span>h <span class="token operator">&gt;&gt;&gt;</span> <span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>使用再散列算法&#xff0c;目的为了减少散列冲突&#xff0c;使元素能够均有地分步在不同的Segment上&#xff0c;从而提高容器的存取效率。假如散列的质量差到极点&#xff0c;那么所有的元素都在一个Segment中&#xff0c;不仅存取元素缓慢&#xff0c;分段所也会失去意义。在JDK 1.7中ConcurrentHashMap通过以下散列算法定位segment</p>
+<pre><code class="prism language-java"><span class="token keyword">final</span> Segment<span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">,</span>V<span class="token punctuation">&gt;</span></span> <span class="token function">segmentFor</span><span class="token punctuation">(</span><span class="token keyword">int</span> hash<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> segments<span class="token punctuation">[</span><span class="token punctuation">(</span>hash <span class="token operator">&gt;&gt;&gt;</span> segmentShift<span class="token punctuation">)</span> <span class="token operator">&amp;</span> segmentMask<span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="PutGetSize_201"></a>Put/Get/Size操作</h4>
+<p>由于JDK1.7和1.8的底层实现和方法有所不同&#xff0c;所以我们这里分别介绍下&#xff1a;</p>
+<h5><a rel="noopener noreferrer" id="Put_203"></a>Put操作</h5>
+<blockquote>
+<p><strong>JDK1.7中的put操作如下</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Segment</span><span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">,</span>V<span class="token punctuation">&gt;</span></span> <span class="token keyword">extends</span> <span class="token class-name">ReentrantLock</span> <span class="token keyword">implements</span> <span class="token class-name">Serializable</span>
+</code></pre>
+<p>从上述Segment的继承体系中可以看出&#xff0c;Segment实现了ReentrantLock&#xff0c;也就带有锁的功能。由于put方法需要对共享变量进行写入操作&#xff0c;所以为了线程安全&#xff0c;在操作共享变量是&#xff0c;<strong>必须加锁</strong>。</p>
+<ol><li>对segment加锁&#xff0c;在加锁时&#xff0c;会通过继承ReentrantLock的tryLock()方法尝试获取锁&#xff0c;若获取成功&#xff0c;就直接在相应的位置插入&#xff1b;若已经有线程获取了该Segment的锁&#xff0c;那当前线程会以自旋的方式继续调用tryLock()方法获取锁&#xff0c;超过指定次数就挂起&#xff0c;等待唤醒</li><li>判断是否需要对Segment里的HashEntry数组进行扩容</li><li>定位添加元素的位置&#xff0c;然后将其放在HashEntry数组中</li></ol>
+<p>其中如果需要扩容该如何扩容呢&#xff1f;</p>
+<ol><li>在插入元素前会先判断Segment里的HashEntry数组是否超过容量threshold&#xff0c;如果超过了阈值&#xff0c;则对数组进行扩容。</li><li>建立一个容量是原来两倍的数组&#xff0c;然后将原数组中的元素再散列后插入到新数组中。为了高效&#xff0c;<code>ConcurrentHashMap</code>不会对整个容器进行扩容&#xff0c;而是只对某个segment进行扩容</li></ol>
+<p>这里的扩容方式与HashMap的扩容方式稍有不同&#xff0c;HashMap是在插入元素之后判断元素是否已经达到容量&#xff0c;如果达到了就进行扩容&#xff0c;但是有可能扩容之后就没有新元素插入&#xff0c;则HashMap就进行了一次无效的扩容。</p>
+<blockquote>
+<p><strong>JDK1.8中的put操作如下</strong></p>
+</blockquote>
+<p>对当前table进行无条件自循环put成功&#xff0c;可以分成以下步骤</p>
+<ol><li>如果没有初始化就调用initTable()方法来进行初始化过程&#xff0c;若通过散列得到的位置中没有节点&#xff0c;则不加锁直接将节点通过CAS操作插入</li><li>如果发现该桶中有一个节点&#xff0c;需要扩容则进行扩容</li><li>如果存在hash冲突&#xff0c;就加锁来保证线程安全&#xff0c;这里存在两种情况&#xff1a;一种是链表形式就直接遍历到尾部插入&#xff1b;另一种是红黑树形式&#xff0c;就按红黑树结构插入。判断依据是如果链表的数量大于阈值&#xff0c;则先转换为红黑树结构&#xff0c;再一次进入循环</li></ol>
+<p>如果添加成功&#xff0c;则调用addCount()统计size&#xff0c;并且检查是否需要扩容。</p>
+<h5><a rel="noopener noreferrer" id="Get_232"></a>Get操作</h5>
+<blockquote>
+<p><strong>JDK1.7中的get操作如下</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> V <span class="token function">get</span><span class="token punctuation">(</span>Object key<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">int</span> hash <span class="token operator">&#61;</span> <span class="token function">hash</span><span class="token punctuation">(</span>key<span class="token punctuation">.</span><span class="token function">hashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//1,先经过一次再散列</span>
+	<span class="token keyword">return</span> <span class="token function">segmentFor</span><span class="token punctuation">(</span>hash<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> hash<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//2,使用这个散列值通过散列运算定位到Segment&#xff0c;再通过散列算法定位到元素</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p><strong>JDK1.8中的get操作如下</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> V <span class="token function">get</span><span class="token punctuation">(</span>Object key<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    Node<span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">,</span>V<span class="token punctuation">&gt;</span></span><span class="token punctuation">[</span><span class="token punctuation">]</span> tab<span class="token punctuation">;</span> Node<span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">,</span>V<span class="token punctuation">&gt;</span></span> e<span class="token punctuation">,</span> p<span class="token punctuation">;</span> <span class="token keyword">int</span> n<span class="token punctuation">,</span> eh<span class="token punctuation">;</span> K ek<span class="token punctuation">;</span>
+   <span class="token punctuation">,</span>
+    <span class="token keyword">int</span> h <span class="token operator">&#61;</span> <span class="token function">spread</span><span class="token punctuation">(</span>key<span class="token punctuation">.</span><span class="token function">hashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>tab <span class="token operator">&#61;</span> table<span class="token punctuation">)</span> <span class="token operator">!&#61;</span> null <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>n <span class="token operator">&#61;</span> tab<span class="token punctuation">.</span>length<span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span>
+        <span class="token punctuation">(</span>e <span class="token operator">&#61;</span> <span class="token function">tabAt</span><span class="token punctuation">(</span>tab<span class="token punctuation">,</span> <span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> h<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 1&#xff0c;计算hash值&#xff0c;定位到该table索引位置&#xff0c;如果是首节点符合&#xff0c;则返回</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>eh <span class="token operator">&#61;</span> e<span class="token punctuation">.</span>hash<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> h<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>ek <span class="token operator">&#61;</span> e<span class="token punctuation">.</span>key<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> key <span class="token operator">||</span> <span class="token punctuation">(</span>ek <span class="token operator">!&#61;</span> null <span class="token operator">&amp;&amp;</span> key<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>ek<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">return</span> e<span class="token punctuation">.</span>val<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">//  2. 如果遇到扩容的时候&#xff0c;会调用标志正在扩容节点Forwarding Node的find方法&#xff0c;查找该节点&#xff0c;若匹配则返回</span>
+        <span class="token comment">// 若查找到就返回</span>
+        <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>eh <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span>p <span class="token operator">&#61;</span> e<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>h<span class="token punctuation">,</span> key<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> null <span class="token operator">?</span> p<span class="token punctuation">.</span>val <span class="token operator">:</span> null<span class="token punctuation">;</span>
+        <span class="token comment">// 3&#xff0c;若既不是首节点也不是forwarding node&#xff0c;则向下遍历</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>e <span class="token operator">&#61;</span> e<span class="token punctuation">.</span>next<span class="token punctuation">)</span> <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>e<span class="token punctuation">.</span>hash <span class="token operator">&#61;&#61;</span> h <span class="token operator">&amp;&amp;</span>
+                <span class="token punctuation">(</span><span class="token punctuation">(</span>ek <span class="token operator">&#61;</span> e<span class="token punctuation">.</span>key<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> key <span class="token operator">||</span> <span class="token punctuation">(</span>ek <span class="token operator">!&#61;</span> null <span class="token operator">&amp;&amp;</span> key<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>ek<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">return</span> e<span class="token punctuation">.</span>val<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>get操作的高效体现在整个get过程不需要加锁</strong>&#xff0c;除非读到的值是空才会加锁重读&#xff0c;因为它的get方法里将使用的共享变量都定义成volatile类型。例如用于统计当前Segment大小的count字段和用于存储值的HashEntry的value。定义成volatile的变量&#xff0c;能够在线程之间保持可见性&#xff0c;能够被多线程同时读&#xff0c;并且保证不会读到过期的值&#xff08;由Java内存模型的happen before原则保证&#xff09;&#xff0c;但是只能被单线程写&#xff08;有一种情况可以被多线程写&#xff0c;就是写入的值不依赖于原值&#xff09;。在get操作期间&#xff0c;只需要读取共享变量count和value值&#xff0c;所以不需要加锁</p>
+<h5><a rel="noopener noreferrer" id="Size_270"></a>Size操作</h5>
+<p>计算ConcurrentHashMap的元素大小&#xff0c;就必须要统计Segment里的元素的大小后求和。上面说过Segment的全局变量count是一个volatile变量&#xff0c;在并发的场景下&#xff0c;可能会导致计算出来的size值和实际的size值有偏差。因为在计算count值的时候&#xff0c;可能有新数据的插入&#xff0c;导致结果的不准确。那么&#xff0c;最安全的做法就是在统计size的时候把所有Segment的put、remove和clean方法全部锁住&#xff0c;但这种做法显然是非常低效的。</p>
+<blockquote>
+<p><strong>JDK1.7中的size操作如下</strong></p>
+</blockquote>
+<p>JDK 1.7中是如下处理的&#xff0c;<strong>先尝试2次通过不锁住Segment的方式来统计各个Segment大小&#xff0c;如果统计的过程中&#xff0c;容器的count发生了变化&#xff0c;则在采用加锁的方式来统计所有Segment的大小</strong>。使用modCount变量判断容器是否发生了变化&#xff0c;在put、remove和clean方法里操作元素前都会将变量modCount进行加1操作&#xff0c;那么在统计size前后比较modCount是否发生变化&#xff0c;从而得知容器的大小是否发生变化</p>
+<pre><code class="prism language-java"><span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>retries<span class="token operator">&#43;&#43;</span> <span class="token operator">&#61;&#61;</span> RETRIES_BEFORE_LOCK<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> segments<span class="token punctuation">.</span>length<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>j<span class="token punctuation">)</span> <span class="token function">ensureSegment</span><span class="token punctuation">(</span>j<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// force creation</span>
+        <span class="token punctuation">}</span>
+        sum <span class="token operator">&#61;</span> <span class="token number">0</span>L<span class="token punctuation">;</span>
+        size <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        overflow <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> segments<span class="token punctuation">.</span>length<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>j<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            Segment<span class="token generics function"><span class="token punctuation">&lt;</span>K<span class="token punctuation">,</span>V<span class="token punctuation">&gt;</span></span> seg <span class="token operator">&#61;</span> <span class="token function">segmentAt</span><span class="token punctuation">(</span>segments<span class="token punctuation">,</span> j<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>seg <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> sum <span class="token operator">&#43;&#61;</span> seg<span class="token punctuation">.</span>modCount<span class="token punctuation">;</span> <span class="token keyword">int</span> c <span class="token operator">&#61;</span> seg<span class="token punctuation">.</span>count<span class="token punctuation">;</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">&lt;</span> <span class="token number">0</span> <span class="token operator">||</span> <span class="token punctuation">(</span>size <span class="token operator">&#43;&#61;</span> c<span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+               overflow <span class="token operator">&#61;</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>sum <span class="token operator">&#61;&#61;</span> last<span class="token punctuation">)</span> <span class="token keyword">break</span><span class="token punctuation">;</span>        <span class="token comment">// 进行2次统计</span>
+        last <span class="token operator">&#61;</span> sum<span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span>
+<span class="token keyword">finally</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>retries <span class="token operator">&gt;</span> RETRIES_BEFORE_LOCK<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> segments<span class="token punctuation">.</span>length<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>j<span class="token punctuation">)</span>
+            <span class="token function">segmentAt</span><span class="token punctuation">(</span>segments<span class="token punctuation">,</span> j<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<blockquote>
+<p><strong>JDK1.8中的size操作如下</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">long</span> n <span class="token operator">&#61;</span> <span class="token function">sumCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>n <span class="token operator">&lt;</span> <span class="token number">0</span>L<span class="token punctuation">)</span> <span class="token operator">?</span> <span class="token number">0</span> <span class="token operator">:</span>
+            <span class="token punctuation">(</span>n <span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token keyword">long</span><span class="token punctuation">)</span>Integer<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">)</span> <span class="token operator">?</span> Integer<span class="token punctuation">.</span>MAX_VALUE <span class="token operator">:</span>
+            <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span>n<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">final</span> <span class="token keyword">long</span> <span class="token function">sumCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    CounterCell<span class="token punctuation">[</span><span class="token punctuation">]</span> as <span class="token operator">&#61;</span> counterCells<span class="token punctuation">;</span> CounterCell a<span class="token punctuation">;</span>	<span class="token comment">// 变化的数量</span>
+    <span class="token keyword">long</span> sum <span class="token operator">&#61;</span> baseCount<span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>as <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> as<span class="token punctuation">.</span>length<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>a <span class="token operator">&#61;</span> as<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span>
+                sum <span class="token operator">&#43;&#61;</span> a<span class="token punctuation">.</span>value<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> sum<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_321"></a>写时复制</h3>
+<p>JUC集合包中的List和Set实现类按照写时复制的实现原理包括: <strong>CopyOnWriteArrayList和 CopyOnWriteArraySet</strong>。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114435255-06-001134aa25.png" loading="lazy"><br />
+写时复制原理解决了并发修改异常&#xff0c;每当有写入的时候&#xff0c;这个时候CopyOnWriteArrayList 底层实现添加的原理是先copy出一个容器(可以简称副本)&#xff0c;再往新的容器里添加这个新的数据&#xff0c;最后把新的容器的引用地址赋值给了之前那个旧的的容器地址&#xff0c;但是在添加这个数据的期间&#xff0c;其他线程如果要去读取数据&#xff0c;仍然是读取到旧的容器里的数据。</p>
+<ul><li><strong>CopyOnWriteArrayList相当于线程安全的ArrayList&#xff0c;它实现了List接口</strong>。CopyOnWriteArrayList是支持高并发的。</li><li><strong>CopyOnWriteArraySet相当于线程安全的HashSet&#xff0c;它继承于AbstractSet类</strong>。 内部包含一个<code>CopyOnWriteArrayList</code>对象&#xff08;聚合关系&#xff09;&#xff0c;它是通过CopyOnWriteArrayList实现的</li></ul>
+<p>这种方式采用了写时加锁复制&#xff0c;读时读旧容器不需任何处理&#xff0c;这种方式有两个显著的缺点:</p>
+<ul><li><strong>内存占用问题</strong>&#xff0c;很明显&#xff0c;两个数组同时驻扎在内存中&#xff0c;如果实际应用中&#xff0c;数据比较多&#xff0c;而且比较大的情况下&#xff0c;占用内存会比较大&#xff0c;针对这个其实可以用ConcurrentHashMap来代替。</li><li><strong>数据一致性问题</strong>&#xff0c;CopyOnWrite容器只能保证数据的最终一致性&#xff0c;不能保证数据的实时一致性。所以如果你希望写入的的数据&#xff0c;马上能读到&#xff0c;请不要使用CopyOnWrite容器</li></ul>
+<p>基于此我们一般不会大量使用。</p>
+<h2><a rel="noopener noreferrer" id="_336"></a>并发队列类</h2>
+<p>JUC集合包中Queue的实现类包括: <strong>ArrayBlockingQueue, LinkedBlockingQueue, LinkedBlockingDeque, ConcurrentLinkedQueue和ConcurrentLinkedDeque</strong>。它们的框架如下图所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114435255-07-cddb1e5656.png" loading="lazy"><br />
+依据队列是否会发生阻塞分为两种&#xff0c;阻塞队列</p>
+<ul><li>ArrayBlockingQueue&#xff0c;<strong>是数组实现的线程安全的有界的阻塞队列</strong>。</li><li>LinkedBlockingQueue是&#xff0c;<strong>单向链表实现的(指定大小)阻塞队列&#xff0c;该队列按 FIFO&#xff08;先进先出&#xff09;排序元素</strong></li><li>LinkedBlockingDeque是&#xff0c;<strong>双向链表实现的(指定大小)双向并发阻塞队列&#xff0c;该阻塞队列同时支持FIFO和FILO两种操作方式</strong>。</li><li>PriorityBlockingQueue&#xff1a;一个支持优先级排序的无界阻塞队列。</li><li>DelayQueue&#xff1a;一个使用优先级队列实现的无界阻塞队列。</li><li>SynchronousQueue&#xff1a;一个不存储元素的阻塞队列。</li><li>LinkedTransferQueue&#xff1a;一个由链表结构组成的无界阻塞队列。</li></ul>
+<p>非阻塞队列&#xff1a;</p>
+<ul><li>ConcurrentLinkedQueue&#xff0c;<strong>是单向链表实现的无界队列</strong>&#xff0c;该队列按 FIFO&#xff08;先进先出&#xff09;排序元素。</li><li>ConcurrentLinkedDeque&#xff0c;<strong>是双向链表实现的无界队列</strong>&#xff0c;该队列同时支持FIFO和FILO两种操作方式。</li></ul>
+<p>简单说下有界和无界的概念&#xff1a;</p>
+<ul><li><strong>有界队列</strong>&#xff1a;就是有固定大小的队列。比如设定了固定大小的 LinkedBlockingQueue&#xff0c;又或者大小为 0&#xff0c;只是在生产者和消费者中做中转用的 SynchronousQueue。</li><li><strong>无界队列</strong>&#xff1a;指的是没有设置固定大小的队列。这些队列的特点是可以直接入列&#xff0c;直到溢出。当然现实几乎不会有到这么大的容量&#xff08;超过 Integer.MAX_VALUE&#xff09;&#xff0c;所以从使用者的体验上&#xff0c;就相当于 “无界”。比如没有设定固定大小的 LinkedBlockingQueue</li></ul>
+<p>一般为了防止撑爆JVM内存&#xff0c;采用有界队列的形式</p>

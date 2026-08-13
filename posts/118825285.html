@@ -1,0 +1,120 @@
+<p>接下来我们基于这样的组合工具来创作第一个Java Web项目&#xff0c;在这个过程中由于不熟悉Idea和Maven自身的强大功能&#xff0c;走了很多弯路&#xff0c;这里把这些弯路都总结一下&#xff0c;输出一篇较为正确的第一个项目&#xff1a;</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>安装与配置</h2>
+<p>首先需要进行组合套件的安装与配置&#xff0c;因为我之前写过类似的文章&#xff0c;这里就不再重复了&#xff0c;针对当前的组合套件来进行一个介绍&#xff1a;<strong>&#xff08;Idea2021&#43;Maven3&#43;Tomcat8&#43;JDK8&#xff09;</strong></p>
+<ul><li>JDK的安装与环境变量的配置&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/73137185">【安装与配置 一】Java环境变量的配置</a></li><li>Tomcat的安装与环境变量的配置&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/73137451">【安装与配置 二】tomcat环境变量的配置</a></li><li>Idea2021的下载与安装: <a href="https://www.jetbrains.com/zh-cn/products/#lang&#61;java" rel="nofollow">Idea官方下载站点</a></li><li>Maven3&#xff1a;Maven我使用了Idea集成绑定版&#xff0c;所以没有单独下载&#xff0c;如果需要下载可以参考这个站点&#xff1a;<a href="https://maven.apache.org/download.cgi" rel="nofollow">Maven官方下载站点</a></li></ul>
+<p>好的&#xff0c;所有的套件组装完毕了&#xff0c;让我们接下来创建第一个Java Web项目并且明确一些注意事项</p>
+<h2><a rel="noopener noreferrer" id="Java_Web_10"></a>Java Web创建</h2>
+<p>包括创建新项目&#xff0c;Tomcat的一些配置疑惑&#xff0c;以及Maven去哪里了&#xff1f;</p>
+<h3><a rel="noopener noreferrer" id="_12"></a>创建新项目</h3>
+<p>点击新建项目创建一个新的project&#xff0c;点击【New Project】开始创建第一个项目&#xff0c;并且为这个项目的组成方式选择配置&#xff1a;<br /> <img src="./posts/assets/118825285-ext-7cd96d762afc.png" alt="在这里插入图片描述"><br /> 选择要构建的项目的一些必须属性&#xff0c;例如我们通过Maven来构建这个Java Web项目&#xff0c;就按照如下的方式去选择&#xff0c;当然你也可以通过Gradle去构建&#xff0c;这里我们选择Maven&#xff1b;同时这里的服务器是我们本地安装好的&#xff0c;选中即可。<br /> <img src="./posts/assets/118825285-ext-c2888b1b2f19.png" alt="在这里插入图片描述"><br /> 接下来是我们项目可以选择的额外装配内容&#xff0c;这里我们暂时都不选择&#xff0c;需要的时候再通过Maven引入即可&#xff1a;<br /> <img src="./posts/assets/118825285-ext-340964caecb6.png" alt="在这里插入图片描述"><br /> 这样一个项目已经构建完了&#xff0c;构建完成的目录如下&#xff1a;<br /> <img src="./posts/assets/118825285-ext-6e9d4f90de97.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="_21"></a>项目目录结构</h3>
+<p>因为是依据Maven构建的&#xff0c;所以也是用的Maven的经典目录结构&#xff0c;详细我会在Maven的一篇专题Blog中具体介绍&#xff0c;敬请期待&#xff0c;这里简单的说明下&#xff1a;<br /> <img src="./posts/assets/118825285-ext-ad46b90c320d.png" alt="在这里插入图片描述"><br /> 再来看看部署后的文件&#xff1a;<br /> <img src="./posts/assets/118825285-ext-3f101c169b6c.png" alt="在这里插入图片描述"><br /> 而WEB-INF下存放编译后的Servlet文件和web配置文件&#xff1a;<br /> <img src="./posts/assets/118825285-ext-2fcb7b381e04.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="Tomcat_28"></a>配置Tomcat服务器</h3>
+<p>我们需要调整一下Tomcat的默认配置来让我们的项目运转的更舒服&#xff0c;让我们解决以下几个问题&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="URL_30"></a>解决URL路径和项目名称不符问题</h4>
+<p>首先我们需要调整一下请求的URL路径名称&#xff0c;这样我们在浏览器里就不必输入较为长的Tomcat默认附加的奇怪地址&#xff1a;<br /> <img src="./posts/assets/118825285-ext-dd7845150dad.png" alt="在这里插入图片描述"></p>
+<h4><a rel="noopener noreferrer" id="JSP_33"></a>解决JSP修改后需要重启服务器问题</h4>
+<p>接下来我们打开Tomcat热部署&#xff0c;这样每次JSP的调整都不需要重启服务器了&#xff0c;会自动的生效。同时我们还需要设置Tomcat所有项目部署&#xff0c;这样的好处是所有部署在Tomcat上的项目启动时都可以同时使用了<br /> <img src="./posts/assets/118825285-ext-901836b0b95c.png" alt="在这里插入图片描述"><br /> 这里顺便提一下两种部署模式&#xff1a;</p>
+<ul><li><strong>war模式</strong>这种可以称之为是发布模式&#xff0c;就是先将WEB工程打成war包&#xff0c;然后再将其上传到服务器进行发布</li><li><strong>war exploded模式</strong>是将WEB工程以当前文件夹的位置关系上传到服务器&#xff0c;即直接把文件夹、jsp页面 、classes等等移到Tomcat 部署文件夹里面&#xff0c;进行加载部署。因此这种方式支持热部署&#xff0c;一般在开发的时候也是用这种方式。</li></ul>
+<p>在平时开发的时候&#xff0c;使用热部署的话&#xff0c;应该对Tomcat进行相应的设置&#xff0c;这样的话修改的jsp界面什么的东西才可以及时的显示出来.</p>
+<p>同时需要注意需要设置Tomcat所有项目部署&#xff0c;这里的勾选指的是会连同&#xff1a;<code>TOMCAT_HOME\webapps</code>下的项目一起部署。如果不勾选&#xff0c;那么甚至连localhost的主页都不会显示&#xff0c;因为它会遵循配置寻找自己要部署的项目&#xff0c;下面将会聊到&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="tomcatwebapps_45"></a>解决tomcat的webapps目录下找不到项目的问题</h4>
+<p>最后我们要设置Web部署包的输出目录&#xff0c;Idea对tomcat的操作是这样的&#xff0c;默认设置输出的部署地址&#xff1a;<br /> <img src="./posts/assets/118825285-ext-33972c827327.png" alt="在这里插入图片描述"></p>
+<p>每次在IDEA启动Tomcat的时候Idea会在一个默认的地址为我们生成一个包含Tomcat全部配置拷贝的Tocat副本&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token class-name">C</span><span class="token operator">:</span>\<span class="token class-name">Users</span>\<span class="token number">13304</span>\<span class="token class-name">AppData</span>\<span class="token class-name">Local</span>\<span class="token class-name">JetBrains</span>\<span class="token class-name">IntelliJIdea2021</span><span class="token number">.1</span>\tomcat
+</code></pre>
+<p>在这个拷贝下我们可以找到当前项目的配置文件&#xff0c;该配置文件描述了tomcat该如何找到当前的部署地址&#xff1a;</p>
+<pre><code class="prism language-java">\<span class="token number">522868f</span><span class="token number">8</span><span class="token operator">-</span>acc6<span class="token operator">-</span><span class="token number">45</span>a8<span class="token operator">-</span><span class="token number">8</span>ea9<span class="token operator">-</span><span class="token number">753</span>cc1111423\conf\<span class="token class-name">Catalina</span>\localhost
+</code></pre>
+<p><img src="./posts/assets/118825285-ext-6f78ac1279fa.png" alt="在这里插入图片描述"><br /> 这样当tomcat启动时通过配置文件找到真实的项目输出位置&#xff0c;启动项目&#xff0c;为了解决这个问题&#xff0c;让我们所有的项目不必依赖idea而启动我们需要修改项目地址&#xff0c;修改为安装的tomcat的webapps下&#xff1a;<br /> <img src="./posts/assets/118825285-ext-c67bed9cae1c.png" alt="在这里插入图片描述"><br /> 这样当我们运行项目后就能找到了&#xff1a;<br /> <img src="./posts/assets/118825285-ext-79adfb1fe8a6.png" alt="在这里插入图片描述"><br /> 当然这个属于历史服务器默认配置tomcat没有办法的办法&#xff0c;如果我们依然想使用idea默认的方式也可以&#xff0c;但是其中的原理还是要理解一下的&#xff0c;即tomcat依据配置路径去寻找部署包并运行。</p>
+<h4><a rel="noopener noreferrer" id="WEBINFlib_66"></a>WEB-INF下的lib目录去哪了</h4>
+<p>我们知道标准的Java EE构建在web-inf下会有lib&#xff0c;文件夹里会存放我们的包依赖&#xff0c;但是从这里我们却没有找到lib&#xff0c;这是因为Maven已经接管了我们的包管理&#xff0c;无需自己再进行手动装配和引入依赖了&#xff0c;这就是Maven最大的优势啊&#xff0c;还搞神秘lib目录&#xff1f;</p>
+<h3><a rel="noopener noreferrer" id="Maven_69"></a>配置Maven包管理器</h3>
+<p>我们先来找到Maven并修改一些配置&#xff0c;保证项目可用。关于Maven的详细介绍&#xff0c;可以看我的这个目录&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/118898119" rel="nofollow"><strong>Maven的基本概念和基本功能</strong></a></p>
+<h4><a rel="noopener noreferrer" id="Maven_71"></a>Maven安装在哪</h4>
+<p>我们可以看到&#xff0c;到现在为止并没有安装任何的Maven&#xff0c;那是因为Idea依据帮我们集成了&#xff0c;版本默认是3.6.3&#xff0c;本地仓库默认放到了用户文件夹下。<br /> <img src="./posts/assets/118825285-ext-59f2914cce7d.png" alt="在这里插入图片描述"></p>
+<h4><a rel="noopener noreferrer" id="Maven_74"></a>添加Maven的依赖</h4>
+<p>为了能让JSP能正常运行&#xff0c;我们后续能够引入Java代码使用&#xff0c;我们需要修改Maven的pom.xml文件引入相关依赖&#xff1a;</p>
+<pre><code class="prism language-java">   <span class="token generics"><span class="token punctuation">&lt;</span>dependencies<span class="token punctuation">&gt;</span></span>
+        <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>引入servlet相关依赖&#xff0c;https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>repo<span class="token punctuation">.</span>maven<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>org<span class="token operator">/</span>maven2<span class="token operator">/</span>javax<span class="token operator">/</span>servlet<span class="token operator">/</span>servlet<span class="token operator">-</span>api<span class="token operator">/</span><span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>javax<span class="token punctuation">.</span>servlet<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>javax<span class="token punctuation">.</span>servlet<span class="token operator">-</span>api<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">4.0</span><span class="token number">.1</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>scope<span class="token punctuation">&gt;</span></span>provided<span class="token operator">&lt;</span><span class="token operator">/</span>scope<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>引入jsp相关依赖&#xff0c;https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>repo<span class="token punctuation">.</span>maven<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>org<span class="token operator">/</span>maven2<span class="token operator">/</span>javax<span class="token operator">/</span>servlet<span class="token operator">/</span>jsp<span class="token operator">/</span>jsp<span class="token operator">-</span>api<span class="token operator">/</span><span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>jsp<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>jsp<span class="token operator">-</span>api<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">2.2</span><span class="token number">.1</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>scope<span class="token punctuation">&gt;</span></span>provided<span class="token operator">&lt;</span><span class="token operator">/</span>scope<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>引入junit测试引擎相关依赖<span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>org<span class="token punctuation">.</span>junit<span class="token punctuation">.</span>jupiter<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>junit<span class="token operator">-</span>jupiter<span class="token operator">-</span>api<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>junit<span class="token punctuation">.</span>version<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>scope<span class="token punctuation">&gt;</span></span>test<span class="token operator">&lt;</span><span class="token operator">/</span>scope<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>org<span class="token punctuation">.</span>junit<span class="token punctuation">.</span>jupiter<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>junit<span class="token operator">-</span>jupiter<span class="token operator">-</span>engine<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>junit<span class="token punctuation">.</span>version<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>scope<span class="token punctuation">&gt;</span></span>test<span class="token operator">&lt;</span><span class="token operator">/</span>scope<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>dependencies<span class="token operator">&gt;</span>
+</code></pre>
+<p>如果没有引用&#xff0c;很有可能报如下错误&#xff1a;<br /> <img src="./posts/assets/118825285-ext-ee9e617c98e1.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_111"></a>编辑项目并启动</h2>
+<p>查看和编辑下JSP和Servlet文件&#xff0c;启动查看显示。</p>
+<h3><a rel="noopener noreferrer" id="JSPServlet_113"></a>编辑JSP&amp;Servlet文件</h3>
+<p>首先我们看到有个入口的index.jsp程序&#xff0c;这个文件是我们的首页文件&#xff0c;在首页文件我们能调整页面显示的文字等&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html; charset&#61;UTF-8&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">!</span>DOCTYPE html<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>JSP <span class="token operator">-</span> <span class="token class-name">Hello</span> <span class="token class-name">World</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h1<span class="token punctuation">&gt;</span></span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span> <span class="token string">&#34;Hello World!&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h1<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>a href<span class="token operator">&#61;</span><span class="token string">&#34;hello-servlet&#34;</span><span class="token operator">&gt;</span>我的第一个<span class="token class-name">JavaWeb</span>项目<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+</code></pre>
+<p>然后我们可以看到一个默认的Servlet文件&#xff0c;可以看到接收的是一个Get请求</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">FirstJavaWeb</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;helloServlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/hello-servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> message<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        message <span class="token operator">&#61;</span> <span class="token string">&#34;Hello World!&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">HttpServletResponse</span> response<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// Hello</span>
+        <span class="token class-name">PrintWriter</span> out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;html&gt;&lt;body&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;h1&gt;&#34;</span> <span class="token operator">&#43;</span> message <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;/h1&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;/body&gt;&lt;/html&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>关于JSP和Servlet&#xff0c;之后的文章里详细介绍&#xff0c;这里有个概念即可。</p>
+<h3><a rel="noopener noreferrer" id="_164"></a>启动服务器并在浏览器查看</h3>
+<p>然后我们启动服务器&#xff0c;访问我们的URL路径来查看启动的JSP&#xff1a;<br /> <img src="./posts/assets/118825285-ext-127681b37dc5.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_168"></a>总结一下</h2>
+<p>这是我这几天实践的一点感悟&#xff0c;工具更新了&#xff0c;时代变了&#xff0c;最好的方式就是拥抱变化&#xff0c;不要再停留在MyEclipse时代&#xff0c;不要再停留在固有的历史的web结构和古早的实现方式&#xff0c;技术变化太快了&#xff0c;idea真是yyds&#xff0c;可以让我们专注业务开发&#xff0c;组件全部集成&#xff0c;看来还是要不断学习才能赶上技术的变化&#xff0c;至于为什么还是用tomcat8和JDK8&#xff0c;是因为生产环境目前还是jdk8&#xff0c;tomcat8也比较适配&#xff0c;真的要快速追赶式学习&#xff0c;在迎接最新的框架和技术时又要做好原理的沉淀&#xff0c;凡事多问几个为什么。</p>

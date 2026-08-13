@@ -1,0 +1,387 @@
+<p>在Java编程语言里&#xff0c;程序是由类(class)构建而成的。在一个类的内部也可以声明类&#xff0c;我们把这样的类叫做<strong>内部类</strong>&#xff0c;一个简单内部类的定义如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Outer</span><span class="token punctuation">{<!-- --></span>
+	<span class="token comment">/**
+	*	我是一个内部类
+	*/</span>
+	<span class="token keyword">class</span> <span class="token class-name">Inner</span><span class="token punctuation">{<!-- --></span>
+	<span class="token comment">//...</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_13"></a>为什么使用内部类</h2>
+<p>使用内部类最吸引人的原因是&#xff1a;<strong>每个内部类都能独立地继承一个&#xff08;接口的&#xff09;实现&#xff0c;所以无论外部类是否已经继承了某个&#xff08;接口的&#xff09;实现&#xff0c;对于内部类都没有影响</strong>&#xff0c;也就是说内部类拥有类的基本特征&#xff0c;可以继承父类&#xff0c;实现接口</p>
+<pre><code class="prism language-java"><span class="token comment">/**
+ 1. Outer类继承了ClassA&#xff0c;实现了IFunctionA
+*/</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Outer</span> <span class="token keyword">extends</span> <span class="token class-name">ClassA</span> <span class="token keyword">implements</span> <span class="token class-name">IFunctionA</span><span class="token punctuation">{<!-- --></span>
+	<span class="token comment">/**
+	*	Inner类继承了ClassB&#xff0c;实现了IFunctionB
+	*/</span>
+	<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Inner</span> <span class="token keyword">extends</span> <span class="token class-name">ClassB</span> <span class="token keyword">implements</span> <span class="token class-name">IfunctionB</span><span class="token punctuation">{<!-- --></span>
+	<span class="token comment">//</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_30"></a>内部类特性</h3>
+<p>使用内部类最大的优点就在于它能够非常好的解决多重继承的问题,使用内部类还能够为我们带来如下特性</p>
+<ol><li>内部类可以用多个实例&#xff0c;每个实例都有自己的状态信息&#xff0c;并且与其他外部对象的信息相互独立。</li><li>在单个外部类中&#xff0c;多个内部类能以不同的方式<strong>实现同一个接口&#xff0c;或者继承同一个类</strong>。</li><li><strong>创建内部类对象的时刻并不依赖于外围类对象的创建</strong></li><li>内部类并没有令人迷惑的“is-a”关系&#xff0c;他就是一个独立的实体。</li><li>内部类提供了更好的封装&#xff0c;<strong>除了该外部类&#xff0c;其他类都不能访问</strong>。</li></ol>
+<p>总结而言该内部类更像是外部类的一部分。</p>
+<h3><a rel="noopener noreferrer" id="_41"></a>内部类使用原则</h3>
+<p>内部类和外部类的使用原则主要分为以下几点&#xff1a;</p>
+<ol><li>外部类只能用public访问修饰符&#xff0c;但内部类可以使用所有的访问修饰符&#xff0c; <strong>public 、 protected 、 private</strong> 等</li><li><strong>类的使用</strong>&#xff1a;外部类直接实例化即可使用&#xff0c;实例化的外部类里边没有关于内部类的东西&#xff0c;基本上外部类的使用可以忽视内部类&#xff1b;内部类的使用需要先实例化外部类对象&#xff0c;即&#xff1a;<code>内部类 对象名 &#61; 外部类对象.new 内部类( );</code></li><li><strong>内部类可以直接访问并且调用外部类的字段</strong>&#xff0c;但优先执行本内部类内部的字段方法。执行顺序&#xff1a;本内部类方法-&gt;方法外-&gt;外部类&#xff0c;如果外部类和内部类具有相同的成员变量或方法&#xff0c;内部类默认访问自己的成员变量或方法&#xff0c;如果要访问外部类的成员变量&#xff0c;可以使用 this 关键字,如:<code>Outer.this.name</code></li><li><strong>外部类的所有字段无论是否private对于内部类都没有任何隐私可言</strong></li><li><strong>外部类不能直接访问内部类</strong>&#xff0c;但可以通过实例化直接当成一个普通的数据类型一样访问。直接new 内部类<br />
+内部类不定义为public也默认设定为同一包可访问&#xff0c;如果想不同包访问&#xff0c;必须定义为public类型</li></ol>
+<p>以上就是外部类和内部类的通用区分方式</p>
+<h2><a rel="noopener noreferrer" id="_53"></a>内部类有哪几种</h2>
+<p>内部类分为成员内部类、静态内部类、局部内部类和匿名内部类。</p>
+<h3><a rel="noopener noreferrer" id="_55"></a>成员内部类</h3>
+<p>以下为一个成员内部类的定义&#xff0c;其使用方式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>company<span class="token punctuation">;</span>
+
+
+<span class="token comment">/**
+ * 外部类、成员内部类的定义
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Outer</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">private</span> <span class="token keyword">int</span> outerVariable <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> commonVariable <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> outerStaticVariable <span class="token operator">&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span>
+    <span class="token comment">//省略getter/setter</span>
+
+    <span class="token comment">/**
+     * 成员方法
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">outerMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是外部类的outerMethod方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 静态方法
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是外部类的outerStaticMethod静态方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 内部类
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Inner</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token keyword">private</span> <span class="token keyword">int</span> commonVariable <span class="token operator">&#61;</span> <span class="token number">20</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/**
+         * 构造方法
+         */</span>
+        <span class="token keyword">public</span> <span class="token function">Inner</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/**
+         * 成员方法&#xff0c;访问外部类信息&#xff08;属性、方法&#xff09;
+         */</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//当和外部类冲突时&#xff0c;直接引用属性名&#xff0c;是内部类的成员属性</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;内部的commonVariable:&#34;</span> <span class="token operator">&#43;</span> commonVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//内部类访问外部属性</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;outerVariable:&#34;</span> <span class="token operator">&#43;</span> outerVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//当和外部类属性名重叠时&#xff0c;可通过外部类名.this.属性名</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;外部的commonVariable:&#34;</span> <span class="token operator">&#43;</span> Outer<span class="token punctuation">.</span><span class="token keyword">this</span><span class="token punctuation">.</span>commonVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;outerStaticVariable:&#34;</span> <span class="token operator">&#43;</span> outerStaticVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//访问外部类的方法</span>
+            <span class="token function">outerMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     *	外部类访问内部类信息
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">outerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        Inner inner <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Inner</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        inner<span class="token punctuation">.</span><span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        Outer o <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Outer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;外部类的方法调用&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        o<span class="token punctuation">.</span><span class="token function">outerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;内部类的初始化调用&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Inner in <span class="token operator">&#61;</span> o<span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token class-name">Inner</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        in<span class="token punctuation">.</span><span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>执行结果如下&#xff1a;</p>
+<pre><code class="prism language-java">外部类的方法调用<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+内部的commonVariable<span class="token operator">:</span><span class="token number">20</span>
+outerVariable<span class="token operator">:</span><span class="token number">1</span>
+外部的commonVariable<span class="token operator">:</span><span class="token number">2</span>
+outerStaticVariable<span class="token operator">:</span><span class="token number">3</span>
+我是外部类的outerMethod方法
+我是外部类的outerStaticMethod静态方法
+内部类的初始化调用<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+内部的commonVariable<span class="token operator">:</span><span class="token number">20</span>
+outerVariable<span class="token operator">:</span><span class="token number">1</span>
+外部的commonVariable<span class="token operator">:</span><span class="token number">2</span>
+outerStaticVariable<span class="token operator">:</span><span class="token number">3</span>
+我是外部类的outerMethod方法
+我是外部类的outerStaticMethod静态方法
+</code></pre>
+<p>以上内容分条解释如下&#xff1a;</p>
+<ol><li>
+<p>Inner 类定义在 Outer 类的内部&#xff0c;相当于 Outer 类的一个成员变量的位置&#xff0c;Inner 类可以使用任意访问控制符&#xff0c;如 <strong>public 、 protected 、 private</strong> 等</p>
+</li><li>
+<p>Inner 类中定义的 innerShow方法可以直接访问 Outer 类中的数据&#xff0c;而<strong>不受访问控制符</strong>的影响&#xff0c;如直接访问 Outer 类中的私有属性commonVariable</p>
+</li><li>
+<p><strong>如果外部类和内部类具有相同的成员变量或方法&#xff0c;内部类默认访问自己的成员变量或方法&#xff0c;如果要访问外部类的成员变量&#xff0c;可以使用 this 关键字,如:Outer.this.name</strong></p>
+</li><li>
+<p><strong>外部类是不能直接使用内部类的成员和方法的&#xff0c;可先创建内部类的对象&#xff0c;然后通过内部类的对象来访问其成员变量和方法;</strong></p>
+</li><li>
+<p>定义了成员内部类后&#xff0c;必须使用外部类对象来创建内部类对象&#xff0c;而不能直接去 new 一个内部类对象&#xff0c;即&#xff1a;<strong>内部类 对象名 &#61; 外部类对象.new 内部类( );</strong></p>
+</li><li>
+<p>编译上面的程序后&#xff0c;会发现产生了两个 .class 文件: Outer.class,Outer$Inner.class<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114866758-01-7fc485e346.png" loading="lazy"></p>
+</li><li>
+<p><strong>成员内部类中不能存在任何 static 的变量和方法,可以定义常量:</strong></p>
+<ul><li>非静态内部类是要依赖于外部类的实例&#xff0c;而静态变量和方法是不依赖于对象仅与类相关&#xff0c;简而言之&#xff1a;<strong>加载静态域时&#xff0c;根本没有外部类,所在在非静态内部类中不能定义静态域或方法&#xff0c;编译不通过; 非静态内部类的作用域是实例级别</strong></li><li>常量是在编译器就确定的&#xff0c;放到常量池了</li></ul>
+</li></ol>
+<p>以上就是成员内部类的使用说明&#xff0c;成员内部类可以类比一个<strong>非静态成员</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_167"></a>静态内部类</h3>
+<p>以下为一个静态内部类的定义&#xff0c;其使用方式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>company<span class="token punctuation">;</span>
+
+
+<span class="token comment">/**
+ * 外部类、成员内部类的定义
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Outer</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">private</span> <span class="token keyword">int</span> outerVariable <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 外部类定义的属性(重名)
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> commonVariable <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> outerStaticVariable <span class="token operator">&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Outer的静态块被执行了……&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 成员方法
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">outerMothod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是外部类的outerMethod方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/*
+     *	静态方法
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是外部类的outerStaticMethod静态方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token comment">/**
+     * 静态内部类
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Inner</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/**
+         * 成员信息
+         */</span>
+        <span class="token keyword">private</span> <span class="token keyword">int</span> innerVariable <span class="token operator">&#61;</span> <span class="token number">10</span><span class="token punctuation">;</span>
+        <span class="token keyword">private</span> <span class="token keyword">int</span> commonVariable <span class="token operator">&#61;</span> <span class="token number">20</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Outer.Inner的静态块执行了……&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> innerStaticVariable <span class="token operator">&#61;</span> <span class="token number">30</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/**
+         * 成员方法
+         */</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;innerVariable:&#34;</span> <span class="token operator">&#43;</span> innerVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;内部的commonVariable:&#34;</span> <span class="token operator">&#43;</span> commonVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;outerStaticVariable:&#34;</span><span class="token operator">&#43;</span>outerStaticVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/**
+         * 静态方法
+         */</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">innerStaticShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//被调用时会先加载Outer类</span>
+            <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;outerStaticVariable&#34;</span><span class="token operator">&#43;</span>outerStaticVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 外部类的内部如何和内部类打交道
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">callInner</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>Inner<span class="token punctuation">.</span>innerStaticVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Inner<span class="token punctuation">.</span><span class="token function">innerStaticShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//访问静态内部类的静态方法&#xff0c;Inner类被加载,此时外部类未被加载&#xff0c;独立存在&#xff0c;不依赖于外围类。</span>
+        Outer<span class="token punctuation">.</span>Inner<span class="token punctuation">.</span><span class="token function">innerStaticShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//访问静态内部类的成员方法</span>
+        Outer<span class="token punctuation">.</span>Inner oi <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Outer<span class="token punctuation">.</span>Inner</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        oi<span class="token punctuation">.</span><span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Inner in<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Inner</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        in<span class="token punctuation">.</span><span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java">Outer的静态块被执行了……
+Outer<span class="token punctuation">.</span>Inner的静态块执行了……
+我是外部类的outerStaticMethod静态方法
+outerStaticVariable3
+innerVariable<span class="token operator">:</span><span class="token number">10</span>
+内部的commonVariable<span class="token operator">:</span><span class="token number">20</span>
+outerStaticVariable<span class="token operator">:</span><span class="token number">3</span>
+我是外部类的outerStaticMethod静态方法
+</code></pre>
+<p>静态内部类和成员内部类有几点不同&#xff1a;</p>
+<ul><li>静态内部类可以包含任意的信息&#xff0c;静态或非静态&#xff0c;因为它不依赖于外部类的实例对象&#xff0c;所以可以有静态成员</li><li>静态内部类的方法<strong>只能访问外部类的static修饰</strong>的信息。</li><li>访问静态内部类的静态信息直接<code>Outer.Inner.innerStaticShow();</code>即可</li><li>访问静态内部类的非静态信息<code>Outer.Inner oi &#61; new Outer.Inner();</code>&#xff0c;然后<code>oi.innerShow();</code>即可</li><li>静态内部类可以独立存在&#xff0c;不依赖于其他外部类。创建静态内部类的对象时&#xff0c;不需要外部类的实例对象&#xff0c;可以直接创建 <strong>内部类 对象名 &#61; new 内部类();</strong></li><li>如果外部类的静态成员与内部类的成员名称相同&#xff0c;可通过“<strong>类名.静态成员</strong>”访问外部类的静态成员&#xff1b;如果外部类的静态成员与内部类的成员名称不相同&#xff0c;则可通过“<strong>成员名</strong>”直接调用外部类的静态成员</li></ul>
+<p>总而言之静态内部类的加载只依赖于外部类的类对象而非实例对象。更加的独立&#xff0c;静态内部类可以类比一个<strong>静态成员</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_284"></a>局部内部类</h3>
+<p>以下为一个静态内部类的定义&#xff0c;其使用方式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">/**
+ *	外部类、内部类
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Outer</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 属性和方法
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> outerVariable <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 外部类定义的属性
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> commonVariable <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 静态的信息
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> outerStaticVariable <span class="token operator">&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 成员外部方法
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">outerMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是外部类的outerMethod方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 静态外部方法
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是外部类的outerStaticMethod静态方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 程序的入口
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        Outer outer <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Outer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        outer<span class="token punctuation">.</span><span class="token function">outerCreatMethod</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 成员方法&#xff0c;内部定义局部内部类
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">outerCreatMethod</span><span class="token punctuation">(</span><span class="token keyword">int</span> value<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/**
+         * 女性
+         */</span>
+        <span class="token keyword">boolean</span> sex <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/**
+         * 局部内部类&#xff0c;类前不能有访问修饰符
+         */</span>
+        <span class="token keyword">class</span> <span class="token class-name">Inner</span> <span class="token punctuation">{<!-- --></span>
+
+            <span class="token keyword">private</span> <span class="token keyword">int</span> innerVariable <span class="token operator">&#61;</span> <span class="token number">10</span><span class="token punctuation">;</span>
+            <span class="token keyword">private</span> <span class="token keyword">int</span> commonVariable <span class="token operator">&#61;</span> <span class="token number">20</span><span class="token punctuation">;</span>
+			<span class="token comment">/**
+			*	局部内部类方法
+			*/</span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;innerVariable:&#34;</span> <span class="token operator">&#43;</span> innerVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//局部变量</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;是否男性:&#34;</span> <span class="token operator">&#43;</span> sex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;参数value:&#34;</span> <span class="token operator">&#43;</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//调用外部类的信息</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;outerVariable:&#34;</span> <span class="token operator">&#43;</span> outerVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;内部的commonVariable:&#34;</span> <span class="token operator">&#43;</span> commonVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;外部的commonVariable:&#34;</span> <span class="token operator">&#43;</span> Outer<span class="token punctuation">.</span><span class="token keyword">this</span><span class="token punctuation">.</span>commonVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;outerStaticVariable:&#34;</span> <span class="token operator">&#43;</span> outerStaticVariable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token function">outerMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token function">outerStaticMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">//局部内部类只能在方法内使用</span>
+        Inner inner <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Inner</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        inner<span class="token punctuation">.</span><span class="token function">innerShow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>返回结果如下&#xff1a;</p>
+<pre><code class="prism language-java">innerVariable<span class="token operator">:</span><span class="token number">10</span>
+是否男性<span class="token operator">:</span><span class="token boolean">false</span>
+参数value<span class="token operator">:</span><span class="token number">100</span>
+outerVariable<span class="token operator">:</span><span class="token number">1</span>
+内部的commonVariable<span class="token operator">:</span><span class="token number">20</span>
+外部的commonVariable<span class="token operator">:</span><span class="token number">2</span>
+outerStaticVariable<span class="token operator">:</span><span class="token number">3</span>
+我是外部类的outerMethod方法
+我是外部类的outerStaticMethod静态方法
+</code></pre>
+<p>相比成员内部类和静态内部类&#xff0c;局部内部类有很多限制&#xff1a;</p>
+<ol><li>局部内部类就像是方法里面的一个局部变量一样&#xff0c;是<strong>不能有 public、protected、private 以及 static 修饰符的</strong>。</li><li>局部内部类无法包含静态成员。</li><li>局部内部类可以直接访问方法内的局部变量和参数 &#xff0c;只能访问方法中定义的 final 类型的局部变量&#xff0c;但是不能更改。</li><li>局部内部类可以随意的访问外部类的任何信息。</li></ol>
+<p>当方法被调用运行完毕之后&#xff0c;局部变量就已消亡了。但内部类对象可能还存在, 直到没有被引用时才会消亡。此时就会出现一种情况&#xff0c;就是内部类要访问一个不存在的局部变量&#xff0c;使用final修饰符不仅会保持对象的引用不会改变,而且编译器还会持续维护这个对象在回调方法中的生命周期.<strong>局部内部类并不是直接调用方法传进来的参数&#xff0c;而是内部类将传进来的参数通过自己的构造器备份到了自己的内部&#xff0c;自己内部的方法调用的实际是自己的属性而不是外部类方法的参数;防止被篡改数据,而导致内部类得到的值不一致</strong>&#xff0c;局部内部类可以类比一个<strong>方法参数</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_388"></a>匿名内部类</h3>
+<p>以下为一个匿名内部类的定义&#xff0c;其使用方式如下&#xff0c;首先定义接口</p>
+<pre><code class="prism language-java"><span class="token comment">/**
+*	接口中方法默认为public
+*/</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IAnimal</span><span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">void</span> <span class="token function">speak</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>然后使用匿名内部类&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token comment">/**
+*	外部内、内部类
+*/</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Outer</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> IAnimal <span class="token function">getInnerInstance</span><span class="token punctuation">(</span>String speak<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">IAnimal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token annotation punctuation">&#64;Override</span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">speak</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>speak<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+	<span class="token comment">//注意上一行的分号必须有</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+	<span class="token comment">//调用的speak()是重写后的speak方法。</span>
+        Outer<span class="token punctuation">.</span><span class="token function">getInnerInstance</span><span class="token punctuation">(</span><span class="token string">&#34;TTTTTTT&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">speak</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>返回结果</p>
+<pre><code class="prism language-java">TTTTTTT
+</code></pre>
+<p>匿名内部类在我们简化代码的时候还是蛮常见的</p>
+<ol><li>匿名内部类是直接使用 new 来生成一个对象的引用;<strong>匿名内部类没有类的名称</strong></li><li><strong>对于匿名内部类的使用它是存在一个缺陷的&#xff0c;就是它仅能被使用一次&#xff0c;创建匿名内部类时它会立即创建一个该类的实例&#xff0c;该类的定义会立即消失&#xff0c;所以匿名内部类是不能够被重复使用;</strong></li><li><strong>使用匿名内部类时&#xff0c;我们必须是继承一个类或者实现一个接口&#xff0c;但是两者不可兼得&#xff0c;同时也只能继承一个类或者实现一个接口;</strong></li><li><strong>匿名内部类中是不能定义构造函数的,匿名内部类中不能存在任何的静态成员变量和静态方法;</strong></li><li><strong>匿名内部类中不能存在任何的静态成员变量和静态方法,匿名内部类不能是抽象的,它必须要实现继承的类或者实现的接口的所有抽象方法</strong></li><li>匿名内部类初始化:<strong>使用构造代码块&#xff01;利用构造代码块能够达到为匿名内部类创建一个构造器的效果</strong></li></ol>
+<p>匿名内部类可以类别一个<strong>方法返回值</strong>。</p>

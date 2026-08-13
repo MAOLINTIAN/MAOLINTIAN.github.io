@@ -1,0 +1,323 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【动态规划】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_1"></a>零钱兑换【MID】</h2>
+<p>通过这道题推导下动态规划状态转移方程的推导思路<br /> <img alt="在这里插入图片描述" src="./posts/assets/133958895-01-43e3d63c67.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_4"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-02-0755713944.png" loading="lazy"><br /> 回溯的思路就是&#xff1a;<strong>无重复可复选的组合树解法</strong></p>
+<h3><a rel="noopener noreferrer" id="_8"></a>解题思路</h3>
+<p>先分析明确 这个问题可以用动态规划解决</p>
+<h4><a rel="noopener noreferrer" id="_10"></a>问题分析</h4>
+<p>首先&#xff0c;这个问题是动态规划问题&#xff0c;因为它具有「<strong>最优子结构</strong>」的。<font color="red"><strong>要符合「最优子结构」&#xff0c;子问题间必须互相独立【无后效性】</strong>。</font></p>
+<blockquote>
+ <p>什么是相互独立&#xff0c;比如说&#xff0c;假设你考试&#xff0c;每门科目的成绩都是互相独立的。你的原问题是考出最高的总成绩&#xff0c;那么你的子问题就是要把语文考到最高&#xff0c;数学考到最高…… 为了每门课考到最高&#xff0c;你要把每门课相应的选择题分数拿到最高&#xff0c;填空题分数拿到最高…… 当然&#xff0c;最终就是你每门课都是满分&#xff0c;这就是最高的总成绩。得到了正确的结果&#xff1a;最高的总成绩就是总分。因为这个过程符合最优子结构&#xff0c;「每门科目考到最高」这些子问题是互相独立&#xff0c;互不干扰的。但是&#xff0c;如果加一个条件&#xff1a;你的语文成绩和数学成绩会互相制约&#xff0c;不能同时达到满分&#xff0c;数学分数高&#xff0c;语文分数就会降低&#xff0c;反之亦然。这样的话&#xff0c;显然你能考到的最高总成绩就达不到总分了&#xff0c;按刚才那个思路就会得到错误的结果。因为「每门科目考到最高」的子问题并不独立&#xff0c;语文数学成绩户互相影响&#xff0c;无法同时最优&#xff0c;所以最优子结构被破坏。</p>
+</blockquote>
+<p>回到凑零钱问题&#xff0c;为什么说它符合最优子结构呢&#xff1f;假设你有面值为 1, 2, 5 的硬币&#xff0c;你想求 amount &#61; 11 时的最少硬币数&#xff08;原问题&#xff09;&#xff0c;如果你知道凑出 amount &#61; 10, 9, 6 的最少硬币数&#xff08;子问题&#xff09;&#xff0c;你只需要把子问题的答案加一&#xff08;再选一枚面值为 1, 2, 5 的硬币&#xff09;&#xff0c;求个最小值&#xff0c;就是原问题的答案。<strong>因为硬币的数量是没有限制的&#xff0c;所以子问题之间没有相互制约</strong>&#xff0c;是互相独立的</p>
+<h4><a rel="noopener noreferrer" id="_17"></a>如何列出状态转移方程</h4>
+<p>那么&#xff0c;既然知道了这是个动态规划问题&#xff0c;就要思考如何列出正确的状态转移方程&#xff1f;</p>
+<ol><li><font color="red"><strong>确定 base case</strong></font>&#xff0c;这个很简单&#xff0c;<strong>显然目标金额 amount 为 0 时算法返回 0&#xff0c;因为不需要任何硬币就已经凑出目标金额了</strong>。</li><li><font color="red"><strong>确定「状态」&#xff0c;也就是原问题和子问题中会变化的变量</strong></font>。由于硬币数量无限&#xff0c;硬币的面额也是题目给定的&#xff0c;<strong>只有目标金额会不断地向 base case 靠近&#xff0c;所以唯一的「状态」就是目标金额 amount</strong>。</li><li><font color="red"><strong>确定「选择」&#xff0c;也就是导致「状态」产生变化的行为</strong></font>。目标金额为什么变化呢&#xff0c;因为你在选择硬币&#xff0c;你每选择一枚硬币&#xff0c;就相当于减少了目标金额。所以说所有硬币的面值&#xff0c;就是你的「选择」。</li><li><strong>明确 dp 函数/数组的定义</strong>。我们采用动态规划&#xff0c;自底向上求解&#xff0c;所以dp 数组的定义&#xff1a;<strong>当目标金额为 i 时&#xff0c;至少需要 dp[i] 枚硬币</strong>&#xff0c;例如目标金额为11时&#xff0c;至少需要dp[11]种硬币组合</li></ol>
+<h3><a rel="noopener noreferrer" id="_26"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     * 最少货币数
+     * &#64;param arr int整型一维数组 the array
+     * &#64;param aim int整型 the target
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">coinChange</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> coins<span class="token punctuation">,</span> <span class="token keyword">int</span> amount<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 0 异常情况</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>coins<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">||</span> amount <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 1 定义动态规划数组&#xff0c;dp[i] 表示组成目标金额i【状态】的最少货币数量【选择】</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>amount <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token comment">// 所有数值初始化为目标金额&#xff0c;初始化目标金额最多有amount种组合&#xff08;当货币为1时&#xff09;</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">fill</span><span class="token punctuation">(</span>dp<span class="token punctuation">,</span> amount<span class="token operator">&#43;</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 定义base case :目标金额为0 需要的货币数量为0</span>
+        dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 列举所有状态&#xff0c;求每种状态的最少货币选择</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> dp<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 内层 for 循环在求所有选择的最小值</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> coin <span class="token operator">:</span> coins<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 剪枝&#xff0c;如果目标金额小于coin&#xff0c;则没有任何选择&#xff0c;子问题无解</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&lt;</span> coin<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">continue</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token comment">// 状态转移方程&#xff0c;目标金额的货币组合数&#61;1&#xff08;当前货币占用1个组合位置&#xff09;&#43;dp[i-coin](差额前值的最少组合数)</span>
+                dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> coin<span class="token punctuation">]</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 如果金额为10的选择大于10种&#xff08;例如11种&#xff09;&#xff0c;那会出现不足1元的币种&#xff0c;显然不满足条件</span>
+        <span class="token keyword">return</span> dp<span class="token punctuation">[</span>amount<span class="token punctuation">]</span> <span class="token operator">&gt;</span> amount<span class="token operator">?</span> <span class="token operator">-</span><span class="token number">1</span><span class="token operator">:</span> dp<span class="token punctuation">[</span>amount<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>为啥 dp 数组中的值都初始化为 <code>amount &#43; 1</code> 呢&#xff0c;因为凑成 amount 金额的硬币数最多只可能等于 amount&#xff08;全用 1 元面值的硬币&#xff09;&#xff0c;所以<strong>初始化为 amount &#43; 1 就相当于初始化为正无穷&#xff0c;便于后续取最小值</strong>&#xff0c;如果没有取到最小值&#xff08;没有更改初始化的值&#xff09;则认为没有找到最少的组合方式</p>
+<p>为啥不直接初始化为 int 型的最大值 <code>Integer.MAX_VALUE</code> 呢&#xff1f;因为后面有 <code>dp[i - coin] &#43; 1</code>&#xff0c;这就会导致整型溢出<br /> <img alt="在这里插入图片描述" src="./posts/assets/133958895-03-f63a299ef9.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_81"></a>复杂度分析</h3>
+<p><strong>时间复杂度&#xff1a;O(S*n)</strong>&#xff0c;其中 S 是金额&#xff0c;n 是面额数。我们一共需要计算 O(S)个状态&#xff0c;S 为题目所给的总金额。对于每个状态&#xff0c;每次需要枚举 n 个面额来转移状态&#xff0c;所以一共需要 O(S*n) 的时间复杂度。</p>
+<p><strong>空间复杂度&#xff1a;O(S)</strong>。数组 dp 需要开长度为总金额 S 的空间。</p>
+<h2><a rel="noopener noreferrer" id="EASY_87"></a>爬楼梯【EASY】</h2>
+<p>再来一道动规里相对来说较为基础的题目<br /> <img alt="在这里插入图片描述" src="./posts/assets/133958895-04-1d5d272f20.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_90"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-05-765b9917c2.png" loading="lazy"><br /> 和零钱兑换类似&#xff0c;不过和零钱兑换不同的是&#xff0c;要记录的是兑换的方法有多少种&#xff0c;而不是最少数量的组合</p>
+<h3><a rel="noopener noreferrer" id="_94"></a>解题思路</h3>
+<p>动态规划&#xff0c;定义状态转移公式&#xff1a;<strong>dp[i]&#61;dp[i-1]&#43;dp[i-2]</strong></p>
+<h3><a rel="noopener noreferrer" id="_96"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param number int整型
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">climbStairs</span><span class="token punctuation">(</span><span class="token keyword">int</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 特殊情况判断&#xff0c;如果目标台阶数为0&#xff0c;则有0种跳法</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>n <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义状态转移表,dp[i]表示跳上i级台阶总共有dp[i]种跳法</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>n <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 定义base case:因为一次只能跳1或2&#xff0c;所以初始状态为dp[0],dp[1]</span>
+        dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        dp<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 4 进行状态转移&#xff0c;穷举所有状态对应的跳法</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> dp<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+
+        <span class="token keyword">return</span> dp<span class="token punctuation">[</span>n<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_138"></a>复杂度分析</h3>
+<p>时间复杂度为&#xff1a;O&#xff08;N&#xff09;&#xff1a;迭代此时为N<br /> 空间复杂度为&#xff1a;O&#xff08;N&#xff09;&#xff1a;状态转移表的大小为N</p>
+<p>还有一种压缩空间复杂度的写法&#xff0c;就是用滚动数组</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param number int整型
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">climbStairs</span><span class="token punctuation">(</span><span class="token keyword">int</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 特殊情况判断&#xff0c;如果目标台阶数为0&#xff0c;则有0种跳法</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>n <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">||</span> n <span class="token operator">&#61;&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">int</span> first <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> second <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> result <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 数组滚动更新</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> n<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result <span class="token operator">&#61;</span> first <span class="token operator">&#43;</span> second<span class="token punctuation">;</span>
+            first <span class="token operator">&#61;</span> second<span class="token punctuation">;</span>
+            second <span class="token operator">&#61;</span> result<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>空间复杂度可以降到O&#xff08;1&#xff09;&#xff0c;但是没有普适性。</p>
+<h2><a rel="noopener noreferrer" id="IEASY_181"></a>买卖股票的最佳时机I【EASY】</h2>
+<p>来从动态规划最简单的题开始训练<br /> <img alt="在这里插入图片描述" src="./posts/assets/133958895-06-ccbf1eac1e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_184"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-07-8eff6f588e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_188"></a>解题思路</h3>
+<p>按照动态规划的思路进行状态设计和状态转移方程编写</p>
+<h4><a rel="noopener noreferrer" id="1__190"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p><font color="red"><strong>dp[i]&#xff1a;表示第i天卖出股票的最大利润</strong></font>。</p>
+<h4><a rel="noopener noreferrer" id="2__192"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p>根据状态的定义&#xff0c;由于 <code>prices[i]</code> 一定会被选取&#xff0c;并且以 <code>prices[i]</code> 结尾的卖出日期与以 <code>prices[i - 1]</code> 结尾的卖出日期只相差一个元素 <code>nums[i]</code> 。假设数组 prices的值全都严格大于 0&#xff0c;那么一定有 <code>dp[i] &#61; dp[i - 1] &#43; prices[i]-prices[i-1]</code>。可是 <code>dp[i - 1]</code> 有可能是负数&#xff0c;于是分类讨论&#xff1a;</p>
+<ul><li>如果 <code>dp[i - 1] &gt; 0</code>&#xff0c;那么可以把<code>prices[i]-prices[i-1]</code>直接接在 <code>dp[i - 1]</code> 表示的那个数组的后面&#xff0c;得到和更大的利润&#xff1b;</li><li>如果 <code>dp[i - 1] &lt;&#61; 0</code>&#xff0c;那么 prices[i] 加上前面的数 dp[i - 1] 以后值不会变大。于是 dp[i] 「另起炉灶」&#xff0c;此时单独的利润<code>prices[i]-prices[i-1]</code>的值&#xff0c;就是 dp[i]。</li></ul>
+<p>以上两种情况的最大值就是 dp[i] 的值</p>
+<h4><a rel="noopener noreferrer" id="3__198"></a>3 初始化状态</h4>
+<p><code>dp[0]</code> 根据定义&#xff0c;初始化第1天买入第一天卖出利润为0&#xff0c;初始化利润值</p>
+<h4><a rel="noopener noreferrer" id="4__200"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__202"></a>5 找到最终解</h4>
+<p>这里的dp[i]只是第i天卖出的最大利润&#xff0c;并不是题目中的问题&#xff0c;买卖股票的最大利润&#xff0c;所以<strong>最终解并不是子问题的解&#xff0c;需要用一个MAX值承载&#xff0c;通过与dp[i]比较更新最终解</strong></p>
+<h3><a rel="noopener noreferrer" id="_205"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param prices int整型一维数组
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> maxProfit <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> prices<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 初始化动态规划数组&#xff1a;维护第i天卖出的最大利润</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>prices<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> maxValue <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> prices<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2 计算当前天和前一天卖出的利润差</span>
+            <span class="token keyword">int</span> curValue <span class="token operator">&#61;</span> prices<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">-</span> prices<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token comment">// 3 状态转移方程&#xff1a;第i天卖出的最大利润为&#xff1a;如果i-1天卖出的最大利润为负数&#xff0c;则舍弃&#xff0c;否则累加第i天的最大利润</span>
+            dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0</span> <span class="token operator">?</span> curValue <span class="token operator">:</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> curValue<span class="token punctuation">;</span>
+            <span class="token comment">// 4 每次计算完最小问题后更新最大值</span>
+            maxValue <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> maxValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> maxValue<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_248"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历了一遍数组&#xff0c;所以时间复杂度为O&#xff08;N&#xff09;<br /> 空间复杂度&#xff1a;定义了动规数组&#xff0c;空间复杂度为O&#xff08;N&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="MID_251"></a>打家劫舍【MID】</h2>
+<p>来一道MID的题目&#xff0c;打家劫舍&#xff0c;也是耳闻已久的题目了<br /> <img alt="在这里插入图片描述" src="./posts/assets/133958895-08-484ca86bd2.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_255"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-09-68adc1c76b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_257"></a>解题思路</h3>
+<p>还是用动态规划的方式解题</p>
+<h4><a rel="noopener noreferrer" id="1__259"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p>子问题是和原问题相似&#xff0c;但规模较小的问题。例如这道小偷问题&#xff0c;原问题是 “从全部房子中能偷到的最大金额”&#xff0c;将问题的规模缩小&#xff0c;子问题就是 “<strong>从 i个房子中能按照规则偷到的最大金额</strong> ”&#xff0c;</p>
+<p><font color="red"><strong>dp[i]&#xff1a;表示能按照规则从i间房子所能偷到的最大利润</strong></font>。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-10-ee1b8f2c45.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="2__266"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-11-bc9186258e.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="3__269"></a>3 初始化状态</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<ul><li>当k&#61;0时&#xff0c;没有房子&#xff0c;所以<code>dp[0]&#61;0</code>;</li><li>当k&#61;1时&#xff0c;有一间房子&#xff0c;所以只能偷这个&#xff0c;金额为<code>dp[1]&#61;nums[0]</code></li></ul>
+<h4><a rel="noopener noreferrer" id="5__274"></a>5 找到最终解</h4>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133958895-12-3e344e5ed5.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_277"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">rob</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 特殊情况处理&#xff0c;如果不存在房间&#xff0c;只能偷到0元</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">.</span>length <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义状态转移表:dp[i] 表示偷窃前i间房子中的最大金额&#xff0c;原问题为偷窃全部房间的最大金额nums.length</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 初始化base case,前0间房&#xff0c;金额为0&#xff0c;第一间房的金额就是nums[0]</span>
+        dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        dp<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+
+        <span class="token comment">// 4 定义状态转移方程</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span>dp<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 前i间房子的偷窃最大金额&#61;&#xff08;前i-2间房子最大值&#43;第i间房子&#xff09;与&#xff08;前i-1间房子的最大值&#xff09;</span>
+            dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> nums<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> dp<span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>为了便于理解&#xff0c;补充一个合nums数组下标对齐的版本</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">rob</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 特殊情况处理&#xff0c;如果不存在房间&#xff0c;只能偷到0元</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">.</span>length <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义状态转移表:dp[i] 表示偷窃前i间房子中的最大金额&#xff0c;原问题为偷窃全部房间的最大金额nums.length-1</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 初始化base case,前0间房&#xff0c;金额为0&#xff0c;第一间房的金额就是nums[0]</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        dp<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+
+        <span class="token comment">// 4 定义状态转移方程</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> dp<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 前i间房子的偷窃最大金额&#61;&#xff08;前i-2间房子最大值&#43;第i间房子&#xff09;与&#xff08;前i-1间房子的最大值&#xff09;</span>
+            dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> dp<span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_357"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历了一遍数组&#xff0c;所以时间复杂度为O&#xff08;N&#xff09;<br /> 空间复杂度&#xff1a;定义了动规数组&#xff0c;空间复杂度为O&#xff08;N&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="_361"></a>拓展知识&#xff1a;动态规划与贪心算法</h2>
+<h3><a rel="noopener noreferrer" id="_362"></a>动态规划</h3>
+<p>动态规划&#xff08;Dynamic Programming&#xff0c;简称DP&#xff09;是一种解决复杂问题的算法设计技术&#xff0c;常用于优化问题和组合问题的求解。它通过<strong>将原问题分解成子问题&#xff0c;并保存子问题的解&#xff0c;以避免重复计算&#xff0c;从而提高算法的效率</strong>。动态规划通常用于解决具有<strong>重叠子问题和最优子结构性质</strong>的问题。</p>
+<p>动态规划的基本思想可以总结为以下几个步骤&#xff1a;</p>
+<ol><li> <p><strong>定义问题的状态</strong>&#xff1a;首先要明确定义问题的状态&#xff0c;这些状态可以用来描述问题的各种情况。</p> </li><li> <p><strong>找到状态转移方程</strong>&#xff1a;状态转移方程描述了问题之间的联系&#xff0c;即如何从一个状态转移到另一个状态。这通常涉及到问题的递归关系&#xff0c;通过这个关系可以从较小规模的子问题得到更大规模的问题的解。</p> </li><li> <p><strong>初始化状态</strong>&#xff1a;确定初始状态的值&#xff0c;这通常是问题规模最小的情况下的解。</p> </li><li> <p><strong>自底向上或自顶向下求解</strong>&#xff1a;动态规划可以采用自底向上&#xff08;Bottom-Up&#xff09;或自顶向下&#xff08;Top-Down&#xff09;的方式求解问题。自底向上是从最小的状态开始逐步计算&#xff0c;直到得到最终问题的解&#xff1b;自顶向下是从最终问题开始&#xff0c;递归地计算子问题的解&#xff0c;直到达到最小状态。</p> </li><li> <p><strong>根据问题的要求&#xff0c;从状态中找到最终解</strong>。</p> </li></ol>
+<p>动态规划常见的应用领域包括&#xff1a;</p>
+<ol><li> <p><strong>最长公共子序列问题</strong>&#xff1a;在两个序列中找到一个最长的共同子序列&#xff0c;用于比较字符串相似性。</p> </li><li> <p><strong>背包问题</strong>&#xff1a;在给定一定容量的背包和一组物品的情况下&#xff0c;选择一些物品放入背包&#xff0c;使得物品的总价值最大或总重量不超过背包容量。</p> </li><li> <p><strong>最短路径问题</strong>&#xff1a;求解图中两点之间的最短路径&#xff0c;如Dijkstra算法和Floyd-Warshall算法。</p> </li><li> <p><strong>硬币找零问题</strong>&#xff1a;给定一组硬币面额和一个目标金额&#xff0c;找到使用最少数量的硬币组合成目标金额。</p> </li><li> <p><strong>斐波那契数列问题</strong>&#xff1a;求解斐波那契数列的第n个数&#xff0c;通过动态规划可以避免重复计算。</p> </li></ol>
+<p>动态规划是一种强大的问题求解方法&#xff0c;但它并不适用于所有类型的问题。在使用动态规划时&#xff0c;需要仔细分析问题的性质&#xff0c;确保问题具有重叠子问题和最优子结构性质&#xff0c;以确保动态规划算法能够有效地解决问题。</p>
+<h3><a rel="noopener noreferrer" id="_390"></a>贪心算法</h3>
+<p>贪心算法&#xff08;Greedy Algorithm&#xff09;是一种常用的问题求解策略&#xff0c;通常用于解决最优化问题&#xff0c;如最短路径、最小生成树、背包问题等。贪心算法的基本思想是每一步都选择当前状态下的最优解&#xff0c;而不考虑全局的最优解&#xff0c;希望通过局部最优的选择最终达到全局最优。贪心算法通常是一种高效的方法&#xff0c;但并不是所有问题都适合使用贪心算法&#xff0c;因为有些问题的最优解不一定可以通过贪心选择得到。</p>
+<p>贪心算法的一般步骤如下&#xff1a;</p>
+<ol><li> <p><strong>定义问题的优化目标&#xff0c;明确问题的约束条件</strong>。</p> </li><li> <p><strong>从问题的初始状态开始&#xff0c;通过一系列选择&#xff0c;每次选择局部最优解&#xff0c;更新当前状态</strong>。</p> </li><li> <p>检查是否满足问题的约束条件和终止条件。如果不满足&#xff0c;则回到第2步继续选择&#xff1b;如果满足&#xff0c;则算法结束。</p> </li><li> <p>对于某些问题&#xff0c;需要证明贪心选择的局部最优解确实能够导致全局最优解&#xff0c;这需要数学证明或者举出反例。</p> </li></ol>
+<p>以下是一些常见的问题&#xff0c;可以使用贪心算法解决&#xff1a;</p>
+<ol><li> <p>最小生成树问题&#xff1a;如Kruskal算法和Prim算法用于寻找无向图中的最小生成树。</p> </li><li> <p>最短路径问题&#xff1a;如Dijkstra算法用于寻找图中两点之间的最短路径。</p> </li><li> <p>背包问题&#xff1a;如<strong>分数背包问题</strong>和<strong>0/1背包问题</strong>&#xff0c;可以使用贪心算法进行求解。</p> </li><li> <p>活动选择问题&#xff1a;如贪心选择<strong>活动安排最多的问题</strong>&#xff0c;可以使用贪心算法求解。</p> </li></ol>
+<p>需要注意的是&#xff0c;并非所有问题都适合使用贪心算法&#xff0c;因为有些问题的最优解可能需要全局搜索或者动态规划等其他算法。因此&#xff0c;在应用贪心算法之前&#xff0c;需要仔细分析问题的特点和性质&#xff0c;以确定贪心算法是否合适。</p>
+<h3><a rel="noopener noreferrer" id="_414"></a>动态规划与贪心算法区别</h3>
+<p>动态规划&#xff08;Dynamic Programming&#xff09;和贪心算法&#xff08;Greedy Algorithm&#xff09;都是常见的问题求解策略&#xff0c;但它们在问题求解时有很大的区别&#xff0c;适用于不同类型的问题和场景。</p>
+<p><strong>区别&#xff1a;</strong></p>
+<ol><li> <p><strong>最优子结构性质&#xff1a;</strong></p>
+  <ul><li>动态规划&#xff1a;动态规划问题通常具有最优子结构性质&#xff0c;即全局最优解可以通过子问题的最优解来构造。动态规划通常涉及到将问题划分为重叠的子问题&#xff0c;然后利用这些子问题的解来构建全局最优解。</li><li>贪心算法&#xff1a;贪心算法通常涉及到每一步选择当前状态下的最优解&#xff0c;但不一定具有最优子结构性质。贪心算法通常是通过一系列局部最优选择来达到全局最优&#xff0c;但不能保证一定能够得到全局最优解。</li></ul> </li><li> <p><strong>选择的灵活性&#xff1a;</strong></p>
+  <ul><li>动态规划&#xff1a;在动态规划中&#xff0c;可以在每个子问题中考虑多种选择&#xff0c;并计算每种选择的代价或价值&#xff0c;然后选择最优的。通常需要一个状态转移方程来描述问题的子结构和递归关系。</li><li>贪心算法&#xff1a;贪心算法在每一步都选择当前状态下的最优解&#xff0c;不考虑其他选择的影响。它通常适用于问题具有&#34;贪心选择性质&#34;的情况&#xff0c;即通过局部最优选择能够得到全局最优解。</li></ul> </li></ol>
+<p><strong>问题解决场景&#xff1a;</strong></p>
+<ol><li> <p><strong>动态规划适用场景&#xff1a;</strong></p>
+  <ul><li>当问题的最优解可以通过子问题的最优解来构造时&#xff0c;通常使用动态规划。典型问题包括&#xff1a;
+    <ul><li>最短路径问题&#xff08;如Dijkstra算法&#xff09;</li><li>最长公共子序列问题</li><li>背包问题&#xff08;如0/1背包问题&#xff09;</li><li>编辑距离问题</li></ul> </li><li>需要存储和重用子问题的解&#xff0c;通常使用表格或数组来实现。</li></ul> </li><li> <p><strong>贪心算法适用场景&#xff1a;</strong></p>
+  <ul><li>当问题具有贪心选择性质&#xff0c;即通过每一步的局部最优选择能够达到全局最优时&#xff0c;可以使用贪心算法。典型问题包括&#xff1a;
+    <ul><li>最小生成树问题&#xff08;如Prim算法和Kruskal算法&#xff09;</li><li>哈夫曼编码问题</li><li>活动选择问题</li><li>货币找零问题</li></ul> </li><li>贪心算法通常更简单和高效&#xff0c;但不能解决所有问题&#xff0c;因为它没有全局的视野。</li></ul> </li></ol>
+<p>总之&#xff0c;动态规划和贪心算法是两种不同的问题求解策略&#xff0c;根据问题的特性和要求选择合适的算法非常重要。有些问题可以同时使用这两种策略的思想&#xff0c;即使用贪心算法的局部最优性来设计动态规划的状态转移方程。</p>

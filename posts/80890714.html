@@ -1,0 +1,105 @@
+<p>经历了第一篇XML入门和第二篇DTD的理解&#xff0c;现在终于可以进入到XML Schema的学习了&#xff0c;正如前边提到的&#xff0c;Schema实际上可以说是DTD的一种扩展&#xff0c;一种替代品&#xff0c;或者可以说是DTD的一种优化。</p>
+<h2 id="schema基础">Schema基础</h2>
+<h3 id="schema用途和能力">Schema用途和能力</h3>
+<h4 id="用途">用途</h4>
+<p>XML Schema 的作用是定义 XML 文档的合法构建模块&#xff0c;类似 DTD。</p>
+<h4 id="能力">能力</h4>
+<p>比较了下DTD和Schema的能力&#xff0c;我感觉其实二者完成的基本功能差别不大&#xff0c;均是为了定义合法的XML模块&#xff0c;可以说Schema是DTD的plus版本吧&#xff0c;更加易懂&#xff0c;易学&#xff0c;扩展性更好。</p>
+<ol><li>定义可出现在文档中的元素</li><li>定义可出现在文档中的属性</li><li>定义哪个元素是子元素</li><li>定义子元素的次序 ——————————-<strong>DTD不能定义无序情况</strong></li><li>定义子元素的数目</li><li>定义元素是否为空&#xff0c;或者是否可包含文本</li><li>定义元素和属性的数据类型——————-<strong>Schema支持更多的数据类型</strong></li><li>定义元素和属性的默认值以及固定值</li></ol>
+<h3 id="schema和dtd的比较">Schema和DTD的比较</h3>
+<p>Schema显然是DTD的加强版&#xff0c;这里举出两个3C的实例比较&#xff0c;然后根据自己理解将区别特性对应上。依然使用之前的例子&#xff1a;</p>
+<p>XML文档</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">note</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">name</span>&gt;</span>茂神<span class="hljs-tag">&lt;/<span class="hljs-title">name</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">sex</span>&gt;</span>男<span class="hljs-tag">&lt;/<span class="hljs-title">sex</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">age</span>&gt;</span>24<span class="hljs-tag">&lt;/<span class="hljs-title">age</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">describe</span>&gt;</span>茂神最帅了&#xff01;<span class="hljs-tag">&lt;/<span class="hljs-title">describe</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">note</span>&gt;</span></code></pre>
+<p>DTD描述文件note.dtd</p>
+<pre class="prettyprint"><code class=" hljs ruleslanguage"> &lt;!ELEMENT note (name,sex,age,describe)&gt;    <span class="hljs-comment">//非XML结构&#xff0c;且子元素顺序是定死的&#xff0c;不支持命名空间</span>
+  &lt;!ELEMENT name     (<span class="hljs-array">#PCDATA</span>)&gt;             <span class="hljs-comment">//元素仅能认定为 &#34;#PCDATA&#34; 类型</span>
+  &lt;!ELEMENT sex      (<span class="hljs-array">#PCDATA</span>)&gt;
+  &lt;!ELEMENT age      (<span class="hljs-array">#PCDATA</span>)&gt;
+  &lt;!ELEMENT describe (<span class="hljs-array">#PCDATA</span>)&gt;            <span class="hljs-comment">//整体文档结构平铺&#xff0c;结构性差&#xff0c;可读性差</span></code></pre>
+<p>Schema描述文件note.xsd</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>   &#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//Schema使用XML的文档结构
+<span class="hljs-tag">&lt;<span class="hljs-title">xs:schema</span> <span class="hljs-attribute">xmlns:xs</span>&#61;<span class="hljs-value">&#34;http://www.w3.org/2001/XMLSchema&#34;</span>
+<span class="hljs-attribute">targetNamespace</span>&#61;<span class="hljs-value">&#34;http://www.w3school.com.cn&#34;</span> &#61;<span class="hljs-value">&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span> //<span class="hljs-attribute">Schema</span>支持命名空间
+<span class="hljs-attribute">xmlns</span>&#61;<span class="hljs-value">&#34;http://www.w3school.com.cn&#34;</span>
+<span class="hljs-attribute">elementFormDefault</span>&#61;<span class="hljs-value">&#34;qualified&#34;</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;note&#34;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:complexType</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-title">xs:sequence</span>&gt;</span>&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//Schema支持子元素顺序
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;name&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;sex&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;age&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:integer&#34;</span>/&gt;</span>&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//整数型&#xff0c;Schema支持详细类型
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;describe &#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//字符串型&#xff0c;Schema支持详细类型
+      <span class="hljs-tag">&lt;/<span class="hljs-title">xs:sequence</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-title">xs:complexType</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">xs:element</span>&gt;</span>
+
+<span class="hljs-tag">&lt;/<span class="hljs-title">xs:schema</span>&gt;</span></code></pre>
+<h4 id="schema-基于-xml-编写">Schema 基于 XML 编写</h4>
+<p><strong>Schema本身也是XML文档&#xff0c;DTD定义跟XML没有什么关系</strong>&#xff0c;Schema在理解和实际应用有很多的好处。Schema是XML文档&#xff0c;而DTD有自己的特殊语法这样&#xff0c;只需要懂得XML的语法规则就可以编写Schema&#xff0c;无须学习其他的语法规则&#xff1b;</p>
+<h4 id="schema-文档结构直观">Schema 文档结构直观</h4>
+<p>DTD文档的结构是“平铺型”的&#xff0c;如果定义复杂的XML文档&#xff0c;很难把握各元素之间的嵌套关系&#xff1b;<strong>Schema文档结构性强&#xff0c;各元素之间的嵌套关系非常直观。</strong></p>
+<h4 id="schema-支持更多元素类型">Schema 支持更多元素类型</h4>
+<p>DTD只能指定元素含有文本&#xff0c;不能定义元素文本的具体类型&#xff0c;如字符型、整型、日期型、自定义类型等。Schema在这方面比DTD强大。</p>
+<h4 id="schema支持元素节点顺序描述">Schema支持元素节点顺序描述</h4>
+<p>Schema支持元素节点顺序的描述&#xff0c;DTD没有提供无序情况的描述&#xff08;子元素均需按顺序&#xff09;&#xff0c;要定义无序必需穷举排列的所有情况。Schema可以利用xs:all来表示无序的情况。</p>
+<h4 id="schema支持命名空间">Schema支持命名空间</h4>
+<p>对命名空间的支持。DTD无法利用XML的命名空间&#xff0c;Schema很好满足命名空间。并且&#xff0c;Schema还提供了include和import两种引用命名空间的方法。</p>
+<h2 id="schema使用">Schema使用</h2>
+<h3 id="xml引入schema">XML引入Schema</h3>
+<p>上篇博客已经详细解释过DTD是怎么被引入到XML中的&#xff1a;主要通过&#xff1a;<code>&lt;!DOCTYPE 根元素 SYSTEM &#34;文件名&#34;&gt;</code>的方式引入&#xff0c;传送门<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/80877507">https://blog.csdn.net/sinat_33087001/article/details/80877507</a>&#xff0c;上例中的XML要想引入DTD&#xff0c;那么只需要在XML中加一句&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-doctype">&lt;!DOCTYPE note SYSTEM &#34;http://www.w3school.com.cn/dtd/note.dtd&#34;&gt;</span></code></pre>
+<p>那么XML引入XSD呢&#xff0c;需要如下代码&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">note
+xmlns&#61;&#34;http:</span>//<span class="hljs-attribute">www.w3school.com.cn</span>&#34;
+<span class="hljs-attribute">xmlns:xsi</span>&#61;<span class="hljs-value">&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+<span class="hljs-attribute">xsi:schemaLocation</span>&#61;<span class="hljs-value">&#34;http://www.w3school.com.cn note.xsd&#34;</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-title">note</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">name</span>&gt;</span>茂神<span class="hljs-tag">&lt;/<span class="hljs-title">name</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">sex</span>&gt;</span>男<span class="hljs-tag">&lt;/<span class="hljs-title">sex</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">age</span>&gt;</span>24<span class="hljs-tag">&lt;/<span class="hljs-title">age</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">describe</span>&gt;</span>茂神最帅了&#xff01;<span class="hljs-tag">&lt;/<span class="hljs-title">describe</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">note</span>&gt;</span></code></pre>
+<p>对上边三句解释如下&#xff1a;</p>
+<ol><li>xmlns&#61;”http://www.w3school.com.cn” 规定了默认命名空间的声明。此声明会告知 schema 验证器&#xff0c;在此 XML 文档中使用的所有元素都被声明于 “<a href="http://www.w3school.com.cn" rel="nofollow">http://www.w3school.com.cn</a>” 这个命名空间。</li><li>一旦拥有了可用的 XML Schema 实例命名空间&#xff1a;xmlns:xsi&#61;”http://www.w3.org/2001/XMLSchema-instance” 就可以使用 schemaLocation 属性了。此属性有两个值。<strong>第一个值是需要使用的命名空间&#xff08;也就是Schmea能发挥作用必须引入的实例<font color="red">这里讲的是Schema结构需要的哦</font>&#xff09;</strong>。第二个值是<strong>供命名空间使用的 XML schema 的位置<font color="red">这里讲的是Schema被用于的XML文档实际的命名空间哦</font></strong>&#xff1a;xsi:schemaLocation&#61;”http://www.w3school.com.cn note.xsd”</li></ol>
+<h3 id="schema结构详解">Schema结构详解</h3>
+<p>继续拿上边3C举例的Schema来讨论Schema的各个结构&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>   &#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//Schema使用XML的文档结构&#xff0c;所以需要xml声明
+<span class="hljs-tag">&lt;<span class="hljs-title">xs:schema</span> <span class="hljs-attribute">xmlns:xs</span>&#61;<span class="hljs-value">&#34;http://www.w3.org/2001/XMLSchema&#34;</span>
+<span class="hljs-attribute">targetNamespace</span>&#61;<span class="hljs-value">&#34;http://www.w3school.com.cn&#34;</span> &#61;<span class="hljs-value">&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span> //<span class="hljs-attribute">Schema</span>支持命名空间
+<span class="hljs-attribute">xmlns</span>&#61;<span class="hljs-value">&#34;http://www.w3school.com.cn&#34;</span>
+<span class="hljs-attribute">elementFormDefault</span>&#61;<span class="hljs-value">&#34;qualified&#34;</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;note&#34;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:complexType</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-title">xs:sequence</span>&gt;</span>&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//Schema支持子元素顺序
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;name&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;sex&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;age&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:integer&#34;</span>/&gt;</span>&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//整数型&#xff0c;Schema支持详细类型
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;describe &#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;//字符串型&#xff0c;Schema支持详细类型
+      <span class="hljs-tag">&lt;/<span class="hljs-title">xs:sequence</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-title">xs:complexType</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">xs:element</span>&gt;</span>
+
+<span class="hljs-tag">&lt;/<span class="hljs-title">xs:schema</span>&gt;</span></code></pre>
+<p>首先&#xff0c;<code>&lt;schema&gt;</code> 元素是每一个 XML Schema 的根元素&#xff0c;而且<code>&lt;schema&gt;</code> 的声明往往如下所示</p>
+<pre class="prettyprint"><code class=" hljs r">&lt;?xml version&#61;<span class="hljs-string">&#34;1.0&#34;</span>?&gt;
+
+&lt;xs:schema xmlns:xs&#61;<span class="hljs-string">&#34;http://www.w3.org/2001/XMLSchema&#34;</span>
+targetNamespace&#61;<span class="hljs-string">&#34;http://www.w3school.com.cn&#34;</span>
+xmlns&#61;<span class="hljs-string">&#34;http://www.w3school.com.cn&#34;</span>
+elementFormDefault&#61;<span class="hljs-string">&#34;qualified&#34;</span>&gt;
+
+<span class="hljs-keyword">...</span>
+<span class="hljs-keyword">...</span>
+&lt;/xs:schema&gt;</code></pre>
+<p>其中四句头部声明内容解释如下&#xff1a;</p>
+<ol><li>xmlns:xs&#61;”http://www.w3.org/2001/XMLSchema”表示 schema 中用到的<strong>元素和数据类型</strong>(<font color="red"><strong>这里讲的是Schema结构的元素和数据类型哦</strong></font>)来自命名空间 “<a href="http://www.w3.org/2001/XMLSchema" rel="nofollow">http://www.w3.org/2001/XMLSchema</a>“。同时它还规定了来自命名空间 “<a href="http://www.w3.org/2001/XMLSchema" rel="nofollow">http://www.w3.org/2001/XMLSchema</a>” 的元素和数据类型应该使用前缀 xs&#xff1a;。<strong>这个地址应该就是国际标准制定日期/名词</strong></li><li>targetNamespace&#61;”http://www.w3school.com.cn” 显示被此 schema 定义的元素 (note,name, sex, age, describe) (<font color="red"><strong>这里讲的是XML文档实际上用的元素和数据类型哦</strong></font>)来自命名空间&#xff1a; “<a href="http://www.w3school.com.cn" rel="nofollow">http://www.w3school.com.cn</a>“。</li><li>xmlns&#61;”http://www.w3school.com.cn” 指出默认的命名空间是 “<a href="http://www.w3school.com.cn" rel="nofollow">http://www.w3school.com.cn</a>“。</li><li>elementFormDefault&#61;”qualified” 指出任何 <strong>XML 实例文档所使用的且在此 schema 中声明过的元素必须被命名空间限定</strong>。</li></ol>

@@ -1,0 +1,105 @@
+<p>本篇博客延续前三篇的写作方式&#xff0c;因为内容较为基础&#xff0c;只是以冷热知识的形式列出旧有的容易忽视的C#特性及新出现的特性&#xff0c;当然对一些之前较为模糊的概念也予以整理。</p>
+<h4><a rel="noopener noreferrer" id="_1"></a>概念重现</h4>
+<p>1&#xff0c;操作符的概念&#xff0c;操作符分为一元、二元、三元三大类&#xff0c;分别对应一、二、三个操作数&#xff0c;分别包含如下的逻辑&#xff1a;</p>
+<ul><li>一元正负操作符&#xff0c;表示数值的正负</li><li>二元算术操作符&#xff0c;包括&#43;&#xff0c;-&#xff0c;*&#xff0c;/&#xff0c;%等。</li><li>三元条件操作符&#xff0c;包括&#xff1f;&#xff1a;两个操作符隔着三个操作数</li></ul>
+<p>2&#xff0c;代码块、作用域和声明空间的区别&#xff1a;声明空间是具名事物的逻辑容器&#xff0c;代码块是两个大括号之间的多条语句&#xff0c;而作用域表示声明的具名事物的作用范围。<strong>作用域决定一个名称引用什么事物&#xff0c;而声明空间决定同名的两个事物是否冲突</strong>。</p>
+<p>3&#xff0c;<strong>switch语句使用的时候有如下规范</strong>&#xff1a;</p>
+<ul><li>switch 语句中的 expression 必须是一个整型或枚举类型&#xff0c;或者是一个 class 类型&#xff0c;其中 class 有一个单一的转换函数将其转换为整型或枚举类型。</li><li>在一个 switch 中可以有任意数量的 case 语句。每个 case 后跟一个要比较的值和一个冒号。</li><li>case 的 constant-expression 必须与 switch 中的变量具有相同的数据类型&#xff0c;且必须是一个常量。</li><li>当被测试的变量等于 case 中的常量时&#xff0c;case 后跟的语句将被执行&#xff0c;直到遇到 break 语句为止。当遇到 break 语句时&#xff0c;switch 终止&#xff0c;控制流将跳转到 switch 语句后的下一行。</li><li>不是每一个 case 都需要包含 break。<strong>如果 case 语句为空&#xff0c;则可以不包含 break&#xff0c;控制流将会 继续 后续的 case&#xff0c;直到遇到 break 为止</strong>。</li><li><strong>C# 不允许从一个开关部分继续执行到下一个开关部分。如果 case 语句中有处理语句&#xff0c;则必须包含 break 或其他跳转语句&#xff0c;否则会编译失败</strong></li><li>一个 switch 语句可以有一个可选的 default case&#xff0c;出现在 switch 的结尾。default case 可用于在上面所有 case 都不为真时执行一个任务。default case 中的 break 语句不是必需的。</li><li>C# 不支持从一个 case 标签显式贯穿到另一个 case 标签。如果要使 C# 支持从一个 case 标签显式贯穿到另一个 case 标签&#xff0c;<strong>可以使用 goto 一个 switch-case 或 goto default</strong>。</li></ul>
+<p>4&#xff0c;C#的预编译指令&#xff0c;和常量以及常量表达式一样&#xff0c;C#预编译指令在编译时调用&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103376158-01-657eed1fa5.png" loading="lazy"></p>
+<p>使用的时候一般是用#define定义一个值&#xff0c;然后依据定义来编译代码&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token preprocessor property">#<span class="token directive keyword">define</span> PI</span>
+<span class="token keyword">using</span> System<span class="token punctuation">;</span>
+<span class="token keyword">namespace</span> PreprocessorDAppl
+<span class="token punctuation">{<!-- --></span>
+   <span class="token keyword">class</span> <span class="token class-name">Program</span>
+   <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+         <span class="token preprocessor property">#<span class="token directive keyword">if</span> (PI)</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;PI is defined&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token preprocessor property">#<span class="token directive keyword">else</span></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;PI is not defined&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token preprocessor property">#<span class="token directive keyword">endif</span></span>
+         Console<span class="token punctuation">.</span><span class="token function">ReadKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+   <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>输出为&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token class-name">PI</span> <span class="token keyword">is</span> defined
+</code></pre>
+<p>可以用if debug来确定调试时运行哪些代码&#xff1a;</p>
+<pre><code class="prism language-csharp">   <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> fileName<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+<span class="token preprocessor property">#<span class="token directive keyword">if</span> DEBUG</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;只有debug时候使用&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token preprocessor property">#<span class="token directive keyword">endif</span></span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="C_63"></a>C#冷知识</h4>
+<p>1&#xff0c;在C#中&#xff0c;只有赋值、调用、递增、递减、 <strong>await(用于异步编程)</strong> 和对象创建表达式才能作为独立语句使用。</p>
+<p>2&#xff0c;再来梳理一遍<strong>操作符优先级</strong>吧&#xff01;从上到下可以按照如下方式归类&#xff1a;</p>
+<ul><li><strong>主要运算符</strong>&#xff1a;有&#43;&#43;、–、()、&#43;、-、!、~。这一级中都是单元运算符&#xff0c;除了其中那一对特殊的具有改变任何运算优先级的括号。这此可以看出&#xff0c;在定义表达式中&#xff0c;那些单元运算符的优先级是很高的&#xff0c;可能是因为它们都直接作用于操作数吧。</li><li><strong>算术运算符</strong>&#xff1a;在常规算术运算符中&#xff0c;有我们经常使用的*、/、%、&#43;、-&#xff0c;因为他们使用得较多&#xff0c;所以也排在较高的位置。这一级是两个特殊的位操作符&#xff0c;&lt;&lt; 和 &gt;&gt;&#xff0c;它们是所有二元操作符中除常规运算符外优先级最高的了&#xff0c;可能是因为与比较运算符、逻辑运算符比起来&#xff0c;这一组操作符进行的还是数值的计算。</li><li><strong>比较运算符</strong>&#xff1a;包括&lt;、&gt;、&lt;&#61;、&gt;&#61;、&#61;&#61;、!&#61;&#xff0c;一共六个&#xff0c;这里有一个特点&#xff0c;就小于优先于大于。</li><li><strong>逻辑运算符</strong>&#xff0c;逻辑运算符原本有四种&#xff0c;但用于单元的“非”运算符排在了前面&#xff0c;所以这里面就只有&amp;、^、|&#xff0c;再加上两个补充的用于提高代码效率的运算符&amp;&amp;、||等共有五个。</li><li><strong>赋值运算符</strong>&#xff0c;这一级最多&#xff0c;几乎前面出现过的二元运算符&#xff0c;在这里加上个“&#61;”号就成为一个赋值运算符。首先当然最基本的赋值运算符“&#61;”&#xff1b;然后是常规算术运算符演变来的“*&#61;、/&#61;、%&#61;、&#43;&#61;、-&#61;”&#xff0c;它们的顺序和常规算术符的顺序一样&#xff1b;然后是位移运算符和逻辑运算符&#xff0c;也按它们演变前的顺序排列&#xff0c;为“&lt;&lt;&#61;、&gt;&gt;&#61;、&amp;&#61;、^&#61;、|&#61;”。因为比较运算符所产生的结果的数据类型和它的运算数的数据类型不同&#xff0c;所以它们没有相应的赋值运算符。</li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/103376158-02-b29eda993c.png" loading="lazy"></p>
+<p>3&#xff0c;<strong>C#的大多数操作符是左结合的&#xff0c;而赋值操作符是右结合的</strong>。</p>
+<p>4&#xff0c;在算术运算符中使用字符&#xff1a;<strong>先把字符转为数值&#xff0c;得到数值后再转为字符</strong>。</p>
+<pre><code class="prism language-csharp">       <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> n <span class="token operator">&#61;</span> <span class="token string">&#39;3&#39;</span> <span class="token operator">&#43;</span> <span class="token string">&#39;4&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">char</span> c <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">)</span>n<span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//g</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>5&#xff0c;结合性和优先级&#xff0c;<strong>结合性决定相似操作符的执行顺序&#xff0c;优先级决定不相似操作符的执行顺序</strong>&#xff0c;而<strong>操作数总是从左向右求值</strong>&#xff0c;<font color="red"><strong>操作符的结合性和优先级只影响操作符自身的执行顺序&#xff0c;不影响操作数的求值顺序</strong></font></p>
+<p>6&#xff0c;<strong>C#禁止一个代码块中声明的局部变量在其子代码块中重复声明</strong>。</p>
+<p>7&#xff0c;<strong>&amp;&amp;和||是短路运算符&#xff0c;只要左边第一个表达式满足条件&#xff0c;就不会继续对右边求值</strong>。</p>
+<p>8&#xff0c;<strong>事先知道循环次数使用for循环&#xff0c;事先不知道使用while</strong>。</p>
+<p>9&#xff0c;goto语句可以使用lable的方式执行&#xff1a;</p>
+<pre><code>myLabel&#xff1a; System.Console.WriteLine(&#34;if条件要求为bool类型哦&#34;);
+goto myLabel;
+</code></pre>
+<p>但是需要注意的是&#xff0c;<strong>goto只能跳转到自己上级代码块和同级代码块&#xff0c;不能跳到自己的子代码块</strong>&#xff0c;而且要避免使用goto语句。</p>
+<h4><a rel="noopener noreferrer" id="C_105"></a>C#新知识</h4>
+<p>1&#xff0c;<code>var temp&#61;&#43;&#43;count</code>是先给count自增再赋值&#xff0c;<code>var temp&#61;count&#43;&#43;</code>是先给temp赋值再自增count&#xff0c;<strong>需要注意的是&#xff0c;这个操作不是原子操作&#xff0c;是线程不安全的</strong>&#xff01;</p>
+<p>2&#xff0c;空合并操作符&#xff1a;如果fileName为null&#xff0c;就使用tml&#xff0c;也就是<strong>如果这个值为null&#xff0c;就使用另一个。</strong></p>
+<pre><code class="prism language-csharp">      <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span> fileName <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+            <span class="token keyword">string</span> fullName <span class="token operator">&#61;</span> fileName <span class="token operator">?</span><span class="token operator">?</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>3&#xff0c;空条件操作符&#xff1a;调用成员前先进行空检查&#xff0c;需要注意&#xff0c;int类型的话返回的是int?&#xff0c;数值类型都类似。</p>
+<pre><code class="prism language-csharp">     <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> fileName<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">var</span> length <span class="token operator">&#61;</span> fileName<span class="token operator">?</span><span class="token punctuation">.</span>Length<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>需要注意的是&#xff0c;if条件操作符要求的条件必须为bool类型&#xff0c;所以要结合空合并操作符使用</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> fileName<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>fileName<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token operator">?</span><span class="token punctuation">.</span><span class="token function">StartsWith</span><span class="token punctuation">(</span><span class="token string">&#34;&#34;</span><span class="token punctuation">)</span> <span class="token operator">?</span><span class="token operator">?</span> <span class="token keyword">false</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;if条件要求为bool类型哦&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>4&#xff0c;foreach用于循环遍历数据项集合的每一项&#xff0c;保证不发生越界错误&#xff01;<strong>foreach循环期间&#xff0c;禁止修改循环变量&#xff08;数据项&#xff09;以及数据集合</strong></p>
+<p>5&#xff0c;<strong>C#7.0开始&#xff0c;支持模式匹配&#xff0c;switch里的每个case不一定是相同类型啦&#xff01;</strong></p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">double</span> <span class="token function">ComputeAreaModernSwitch</span><span class="token punctuation">(</span><span class="token keyword">object</span> shape<span class="token punctuation">)</span>
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">switch</span> <span class="token punctuation">(</span>shape<span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">case</span> <span class="token class-name">Square</span> s<span class="token punctuation">:</span>
+            <span class="token keyword">return</span> s<span class="token punctuation">.</span>Side <span class="token operator">*</span> s<span class="token punctuation">.</span>Side<span class="token punctuation">;</span>
+        <span class="token keyword">case</span> <span class="token class-name">Circle</span> c<span class="token punctuation">:</span>
+            <span class="token keyword">return</span> c<span class="token punctuation">.</span>Radius <span class="token operator">*</span> c<span class="token punctuation">.</span>Radius <span class="token operator">*</span> Math<span class="token punctuation">.</span>PI<span class="token punctuation">;</span>
+        <span class="token keyword">case</span> <span class="token class-name">Rectangle</span> r<span class="token punctuation">:</span>
+            <span class="token keyword">return</span> r<span class="token punctuation">.</span>Height <span class="token operator">*</span> r<span class="token punctuation">.</span>Length<span class="token punctuation">;</span>
+        <span class="token keyword">default</span><span class="token punctuation">:</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentException</span><span class="token punctuation">(</span>
+                message<span class="token punctuation">:</span> <span class="token string">&#34;shape is not a recognized shape&#34;</span><span class="token punctuation">,</span>
+                paramName<span class="token punctuation">:</span> <span class="token function">nameof</span><span class="token punctuation">(</span>shape<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>

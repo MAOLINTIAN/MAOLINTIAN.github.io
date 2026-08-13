@@ -1,0 +1,40 @@
+<p>好的&#xff0c;让我们以学校数据库中的一个表为例来说明第一范式&#xff08;1NF&#xff09;、第二范式&#xff08;2NF&#xff09;和第三范式&#xff08;3NF&#xff09;的概念。</p>
+<h3><a rel="noopener noreferrer" id="_1"></a>什么是数据库三范式</h3>
+<p>数据库的范式&#xff08;Normalization&#xff09;是一组关于数据库设计的规则&#xff0c;目的是减少数据冗余和改善数据完整性。数据库设计通常遵循三个基本的范式&#xff0c;它们分别是&#xff1a;</p>
+<ol><li>
+<p><strong>第一范式&#xff08;1NF&#xff09;</strong>&#xff1a;</p>
+<ul><li><strong>原子性</strong>&#xff1a;表的每一列都是不可分割的基本数据项&#xff0c;即表中的所有字段值都是不可再分的原子值。</li><li><strong>唯一性</strong>&#xff1a;表的每一行都是唯一的&#xff0c;可以通过一个主键&#xff08;Primary Key&#xff09;来区分。</li></ul>
+</li><li>
+<p><strong>第二范式&#xff08;2NF&#xff09;</strong>&#xff1a;</p>
+<ul><li><strong>在1NF的基础上</strong>&#xff0c;消除非主属性对于码的部分函数依赖。</li><li><strong>部分函数依赖</strong>是指表中的非主属性只依赖于候选键的一部分&#xff0c;而不是整个候选键。</li><li>为了达到2NF&#xff0c;通常需要把表分解成两个或多个表&#xff0c;以确保每个表中的非主属性只依赖于该表的主键。</li></ul>
+</li><li>
+<p><strong>第三范式&#xff08;3NF&#xff09;</strong>&#xff1a;</p>
+<ul><li><strong>在2NF的基础上</strong>&#xff0c;消除非主属性对于码的传递函数依赖。</li><li><strong>传递函数依赖</strong>是指表中的非主属性依赖于另外一个非主属性&#xff0c;这个非主属性依赖于候选键。</li><li>达到3NF需要进一步分解表&#xff0c;以确保每个表中的非主属性只依赖于该表的主键&#xff0c;并且没有非主属性依赖于其他非主属性。</li></ul>
+</li></ol>
+<p>这些范式的目标是减少数据冗余&#xff08;即重复数据&#xff09;&#xff0c;避免更新异常&#xff0c;增强数据的一致性。通常&#xff0c;在实际应用中&#xff0c;设计到第三范式就足够了&#xff0c;但有时候也可能会用到更高级的范式&#xff0c;如BCNF&#xff08;Boyce-Codd Normal Form&#xff09;。设计数据库时&#xff0c;需要在规范化和性能之间做出权衡&#xff0c;因为过度规范化可能会导致查询性能下降。</p>
+<h3><a rel="noopener noreferrer" id="_19"></a>一个例子讲清三范式</h3>
+<p>从一个未优化的例子逐步拆表</p>
+<h4><a rel="noopener noreferrer" id="_22"></a>原始表格&#xff08;未规范化&#xff09;&#xff1a;</h4>
+<p>假设我们有一个记录学生信息和他们选修课程成绩的表格&#xff0c;如下所示&#xff1a;</p>
+
+<table><thead><tr><th>学生ID</th><th>学生姓名</th><th>选修课程</th><th>成绩</th><th>导师姓名</th><th>导师电话</th></tr></thead><tbody><tr><td>001</td><td>张三</td><td>数学, 物理</td><td>85, 90</td><td>李教授</td><td>1234567890</td></tr><tr><td>002</td><td>李四</td><td>化学</td><td>78</td><td>王教授</td><td>0987654321</td></tr></tbody></table><p>这个表有多个问题&#xff1a;选修课程和成绩字段包含了多个值&#xff0c;违反了1NF&#xff1b;导师姓名和电话是依赖于学生ID的非主属性&#xff0c;违反了2NF&#xff1b;导师电话依赖于导师姓名&#xff0c;而不是学生ID&#xff0c;违反了3NF。</p>
+<h4><a rel="noopener noreferrer" id="1NF_33"></a>第一范式&#xff08;1NF&#xff09;&#xff1a;</h4>
+<p>要满足1NF&#xff0c;<strong>表中的每个字段都必须只有单一的&#xff08;不可分割的&#xff09;值&#xff0c;不可以有重复的列</strong>。</p>
+
+<table><thead><tr><th>学生ID</th><th>学生姓名</th><th>选修课程</th><th>成绩</th><th>导师姓名</th><th>导师电话</th></tr></thead><tbody><tr><td>001</td><td>张三</td><td>数学</td><td>85</td><td>李教授</td><td>1234567890</td></tr><tr><td>001</td><td>张三</td><td>物理</td><td>90</td><td>李教授</td><td>1234567890</td></tr><tr><td>002</td><td>李四</td><td>化学</td><td>78</td><td>王教授</td><td>0987654321</td></tr></tbody></table><p>现在每个字段都只包含单一值&#xff0c;满足了1NF。</p>
+<h4><a rel="noopener noreferrer" id="2NF_45"></a>第二范式&#xff08;2NF&#xff09;&#xff1a;</h4>
+<p>为了达到2NF&#xff0c;我们需要确保表中的<strong>所有非主属性完全依赖于主键&#xff08;而不是部分依赖于复合主键的一部分&#xff09;</strong>。首先&#xff0c;我们确定主键是学生ID和选修课程的组合。然后&#xff0c;我们将导师信息移到一个单独的表中&#xff0c;因为导师信息依赖于学生ID而不是选修课程。</p>
+<p>学生课程表&#xff1a;</p>
+
+<table><thead><tr><th>学生ID</th><th>选修课程</th><th>成绩</th></tr></thead><tbody><tr><td>001</td><td>数学</td><td>85</td></tr><tr><td>001</td><td>物理</td><td>90</td></tr><tr><td>002</td><td>化学</td><td>78</td></tr></tbody></table><p>导师信息表&#xff1a;</p>
+
+<table><thead><tr><th>学生ID</th><th>导师姓名</th><th>导师电话</th></tr></thead><tbody><tr><td>001</td><td>李教授</td><td>1234567890</td></tr><tr><td>002</td><td>王教授</td><td>0987654321</td></tr></tbody></table><p>现在&#xff0c;学生课程表满足2NF&#xff0c;因为所有非主属性&#xff08;成绩&#xff09;都完全依赖于整个主键。</p>
+<h4><a rel="noopener noreferrer" id="3NF_66"></a>第三范式&#xff08;3NF&#xff09;&#xff1a;</h4>
+<p>为了满足3NF&#xff0c;我们需要<strong>确保表中的所有非主属性只依赖于主键&#xff0c;不存在传递依赖</strong>。我们发现&#xff0c;导师电话依赖于导师姓名&#xff0c;而不是学生ID。为了消除传递依赖&#xff0c;我们将导师信息再次分离成独立的表。</p>
+<p>学生课程表&#xff08;保持不变&#xff09;&#xff1a;</p>
+
+<table><thead><tr><th>学生ID</th><th>选修课程</th><th>成绩</th></tr></thead><tbody><tr><td>001</td><td>数学</td><td>85</td></tr><tr><td>001</td><td>物理</td><td>90</td></tr><tr><td>002</td><td>化学</td><td>78</td></tr></tbody></table><p>学生导师关系表&#xff1a;</p>
+
+<table><thead><tr><th>学生ID</th><th>导师姓名</th></tr></thead><tbody><tr><td>001</td><td>李教授</td></tr><tr><td>002</td><td>王教授</td></tr></tbody></table><p>导师信息表&#xff1a;</p>
+
+<table><thead><tr><th>导师姓名</th><th>导师电话</th></tr></thead><tbody><tr><td>李教授</td><td>1234567890</td></tr><tr><td>王教授</td><td>0987654321</td></tr></tbody></table><p>现在&#xff0c;每个表都满足3NF&#xff0c;因为<strong>所有的非主属性都直接依赖于主键&#xff0c;不存在非主属性对主键之外的其他非主属性的依赖</strong>。通过这些步骤&#xff0c;我们实现了数据的规范化&#xff0c;减少了数据冗余&#xff0c;并提高了数据的完整性。</p>
