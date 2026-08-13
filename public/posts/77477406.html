@@ -1,0 +1,74 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>定义栈的数据结构&#xff0c;请在该类型中实现一个能够得到栈最小元素的min函数。</p>
+
+
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;两个栈&#xff0c;一个完成基本功能&#xff0c;一个充当辅助栈 <br />
+2&#xff0c;辅助栈内最小值总是上浮到栈顶</p>
+
+
+
+<h3 id="代码实现">代码实现</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> 栈和队列;
+
+<span class="hljs-keyword">import</span> java.util.Stack;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:MinStack
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月22日 上午10:40:43
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MinStack</span> {<!-- --></span>
+    Stack&lt;Integer&gt; stack1 &#61; <span class="hljs-keyword">new</span> Stack&lt;Integer&gt;(); <span class="hljs-comment">// 主栈</span>
+    Stack&lt;Integer&gt; stack2 &#61; <span class="hljs-keyword">new</span> Stack&lt;Integer&gt;(); <span class="hljs-comment">// 辅助栈&#xff0c;栈顶即为最小值</span>
+    <span class="hljs-keyword">int</span> min &#61; Integer.MAX_VALUE;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push</span>(<span class="hljs-keyword">int</span> node) {
+        stack1.push(node);
+        <span class="hljs-keyword">if</span> (min &gt; node) {
+            stack2.push(node);
+            min &#61; node;
+        } <span class="hljs-keyword">else</span> {
+            stack2.push(min);     <span class="hljs-comment">//栈2的顶永远存放当前的最小值</span>
+        }
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">pop</span>() {
+        <span class="hljs-keyword">if</span> (!stack1.isEmpty() &amp;&amp; !stack2.isEmpty()) {
+            stack1.pop();
+            stack2.pop();
+        }
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">top</span>() {
+        <span class="hljs-keyword">return</span> stack1.peek();
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">min</span>() {
+        <span class="hljs-keyword">return</span> stack2.peek();
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span>(String[] args) {
+
+    }
+}
+</code></pre>

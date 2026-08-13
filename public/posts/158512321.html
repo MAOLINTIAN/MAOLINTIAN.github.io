@@ -1,0 +1,12 @@
+<p>一篇文章整理完成MySQL所有重点知识，快速熟悉起来，包括索引，事务，锁，日志。</p>
+<h2><a rel="noopener noreferrer" id="MySQL_1"></a>MySQL一条查询和更新语句的执行流程是什么</h2>
+<p>MySQL的整体架构如下</p>
+<p>了解了MySQL的架构之后呢，正式理解下一条语句如何进行执行和优化。，以如下的查询语句举例分析，从人员库的人员信息表里拿出一条人员数据：</p>
+<pre><code class="prism language-java">use <span class="token class-name">User</span>
+go
+select <span class="token operator">*</span> from  <span class="token class-name">UserInfo</span>   where  name<span class="token operator">=</span><span class="token char">'tml'</span> and age<span class="token operator">=</span><span class="token char">'26'</span> and sex<span class="token operator">=</span><span class="token char">'男'</span><span class="token punctuation">;</span>
+</code></pre>
+<p>分析下这个语句的执行流程：</p>
+<ol>
+ <li><strong>连接器</strong>： 连接数据库User，并通过输入账号密码通过连接认证【<font color="red"><strong>数据库</strong></font></li>
+</ol>

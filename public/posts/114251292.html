@@ -1,0 +1,187 @@
+<p>前文我们提到过javac编译会将Java源码&#xff08;对应于一个类 / 抽象类 / 接口的定义信息&#xff09;编译为class类文件&#xff0c;由字节码生成技术&#xff08;如javassist / CGLib / ASM&#xff09;生成&#xff0c;以内存中二进制流形式存在&#xff0c;以磁盘文件形式存在。<strong>也称之为字节码&#xff0c;可以看作Java 虚拟机的可执行文件</strong>&#xff0c;通过理解类文件结构&#xff0c;为之后的<strong>类加载</strong>提供一种可以理解的数据结构。</p>
+<p>类class文件可以说是无关性的基石&#xff0c;通过这样一个中间文件&#xff0c;Java不光可以实现平台无关&#xff0c;也可以逐步实现语言无关。也就是说<strong>Java 虚拟机 &amp; Class 文件</strong>共同构成了Java无关性的基础&#xff0c;前文也提到过<strong>语言无关性和平台无关性</strong>&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114251292-01-aba2bb4241.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="Class_6"></a>Class的数据类型</h2>
+<p>Java虚拟机规定&#xff0c;Class类文件格式采用<strong>类似C语言结构体的伪结构</strong>来存储&#xff0c;是一种强协议的紧凑型结构&#xff08;遵循《Java 虚拟机规范》&#xff09;&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-02-9a222d42c5.png" loading="lazy">这种伪结构中三种数据类型&#xff1a;<strong>无符号数、TVL和表</strong>&#xff1a;</p>
+<ul><li><strong>无符号数</strong>&#xff1a;属于基本类型的数据&#xff0c;以u1, u2, u4, u8来分别代表1个字节&#xff0c;2个字节&#xff0c;4个字节和8个字节的无符号数&#xff0c;无符号数可以用来描述<strong>数字、索引引用、数量值</strong>或者<strong>按照UTF-8编码的字符串值。</strong></li><li><strong>TVL</strong>&#xff1a;复合数据结构&#xff0c;用于描述一段连续的同类数据区域&#xff0c;<strong>类型&#43;数据区域长度&#43;数据区域内容</strong>&#xff0c;让我想到了Redis的压缩列表设计</li><li><strong>表</strong>&#xff1a;由<strong>多个无符号数</strong>或<strong>其他表</strong>作为数据项构成的复合数据类型&#xff0c;所有表都习惯性以<code>_info</code>结尾。表用于描述有层次关系的复合结构数据&#xff0c;整个Class文件本质就是一张表。</li></ul>
+<p>Class文件的一级结构如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-03-9ba030ebe5.png" loading="lazy"><br />
+按照顺序统计其长度及类型如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-04-2b29092513.png" loading="lazy"></p>
+<p>这7部分结构的简单介绍如下&#xff1a;</p>
+<ul><li><strong>魔数</strong>&#xff1a;固定值0xCAFEBABE&#xff0c;用于鉴别为合法的Class 文件</li><li><strong>版本号</strong>&#xff1a;表示Class 文件的目标版本号&#xff0c;高版本的虚拟机可以向前兼容旧版本Class 文件&#xff0c;由一个主版本号和次版本号组成。</li><li><strong>访问标志</strong>&#xff1a;一个u2无符号数&#xff0c;用于表示本类 / 接口的访问信息。其中每个标志位的值与java.lang.reflect.Modifier中的常量一一对应&#xff1a;</li><li><strong>常量池</strong>&#xff1a;存放字面量&#xff08;Literal&#xff09;和 符号引用&#xff08;Symbolic References&#xff09;</li><li><strong>本类索引 &amp; 父类索引 &amp; 接口索引集</strong>&#xff1a;是一个索引值&#xff0c;&#xff08;共经过 2 次索引后&#xff09;指向常量池中一个utf-8编码的 全限定名&#xff0c;例如&#xff1a;java/lang/Object;</li><li><strong>字段表集合</strong>&#xff1a;用于描述类或接口中声明的变量&#xff0c;包括类变量&#xff08;静态变量&#xff09;与成员变量</li><li><strong>方法表集合</strong>&#xff1a;用于描述类或接口中声明的方法&#xff0c;包括类方法&#xff08;静态方法&#xff09;与成员方法</li><li><strong>属性表集合</strong>&#xff1a;用于描述 Class 文件、字段表、方法表中携带的属性</li></ul>
+<p>接下来依据示例详细拆解进行介绍。</p>
+<h2><a rel="noopener noreferrer" id="Class_32"></a>Class的类文件结构</h2>
+<p>依据上表所列的Class的一级结构我们可以详细看下&#xff0c;我们还以之前blog提到的Student类来进行分析&#xff0c;代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>company<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Student</span> <span class="token keyword">extends</span> <span class="token class-name">Person</span> <span class="token keyword">implements</span> <span class="token class-name">IStudy</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//私有静态成员变量</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> cnt<span class="token operator">&#61;</span><span class="token number">5</span><span class="token punctuation">;</span>
+    <span class="token comment">//静态方法块</span>
+    <span class="token keyword">static</span><span class="token punctuation">{<!-- --></span>
+        cnt<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//私有成员变量</span>
+    <span class="token keyword">private</span> String sid<span class="token punctuation">;</span>
+    <span class="token comment">//构造方法</span>
+    <span class="token keyword">public</span> <span class="token function">Student</span><span class="token punctuation">(</span><span class="token keyword">int</span> age<span class="token punctuation">,</span> String name<span class="token punctuation">,</span> String sid<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//继承父类构造方法</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span>age<span class="token punctuation">,</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>sid <span class="token operator">&#61;</span> sid<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//父类方法重写</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;run()...&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+    <span class="token comment">//实现接口方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">study</span><span class="token punctuation">(</span><span class="token keyword">int</span> a<span class="token punctuation">,</span> <span class="token keyword">int</span> b<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> c <span class="token operator">&#61;</span> <span class="token number">10</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> d <span class="token operator">&#61;</span> <span class="token number">20</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> a<span class="token operator">&#43;</span>b<span class="token operator">*</span>c<span class="token operator">-</span>d<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//成员方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> cnt<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">//方法加载入口</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        Student s <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Student</span><span class="token punctuation">(</span><span class="token number">28</span><span class="token punctuation">,</span><span class="token string">&#34;tml&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;20210201&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//接口方法调用</span>
+        s<span class="token punctuation">.</span><span class="token function">study</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//成员方法调用</span>
+        Student<span class="token punctuation">.</span><span class="token function">getCnt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//父类重写方法调用</span>
+        s<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>字节码信息如下&#xff0c;可以看到一些类的基本信息&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-05-ec0f68980d.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_89"></a>校验信息</h3>
+<p>主要包含&#xff1a;<strong>魔数、版本序号</strong>&#xff0c;描述的是Class的基本信息</p>
+<ul><li><strong>魔数</strong>&#xff0c;每个Class文件的<strong>头4个字节</strong>被称为魔数&#xff0c;它的唯一作用是<strong>用于确定这个文件是否为一个能被java虚拟机所接收的Class类文件&#xff0c;即用于判定文件是否是符合规范的JavaClass文件</strong>。虽然说后缀名<code>.class</code>可以表明文件是一个Class文件&#xff0c;但是文件后缀名是可以随意被改动的&#xff0c;基于安全的考虑&#xff0c;很多文件都通过魔数值来唯一确定文件类型&#xff0c;<strong>Java的Class文件魔数是&#xff1a;0xCAFEBABE.</strong></li><li><strong>版本序号</strong>&#xff0c;每个Class文件的<strong>第5和第6个字节代表Class文件的次版本号</strong>&#xff0c;<strong>第7和第8个字节代表Class文件的主版本号</strong>。Class文件的主、次版本号是由JDK决定的&#xff0c;<code>JDK1.0~JDK1.1</code>使用了45.0~45.3的版本号(45是主版本序号&#xff0c;点”.“之后的是次版本号)&#xff0c;从JDK1.1开始&#xff0c;每个大版本的JDK主版本号加1。Class主、次版本号的一个作用时&#xff0c;<font color="red"><strong>高版本的Java虚拟机可以向前兼容&#xff0c;运行低版本JDK编译的Class字节码文件&#xff0c;而低版本的java虚拟机不能运行高版本JDK编译的Class字节码文件</strong></font></li></ul>
+<p>上图中我们可以看到当前Java程序的编译版本为52&#xff0c;也就是JDK1.8及以上的虚拟机可以编译。<br />
+<img alt="加粗样式" src="./posts/assets/114251292-06-f0e4000003.png" loading="lazy"><br />
+版本信息的对照表如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-07-e3ac5debf0.png" loading="lazy"></p>
+<p>JDK1.2使用了46版本号&#xff0c;JDK1.3使用了47版本号&#xff0c;以此类推&#xff0c;JDK1.7使用51的版本号&#xff0c;JDK1.8使用的是52&#xff0c;值得注意的是在编译时可以通过指定<code>-target</code>参数来改变主版本号&#xff0c;如JDK1.6编译时如果没有给定target参数&#xff0c;则编译出来的Class文件的主版本号是50&#xff0c;如果给定<code>-target 1.4</code>参数之后&#xff0c;则主版本将变为48&#xff0c;如果给定<code>-target 1.5</code>参数之后&#xff0c;则主版本将变为49</p>
+<h3><a rel="noopener noreferrer" id="_100"></a>常量池</h3>
+<p>什么是常量池&#xff1f;常量池中的每一项常量都是一个表&#xff0c;存放两种类常量&#xff1a;<strong>字面量</strong>&#xff08;Literal&#xff09;和 <strong>符号引用</strong>&#xff08;Symbolic References&#xff09;</p>
+<ol><li><strong>字面量</strong>&#xff0c;是用于表达源代码中一个固定值的表示法&#xff0c;例如&#xff1a;整数、浮点数以及字符串&#xff0c;字面量比较接近于Java层面的常量概念&#xff0c;如文本字符串、被声明为final的常量值等</li><li><strong>符号引用</strong>&#xff0c;是一个字符串类型的字面量&#xff08;存储在常量池&#xff09;&#xff0c;它的作用是<strong>唯一地标示一个实体</strong></li></ol>
+<p>虚拟机在加载Class文件时才会进行动态连接&#xff0c;也就是说&#xff0c;<strong>Class文件中不会保存各个方法和字段的最终内存布局信息&#xff0c;因此&#xff0c;这些字段和方法的符号引用不经过转换是无法直接被虚拟机使用的</strong>。当虚拟机运行时&#xff0c;需要从常量池中获得对应的符号引用&#xff0c;再<strong>在类加载过程中的解析阶段将其替换为直接引用&#xff0c;并翻译到具体的内存地址中</strong>。</p>
+<p>符号引用主要包括如下三类信息&#xff1a;</p>
+<ul><li>类和接口的全限定名&#xff08;即带有包名的Class名&#xff0c;如&#xff1a;com/company/Student&#xff09;</li><li>字段的名称和描述符&#xff08;private、static等描述符&#xff09;</li><li>方法的名称和描述符&#xff08;private、static等描述符&#xff09;</li></ul>
+<p>例如我们的Student类<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-08-07c5f113d3.png" loading="lazy"><br />
+上边我们提到了符合引用和直接引用&#xff0c;它们的区别是什么呢&#xff1f;</p>
+<ul><li><strong>符号引用</strong>&#xff1a;符号引用以一组符号来描述所引用的目标&#xff0c;符号可以是任何形式的字面量&#xff0c;只要使用时能无歧义地定位到目标即可。符号引用与虚拟机实现的内存布局无关&#xff0c;引用的目标并不一定已经加载到了内存中。</li><li><strong>直接引用</strong>&#xff1a;直接引用可以是直接指向目标的指针、相对偏移量或是一个能间接定位到目标的句柄。直接引用是与虚拟机实现的内存布局相关的&#xff0c;<strong>同一个符号引用在不同虚拟机实例上翻译出来的直接引用一般不会相同&#xff08;所以加载器采用双亲委派模式&#xff09;</strong>。如果有了直接引用&#xff0c;那说明引用的目标必定已经存在于内存之中了。</li></ul>
+<p>拿字段举例来说&#xff0c;一个字段在虚拟机运行时从常量池获得一个符号引用&#xff0c;再在类解析时将符号引用转换为直接引用来获取内存地址入口例如0X0002&#xff0c;然后通过该地址去常量池中对应地址的位置找到获取的信息&#xff0c;例如字段的name_index解析后地址为0x0005&#xff0c;在常量表中对比后发现该索引地址指向CONSTANT_Utf8_info存放的字符串为<strong>tml</strong>&#xff0c;所以得到字段名称为<strong>tml</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_121"></a>常量池结构</h4>
+<p>常量池由两部分内容组成&#xff0c;<strong>constant_pool_count</strong>和<strong>constant_pool</strong>&#xff1a;</p>
+<ul><li><strong>constant_pool_count</strong>&#xff0c;代表Class文件中<strong>常量池的数目</strong>&#xff0c;由于常量池的计数从1开始&#xff0c;因此常量池的容量是该值减1。第0项常量空出做特殊考虑&#xff0c;为了满足一些指向常量池的索引值在某些特定情况下需要表达&#xff0c;不指向任何一个常量池”的意思。这里我们看到的常量池计数是71&#xff0c;实际上常量池共有70个常量<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-09-4eed278d0c.png" loading="lazy"></li><li>constant_pool&#xff0c;代表常量池的组成结构&#xff0c;<strong>常量池是Class文件中与其他项目关联最多的数据类型&#xff0c;也是占用Class文件空间最大的数据项目之一</strong></li></ul>
+<p>常量池存放的项目类型有如下几种&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_128"></a>常量池表结构类型</h4>
+<p>常量池中的每一项常量都是一个表&#xff0c;共有14种结构各不相同的表结构数据&#xff0c;每种表开始的第一位是一个u1类型的标志位&#xff08;1-18&#xff0c;缺少2、13、14&#xff09;&#xff0c;代表当前这个常量属于的常量类型&#xff0c;每个表是TVL结构&#xff0c;标志为tag。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-10-4f36acca35.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_131"></a>常量池表结构说明</h4>
+<p>这14种常量类型各自均有自己的结构&#xff0c;详细说明如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-11-a826e887fb.png" loading="lazy"><br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-12-314314199d.png" loading="lazy"><br />
+举例说明&#xff1a;在<strong>CONSTANT_Class_info</strong>型常量的结构中有一项<strong>index</strong>属性&#xff0c;该常量属性中存放一个索引值&#xff0c;指向常量池中一个<strong>CONSTANT_Utf8_info</strong>类型的常量&#xff0c;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-13-b25e60cfd8.png" loading="lazy"><br />
+该常量中即保存了该<strong>类的全限定名字符串</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-14-eeaa56f8c9.png" loading="lazy"></p>
+<p>类似的<strong>CONSTANT_Fieldref_info</strong>、<strong>CONSTANT_Methodref_info</strong>、<strong>CONSTANT_InterfaceMethodref_info</strong>等常量的结构中都有index属性去指向真正的字面量值。最终保存的诸如Class名、字段名、方法名、修饰符等字符串都是一个<strong>CONSTANT_Utf8_info</strong>类型的常量&#xff0c;因此&#xff0c;Java中方法和字段名的最大长度也即是CONSTANT_Utf8_info型常量的最大长度&#xff0c;在CONSTANT_Utf8_info型常量的结构中有一项length属性&#xff0c;它是u2类型的&#xff0c;即占用2个字节&#xff0c;那么它的最大的length即为<strong>65535</strong>。因此&#xff0c;<strong>Java程序中如果定义了超过64KB英文字符的变量或方法名&#xff0c;将会无法编译</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_143"></a>访问标志</h3>
+<p>访问标志access_flags分为两种&#xff0c;一种是用于表示Class或接口层次的访问标志&#xff0c;<strong>即类或接口层面的访问控制信息</strong>&#xff0c;通常存储的信息包括&#xff1a;<strong>Class类文件是类、接口、枚举或是注解</strong>&#xff1b;<strong>是否定义为public类型</strong>&#xff1b;<strong>是否定义为abstract类型</strong>&#xff1b;<strong>类是否被定义为final</strong>等等。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-15-f8b217569c.png" loading="lazy"><br />
+例如我们本类的访问标志为&#xff1a;0x0021&#xff0c;就表示0x0001&#43;0x0020&#xff0c;也就是public的且有父类的意思。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-16-8c1e28c867.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_149"></a>类索引</h3>
+<p>类索引包含如下四部分信息&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-17-9fd3855de8.png" loading="lazy"><br />
+解释如下&#xff1a;</p>
+<ul><li><strong>this_class类索引</strong>用于确定类的全限定名</li><li><strong>super_class父类索引</strong>用于确定父类的全限定名</li><li><strong>interfaces_count</strong>接口计数&#xff0c;因为接口可以继承多个&#xff0c;所以需要计数</li><li><strong>interfaces接口索引</strong>用于确定接口的全限定名&#xff0c;由于java中可以实现多个接口&#xff0c;因此使用<strong>interfaces_count来存储接口数量</strong>。</li></ul>
+<p>展示顺序是类索引&#xff0c;父类索引与接口索引数量&#xff0c;接口索引&#xff0c;也就是我们上图看到的&#xff0c;<strong>本类索引、父类索引和接口计数</strong>&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-18-f06e1a92cf.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_161"></a>字段表</h3>
+<p>字段表&#xff08;field_info&#xff09;用于描述接口或类中声明的变量。<strong>字段包括了类级变量或实例级变量&#xff0c;但不包括在方法内声明的局部变量</strong>。<font color="red"><strong>字段的名字、数据类型、修饰符等都是无法固定的&#xff0c;只能引用常量池中的常量来描述</strong>。</font></p>
+<ul><li><strong>fields_count</strong>&#xff0c;u2字段数目<strong>表示Class文件中的类变量和实例变量总数</strong>&#xff0c;如上图举例&#xff0c;我们这里有两个字段<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-19-a472201d3c.png" loading="lazy"></li><li><strong>fields</strong>&#xff0c;表示字段的详细结构&#xff0c;当然具体最后也是落到了常量池中的字面量上。</li></ul>
+<p>接下来详细分析下字段表结构。</p>
+<h4><a rel="noopener noreferrer" id="_168"></a>字段表结构</h4>
+<p>字段表结构包含如下内容&#xff1a;<code>access_flags</code>&#xff1a;字段的访问标志位&#xff1b;<code>name_index</code>&#xff1a;常量池索引&#xff0c;最终指向字段的简单名称&#xff1b;<code>descriptor_index</code>&#xff1a;常量池索引&#xff0c;最终指向字段的描述符&#xff1b;<code>attributes_count &amp; attributes</code>&#xff1a;字段属性&#xff0c;为字段的附加信息<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-20-e66a9074ae.png" loading="lazy"><br />
+以我们这里的<strong>cnt</strong>字段举例&#xff1a;可以看到<strong>访问标志、描述符索引和名称索引</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-21-ac207f1efd.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="access_flags_173"></a>字段access_flags</h5>
+<p>字段修饰符放在access_flags项目中&#xff0c;它与类中的access_flags项目是非常类似的&#xff0c;都是一个u2的数据类型<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-22-e5d5fc50f4.png" loading="lazy"><br />
+举个例子我们可以看到字段cnt为静态私有字段。所以取0x0002&#43;0x0010的和来标识。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-23-a2a75396db.png" loading="lazy"><br />
+跟随access_flags标志的是两项索引值&#xff1a;name_index和descriptor_index。它们都是<strong>对常量池的引用</strong>&#xff0c;分别代表着<strong>字段的简单名称(name_index)<strong>以及</strong>字段和方法的描述符(descriptor_index)</strong>&#xff0c;这里简单介绍一下简单名称和描述符。</p>
+<h5><a rel="noopener noreferrer" id="_180"></a>简单名称&#xff0c;描述符和全限定名</h5>
+<p>简单名称&#xff0c;描述符和全限定名三者的定义如下&#xff1a;</p>
+<ul><li><strong>全限定名</strong>&#xff1a;指一个事物的完整的名称&#xff0c;如在org.lxh.test包下的TestClass类的全限定名为&#xff1a;org/lxh/test/TestClass&#xff0c;即把包名中的“.”改为“/”&#xff0c;为了使连续的多个全限定名之间不产生混淆&#xff0c;在使用时最后一般会加入一个“&#xff0c;”来表示全限定名结束</li><li><strong>简单名称</strong>&#xff1a;指没有类型或参数修饰的方法或字段名称&#xff0c;如果一个类中有这样一个方法boolean  get&#xff08;int name&#xff09;和一个变量private final static int m&#xff0c;则他们的简单名称则分别为get&#xff08;&#xff09;和m。</li><li><strong>描述符</strong>&#xff1a;是用来描述<strong>字段的数据类型、方法的参数列表&#xff08;包括数量、类型以及顺序等&#xff09;和返回值</strong>的。</li></ul>
+<p>根据描述符规则&#xff0c;详细的描述符标示字的含义如下表所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-24-c918a51e85.png" loading="lazy"></p>
+<p>字段表包含的固定数据项目到descriptor_index为止就结束了&#xff0c;但是在它之后还紧跟着一个属性表集合用于存储一些额外的信息。比如&#xff0c;如果在类中有如下字段的声明&#xff1a;static final int m &#61; 2&#xff1b;那就可能会存在一项名为<strong>ConstantValue</strong>的属性&#xff0c;它指向常量2。关于attribute_info的详细内容&#xff0c;在后面关于属性表的项目中会有详细介绍。</p>
+<p>最后需要注意一点&#xff1a;<strong>字段表集合中不会列出从父类或接口中继承而来的字段&#xff0c;但有可能列出原本Java代码中不存在的字段。比如在内部类中为了保持对外部类的访问性&#xff0c;会自动添加指向外部类实例的字段</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_192"></a>字段值的初始化</h4>
+<p>不同类型的字段&#xff0c;其默认初始值不同&#xff0c;具体表现如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-25-ff1e71fe9d.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_197"></a>方法表</h3>
+<p>方法表包含两部分内容methods_count和methods&#xff1a;</p>
+<ul><li>
+<p>methods_count&#xff0c;表明方法的个数&#xff0c;methods_count(u2)用于表示Class文件中方法总数&#xff0c;我们这里共有6个方法<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-26-6644588e9d.png" loading="lazy"></p>
+</li><li>
+<p>methods&#xff0c;表明具体的方法内容&#xff0c;用于描述<strong>类或者接口中声明的方法</strong></p>
+</li></ul>
+<p>接下来详细看下方法表的结构。</p>
+<h4><a rel="noopener noreferrer" id="_206"></a>方法表结构</h4>
+<p>方法表和字段表的设计是很相似的。<strong>方法表用于描述类方法与实例方法&#xff0c;但只包括在本类中声明的方法或者重写的方法&#xff0c;不包括父类或父接口中声明的方法</strong>。需要注意的是&#xff0c;编译器生成的方法是包括的&#xff0c;例如<code>类构造器&lt;clinit&gt;()与实例构造器&lt;init&gt;()</code>。方法表的基本结构如下<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-27-16f20559eb.png" loading="lazy"><br />
+对照我们上图&#xff0c;可以看到构造方法的一个简要信息&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-28-ef0ddc24bb.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_211"></a>表结构主要信息</h4>
+<p>方法也具备access_flags&#xff0c;存储了方法的<strong>访问标识、是否静态、是否final、是否同步synchronized、是否本地方法native、是否抽象方法abstract</strong>等信息。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-29-9e16731e8b.png" loading="lazy"></p>
+<p><strong>方法的代码指令并没有直接存放在方法表中&#xff0c;而是存放着属性表中的方法表Code中</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-30-e8a6ec9007.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_218"></a>属性表</h3>
+<p>attributes(attribute_info)属性表是Class文件格式中最具扩展性的一种数据项目&#xff0c;<strong>用于存放field_info字段表、method_info方法表以及Class文件的专有信息</strong>&#xff0c;属性表不要求各个属性有严格顺序&#xff0c;只要求不与已有的属性名字重复即可</p>
+<ul><li>
+<p><strong>attributes_count</strong>(u2)表示属性表个数。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-31-19b5f8216e.png" loading="lazy"></p>
+</li><li>
+<p><strong>attributes</strong>&#xff0c;具体的属性信息&#xff0c;包含哪些内容可以从下放所列表看到</p>
+</li></ul>
+<p>属性的应用范围如下表所示&#xff1a;</p>
+
+<table><thead><tr><th>属性名称</th><th>使用位置</th><th>含义</th></tr></thead><tbody><tr><td>SourceFile</td><td>类文件</td><td>源文件名称</td></tr><tr><td>InnerClasses</td><td>类文件</td><td>内部类列表</td></tr><tr><td>Code</td><td>方法表</td><td>Java代码编译成的字节码指令</td></tr><tr><td>LineNumberTable</td><td>Code 属性</td><td>Java源码的行号与字节码指令的对应关系</td></tr><tr><td>LocalVariableTable</td><td>Code 属性</td><td>方法的局部变量描述</td></tr><tr><td>Exceptions</td><td>方法表</td><td>方法抛出的异常</td></tr><tr><td>ConstantValue</td><td>字段表</td><td>final关键字定义的常量值</td></tr></tbody></table><h4><a rel="noopener noreferrer" id="_236"></a>属性表结构</h4>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114251292-32-58a31c94bd.png" loading="lazy"><br />
+举例我们上述的类文件属性可以看到&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-33-7a54498966.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="Code_241"></a>Code属性表</h4>
+<p>前面已经说过&#xff0c;<strong>Java程序方法体中的代码讲过Javac编译后&#xff0c;生成的字节码指令便会存储在Code属性中</strong>&#xff0c;但并非所有的方法表都必须存在这个属性&#xff0c;比如<strong>接口或抽象类中的方法就不存在Code属性</strong>。如果方法表有Code属性存在&#xff0c;那么它的展现如下图所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-34-808d79f12d.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="ConstantValue_245"></a>ConstantValue属性</h4>
+<p>ConstantValue属性的作用是<strong>通知虚拟机自动为静态变量赋值&#xff0c;只有被static修饰的变量才可以使用这项属性</strong>。在Java中&#xff0c;对非static类型的变量&#xff08;也就是实例变量&#xff09;的赋值是在实例构造器方法中进行的&#xff1b;而对于类变量&#xff08;static变量&#xff09;&#xff0c;则有两种方式可以选择&#xff1a;<strong>在类构造其中赋值&#xff0c;或使用ConstantValue属性赋值</strong>。例如我们final一个常量可以看到&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-35-1a0a98494f.png" loading="lazy"></p>
+<p>目前Sun Javac编译器的策略是</p>
+<ul><li>如果<strong>同时使用final和static修饰一个变量</strong>&#xff08;即全局常量&#xff09;&#xff0c;并且这个变量的数据类型是基本类型或String的话&#xff0c;就生成ConstantValue属性来进行初始化&#xff08;编译时Javac将会为该常量生成ConstantValue属性&#xff0c;在类加载的<strong>准备</strong>阶段虚拟机便会根据ConstantValue为常量设置相应的值&#xff09;</li><li>如果该变量没有被final修饰&#xff0c;只被static修饰&#xff0c;或者并非基本类型及字符串&#xff0c;则选择在方法中进行<strong>初始化</strong>。</li></ul>
+<p>虽然有final关键字才更符合<strong>ConstantValue</strong>的含义&#xff0c;但在虚拟机规范中并没有强制要求字段必须用final修饰&#xff0c;只要求了字段必须用static修饰&#xff0c;对final关键字的要求是Javac编译器自己加入的限制。<strong>因此&#xff0c;在实际的程序中&#xff0c;只有同时被final和static修饰的字段才有ConstantValue属性。而且ConstantValue的属性值只限于基本类型和String</strong>&#xff0c;很明显这是因为它从常量池中也只能够引用到基本类型和String类型的字面量。</p>
+<h2><a rel="noopener noreferrer" id="_256"></a>总结</h2>
+<p>通过本篇blog的学习&#xff0c;其实可以看的出来&#xff0c;成为字节码文件后&#xff0c;Java的源码被翻译成了一种通用的公共文件&#xff0c;该文件与来源的代码无关&#xff0c;也与不同操作系统的虚拟机无关&#xff0c;只要能运行这个文件即可让程序在任意操作系统的任意虚拟机上运行&#xff0c;整个文件的结构&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251292-36-da177c4b13.png" loading="lazy"></p>
+<p>可以这么理解&#xff0c;所有当前类的相关信息&#xff1a;类基本信息、接口、方法、字段等的描述信息以及各自特有的属性信息&#xff0c;都通过索引和符号引用最终指向了常量池&#xff0c;翻译成了一系列直接引用&#xff0c;这样&#xff0c;在字节码执行系统中&#xff0c;就可以按照方法的字节指令顺序按行&#xff0c;需要什么资源就按照索引去常量池中去拿。</p>

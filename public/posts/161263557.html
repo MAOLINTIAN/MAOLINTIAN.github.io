@@ -1,0 +1,83 @@
+<p>主要学习未来企业在 AI 时代背景下一些开发模式的变化&#xff1b;企业业务能力的开发方向&#xff0c;更具体的是未来产研的精力会更多的投入到哪里&#xff0c;也就是人才的流动方向、研发资源的流动方向&#xff0c;我们以后的关注重点在哪儿。<font color="red"><strong>AI 时代产研大趋势 &#43; 架构变革 &#43; 人力流向&#xff08;全局视野&#xff09;</strong></font></p>
+<h2><a rel="noopener noreferrer" id="__2"></a>一 传统业务平台/中台开发模式</h2>
+<p><strong>旧时代&#xff08;AI普及之前&#xff09;的企业内部业务平台/中台的分层架构</strong>&#xff0c;没有AI、没有Agent编排、没有模型服务层&#xff0c;我们一般是三层架构&#xff1a;</p>
+
+<table><thead><tr><th align="left">层级</th><th align="left">角色</th><th align="left">核心能力与内容</th><th align="left">主要实现/抽象形式</th><th align="left">主要工作角色/人员类型</th></tr></thead><tbody><tr><td align="left"><strong>用户交互层</strong></td><td align="left">前端界面</td><td align="left">提供表单、列表、报表、审批操作等图形化界面&#xff0c;用户通过点击、填写、提交等方式完成业务操作</td><td align="left">Web页面、移动端App、桌面客户端&#xff08;React/Vue/Angular等&#xff09;</td><td align="left"><strong>一线业务人员&#xff08;使用者&#xff09;</strong></td></tr><tr><td align="left"><strong>业务应用层</strong></td><td align="left">前后端服务</td><td align="left">实现业务规则、流程编排、数据校验、API接口、定时任务、消息处理等核心逻辑</td><td align="left">前后端服务&#xff08;Java/Go/PHP/Python&#xff09;、微服务、消息队列、工作流引擎</td><td align="left"><strong>前后端开发、架构师、业务研发</strong></td></tr><tr><td align="left"><strong>基础设施层</strong></td><td align="left">运行环境与数据存储</td><td align="left">提供计算、存储、网络、数据库、缓存、消息中间件等底层资源&#xff0c;支持应用的运行和数据持久化</td><td align="left">物理服务器、虚拟机、容器&#xff08;Docker&#xff09;、云主机、关系型数据库&#xff08;MySQL/Oracle&#xff09;、NoSQL&#xff08;Redis/ES&#xff09;、负载均衡、DNS</td><td align="left"><strong>运维工程师、DBA、基础设施工程师</strong></td></tr></tbody></table><ul><li><strong>用户交互层</strong>&#xff1a;一线业务人员只能使用&#xff0c;无法修改</li><li><strong>业务应用层</strong>&#xff1a;所有业务规则、流程、API均由前后端研发人员手工编写&#xff0c;没有Agent编排或低代码生成。</li><li><strong>基础设施层</strong>&#xff1a;包含了计算、存储、网络以及数据库、缓存等数据层组件&#xff0c;由运维和DBA负责。</li></ul>
+<p>没有任何AI相关元素&#xff08;无大模型、无Agent、无智能编排、无自然语言交互&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="_AI_18"></a>二 AI时代下新业务开发模式</h2>
+<h3><a rel="noopener noreferrer" id="1_AI_20"></a>1 AI时代下新的开发层级划分</h3>
+<p><strong>AI时代的企业技术基座&#xff0c;相较于旧时代的分层模式&#xff0c;主要发生了四个关键变化&#xff1a;</strong></p>
+<ol><li>
+<p><strong>新增模型服务层</strong>&#xff1a;这一层与具体业务无关&#xff0c;提供大语言模型的训练、微调、推理、RAG等运行环境&#xff0c;是AI能力的源头。</p>
+</li><li>
+<p><strong>业务应用层转型业务能力层</strong>&#xff1a;将企业的核心业务能力&#xff08;如文档处理、审批规则、价格计算&#xff09;封装为<strong>原子化、可被AI Agent理解调用的API</strong>。原有的<strong>业务逻辑层</strong>只需完成<strong>能力原子化改造</strong>&#xff0c;无需再做前端页面或交互&#xff0c;只暴露能力接口&#xff0c;让上层Agent或用户自由编排。<strong>真正的页面交互和业务入口&#xff0c;让业务的使用者自己通过业务轻应用层定义</strong>。</p>
+</li><li>
+<p><strong>新增Agent管理调度层</strong>&#xff1a;核心作用是**“管理智能体行为”<strong>。负责Agent的</strong>编排、协同、身份认证、权限、审计、成本追踪**等治理工作。它是企业AI中枢的核心</p>
+</li><li>
+<p><strong>新增轻应用层</strong>&#xff1a;核心作用是用自然语言生成表单、报表、审批流、数据看板&#xff0c;<strong>将数据的呈现形式和组织形式主权交还给用户</strong>。</p>
+</li></ol>
+<p>基于以上变化&#xff0c;新的分层模式如下(从上到下)&#xff1a;</p>
+
+<table><thead><tr><th align="left">层级划分</th><th align="left">角色</th><th align="left">核心能力与内容</th><th align="left">主要实现/抽象形式</th><th align="left">主要工作角色/人员类型</th></tr></thead><tbody><tr><td align="left"><strong>用户交互层</strong></td><td align="left">对话式界面</td><td align="left">自然语言交互、多模态输入、任务发起与结果展示</td><td align="left">聊天机器人、企业门户、IM集成&#xff08;钉钉/飞书/微信&#xff09;</td><td align="left"><strong>一线业务人员</strong>&#xff08;直接使用&#xff0c;无需技术背景&#xff09;</td></tr><tr><td align="left"><strong>业务轻应用层</strong></td><td align="left">业务轻应用快速生成</td><td align="left">用自然语言生成表单、报表、审批流、数据看板</td><td align="left">低代码应用</td><td align="left"><strong>低代码应用搭建者、实施类研发</strong>&#xff08;轻研发&#xff0c;偏配置与组装&#xff09;、<strong>部分一线业务人员</strong></td></tr><tr><td align="left"><strong>Agent管理层</strong></td><td align="left">Agent编排与治理</td><td align="left">身份认证、权限控制、多Agent协同、审计、成本追踪、策略执行</td><td align="left">低代码平台、AI应用生成器&#xff08;秒搭、轻流&#xff09;、企业自建管理平台</td><td align="left"><strong>核心研发 / 平台架构师</strong>&#xff08;重研发&#xff0c;构建控制平面&#xff09;</td></tr><tr><td align="left"><strong>业务能力层</strong></td><td align="left">业务能力服务化</td><td align="left">将文档处理、图形识别、审批规则、价格计算等业务能力封装为安全、可调用的原子服务&#xff0c;构建为Agent</td><td align="left">API网关、函数即服务&#xff08;FaaS&#xff09;、企业内部服务网格</td><td align="left"><strong>后端 / 平台研发</strong>&#xff08;原有服务接口化&#xff0c;暴露为能力&#xff09;</td></tr><tr><td align="left"><strong>模型服务层</strong></td><td align="left">大模型服务</td><td align="left">基础大模型、微调模型、RAG引擎、向量数据库</td><td align="left">模型API&#xff08;OpenAI、智谱、百川&#xff09;、开源模型部署</td><td align="left"><strong>算法工程师 / 模型工程师</strong>&#xff08;训练、微调、部署&#xff09;</td></tr><tr><td align="left"><strong>基础设施层</strong></td><td align="left">计算、存储、网络</td><td align="left">物理/虚拟服务器、云主机、存储桶、网络设备、容器运行时</td><td align="left">云厂商&#xff08;AWS、阿里云、腾讯云&#xff09;、私有云、本地数据中心</td><td align="left"><strong>运维工程师 / 基础设施工程师</strong>&#xff08;硬件、网络、云资源&#xff09;</td></tr></tbody></table><hr />
+<p>各层之间的关系如下&#xff1a;</p>
+<div class="mermaid mermaid-newversion"></div>
+<h3><a rel="noopener noreferrer" id="2___78"></a>2  新工作模式下产研流动</h3>
+<p>重点体现&#xff1a;<strong>原有后台研发人员分流</strong>、<strong>新增Agent管理层与模型服务层</strong>、<strong>业务人员能力拓展</strong>。</p>
+<p>以下是更新后的表格和详细说明&#xff1a;</p>
+
+<table><thead><tr><th align="left">群体</th><th align="left">变化趋势</th><th align="left">详细说明</th></tr></thead><tbody><tr><td align="left"><strong>一线业务人员</strong></td><td align="left">能力拓展&#xff0c;向下可独立构建应用</td><td align="left">原本只是各类后台应用的使用者&#xff08;登录、点菜单、填表单&#xff09;。在AI加持下&#xff0c;部分有能力的业务人员可以下沉到<strong>业务应用层</strong>&#xff08;原SaaS生成层&#xff09;&#xff0c;通过自然语言或可视化拖拽&#xff0c;自主搭建轻应用&#xff08;表单、报表、审批流、看板等&#xff09;&#xff0c;<strong>无需等待研发排期</strong>。</td></tr><tr><td align="left"><strong>原有后台研发人员</strong></td><td align="left"><strong>分流&#xff1a;部分上浮&#xff0c;部分保留&#xff0c;部分下沉</strong></td><td align="left">AI辅助下&#xff0c;大量重复性的CRUD开发、前端页面编写不再需要人力。<strong>上浮</strong>&#xff1a;转向业务轻应用层&#xff0c;辅助业务人员生成低代码应用&#xff0c;或担任AI生成结果的校验、配置角色&#xff08;偏实施&#xff09;。<strong>保留</strong>&#xff1a;留在业务能力层&#xff08;CaaS&#xff09;&#xff0c;但要求升级——必须掌握领域驱动设计&#xff08;DDD&#xff09;、原子能力拆分、API治理等技能&#xff0c;需要深入理解业务模型、事务一致性、高可用设计&#xff0c;并且会配合上层Agent封装。不再写简单接口。<strong>下沉</strong>&#xff1a;极少数核心研发可能涉及Agent管理层或模型服务层的底层框架开发。</td></tr><tr><td align="left"><strong>Agent管理层&#xff08;新增&#xff09;</strong></td><td align="left"><strong>全新岗位&#xff0c;需求增长</strong></td><td align="left">负责构建和维护企业的AI中枢&#xff1a;包括Agent注册发现、多Agent协同编排、统一身份认证、权限控制、审计日志、成本追踪、策略执行。需要熟悉工作流引擎、分布式协调、安全策略等&#xff0c;同时要理解大模型调用和Agent通信协议。这一层之前完全不存在。</td></tr><tr><td align="left"><strong>模型服务层&#xff08;新增&#xff09;</strong></td><td align="left"><strong>全新岗位&#xff0c;门槛较高</strong></td><td align="left">负责大模型的选型、部署、微调、RAG引擎搭建、向量数据库管理、提示词工程、模型性能优化等。需要具备算法基础、工程化能力&#xff0c;以及一定的业务理解&#xff08;如何将大模型能力融入企业场景&#xff09;。这一层也是之前没有的&#xff0c;岗位需求在增长。</td></tr><tr><td align="left"><strong>基础设施工程师</strong></td><td align="left"><strong>基本不变</strong></td><td align="left">运维和DBA仍然负责服务器、容器、数据库、网络等底层资源。但随着AI引入&#xff0c;可能需要支持GPU算力调度、向量数据库运维等新技能&#xff0c;整体岗位数量稳定。</td></tr></tbody></table><p>总结来看可以大致分为这三个变化&#xff1a;</p>
+<ul><li><strong>一线业务人员</strong> 能力向下拓展&#xff0c;部分可自主生成应用。</li><li><strong>普通CRUD研发</strong> 被分流&#xff1a;上浮做轻应用辅助&#xff0c;留下做原子能力&#xff08;需升级&#xff09;&#xff0c;极少数下沉做底层框架。</li><li><strong>新增Agent管理层 &#43; 模型服务层</strong> 成为核心研发的新主战场&#xff0c;替代了旧时代部分业务逻辑层的职能。</li></ul>
+<p>整体人才结构从“橄榄型”向<strong>两端&#xff08;业务&#43;AI基础&#xff09;扩大、中间层&#xff08;纯CRUD&#xff09;收缩</strong>演变&#xff0c;这主要是因为在AI加持下&#xff0c;我们可以实现<strong>业务能力原子化&#xff08;CaaS&#xff09;&#xff0c;交互入口民主化&#xff08;用户自定义&#xff09;</strong></p>
+<hr />
+<h3><a rel="noopener noreferrer" id="3__101"></a>3 新工作模式下业务落地场景对比</h3>
+<p>举几个新旧业务落地场景的对比&#xff1a;</p>
+
+<table><thead><tr><th>业务场景</th><th>旧时代处理方式</th><th>AI时代融合处理方式</th></tr></thead><tbody><tr><td>商户资质信息查询</td><td>登录内部商户平台&#xff0c;手动检索页面查询</td><td>对话入口下发指令&#xff0c;商户Agent自动调用中台API调取数据返回</td></tr><tr><td>跨系统业务数据同步</td><td>多系统分别登录&#xff0c;人工导出导入流转数据</td><td>AI Agent编排多类内外Agent&#xff0c;全自动完成跨系统数据同步流转</td></tr><tr><td>全新业务审批流程搭建</td><td>研发团队全流程开发测试&#xff0c;上线周期长达数周</td><td>业务人员低代码可视化搭建&#xff0c;数小时内完成流程落地启用</td></tr></tbody></table><h2><a rel="noopener noreferrer" id="_Agent_109"></a>三 企业业务平台/中台Agent化路径</h2>
+<p>明确整体架构后&#xff0c;我们再来看其中最大的变化&#xff0c;也就是原有的业务平台业务中台怎么转换为可被使用的能力或者Agent。首先从交互的角度回到基础的定义&#xff0c;什么是平台&#xff0c;什么是中台&#xff1a;</p>
+<ul><li><strong>平台</strong>&#xff1a;人 ↔ 系统界面。人直接操作商户平台的后台页面。</li><li><strong>中台</strong>&#xff1a;系统 ↔ 系统API。商户中台只暴露能力&#xff0c;人不再直接操作它。</li><li><strong>Agent</strong>&#xff1a;人 ↔ Agent ↔ 系统。人跟Agent对话&#xff0c;Agent再去调用中台/能力。<strong>商户系统彻底不跟人交互了&#xff0c;它只跟机器&#xff08;Agent或大模型&#xff09;交互。</strong></li></ul>
+<blockquote>
+<p>一句话&#xff1a;<strong>从平台到中台到Agent&#xff0c;本质是“交互对象的迁移”——人的操作对象从系统界面&#xff0c;变成了智能体。</strong></p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="1_UI_121"></a>1 起点&#xff1a;业务平台&#xff08;带UI的完整系统&#xff09;</h3>
+<p>以商户平台为例说明&#xff1a;公司原有多个商户系统相互割裂&#xff0c;数据模型不统一&#xff0c;新业务接入慢、资损频发。为此&#xff0c;团队从0到1构建了<strong>统一的商户平台</strong>。</p>
+<p><strong>此时的形态</strong>&#xff1a;完整的业务平台&#xff0c;包含前端界面 &#43; 后端逻辑 &#43; 数据存储。用户是运营人员、CA审核人员&#xff0c;他们<strong>登录平台、点菜单、填表单</strong>&#xff0c;与系统界面直接交互。</p>
+<blockquote>
+<p>特征&#xff1a;<strong>人 ↔ 系统界面</strong>。界面是用户的唯一入口。</p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="2_UIAPI_131"></a>2 演化第一步&#xff1a;业务中台&#xff08;剥离UI&#xff0c;暴露API&#xff09;</h3>
+<p>随着业务发展&#xff0c;越来越多其他系统&#xff08;风控、审批、数据报表&#xff09;需要访问商户数据。如果每个系统都直接连接数据库&#xff0c;会导致耦合混乱、逻辑重复。</p>
+<p>于是&#xff0c;商户平台开始<strong>中台化</strong>&#xff1a;</p>
+<ul><li><strong>剥离用户交互界面</strong>&#xff1a;运营后台依然存在&#xff0c;但商户的核心能力被封装成<strong>API</strong></li><li><strong>对外暴露原子能力</strong>&#xff1a;<code>queryMerchant</code>、<code>updateQualification</code>、<code>submitAudit</code>等</li><li><strong>独立治理</strong>&#xff1a;通过API网关统一鉴权、限流、审计</li></ul>
+<p><strong>此时的形态</strong>&#xff1a;商户中台。它不再是一个单纯的后台系统&#xff0c;而是一个<strong>可复用的能力层</strong>&#xff0c;服务于多个上层业务。<strong>人不再直接操作中台</strong>&#xff0c;而是由其他系统通过API调用。</p>
+<blockquote>
+<p>特征&#xff1a;<strong>系统 ↔ 系统API</strong>。人的操作对象转移到上层系统&#xff08;或仍保留原平台界面&#xff0c;但中台本身无界面&#xff09;。</p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="3_CaaS_146"></a>3 演化第二步&#xff1a;CaaS&#xff08;原子能力进一步拆分&#xff09;</h3>
+<p>在商户中台的基础上&#xff0c;进一步将API拆解为<strong>更细粒度的原子服务</strong>&#xff0c;以支持更灵活的组合&#xff1a;</p>
+
+<table><thead><tr><th align="left">原有API&#xff08;粗粒度&#xff09;</th><th align="left">拆解后的原子能力&#xff08;CaaS&#xff09;</th></tr></thead><tbody><tr><td align="left"><code>submitAudit(merchantId, auditData)</code></td><td align="left"><code>validateQualification()</code>、<code>createAuditTask()</code>、<code>notifyApprover()</code></td></tr><tr><td align="left"><code>getMerchantFullInfo(merchantId)</code></td><td align="left"><code>getBasicInfo()</code>、<code>getContactList()</code>、<code>getQualificationStatus()</code></td></tr></tbody></table><p>这些原子能力可以被上层应用自由编排&#xff0c;也可以被AI Agent调用。<strong>这一层仍然是系统与系统之间的交互</strong>&#xff0c;人依然不直接面对。</p>
+<blockquote>
+<p>CaaS&#xff08;能力即服务&#xff09;层&#xff1a;<strong>业务中台暴露的细粒度API集合&#xff0c;是可调用的业务原子能力</strong>。</p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="4_Agent_161"></a>4 演化第三步&#xff1a;商户Agent&#xff08;智能体封装&#xff09;</h3>
+<p>在CaaS层之上&#xff0c;增加一层<strong>智能体</strong>——商户Agent。它不再要求调用方精确指定接口和参数&#xff0c;而是通过自然语言对话完成复杂任务。</p>
+<p><strong>此时的核心变化</strong>&#xff1a;<strong>商户系统&#xff08;中台&#43;CaaS&#xff09;彻底不跟人交互了&#xff0c;它只跟Agent交互</strong>。人的对话对象是Agent&#xff0c;Agent再去调用底层能力。</p>
+<p><strong>商户Agent的能力增量</strong>&#xff1a;</p>
+
+<table><thead><tr><th align="left">能力</th><th align="left">CaaS原子API</th><th align="left">商户Agent</th></tr></thead><tbody><tr><td align="left">调用方式</td><td align="left">代码/REST调用</td><td align="left">自然语言对话</td></tr><tr><td align="left">意图理解</td><td align="left">无&#xff0c;需精确指定接口</td><td align="left">自动理解“查一下XX商户的资质” → 调用相关能力</td></tr><tr><td align="left">多步编排</td><td align="left">需上层自行组合</td><td align="left">自动分解任务&#xff08;查ID→查资质→判断过期&#xff09;</td></tr><tr><td align="left">主动通知</td><td align="left">不支持</td><td align="left">主动提醒&#xff1a;“商户A资质3天后到期”</td></tr><tr><td align="left">上下文记忆</td><td align="left">无</td><td align="left">记住对话中的商户ID和历史操作</td></tr><tr><td align="left"><strong>交互对象</strong></td><td align="left">系统&#xff08;开发者/其他服务&#xff09;</td><td align="left"><strong>人</strong></td></tr></tbody></table><blockquote>
+<p>特征&#xff1a;<strong>人 ↔ Agent ↔ 系统</strong>。人的操作对象从系统界面变成了智能体&#xff0c;底层商户系统只与Agent交互。</p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="5__182"></a>5 演化全路径图</h3>
+<p>这里的原子能力我理解就是skill</p>
+<div class="mermaid mermaid-newversion mermaid-flowchart"></div>
+<hr />
+<h3><a rel="noopener noreferrer" id="6_CaaSAgent_212"></a>6 总结&#xff1a;平台、中台、CaaS、Agent的关系</h3>
+
+<table><thead><tr><th align="left">形态</th><th align="left">核心特征</th><th align="left">交互方式</th><th align="left">复用性</th><th align="left">智能化程度</th><th align="left"><strong>交互对象</strong></th></tr></thead><tbody><tr><td align="left"><strong>业务平台</strong></td><td align="left">完整UI&#43;业务逻辑&#43;数据</td><td align="left">人机界面</td><td align="left">低</td><td align="left">无</td><td align="left"><strong>人 ↔ 系统界面</strong></td></tr><tr><td align="left"><strong>业务中台</strong></td><td align="left">剥离UI&#xff0c;暴露粗粒度API</td><td align="left">API调用</td><td align="left">中</td><td align="left">无</td><td align="left"><strong>系统 ↔ 系统</strong></td></tr><tr><td align="left"><strong>CaaS层</strong></td><td align="left">细粒度原子能力API</td><td align="left">API调用</td><td align="left">高</td><td align="left">无</td><td align="left"><strong>系统 ↔ 系统</strong></td></tr><tr><td align="left"><strong>业务Agent</strong></td><td align="left">CaaS &#43; 意图理解 &#43; 编排 &#43; 对话</td><td align="left">自然语言</td><td align="left">高</td><td align="left">有</td><td align="left"><strong>人 ↔ Agent ↔ 系统</strong></td></tr></tbody></table><p><strong>一句话总结</strong>&#xff1a;商户平台从“带UI的业务平台”起步&#xff0c;通过<strong>剥离界面、暴露API</strong>变成业务中台&#xff0c;再通过<strong>拆解细粒度能力</strong>形成CaaS层&#xff0c;最终<strong>封装为商户Agent</strong>&#xff0c;让用户通过自然语言对话完成复杂任务。<strong>每一次演化&#xff0c;本质上是“交互对象的迁移”——从人直接操作界面&#xff0c;到系统调用API&#xff0c;再到人通过Agent与系统对话。商户系统最终只与机器&#xff08;Agent&#xff09;交互&#xff0c;不再面向人。</strong></p>
+<h2><a rel="noopener noreferrer" id="_224"></a>总结一下</h2>
+<p>在我看来&#xff0c;AI时代企业业务架构正从传统三层架构&#xff0c;逐步升级为六层全新技术架构&#xff0c;整个演进过程不仅新增了Agent编排治理、大模型服务两大核心层级&#xff0c;还推动业务能力走向原子化拆解&#xff0c;同时把业务交互从传统固定页面操作&#xff0c;升级为更灵活的自然语言对话模式。这种架构变革也直接带动了团队人员结构与工作模式转变&#xff0c;一线业务人员能够自主搭建轻量化业务应用&#xff0c;传统后台研发人员出现明显职业分流&#xff0c;行业也顺势催生了智能体治理、模型工程等全新技术岗位&#xff0c;整体人才结构随之发生明显调整。而从业务系统自身发展来看&#xff0c;也走完了从业务平台人机直连操作&#xff0c;到业务中台系统间API调用&#xff0c;再到CaaS精细化原子能力拆分&#xff0c;最终形成人通过智能体调度底层能力的完整演进链路&#xff0c;其本质就是业务交互对象的持续迁移与数字化能力的层层下沉。对于我们原有业务后端开发人员而言&#xff0c;尽量不要偏向轻量化应用搭建这类偏上浮的工作&#xff0c;更建议主动向下深耕&#xff0c;一方面深耕领域建模、夯实原有业务能力层功底&#xff0c;另一方面主动切入Agent开发与智能体调度相关工作&#xff0c;稳住自身技术核心竞争力&#xff0c;顺应技术发展趋势完成能力升级</p>

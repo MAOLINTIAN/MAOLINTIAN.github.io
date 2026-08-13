@@ -1,0 +1,151 @@
+<p>本篇是深入理解JVM的第二篇&#xff0c;上一篇在全面理解Java程序的整体流程之后&#xff0c;这一篇开始详细的按照Java代码执行顺序分模块的深入理解。首先第一个阶段我们知道&#xff0c;就是Java代码要编译为字节码文件&#xff0c;当然因为Java编译有些优化策略&#xff0c;所以具体而言有一些详细划分&#xff1a;</p>
+<ol><li>将 <code>*.java</code>文件转为 <code>*.class</code>的过程称为编译器的前端&#xff08;<code>前端编译</code>&#xff09;。例如&#xff1a;JDK的javac编译器。</li><li>把字节码( <code>*.class文件</code>) 转变为 <strong>本地机器码</strong> 的过程称为Java虚拟机的即时编译运行期&#xff08;JIT编译器&#xff0c;Just In Time&#xff09;。例如&#xff1a;HotSpot虚拟机的C1、C2编译器。</li><li>使用静态的提前编译器&#xff08;AOT编译器&#xff0c;Ahead Of Time Compiler&#xff09;直接把程序编译成与目标及其指令集相关的二进制代码的过程。例如&#xff1a;JDK的Jaotc&#xff0c;这类编译器我们应该比较少遇到</li></ol>
+<p>我们通常说到的最主要的就是第一种情况&#xff0c;前端编译&#xff0c;然后剩下的字节码文件转机器码交由JVM处理。</p>
+<h2><a rel="noopener noreferrer" id="Javac_8"></a>Javac编译</h2>
+<p>Javac 这类编译器对代码的运行效率几乎没有任何优化措施&#xff0c;虚拟机设计团队把对性能的优化都放到了后端的即时编译器中&#xff0c;这样可以让那些不是由 Javac 产生的 class 文件&#xff08;如 Groovy、Kotlin 等语言产生的 class 文件&#xff09;也能享受到编译器优化带来的好处。但是 Javac 做了很多针对 Java 语言编码过程的优化措施来改善程序员的编码风格、提升编码效率。相当多新生的 Java 语法特性&#xff0c;都是靠编译器的「<strong>语法糖</strong>」来实现的&#xff0c;而不是依赖虚拟机的底层改进来支持。</p>
+<h3><a rel="noopener noreferrer" id="_11"></a>编译过程</h3>
+<p>Javac 编译器的编译过程大致可分为 1个准备过程3个处理过程 &#xff0c;准备过程是&#xff1a;<strong>初始化插入式注解处理器</strong>&#xff0c;处理过程分别为<strong>解析与填充符号表</strong>&#xff1b;<strong>插入式注解处理器的注解处理</strong>&#xff1b;<strong>分析与字节码生成</strong>。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114251219-01-a64bd350c4.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_15"></a>解析与填充符号表</h4>
+<p>第一个步骤为解析步骤&#xff0c;<strong>解析步骤</strong>包含了经典程序编译原理中的<strong>词法分析</strong>和<strong>语法分析</strong>两个过程&#xff0c;第二个步骤则是<strong>填充符号表</strong>过程&#xff1a;</p>
+<ol><li><strong>词法分析</strong>&#xff0c;是<strong>将源代码的字符流转变为标记&#xff08;Token&#xff09;集合</strong>。<strong>单个字符是程序编写过程中的的最小元素&#xff0c;而标记则是编译过程的最小元素</strong>&#xff0c;关键字、变量名、字面量、运算符等都可以成为标记&#xff0c;比如整型标志int由三个字符构成&#xff0c;但是它只是一个标记&#xff0c;不可拆分。</li><li><strong>语法分析</strong>&#xff0c;是<strong>根据Token序列来构造抽象语法树的过程</strong>。抽象语法树是一种用来描述程序代码语法结构的树形表示方式&#xff0c;<strong>语法树的每一个节点都代表着程序代码中的一个语法结构&#xff0c;如包、类型、修饰符、运算符等</strong>。经过这个步骤后&#xff0c;编译器就基本不会再对源码文件进行操作了&#xff0c;后续的操作都建立在抽象语法树之上。</li><li><strong>填充符号表</strong>&#xff0c;完成词法分析和语法分析之后&#xff0c;下一步就是填充符号表的过程。符号表是由<strong>一组符号地址和符号信息构成的表格</strong>。在语义分析中&#xff0c;<strong>符号表所登记的内容将用于语义检查和产生中间代码</strong>。在目标代码生成阶段&#xff0c;当<strong>对符号名进行地址分配时&#xff0c;符号表是地址分配的依据</strong>。</li></ol>
+<p>经过以上三个步骤后代码的关键信息就被拆解记录完毕了。</p>
+<h4><a rel="noopener noreferrer" id="_24"></a>注解处理</h4>
+<p>注解&#xff08;Annotation&#xff09;是在 JDK 1.5 中新增的&#xff0c;注解在设计上原本是与普通代码一样&#xff0c;只在运行期间发挥作用。但是在JDK1.6中&#xff0c;<strong>插入式注解处理器可以提前至编译期对代码中的特点注解进行处理</strong>&#xff0c;从而影响到前端编译器的工作过程。我们可以把插入式注解处理器看作是一组编译器的插件&#xff0c;当这些插件工作时&#xff0c;允许读取、修改、添加抽象语法树中的任意元素。如果这些插件在处理注解期间对语法树进行过修改&#xff0c;编译器将回到解析及填充符号表的过程重新处理&#xff0c;直到所有插入式注解处理器都没有再对语法树进行修改为止&#xff0c;每一次循环过程称为一个轮次&#xff08;Round&#xff09;&#xff0c;这也就对应着上图回环过程有了编译器注解处理过程。<strong>Lombok</strong>就是依赖于插入式注解器实现的。</p>
+<h4><a rel="noopener noreferrer" id="_27"></a>语义分析与字节码生成</h4>
+<p>语法分析之后&#xff0c;编译器获得了程序代码的抽象语法树表示&#xff0c;<strong>语法树能表示一个结构正确的源程序的抽象&#xff0c;但无法保证源程序是符合逻辑的</strong>。所以需要接下来的步骤&#xff1a;</p>
+<h5><a rel="noopener noreferrer" id="_29"></a>语义分析</h5>
+<p><strong>语义分析</strong>&#xff0c;主要任务是对结构上正确的源程序进行上下文有关性质的审查&#xff0c;比如进行<strong>类型检查&#xff0c;控制流检查&#xff0c;数据流检查&#xff0c;解语法糖</strong>。</p>
+<ol><li><strong>标注检查</strong>&#xff0c;检查的内容包括诸如变量使用前是否已被声明、变量和赋值之间的数据类型是否匹配等。</li><li><strong>数据及控制流分析</strong>&#xff0c;对程序上下文逻辑更进一步的验证&#xff0c;它可以检查出诸如程序局部变量在使用前是否有赋值、方法的每条路径是否都有返回值、是否所有的受查异常都被正确处理了等问题。</li></ol>
+<p>完成亦或是哪个步骤后即可进行字节码生成</p>
+<h5><a rel="noopener noreferrer" id="_36"></a>字节码生成</h5>
+<p><strong>字节码生成</strong>&#xff0c;字节码生成是 Javac 编译过程的最后一个阶段&#xff0c;字节码生成阶段不仅仅是把前面各个步骤所生成的信息&#xff08;语法树、符号表&#xff09;转化成字节码写到磁盘中&#xff0c;编译器还进行了少量的代码添加和转换工作</p>
+<ol><li><strong>生成构造器</strong>&#xff0c;如前面提到的<code>&lt;init&gt; ()</code> 方法和<code>&lt;clinit&gt;()</code>方法 就是在这一阶段添加到语法树中的。这里的实例构造器并不是指默认的构造函数&#xff0c;而是指<strong>我们自己重载的构造函数</strong>&#xff0c;如果用户代码中没有提供任何构造函数&#xff0c;那编译器会自动添加一个没有参数、访问权限与当前类一致的默认构造函数&#xff0c;这个工作在填充符号表阶段就已经完成了</li><li><strong>程序优化逻辑</strong>&#xff0c;还有一些<strong>其它的代码替换工作用于优化程序的实现逻辑</strong>&#xff0c;如把字符串的加操作替换为 StringBiulder 或 StringBuffer。</li><li><strong>写入磁盘</strong>&#xff0c;完成语法树的遍历和调整后&#xff0c;就会把填充了所需信息的符号表交给<code>com.sun.tools.javac.jvm.ClassWriter</code> 类&#xff0c;由这个类的 writeClass() 方法输出字节码&#xff0c;最终生成字节码文件&#xff0c;到此为止整个编译过程就结束了</li></ol>
+<p>这样&#xff0c;Javac的编译任务就完成了&#xff0c;生成了一个字节码文件写入到了磁盘。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114251219-02-f0e98e769c.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_46"></a>编译期优化</h3>
+<p>Java 中提供了有很多<strong>语法糖</strong>来方便程序开发&#xff0c;虽然语法糖不会提供实质性的功能改进&#xff0c;但是它能提升开发效率、语法的严谨性、减少编码出错的机会。Java中最常用的语法糖主要有<strong>泛型、变长参数、条件编译、自动拆装箱、内部类</strong>等。<font color="red"><strong>虚拟机并不支持这些语法&#xff0c;它们在编译阶段就被还原回了简单的基础语法结构&#xff0c;这个过程称为解语法糖</strong>。</font></p>
+<h4><a rel="noopener noreferrer" id="_48"></a>泛型与类型擦除</h4>
+<p>泛型顾名思义就是类型泛化&#xff0c;本质是参数化类型的应用&#xff0c;也就是说操作的数据类型被指定为一个参数。这种参数可以用在类、接口和方法的创建中&#xff0c;分别称为<strong>泛型类、泛型接口和泛型方法</strong>。</p>
+<p>泛型是JDK1.5之后引入的一项新特性&#xff0c;Java语言在还没有出现泛型时&#xff0c;只能通过<strong>Object是所有类型的父类和类型强制转换</strong>这两个特点的配合来实现泛型的功能&#xff0c;这样实现的泛型功能要在程序运行期才能知道Object真正的对象类型&#xff0c;在Javac编译期&#xff0c;编译器无法检查这个Object的强制转型是否成功&#xff0c;这便将ClassCastException 一些风险转接到了程序运行期中</p>
+<p>Java语言在JDK1.5之后引入的<strong>泛型实际上只在程序源码中存在&#xff0c;在编译后的字节码文件中&#xff0c;就已经被替换为了原来的原生类型&#xff0c;并且在相应的地方插入了强制转型代码</strong>&#xff0c;因此对于运行期的Java语言来说&#xff0c;ArrayList<code>&lt;String&gt;</code>和ArrayList<code>&lt;Integer&gt;</code>就是同一个类。所以泛型技术实际上是Java语言的一颗语法糖&#xff0c;Java语言中的泛型实现方法称为<strong>类型擦除</strong>&#xff0c;基于这种方法实现的泛型被称为<strong>伪泛型</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_55"></a>泛型擦除示例</h5>
+<p>下面是一段简单的Java泛型代码示例&#xff1a;</p>
+<pre><code class="prism language-java">Map<span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">,</span>String<span class="token punctuation">&gt;</span></span> map <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">,</span>String<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token string">&#34;No.1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token string">&#34;No.2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>将这段Java代码编译成Class文件&#xff0c;然后再用字节码反编译工具进行反编译后&#xff0c;将会发现泛型都变回了原生类型&#xff0c;如下面的代码所示&#xff1a;</p>
+<pre><code class="prism language-java">    Map map <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token string">&#34;No.1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token string">&#34;No.2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token punctuation">(</span>String<span class="token punctuation">)</span>map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token punctuation">(</span>String<span class="token punctuation">)</span>map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>为了更详细地说明类型擦除&#xff0c;再看如下代码&#xff1a;</p>
+<pre><code class="prism language-java">    <span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>List<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FanxingTest</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">method</span><span class="token punctuation">(</span>List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> list<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;List String&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">method</span><span class="token punctuation">(</span>List<span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">&gt;</span></span> list<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;List Int&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>产生报错信息&#xff1a;大意是使用了相同的方法。这是因为泛型List和List编译后都被擦除了&#xff0c;变成了一样的原生类型List&#xff0c;擦除动作导致这两个方法的特征签名变得一模一样&#xff0c;在Class类文件结构一文中讲过&#xff0c;Class文件中不能存在特征签名相同的方法。所以重载失败了&#xff0c;其实只要挺过编译器&#xff0c;在泛型擦除后加上强制类型转换重载就成功了&#xff08;因为不同的参数列表&#xff09;&#xff0c;但这里挺不过去啊&#xff01;</p>
+<pre><code class="prism language-java">    <span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>List<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FanxingTest</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">method</span><span class="token punctuation">(</span>List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> list<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;List String&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">method</span><span class="token punctuation">(</span>List<span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">&gt;</span></span> list<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;List Int&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>发现这时编译可以通过了&#xff08;注意&#xff1a;Java语言中true和1没有关联&#xff0c;二者属于不同的类型&#xff0c;不能相互转换&#xff0c;不存在C语言中整数值非零即真的情况&#xff09;。两个不同类型的返回值的加入&#xff0c;使得方法的重载成功了。这是为什么呢&#xff1f;</p>
+<p>我们知道&#xff0c;Java代码中的方法特征签名只包括了<strong>方法名称、参数顺序和参数类型</strong>&#xff0c;并不包括方法的返回值&#xff0c;因此方法的返回值并不参与重载方法的选择&#xff0c;这样看来为重载方法加入返回值貌似是多余的。对于重载方法的选择来说&#xff0c;这确实是多余的。但我们现在要解决的问题是让上述代码能通过编译&#xff0c;让两个重载方法能够合理地共存于同一个Class文件之中&#xff0c;这就要看<strong>字节码的方法特征签名&#xff0c;它不仅包括了Java代码中方法特征签名中所包含的那些信息&#xff0c;还包括方法返回值及受查异常表</strong>。为两个重载方法加入不同的返回值后&#xff0c;因为有了不同的字节码特征签名&#xff0c;它们便可以共存于一个Class文件之中。</p>
+<h4><a rel="noopener noreferrer" id="_107"></a>条件编译</h4>
+<p>Java语言中条件编译的实现&#xff0c;也是Java语言的一颗语法糖&#xff0c;<strong>根据布尔常量值的真假&#xff0c;编译器将会把分支中不成立的代码块消除掉&#xff0c;这一工作将在编译器解除语法糖阶段&#xff08;com.sun.tools.javac.comp.Lower类中&#xff09;完成</strong>。由于这种条件编译的实现方式使用了if语句&#xff0c;所以它必须遵循最基本的Java语法&#xff0c;只能写在方法体内部。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;block 1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;block 2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>上述代码经过编译后 class 文件的反编译结果&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;block 1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>此代码中的if语句不同于其他Java代码&#xff0c;它在编译阶段就会被“运行”&#xff0c;生成的字节码中只包括<code>System.out.println&#xff08;&#34;block 1&#34;&#xff09;&#xff1b;</code>一条语句&#xff0c;并不会包含if语句及另外一个分支中的<code>System.out.println&#xff08;&#34;block 2&#34;&#xff09;</code>&#xff0c;需要注意的是&#xff1a;<strong>只能使用条件为常量的if语句才能达到上述效果</strong>&#xff0c;如果使用常量与其他带有条件判断能力的语句搭配&#xff0c;则可能在控制流分析中提示错误&#xff0c;被拒绝编译</p>
+<h4><a rel="noopener noreferrer" id="_128"></a>自动装箱、拆箱与遍历循环</h4>
+<p>自动装箱、拆箱与遍历循环是 Java 语言中用得最多的语法糖。这块比较简单&#xff0c;我们直接看代码&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SyntaxSugars</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+
+        List<span class="token generics function"><span class="token punctuation">&lt;</span>Integer<span class="token punctuation">&gt;</span></span> list <span class="token operator">&#61;</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">int</span> sum <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">:</span> list<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            sum <span class="token operator">&#43;&#61;</span> i<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;sum &#61; &#34;</span> <span class="token operator">&#43;</span> sum<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>}<br />
+自动装箱、拆箱与遍历循环编译之后&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SyntaxSugars</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        List list <span class="token operator">&#61;</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Integer</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{<!-- --></span>
+                Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">int</span> sum <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>Iterator iterable <span class="token operator">&#61;</span> list<span class="token punctuation">.</span><span class="token function">iterator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> iterable<span class="token punctuation">.</span><span class="token function">hasNext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>Integer<span class="token punctuation">)</span> iterable<span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">intValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            sum <span class="token operator">&#43;&#61;</span> i<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;sum &#61; &#34;</span> <span class="token operator">&#43;</span> sum<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>第一段代码包含了<strong>泛型、自动装箱、自动拆箱、遍历循环和变长参数</strong> 5 种语法糖&#xff0c;第二段代码则展示了它们在编译后的变化。</p>
+<h2><a rel="noopener noreferrer" id="_174"></a>后端编译与优化</h2>
+<p>Java程序最初是仅仅通过解释器解释执行的&#xff0c;即对字节码逐条解释执行&#xff0c;这种方式的执行速度相对会比较慢&#xff0c;尤其当某个方法或代码块运行的特别频繁时&#xff0c;这种方式的执行效率就显得很低。于是后来在虚拟机中引入了JIT编译器&#xff08;即时编译器&#xff09;&#xff0c;<font color="red"><strong>当虚拟机发现某个方法或代码块运行特别频繁时&#xff0c;就会把这些代码认定为“Hot Spot Code”&#xff08;热点代码&#xff09;&#xff0c;为了提高热点代码的执行效率&#xff0c;在运行时&#xff0c;虚拟机将会把这些代码编译成与本地平台相关的机器码&#xff0c;并进行各层次的优化&#xff0c;完成这项任务的正是JIT编译器</strong>。</font></p>
+<h3><a rel="noopener noreferrer" id="JIT_176"></a>JIT即时编译</h3>
+<p>虽然<strong>即时编译器不是虚拟机必须的部分</strong>&#xff0c;Java 虚拟机规范并没有规定虚拟机内部必须要有即时编译器存在&#xff0c;更没有限定或指导即时编译器应该如何实现。但是 JIT 编译性能的好坏、代码优化程度的高低却是衡量一款商用虚拟机优秀与否的最关键指标之一。</p>
+<p>现在主流的商用虚拟机&#xff08;如Sun HotSpot、IBM J9&#xff09;中几乎都<strong>同时包含解释器和JIT编译器</strong>&#xff0c;二者各有优势&#xff1a;</p>
+<ul><li><strong>编译器</strong>&#xff1a;负责把一种编程语言编写的源码转换成另外一种计算机代码&#xff0c;后者往往是以二进制的形式被称为目标代码(object code)。这个转换的过程通常的目的是生成可执行的程序。编译器&#xff0c;往往是在「执行」之前完成&#xff0c;产出是一种可执行或需要再编译或者解释的「代码」。<strong>前端的javac编译就是把java源代码编译为字节码然后交给解释器去执行&#xff0c;而后端的jit编译就是把热点字节码编译为本地机器码并且执行</strong>, 显然机器码的执行速度更快。</li><li><strong>解释器</strong>&#xff1a;它直接执行由编程语言或脚本语言编写的代码&#xff0c;并不会把源代码预编译成机器码。它是把程序源代码一行一行的读懂然后执行&#xff0c;发生在运行时&#xff0c;产物是「运行结果」。</li></ul>
+<p>既然JIT处理后的是机器能够快速执行的代码&#xff0c;为啥还要解释执行呢&#xff0c;干嘛不把全部代码编译成机器代码呢&#xff1f;这是由于<strong>编译本地代码比较费时间&#xff0c;而且编译后还要进行进一步的优化导致耗时更久</strong>&#xff1b;而<strong>解释器是能够立即解释字节码文件</strong>的&#xff0c;毕竟我们的应用放到服务器上的时候就已经是字节码文件了&#xff0c;解释器可以拿来直接用。而且解释器执行的时候占用的内存更小&#xff0c;在内存受限的场景难以使用编译器&#xff08;比如手机上&#xff09;。编译器会概率性地选择多数时候都能提升运行效率的手段进行优化&#xff0c;如果“优化”后发现还不如不优化&#xff08;甚至执行有问题&#xff09;就得“逆优化”&#xff0c;回退到解释执行状态。所以解释器与编译器两者各有优势&#xff1a;</p>
+<ul><li>当程序需要迅速启动和执行的时候&#xff0c;解释器可以首先发挥作用&#xff0c;省去编译的时间&#xff0c;立即执行。</li><li>在程序运行后&#xff0c;随着时间的推移&#xff0c;编译器逐渐发挥作用&#xff0c;把越来越多的代码编译成本地机器码之后&#xff0c;可以获得更高的执行效率。</li></ul>
+<p>例如当程序运行环境中内存资源限制较大&#xff08;如部分嵌入式系统&#xff09;&#xff0c;可以使用解释器执行来节约内存&#xff0c;反之可以使用编译执行来提升效率。<strong>解释执行可以节约内存&#xff0c;而编译执行可以提升效率</strong>。HotSpot虚拟机中内置了两个JIT编译器&#xff1a;Client Complier和Server Complier&#xff0c;分别用在客户端和服务端&#xff0c;<strong>目前主流的HotSpot虚拟机中默认是采用解释器与其中一个编译器直接配合的方式工作。</strong></p>
+<p>总而言之就是&#xff0c;前端编译Javac&#xff0c;后端编译在jvm里解释包含&#xff1a;<strong>即使编译器JIT和解释器</strong>配合工作。</p>
+<h3><a rel="noopener noreferrer" id="_190"></a>编译对象与触发条件</h3>
+<p>运行过程中会被即时编译器编译的“热点代码”有两类&#xff1a;<strong>被多次调用的方法</strong>&#xff1b;<strong>被多次调用的循环体</strong>。 两种情况&#xff0c;编译器都是以整个方法作为编译对象&#xff0c;这种编译也是虚拟机中标准的编译方式。要知道一段代码或方法是不是热点代码&#xff0c;是不是需要触发即时编译&#xff0c;需要进行Hot Spot Detection&#xff08;热点探测&#xff09;。目前主要的热点 判定方式有以下两种&#xff1a;</p>
+<ul><li><strong>基于采样的热点探测</strong>&#xff1a;<strong>采用这种方法的虚拟机会周期性地检查各个线程的栈顶&#xff0c;如果发现某些方法经常出现在栈顶&#xff0c;那这段方法代码就是“热点代码”</strong>。这种探测方法的好处是实现简单高效&#xff0c;还可以很容易地获取方法调用关系&#xff0c;缺点是很难精确地确认一个方法的热度&#xff0c;容易因为受到线程阻塞或别的外界因素的影响而扰乱热点探测。</li><li><strong>基于计数器的热点探测</strong>&#xff1a;采用这种方法的虚拟机会<strong>为每个方法&#xff0c;甚至是代码块建立计数器&#xff0c;统计方法的执行次数&#xff0c;如果执行次数超过一定的阀值&#xff0c;就认为它是“热点方法”</strong>。这种统计方法实现复杂一些&#xff0c;需要为每个方法建立并维护计数器&#xff0c;而且不能直接获取到方法的调用关系&#xff0c;但是它的统计结果相对更加精确严谨。</li></ul>
+<p>HotSpot 虚拟机采用的是第二种&#xff1a;<strong>基于计数器的热点探测</strong>。因此它为每个方法准备了两类计数器&#xff1a;<strong>方法调用计数器</strong>&#xff08;Invocation Counter&#xff09;和<strong>回边计数器</strong>&#xff08;Back Edge Counter&#xff09;。在确定虚拟机运行参数的情况下&#xff0c;这两个计数器都有一个确定的阈值&#xff0c;当计数器超过阈值就会触发 JIT 编译&#xff0c;触发了JIT编译后&#xff0c;在默认设置下&#xff0c;执行引擎并不会同步等待编译请求完成&#xff0c;而是继续进入解释器按照解释方式执行字节码&#xff0c;直到提交的请求被编译器编译完成为止&#xff08;编译工作在后台线程中进行&#xff09;。当编译工作完成后&#xff0c;下一次调用该方法或代码时&#xff0c;就会使用已编译的版本。</p>
+<h4><a rel="noopener noreferrer" id="_197"></a>方法调用计数器</h4>
+<p>这个计数器用于统计方法被调用的次数。当一个方法被调用时&#xff0c;会首先检查该方法是否存在被 JIT 编译过的版本&#xff0c;如果存在&#xff0c;则优先使用编译后的本地代码来执行。如果不存在&#xff0c;则将此方法的调用计数器加 1&#xff0c;然后判断方法调用计数器与回边计数器之和是否超过方法调用计数器的阈值。如果超过阈值&#xff0c;将会向即时编译器提交一个该方法的代码编译请求</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114251219-03-2e6ae48db9.png" loading="lazy"><br />
+如果不做任何设置&#xff0c;方法调用计数器统计的并不是方法被调用的绝对次数&#xff0c;而是一个相对的执行频率&#xff0c;<strong>即一段时间内方法调用的次数</strong>。当超过一定的时间限度&#xff0c;如果方法的调用次数仍然不足以让它提交给即时编译器编译&#xff0c;那这个方法的调用计数器值就会被减少一半&#xff0c;这个过程称为方法调用计数器热度的衰减&#xff0c;而这段时间就称为此方法统计的<strong>半衰期</strong>。</p>
+<p>进行热度衰减的动作是在虚拟机进行 GC 时顺便进行的&#xff0c;可以设置虚拟机参数来关闭热度衰减&#xff0c;让方法计数器统计方法调用的绝对次数&#xff0c;这样&#xff0c;只要系统运行时间足够长&#xff0c;绝大部分方法都会被编译成本地代码。此外还可以设置虚拟机参数调整半衰期的时间</p>
+<h4><a rel="noopener noreferrer" id="_204"></a>回边计数器</h4>
+<p>回边计数器的作用是统计一个方法中循环体代码执行的次数&#xff0c;<strong>在字节码中遇到控制流向后跳转的指令称为</strong>「回边」&#xff08;Back Edge&#xff09;。建立回边计数器统计的目的是为了触发 OSR 编译。当解释器遇到一条回边指令时&#xff0c;会先查找将要执行的代码片段是否已经有编译好的版本&#xff0c;如果有&#xff0c;它将优先执行已编译的代码&#xff0c;否则就把回边计数器值加 1&#xff0c;然后判断方法调用计数器和回边计数器值之和是否超过计数器的阈值。当超过阈值时&#xff0c;将会提交一个 OSR 编译请求&#xff0c;并且把回边计数器的值降低一些&#xff0c;以便继续在解释器中执行循环&#xff0c;等待编译器输出编译结果。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114251219-04-1da1a144f1.png" loading="lazy"><br />
+与方法计数器不同&#xff0c;回边计数器没有计算热度衰减的过程&#xff0c;因此这个计数器统计的就是该方法循环执行的绝对次数。当计数器溢出时&#xff0c;它还会把方法计数器的值也调整到溢出状态&#xff0c;这样下次再进入该方法的时候就会执行标准编译过程</p>

@@ -1,0 +1,8 @@
+<p>单机性能的瓶颈，首先在于操作系统如何处理网络连接。一个连接从建立到关闭，会经历 <strong>accept、read、业务处理、write、close</strong> 等多个阶段。在传统的阻塞 I/O（BIO）模型下，每个连接的处理都会耗费一个进程或线程，并且在这些阶段中的任何一步都可能阻塞，导致资源利用率极低。</p>
+<p>具体来说，有两种典型的阻塞模型：</p>
+<ul>
+ <li><strong>PPC（Process Per Connection）</strong>：每来一个连接就 fork 一个进程去处理。进程创建开销大，需要分配独立的内核资源，并且父子进程间通信复杂。如果业务处理时间长，进程就会一直被阻塞，可承载的连接数非常有限。</li>
+ <li><strong>TPC（Thread Per Connection）</strong>：每来一个连接就创建一个线程。线程比进程更轻量，创建快，共享进程内存，通信也简单。但多线程之间共享资源会引入互斥和锁的问题，而且如果每个线程的业务处理耗时很长，依然会被阻塞，线程数过多时还会导致频繁的上下文切换。</li>
+</ul>
+<p>为了解决阻塞问题，我们引入了 <strong>NIO（非阻塞 I/O）</strong> 和多路复用技术（如 <code>select</code>、<code>poll</code>、<code>epoll</code>）。NIO 的核心思想是：不再为每个连接单独创建进程或线程，而是通过一个事件循环（Reactor）来监控所有连接的事件，当某个连接可读或可写时才去处理。这样就实现了 I/O 线程与业务处理的初步分离。但最初的 <strong>单 Reactor 单线程</strong> 模型仍然存在一个瓶颈：Reactor 线程既要负责监听事件，又要负责业务处理（通过 Handler）。如果 Handler 中的业务逻辑耗时较长（比如数据库操作），整个事件循环就会被阻塞，无法响应其他连接的事件。<br> <img alt="在这里插入图片描述" src="./posts/assets/158432878-01-a0acf99f0a.png" loading="lazy"></p>
+<p>于是演进出了 <strong>单 Reactor 多线</strong></p>

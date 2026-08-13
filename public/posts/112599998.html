@@ -1,0 +1,944 @@
+<p>大数据时代系统和业务每分每秒都产生成千上万的数据&#xff0c;其存储一定是不能通过关系型数据库了&#xff0c;当然因为数据的持久性也不能存储到内存型Nosql数据库Redis中&#xff0c;我们通常会将这些数据存储在能够不丢失数据的非关系型数据库中&#xff0c;这个技术选型有很多&#xff0c;例如HBase、Cassandra&#xff0c;这里我们暂不关心其数据存储&#xff0c;留待日后讨论&#xff0c;我们关注的是另一件事&#xff0c;如何能在分布式的数据库中进行PB级的数据检索&#xff0c;目前市场上较为成熟的解决方案中间件就是ElasticSearch&#xff0c;本文将从使用背景开始对ElasticSearch进行全面讨论&#xff1a;</p>
+<ol><li><strong>什么是全文检索&#xff1a;全文检索实现方式、倒排索引</strong></li><li><strong>ElasticSearch的概念和实现&#xff1a;索引创建和文档添加</strong></li><li><strong>ElasticSearch集群&#xff1a;节点分析、发现机制、选举机制</strong></li><li><strong>ElasticSearch工作流程&#xff1a;索引CRSUD过程</strong></li><li><strong>ElasticSearch存储原理及策略&#xff1a;分段存储及段不变性、索引操作策略</strong></li><li><strong>ElasticSearch检索&#xff1a;分词器、查询方式以及分页查询</strong></li></ol>
+<p><strong>适合人群</strong>&#xff1a;不了解ElasticSearch的新手&#xff0c;对ElasticSearch的实现机制感兴趣的技术人员</p>
+<p>本文的全部内容来自我个人在ElasticSearch学习过程中整理的博客&#xff0c;是该博客专栏的精华部分。在书写过程中过滤了流程性的上下文&#xff0c;例如部署环境、配置文件等&#xff0c;而致力于向读者讲述其中的核心部分&#xff0c;如果读者有意对过程性内容深入探究&#xff0c;可以移步<a href="https://tianmaolin.blog.csdn.net/article/details/109325831" rel="nofollow">MaoLinTian的Blog</a>&#xff0c;在这篇索引目录里找到答案。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-01-bf526ffb7e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_15"></a>什么是全文检索</h3>
+<p>有因才有果&#xff0c;先了解下为什么使用全文检索&#xff0c;才能最终料到ElasticSearch。本节从以下三个方面来进行讨论&#xff1a;<strong>全文检索的应用场景、基本概念、实现思路</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_18"></a>全文检索基本概念</h4>
+<p>因为我们的数据世界存在不规则的数据&#xff0c;而我们又需要对这些数据进行快速检索&#xff0c;所以和关系数据库类似&#xff0c;需要创建索引&#xff0c;这就引出了全文检索的概念。</p>
+<h5><a rel="noopener noreferrer" id="_21"></a>数据分类</h5>
+<p>先来了解一个前置概念&#xff1a;数据类型的分类&#xff0c;数据的来源按数据类型可分为&#xff1a;<strong>结构化数据、半结构化数据、非结构化数据</strong>。</p>
+<ul><li><strong>结构化数据</strong>&#xff1a;一般是从内部数据库和外部开放数据库接口中获得&#xff0c;一般存储产品业务运营数据以及用户操作的结果数据&#xff0c;比如注册用户数、下单量、完单量等数据。<strong>这类数据格式规范&#xff0c;典型代表就是关系数据库中的数据&#xff0c;可以用二维表来存储&#xff0c;有固定字段数&#xff0c;每个字段有固定的数据类型&#xff08;数字、字符、日期等&#xff09;&#xff0c;每个字节长度相对固定</strong>。这类数据<strong>易于维护管理&#xff0c;同时对于查询、展示和分析而言也是最为方便的一类数据格式</strong>。</li><li><strong>半结构化数据</strong>&#xff1a;应用的点击日志以及一些用户行为数据&#xff0c;<strong>通常指日志数据、xml、json等格式输出的数据</strong>&#xff0c;格式较为规范&#xff0c;一般是纯文本数据&#xff0c;需要对数据格式进行解析&#xff0c;才能用于查询或分析数据。每条记录预定义规范&#xff0c;但是每条记录包含信息不同&#xff0c;字段数不同&#xff0c;字段名和字段类型不同&#xff0c;或者还包含着嵌套的格式。</li><li><strong>非结构化数据</strong>&#xff1a;指非纯文本类数据&#xff0c;没有标准格式&#xff0c;无法直接解析相应值&#xff0c;常见的非结构化数据有富文本、图片、声音、视频等数据。<strong>一般将非结构化数据存放在文件系统中&#xff0c;数仓中记录数据的信息&#xff0c;如标题、摘要、创建时间等&#xff0c;方便进行索引查询</strong></li></ul>
+<p>对于结构化数据来说我们的<strong>查询、展示和分析</strong>很方便&#xff0c;强大的SQL语句和规范的表结构让这一点很容易做到&#xff0c;但是对于非结构化数据来说并不容易&#xff0c;尤其是进行查询的时候&#xff0c;如果给你一推文件&#xff0c;让你找出包含某个字符串的所有文件是很难实现的&#xff0c;一个两个还可以目测&#xff0c;多了就不行了。所以<strong>如何快速定位到满足查询条件的文档(数据)呢&#xff1f;</strong></p>
+<h5><a rel="noopener noreferrer" id="_30"></a>非结构化查询方式</h5>
+<p>要想实现上述需求&#xff0c;我们可以按照非结构化数据的处理思路来看&#xff1a;<strong>一般将非结构化数据存放在文件系统中&#xff0c;数仓中记录数据的信息&#xff0c;如标题、摘要、创建时间等&#xff0c;方便进行索引查询</strong>&#xff0c;也就是从文件数据提取数据标签&#xff0c;描述这个文件是做什么的&#xff0c;这样我们搜索的时候只要搜索这些标签即可找到目标的数据文件。</p>
+<h5><a rel="noopener noreferrer" id="_32"></a>全文检索</h5>
+<p>以上非结构化查询方式抽象而言可以理解为将非结构化数据中的<strong>一部分信息提取出来&#xff0c;重新组织&#xff0c;使其变得有一定结构</strong>&#xff0c;然后对此有一定结构的数据进行搜索&#xff0c;从而达到搜索相对较快的目的。<font color="red"><strong>这部分从非结构化数据中提取出的然后重新组织的信息&#xff0c;我们称之索引&#xff0c;这种先建立索引&#xff0c;再对索引进行搜索的过程就叫全文检索(Full-text Search)</strong></font>。虽然<strong>创建索引的过程也是非常耗时的</strong>&#xff0c;但是索引一旦创建就可以多次使用&#xff0c;全文检索主要处理的是查询&#xff0c;所以耗时间创建索引是值得的。</p>
+<p>这里说到我们将非结构化数据提取出来使其变得有结构&#xff0c;那么有人可能会问&#xff1a;如果我们把这些结构化标签存储在MySQL里不行么&#xff0c;还有这篇blog聊的ElasticSearch什么事儿呢&#xff1f;事实上MySQL也提供全文检索能力&#xff0c;但是没有ElasticSearch好用&#xff0c;这里简单解释一下为什么不用关系型数据库处理索引&#xff1a;</p>
+<ul><li><strong>数据结构不固定</strong>&#xff1a;这个是最关键的一点&#xff0c;关系型数据库扩展性很差&#xff0c;如果需要添加一个字段&#xff0c;那么首先要改表&#xff0c;其次如果有存储过程这些的话还需要全都改一遍&#xff0c;不好维护&#xff0c;而<strong>非结构化数据的数据标签【索引】是不固定的</strong>。</li><li><strong>不满足高并发读写</strong>&#xff1a;web2.0时代&#xff0c;需要依据用户个性化需要高并发读写&#xff0c;关系型数据库读还可以&#xff0c;写就很难做到了。例如论坛这样的站点&#xff0c; 网站的用户并发性非常高&#xff0c;往往达到每秒上万次读写请求&#xff0c;对于传统关系型数据库来说&#xff0c;<strong>硬盘I/O是一个很大的瓶颈</strong>。</li><li><strong>不满足高效访问</strong>&#xff1a;海量数据高效率存储和访问&#xff0c; 网站每天产生的数据量是巨大的&#xff0c;对于关系型数据库来说&#xff0c;在一张包含海量数据的表中查询&#xff0c;效率是非常低的&#xff0c;因为关系型数据库导出充斥着锁和事务。</li><li><strong>不满足高可拓展性和高可用性</strong>&#xff1a;关系型数据库很难进行横向扩展&#xff0c;当一个应用系统的用户量和访问量与日俱增的时候&#xff0c;数据库却没有办法像web server和app server那样简单的通过添加更多的硬件和服务节点来扩展性能和负载能力。</li></ul>
+<p>之后我们在详细聊到ElasticSearch再去讨论它是如何做到满足以上几个要求的。</p>
+<h4><a rel="noopener noreferrer" id="_43"></a>全文检索应用场景</h4>
+<p>对于<font color="red"><strong>数据量大、数据结构不固定的数据可采用全文检索方式搜索</strong></font>&#xff0c;比如百度、Google等搜索引擎、论坛站内搜索、电商网站站内搜索等&#xff0c;总而言之&#xff0c;只要用到搜索的地方&#xff0c;都可以使用<strong>全文检索</strong>进行搜索&#xff0c;</p>
+<h4><a rel="noopener noreferrer" id="_45"></a>全文检索实现思路</h4>
+<p>全文检索的整体实现思路如下图所示&#xff0c;左侧部分为创建索引&#xff0c;右侧部分为查询索引&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-02-1780b82d35.png" loading="lazy"><br /> 上图的执行流程说明如下&#xff1a;</p>
+<ul><li>左侧绿色部分表示索引过程&#xff0c;对要搜索的原始内容进行索引构建一个索引库&#xff0c;索引过程包括&#xff1a;<strong>确定原始内容即要搜索的内容—&gt;采集文档—&gt;创建文档—&gt;分析文档—&gt;索引文档</strong></li><li>右侧红色部分表示搜索过程&#xff0c;从索引库中搜索内容&#xff0c;搜索过程包括&#xff1a;<strong>用户通过搜索界面传参—&gt;创建查询—&gt;执行搜索、从索引库搜索—&gt;渲染搜索结果</strong></li></ul>
+<p>我们来具体看下索引库的基本创建过程和查询过程。</p>
+<h5><a rel="noopener noreferrer" id="_54"></a>创建索引</h5>
+<p>对文档索引的过程&#xff0c;将用户要搜索的文档内容进行索引&#xff0c;索引存储在索引库&#xff08;index&#xff09;中&#xff0c;也就是左侧的绿色流程&#xff1a;</p>
+<ol><li><strong>确定原始内容即要搜索的内容</strong>&#xff1a;确定我们的需求也即对什么数据进行分析&#xff0c;这里就是这个存放了诸多文档的文件夹</li><li><strong>采集文档</strong>&#xff1a;手段有很多&#xff0c;网络爬虫&#xff0c;数据读取&#xff0c;文件IO读取&#xff0c;我们这里用的就是<strong>文件IO读取</strong></li><li><strong>创建文档</strong>&#xff1a;获取原始内容的目的是为了索引&#xff0c;在索引前需要将原始内容创建成文档&#xff08;Document&#xff09;&#xff0c;文档中包括一个一个的域&#xff08;Field&#xff09;&#xff0c;域中存储内容。这里我们可以将磁盘上的一个文件当成一个document&#xff0c;Document中包括一些Field&#xff08;file_name文件名称、file_path文件路径、file_size文件大小、file_content文件内容&#xff09;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-03-74754ec998.png" loading="lazy"><br /> 每个文档都有一个唯一的编号&#xff0c;就是<strong>文档id</strong>。</li><li><font color="red"><strong>分析文档</strong></font>&#xff1a;将原始内容创建为包含域&#xff08;Field&#xff09;的文档&#xff08;document&#xff09;后&#xff0c;需要再对域中的内容进行分析&#xff0c;分析的过程是经过<strong>对原始文档提取单词、将字母转为小写、去除标点符号、去除停用词</strong>等过程生成最终的语汇单元&#xff0c;可以将语汇单元理解为一个一个的单词&#xff0c;例如&#xff1a;<code>Lucene is a Java full-text search engine.</code> 分析后得到的<strong>语汇单元</strong>&#xff1a;lucene、java、full、text、search、engine。<strong>每个单词叫做一个Term&#xff0c;不同的域中拆分出来的相同的单词是不同的term。term中包含两部分一部分是文档的域名&#xff0c;另一部分是单词的内容</strong>&#xff0c;例如<code>{&#34;FileName&#34;:&#34;springmvc&#34;}</code>就是域FileName上的一个term&#xff0c;这样我们在该域上进行检索的时候&#xff0c;只要检索springmvc就能找到当前文档。</li><li><font color="red"><strong>索引文档</strong></font>&#xff1a;对所有文档分析得出的语汇单元进行索引&#xff0c;索引的目的是为了搜索&#xff0c;最终要实现只搜索被索引的语汇单元从而找到Document&#xff08;文档&#xff09;&#xff0c;注意&#xff1a;<strong>创建索引是对语汇单元索引&#xff0c;通过词语找文档&#xff0c;这种索引的结构叫<font color="red"><strong>倒排索引</strong></font>结构</strong>。传统方法是根据文件找到该文件的内容&#xff0c;在文件内容中匹配搜索关键字&#xff0c;这种方法是<strong>顺序扫描方法</strong>&#xff0c;数据量大、搜索慢。倒排索引结构是根据内容&#xff08;词语&#xff09;找文档&#xff0c;如下图<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-04-1fba281d18.png" loading="lazy"><br /> 这里的词典就是term的集合&#xff0c;每个term【域和关键词的组合】会索引一连串满足条件的文档id&#xff0c;检索时通过term检索可以找到这串id&#xff0c;进而找到满足条件的文档集合。</li></ol>
+<p>实际上以上过程就是将非结构化的一些数据进行结构化提取并索引的过程。</p>
+<h5><a rel="noopener noreferrer" id="_68"></a>查询索引</h5>
+<p>查询索引也是搜索的过程。搜索就是用户输入关键字&#xff0c;从索引&#xff08;index&#xff09;中进行搜索的过程。<strong>根据关键字搜索索引&#xff0c;根据索引找到对应的文档&#xff0c;从而找到要搜索的内容</strong>&#xff08;这里指磁盘上的文件&#xff09;&#xff0c;也就是右侧红色的部分&#xff1a;</p>
+<ol><li><strong>用户通过搜索界面键入关键词</strong>&#xff1a;全文检索系统提供用户搜索的界面供用户提交搜索的关键字&#xff0c;搜索完成展示搜索结果&#xff0c;例如我们常用的百度就是这个原理。</li><li><font color="red"><strong>创建查询</strong></font>&#xff1a;用户输入查询关键字执行搜索之前需要先构建一个<strong>查询对象</strong>&#xff0c;查询对象中可以指定查询要搜索的Field文档域、查询关键字等&#xff0c;查询对象会生成具体的查询语法&#xff0c;例如term为<code>{&#34;FileName&#34;:&#34;springmvc&#34;}</code></li><li><font color="red"><strong>执行搜索</strong></font>&#xff1a;根据查询语法在倒排索引词典表中分别找出对应搜索词的索引&#xff0c;从而找到索引所链接的文档链表</li><li><strong>渲染搜索结果</strong>&#xff1a;以一个友好的界面将查询结果展示给用户&#xff0c;用户根据搜索结果找自己想要的信息&#xff0c;为了帮助用户很快找到自己的结果&#xff0c;提供了很多展示的效果&#xff0c;比如搜索结果中将<strong>关键字高亮</strong>显示&#xff0c;百度提供的快照等</li></ol>
+<p>以上部分就是全文检索如何实现索引库的查询</p>
+<h5><a rel="noopener noreferrer" id="_77"></a>全流程举例</h5>
+<p>按照如上的流程来模拟一遍。提出如下需求&#xff1a;给出一组doc文件&#xff0c;如下图所示&#xff0c;用于建立索引和搜索&#xff0c;找到指定的文档&#xff1a;要求找出所有文件名包含<strong>丑</strong>字的文件。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-05-2a5ad4be6b.png" loading="lazy"></p>
+<p>那么按照需求我们来看下如何实现&#xff0c;创建文档的相关索引&#xff0c;按照流程处理如下&#xff1a;</p>
+<ol><li><strong>确定原始内容即要搜索的内容</strong>&#xff1a;确认要搜索的是文档的文件名&#xff0c;所以只给<strong>文件名</strong>进行索引即可。需要说明的是当前这个例子比较简单&#xff0c;基本通过目测就可以实现&#xff0c;就是举个例子&#xff0c;实际上文档成千上万的时候&#xff0c;索引非常有用。</li><li><strong>采集文档</strong>&#xff1a;我们这里可以通过将文件通过IO读取到磁盘即可。</li><li><strong>创建文档</strong>&#xff1a;创建一个文档对象&#xff0c;在文档对象下我们可以创建一个FieldName为<strong>Name</strong>的域&#xff0c;Value值即为文件名&#xff0c;例如以上六个文档对象里都会包含一个文件名域&#xff0c;拿第一个文档对象举例&#xff1a;<code>&#34;FieldName&#34;:&#34;tml超级帅&#34;</code></li><li><font color="red"><strong>分析文档</strong></font>&#xff1a;将文件名进行处理&#xff0c;如果按照标准的分词方法可以举例如下&#xff1a;<strong>tml超级帅</strong>分词时分为**&#xff1a;tml、有、点、帅** &#xff0c;标准的中文是单字切分的。</li><li><font color="red"><strong>索引文档</strong></font>&#xff1a;索引文档就是建立<strong>term【某个域下的某个关键词】和文档的关系</strong>&#xff0c;倒排索引结构的创建&#xff0c;例如这里就是&#xff1a;例如term&#xff1a;<code>&#34;FieldName&#34;:&#34;丑&#34;</code>—&gt;很丑.txt[文档id为5]–&gt;tml介于帅和丑之间.txt[文档id为1]&#xff0c;挂载了两篇文档</li></ol>
+<p>查询文档过程是从索引库中搜索内容&#xff0c;按照流程处理过程如下&#xff1a;</p>
+<ul><li><strong>用户通过搜索界面传参</strong>&#xff1a;选定好域Name&#xff1a;FieldName&#xff0c;关键词value&#xff1a;丑</li><li><font color="red"><strong>创建查询</strong></font>&#xff1a;创构造一个term查询结构&#xff1a;<code>&#34;FieldName&#34;:&#34;丑&#34;</code></li><li><font color="red"><strong>执行搜索</strong></font>&#xff1a;找到所有包含<strong>丑</strong>关键词的文档&#xff0c;共两篇&#xff0c;返回文档id&#xff1a;1、5</li><li><strong>渲染搜索结果</strong>&#xff1a;通过文档id找到对应文档&#xff0c;返回结果&#xff0c;呈现给用户</li></ul>
+<p>以上就是全文检索的实现逻辑&#xff0c;了解了实现逻辑后&#xff0c;其实大家就知道&#xff0c;一定有人会写一些工具至少是类库来加速这个过程。</p>
+<h3><a rel="noopener noreferrer" id="ElasticSearch_98"></a>ElasticSearch的概念和实现</h3>
+<p>熟悉全文检索概念的话知道其实早期实现方式是用Lucene的&#xff0c;什么是Lucene呢&#xff1f;Lucene是一个开放源代码的全文检索引擎工具包&#xff0c;但它不是一个完整的全文检索引擎&#xff0c;而是一个全文检索引擎的架构&#xff0c;提供了完整的查询引擎和索引引擎&#xff0c;部分文本分析引擎&#xff08;英文与德文两种西方语言&#xff09;。<strong>Lucene的目的是为软件开发人员提供一个简单易用的工具包&#xff0c;以方便的在目标系统中实现全文检索的功能</strong>&#xff0c;或者是以此为基础建立起完整的全文检索引擎。在Java开发环境里Lucene是一个成熟的免费开源工具。一句话概括&#xff0c;<font color="red"><strong>Lucene就是一组实现全文检索的Jar包。而ElasticSearch就是基于Lucene实现的工业级全文检索引擎</strong></font></p>
+<h4><a rel="noopener noreferrer" id="ElasticSearch_100"></a>什么是ElasticSearch</h4>
+<p>Elaticsearch&#xff0c;简称为es&#xff0c; es是一个<font color="red"><strong>开源的高扩展的分布式全文检索引擎</strong></font>&#xff0c;它可以近乎实时的存储、检索数据&#xff1b;本身扩展性很好&#xff0c;可以扩展到上百台服务器&#xff0c;处理<font color="red"><strong>PB[1024TB]级别</strong></font>的数据。es也使用Java开发并使用<font color="red"><strong>Lucene</strong></font>作为其核心来实现所有索引和搜索的功能&#xff0c;但是它的目的是通过简单的RESTful API来隐藏Lucene的复杂性&#xff0c;从而让全文搜索变得简单:</p>
+<ul><li>Elasticsearch 自身带有<strong>分布式协调管理功能</strong>&#xff0c; <strong>仅支持json文件格式</strong>&#xff0c;Elasticsearch处理<strong>实时搜索应用时效率</strong>很高</li></ul>
+<p>以上的所有特点都标注了Elasticsearch实质上是一款高效的分布式的全文搜索引擎</p>
+<h4><a rel="noopener noreferrer" id="ElasticSearch_106"></a>ElasticSearch基本术语</h4>
+<p>ElasticSearch是一个<strong>面向文档</strong>的搜索引擎&#xff0c;这意味着它可以存储<strong>整个对象或文档(document)</strong>。然而它不仅仅是存储&#xff0c;还会索引(index)每个文档的内容使之可以被搜索。在Elasticsearch中&#xff0c;你可以对文档&#xff08;而非成行成列的数据&#xff09;进行<strong>索引、搜索、排序、过滤</strong>。Elasticsearch比传统关系型数据库如下&#xff1a;</p>
+<table><thead><tr><th>类别</th><th>库</th><th>表</th><th>行</th><th>列</th></tr></thead><tbody><tr><td>关系型数据库</td><td>Databases</td><td>Tables</td><td>Rows</td><td>Columns</td></tr><tr><td>ElasticSearch</td><td>Indices</td><td>Types</td><td>Docements</td><td>Fields</td></tr><tr><td>Elasticsearch具备接近实时 NRT&#xff0c;Elasticsearch是一个接近实时的搜索平台。这意味着&#xff0c;<strong>从索引一个文档直到这个文档能够被搜索到</strong>有一个轻微的延迟&#xff0c;通常1秒以内&#xff0c;关于这个延迟后边我们会详细讨论到。</td><td></td><td></td><td></td><td></td></tr><tr><td>Elasticsearch 概念</td><td>解释</td><td>Lucene概念</td><td></td><td></td></tr><tr><td>–</td><td>:–</td><td>–</td><td></td><td></td></tr><tr><td>索引</td><td>索引index就是相似特征文档的集合。例如产品目录索引、订单索引。一个索引由一个名字来标识&#xff08;<strong>必须全部是小写字母</strong>&#xff09;&#xff0c;当对索引中的文档进行CRSUD的时候都需要指定索引编码。<strong>一个集群中可以定义任意多的索引</strong></td><td>索引</td><td></td><td></td></tr><tr><td>类型</td><td>一个索引中可以定义一种或多种类型type。一个类型是<strong>索引的一个逻辑上的分类/分区</strong>&#xff0c;通常&#xff0c;<strong>会为具有一组共同字段的文档定义一个类型</strong>。<strong>ES7.X新版本中移除了这个属性&#xff0c;恒定为_doc&#xff0c;<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html#_migrating_multi_type_indices_to_single_type" rel="nofollow">这么做是为了和Lucene一致</a></strong></td><td></td><td></td><td></td></tr><tr><td>字段</td><td>相当于数据的字段Field&#xff0c;对<strong>文档数据根据不同属性进行的分类标识</strong></td><td>字段域</td><td></td><td></td></tr><tr><td>映射</td><td>mapping是处理数据的方式和规则的一些限制&#xff0c;如某个字段的**数据类型&#xff08;type&#xff09;、分析器(analyzer)、是否被索引&#xff08;index&#xff09;、是否存储(store)**等等</td><td>字段域属性配置集合</td><td></td><td></td></tr><tr><td>文档</td><td>一个文档是一个可被索引的基础信息单元。比如&#xff0c;你可以拥有某一个客户的文档&#xff0c;某一个产品的一个文档&#xff0c;当然&#xff0c;也可以拥有某个订单的一个文档。<strong>文档以JSON&#xff08;Javascript Object Notation&#xff09;格式来表示</strong>&#xff0c;而JSON是一个到处存在的互联网数据交互格式。在一个index/type里面&#xff0c;你可以存储任意多的文档。</td><td>文档</td><td></td><td></td></tr></tbody></table>
+<h4><a rel="noopener noreferrer" id="ElasticSearch_121"></a>ElasticSearch服务节点</h4>
+<p>中间件可以直接从官网 <a href="https://www.elastic.co/products/elasticsearch" rel="nofollow">ElasticSearch的官方地址</a>下载到软件&#xff0c;本质上ElasticSearch就是一个服务器&#xff0c;服务器上存放了索引数据&#xff0c;看项目结构也可以看出&#xff0c;实质上是一个tomcat的典型服务器目录&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-06-e14713342f.png" loading="lazy"><br /> 用户可以通过向服务器发起请求进行一系列操作&#xff0c; <strong>其中9300为tcp的通讯接口【代码接口tcp调用使用】&#xff0c;9200为RestFul风格通讯接口【Http调用访问】</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_125"></a>创建索引</h4>
+<p>上面提到过可以通过http请求和tcp请求来实现&#xff0c;创建索引也是如此&#xff0c;通过http请求即可创建索引并设置相关mapping&#xff0c;<strong>注意mapping在创建后只能新增字段&#xff0c;不能修改已有的字段属性</strong>&#xff0c;其中关于分片和复制在下一小节具体讨论&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token constant">PUT</span>   http<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">9200</span><span class="token operator">/</span>tml<span class="token operator">-</span>userinfo
+请求体body
+<span class="token punctuation">{<!-- --></span>
+   <span class="token string">&#34;settings&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;number_of_shards&#34;</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span>    <span class="token comment">//分片数</span>
+      <span class="token string">&#34;number_of_replicas&#34;</span><span class="token operator">:</span> <span class="token number">1</span>   <span class="token comment">//复制数</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;mappings&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;properties&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;id&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;long&#34;</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;store&#34;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;true&#34;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;title&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;text&#34;</span><span class="token punctuation">,</span>   <span class="token comment">//数据类型</span>
+                <span class="token string">&#34;store&#34;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>    <span class="token comment">//是否存储</span>
+                <span class="token string">&#34;index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;true&#34;</span><span class="token punctuation">,</span>  <span class="token comment">//是否索引</span>
+                <span class="token string">&#34;analyzer&#34;</span><span class="token operator">:</span> <span class="token string">&#34;standard&#34;</span>  <span class="token comment">//分词器类别</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;content&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;text&#34;</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;store&#34;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;true&#34;</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;analyzer&#34;</span><span class="token operator">:</span> <span class="token string">&#34;standard&#34;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回信息如下证明索引创建成功</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;acknowledged&#34;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;shards_acknowledged&#34;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;tml-userinfo&#34;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_168"></a>添加文档</h4>
+<p>同样的添加文档也是通过发http请求即可做到&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token constant">POST</span> localhost<span class="token operator">:</span><span class="token number">9200</span><span class="token operator">/</span>tml<span class="token operator">-</span>userinfo<span class="token operator">/</span>_doc<span class="token operator">/</span><span class="token number">1</span>
+请求体&#xff1a;
+<span class="token punctuation">{<!-- --></span>
+	<span class="token string">&#34;id&#34;</span><span class="token operator">:</span><span class="token number">1101</span><span class="token punctuation">,</span>
+	<span class="token string">&#34;title&#34;</span><span class="token operator">:</span><span class="token string">&#34;我是第一个集群数据&#34;</span><span class="token punctuation">,</span>
+	<span class="token string">&#34;content&#34;</span><span class="token operator">:</span><span class="token string">&#34;它提供了一个分布式多用户能力的全文搜索引擎&#xff0c;基于RESTful web接口&#34;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回值&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;_index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;tml-userinfo&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;_doc&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_id&#34;</span><span class="token operator">:</span> <span class="token string">&#34;1&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_version&#34;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;result&#34;</span><span class="token operator">:</span> <span class="token string">&#34;created&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_shards&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;successful&#34;</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;failed&#34;</span><span class="token operator">:</span> <span class="token number">0</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_seq_no&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_primary_term&#34;</span><span class="token operator">:</span> <span class="token number">1</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>在索引中的数据展示如下图所示<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-07-d60e242072.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="ElasticSearch_201"></a>ElasticSearch集群</h3>
+<p>因为ElasticSearch是应对海量数据的检索使用&#xff0c;所以ES一定是以集群为基础进行访问的&#xff0c;上文中我们引申提到过分片和副本的概念&#xff0c;其实也对应于Kafka的分区和副本的概念。本节详细聊聊ElasticSearch的集群</p>
+<h4><a rel="noopener noreferrer" id="_203"></a>集群术语</h4>
+<p>在ElasticSearch集群中有如下的前置概念术语需要理解&#xff0c;分别是集群、节点、分片和复制&#xff1a;</p>
+<ul><li><strong>集群 cluster</strong>&#xff1a;一个集群由一个或多个节点组织在一起&#xff0c;它们共同持有整个的数据&#xff0c;并一起提供索引和搜索功能。一个集群由一个唯一的名字标识&#xff0c;节点只能通过指定某个集群的名字加入集群&#xff0c;也即<strong>cluster.name必须一致</strong>&#xff0c;<strong>通过discovery.zen.ping.unicast.hosts可以相互关联起来</strong>&#xff0c;discovery.zen.ping.unicast.hosts 列表中的IP列表称为<strong>种子节点</strong>&#xff0c;整个集群提供索引和搜索的服务。</li><li><strong>节点 node</strong>&#xff1a;<strong>一个节点是集群中的一个服务器&#xff0c;作为集群的一部分&#xff0c;它存储数据&#xff0c;参与集群的索引和搜索功能</strong>&#xff0c;节点分为三类&#xff1a;<strong>主节点、数据节点\候选主节点、协调节点</strong>&#xff0c;当然并不意味着一个节点只能是一种角色</li><li><strong>分片 shard</strong>&#xff1a;一个索引可以存储超出单个结点硬件限制的大量数据。比如一个具有10亿文档的索引占据1TB的磁盘空间&#xff0c;而任一节点都没有这样大的磁盘空间或单个节点处理搜索请求响应太慢。为此Elasticsearch提供了将索引划分成多份的能力&#xff0c;这些份就叫做分片。每个分片本身也是一个功能完善并且独立的“索引”&#xff0c;这个“索引”可以被放置到集群中的任何节点上&#xff0c;<strong>允许水平分割/扩展内容容量&#xff0c;在分片之上进行分布式的、并行的操作来提高性能/吞吐量</strong>&#xff0c;提供了高可扩展及高并发能力。</li><li><strong>复制 replica</strong>&#xff1a;分片故障时故障转移机制非常必要。Elasticsearch允许创建分片的一份或多份拷贝&#xff0c;这些拷贝叫做<strong>复制分片</strong>。在分片/节点失败的情况下&#xff0c;提供了<strong>高可用性</strong>。因为这个原因&#xff0c;注意到<strong>复制分片从不与原/主要&#xff08;original/primary&#xff09;分片置于同一节点上是非常重要的</strong>&#xff0c;同时复制分片还能<strong>提提高并发量</strong>。所以复制分片的作用是<strong>高可用\高并发</strong>&#xff0c;副本越多消耗越大&#xff0c;也越保险&#xff0c;集群的可用性就越高&#xff0c;但是由于<font color="red"><strong>每个分片物理上相当于一个Lucene的索引文件</strong></font>&#xff0c;会占用一定的文件句柄、内存及CPU&#xff0c;并且分片间的数据同步也会占用一定的网络带宽&#xff0c;所以索引的分片数和副本数也不是越多越好</li></ul>
+<p>其实在创建好的索引mapping信息中我们也能get到这一信息&#xff0c;接下来配置一个集群并创建索引来对照下我们上边提到的各种概念。</p>
+<h4><a rel="noopener noreferrer" id="_212"></a>集群配置</h4>
+<p>了解了集群的基本术语后&#xff0c;我们亲手构建一个集群&#xff0c;如果一个集群中有三个节点&#xff0c;那么这三个节点可以通过以下方式配置来相互发现&#xff1a;修改每个节点<code>config\elasticsearch.yml</code>配置文件如下&#xff1a;</p>
+<pre><code class="prism language-yaml"><span class="token comment">#节点1的配置信息&#xff1a;</span>
+<span class="token comment">#集群名称&#xff0c;保证唯一</span>
+<span class="token key atrule">cluster.name</span><span class="token punctuation">:</span> elasticsearch<span class="token punctuation">-</span>tml
+<span class="token comment">#节点名称&#xff0c;必须不一样</span>
+<span class="token key atrule">node.name</span><span class="token punctuation">:</span> node<span class="token punctuation">-</span><span class="token number">1</span>
+<span class="token comment">#必须为本机的ip地址</span>
+<span class="token key atrule">network.host</span><span class="token punctuation">:</span> 127.0.0.1
+<span class="token comment">#服务端口号&#xff0c;在同一机器下必须不一样</span>
+<span class="token key atrule">http.port</span><span class="token punctuation">:</span> <span class="token number">9200</span>
+<span class="token comment">#集群间通信端口号&#xff0c;在同一机器下必须不一样</span>
+<span class="token key atrule">transport.tcp.port</span><span class="token punctuation">:</span> <span class="token number">9300</span>
+<span class="token comment">#设置集群自动发现机器ip集合</span>
+<span class="token key atrule">discovery.zen.ping.unicast.hosts</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">&#34;127.0.0.1:9300&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9301&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9302&#34;</span><span class="token punctuation">]</span>
+<span class="token comment">#跨域访问配置</span>
+<span class="token key atrule">http.cors.enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+<span class="token key atrule">http.cors.allow-origin</span><span class="token punctuation">:</span> <span class="token string">&#34;*&#34;</span>
+<span class="token comment">#指定主节点</span>
+<span class="token key atrule">cluster.initial_master_nodes</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">&#34;node-1&#34;</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code class="prism language-yaml"><span class="token comment">#节点2的配置信息&#xff1a;</span>
+<span class="token comment">#集群名称&#xff0c;保证唯一</span>
+<span class="token key atrule">cluster.name</span><span class="token punctuation">:</span> elasticsearch<span class="token punctuation">-</span>tml
+<span class="token comment">#节点名称&#xff0c;必须不一样</span>
+<span class="token key atrule">node.name</span><span class="token punctuation">:</span> node<span class="token punctuation">-</span><span class="token number">2</span>
+<span class="token comment">#必须为本机的ip地址</span>
+<span class="token key atrule">network.host</span><span class="token punctuation">:</span> 127.0.0.1
+<span class="token comment">#服务端口号&#xff0c;在同一机器下必须不一样</span>
+<span class="token key atrule">http.port</span><span class="token punctuation">:</span> <span class="token number">9201</span>
+<span class="token comment">#集群间通信端口号&#xff0c;在同一机器下必须不一样</span>
+<span class="token key atrule">transport.tcp.port</span><span class="token punctuation">:</span> <span class="token number">9301</span>
+<span class="token comment">#设置集群自动发现机器ip集合</span>
+<span class="token key atrule">discovery.zen.ping.unicast.hosts</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">&#34;127.0.0.1:9300&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9301&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9302&#34;</span><span class="token punctuation">]</span>
+<span class="token comment">#跨域访问配置</span>
+<span class="token key atrule">http.cors.enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+<span class="token key atrule">http.cors.allow-origin</span><span class="token punctuation">:</span> <span class="token string">&#34;*&#34;</span>
+</code></pre>
+<pre><code class="prism language-yaml"><span class="token comment">#节点3的配置信息&#xff1a;</span>
+<span class="token comment">#集群名称&#xff0c;保证唯一</span>
+<span class="token key atrule">cluster.name</span><span class="token punctuation">:</span> elasticsearch<span class="token punctuation">-</span>tml
+<span class="token comment">#节点名称&#xff0c;必须不一样</span>
+<span class="token key atrule">node.name</span><span class="token punctuation">:</span> node<span class="token punctuation">-</span><span class="token number">3</span>
+<span class="token comment">#必须为本机的ip地址</span>
+<span class="token key atrule">network.host</span><span class="token punctuation">:</span> 127.0.0.1
+<span class="token comment">#服务端口号&#xff0c;在同一机器下必须不一样</span>
+<span class="token key atrule">http.port</span><span class="token punctuation">:</span> <span class="token number">9202</span>
+<span class="token comment">#集群间通信端口号&#xff0c;在同一机器下必须不一样</span>
+<span class="token key atrule">transport.tcp.port</span><span class="token punctuation">:</span> <span class="token number">9302</span>
+<span class="token comment">#设置集群自动发现机器ip集合</span>
+<span class="token key atrule">discovery.zen.ping.unicast.hosts</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">&#34;127.0.0.1:9300&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9301&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9302&#34;</span><span class="token punctuation">]</span>
+<span class="token comment">#跨域访问配置</span>
+<span class="token key atrule">http.cors.enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+<span class="token key atrule">http.cors.allow-origin</span><span class="token punctuation">:</span> <span class="token string">&#34;*&#34;</span>
+</code></pre>
+<p>配置集群后启动并添加上小节设置的5个分片1个复制的<code>tml-userinfo</code>索引后&#xff0c;集群状态如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-08-f5a3d58239.png" loading="lazy"><br /> 我们我们来查看索引的信息&#xff0c;可以看到如下内容&#xff1a;</p>
+<pre><code class="prism language-java">
+&#96;&#96;&#96;java
+<span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;version&#34;</span><span class="token operator">:</span><span class="token number">9</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;mapping_version&#34;</span><span class="token operator">:</span><span class="token number">2</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;settings_version&#34;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aliases_version&#34;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;routing_num_shards&#34;</span><span class="token operator">:</span><span class="token number">640</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;state&#34;</span><span class="token operator">:</span><span class="token string">&#34;open&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;settings&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;index&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;routing&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;allocation&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;include&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                        <span class="token string">&#34;_tier_preference&#34;</span><span class="token operator">:</span><span class="token string">&#34;data_content&#34;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;number_of_shards&#34;</span><span class="token operator">:</span><span class="token string">&#34;5&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;provided_name&#34;</span><span class="token operator">:</span><span class="token string">&#34;tml-userinfo&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;creation_date&#34;</span><span class="token operator">:</span><span class="token string">&#34;1610800394680&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;number_of_replicas&#34;</span><span class="token operator">:</span><span class="token string">&#34;1&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;uuid&#34;</span><span class="token operator">:</span><span class="token string">&#34;MbmG0jnUQ22UOfM9zhJ3kg&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;version&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;created&#34;</span><span class="token operator">:</span><span class="token string">&#34;7100299&#34;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;mappings&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;_doc&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;properties&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;describe&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;analyzer&#34;</span><span class="token operator">:</span><span class="token string">&#34;standard&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;store&#34;</span><span class="token operator">:</span><span class="token boolean">true</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;type&#34;</span><span class="token operator">:</span><span class="token string">&#34;text&#34;</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;id&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;store&#34;</span><span class="token operator">:</span><span class="token boolean">true</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;type&#34;</span><span class="token operator">:</span><span class="token string">&#34;long&#34;</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;title&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;analyzer&#34;</span><span class="token operator">:</span><span class="token string">&#34;standard&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;store&#34;</span><span class="token operator">:</span><span class="token boolean">true</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;type&#34;</span><span class="token operator">:</span><span class="token string">&#34;text&#34;</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;content&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;analyzer&#34;</span><span class="token operator">:</span><span class="token string">&#34;standard&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;store&#34;</span><span class="token operator">:</span><span class="token boolean">true</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;type&#34;</span><span class="token operator">:</span><span class="token string">&#34;text&#34;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aliases&#34;</span><span class="token operator">:</span><span class="token punctuation">[</span>
+
+    <span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;primary_terms&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;0&#34;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;1&#34;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;2&#34;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;3&#34;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;4&#34;</span><span class="token operator">:</span><span class="token number">1</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;in_sync_allocations&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;0&#34;</span><span class="token operator">:</span><span class="token punctuation">[</span>
+            <span class="token string">&#34;dFqgw2xGR2K2_2N5H1mg0Q&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;zi7v_U9LQNCzyj6mqygowA&#34;</span>
+        <span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;1&#34;</span><span class="token operator">:</span><span class="token punctuation">[</span>
+            <span class="token string">&#34;c36TL2OFTOWmxhs4uuVIug&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;storqrL-TKCRYyneXTp5wQ&#34;</span>
+        <span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;2&#34;</span><span class="token operator">:</span><span class="token punctuation">[</span>
+            <span class="token string">&#34;6o_AFiphQYi_IysAN6Dmnw&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;veZZlgZ5Q2ihu2ALlxA2Hg&#34;</span>
+        <span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;3&#34;</span><span class="token operator">:</span><span class="token punctuation">[</span>
+            <span class="token string">&#34;l5L-1ZNBQ5mv0JNBh9RKMw&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;A8oYRyK0Qu-oL0SAndIhVA&#34;</span>
+        <span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;4&#34;</span><span class="token operator">:</span><span class="token punctuation">[</span>
+            <span class="token string">&#34;YnNkHjeWQTSOjQFJ5MGxjw&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;An8hAJP7R1Wo4uQ7IVFZJQ&#34;</span>
+        <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;rollover_info&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;system&#34;</span><span class="token operator">:</span><span class="token boolean">false</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_369"></a>节点分析</h4>
+<p>上文提到&#xff0c;节点分为3类&#xff0c;每个节点既可以是候选主节点也可以是数据节点&#xff0c;通过在配置文件…/config/elasticsearch.yml中设置即可&#xff0c;默认都为<strong>true</strong>&#xff1a;</p>
+<pre><code class="prism language-java">node<span class="token punctuation">.</span>master<span class="token operator">:</span> <span class="token boolean">true</span>  <span class="token comment">//是否候选主节点</span>
+node<span class="token punctuation">.</span>data<span class="token operator">:</span> <span class="token boolean">true</span>    <span class="token comment">//是否数据节点</span>
+</code></pre>
+<p>那么这三类节点各代表什么意义呢&#xff1f;</p>
+<ul><li><strong>数据节点(data)【物理配置】</strong>&#xff1a;负责数据的存储和相关的操作&#xff0c;例如对数据进行增、删、改、查和聚合等操作&#xff0c;所以数据节点&#xff08;data节点&#xff09;对机器配置要求比较高&#xff0c;对CPU、内存和I/O的消耗很大。通常随着集群的扩大&#xff0c;需要增加更多的数据节点来提高性能和可用性。<font color="red"><strong>可以存放数据的节点</strong></font></li><li><strong>候选主节点&#xff08;master-eligible node&#xff09;【物理配置】<strong>可以被选举为主节点&#xff08;master节点&#xff09;&#xff0c;集群中只有候选主节点才有</strong>选举权和被选举权</strong>&#xff0c;其他节点不参与选举的工作。<font color="red"><strong>可以参与主节点竞选的节点</strong></font></li><li><strong>主节点&#xff08;master&#xff09;【动态概念】</strong>&#xff1a;负责创建索引、删除索引、跟踪哪些节点是集群的一部分&#xff0c;并决定哪些分片分配给相关的节点、追踪集群中节点的状态等&#xff0c;稳定的主节点对集群的健康是非常重要的。<font color="red"><strong>管理整个集群中的节点、索引等的节点&#xff0c;master</strong></font></li><li><strong>协调节点&#xff08;proxy&#xff09;【动态概念】</strong>&#xff1a;虽然对节点做了角色区分&#xff0c;但是用户的请求可以发往任何一个节点&#xff0c;并由该节点负责分发请求、收集结果等操作&#xff0c;而不需要主节点转发&#xff0c;这种节点可称之为协调节点&#xff0c;协调节点是不需要指定和配置的&#xff0c;集群中的任何节点都可以充当协调节点的角色,<font color="red"><strong>接收用户请求并反馈结果给用户的节点</strong></font></li></ul>
+<p>一般而言&#xff0c;一个节点既可以是候选主节点也可以是数据节点&#xff0c;但是由于数据节点对CPU、内存核I/0消耗都很大&#xff0c;所以如果某个节点既是数据节点又是主节点&#xff0c;那么可能会对主节点产生影响从而对整个集群的状态产生影响&#xff0c;会导致我们接下来分析的<strong>脑裂现象</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-09-54a13b5cda.png" loading="lazy"><br /> NodeA是当前集群的Master&#xff0c;NodeB和NodeC是Master的候选节点&#xff0c;其中NodeA和NodeB同时也是数据节点(DataNode)&#xff0c;此外&#xff0c;NodeD是一个单纯的数据节点&#xff0c;Node_E是一个双非节点&#xff08;既非Data也非Master候选&#xff09;&#xff0c;但还是可以充当proxy节点。每个Node会跟其他所有Node建立连接&#xff0c;形成一张网状图</p>
+<h4><a rel="noopener noreferrer" id="_385"></a>发现机制</h4>
+<p>每个节点是如何连接到一起并构建成集群的呢&#xff0c;这个就是由集群的发现机制来实现的&#xff0c;上文中我们提到两个参数&#xff0c;在节点配置信息上必须具备&#xff1a;</p>
+<pre><code class="prism language-java">#集群名称&#xff0c;保证唯一
+cluster<span class="token punctuation">.</span>name<span class="token operator">:</span> elasticsearch<span class="token operator">-</span>tml
+#设置集群自动发现机器ip集合
+discovery<span class="token punctuation">.</span>zen<span class="token punctuation">.</span>ping<span class="token punctuation">.</span>unicast<span class="token punctuation">.</span>hosts<span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&#34;127.0.0.1:9300&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9301&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;127.0.0.1:9302&#34;</span><span class="token punctuation">]</span>
+</code></pre>
+<p>每个节点配置相同的 cluster.name 即可加入集群&#xff0c;那么ES内部是如何通过一个相同的设置cluster.name 就能将不同的节点连接到同一个集群的&#xff1f;</p>
+<p>ES的内部使用了Zen Discovery——Elasticsearch的内置默认发现模块&#xff08;发现模块的职责是<strong>发现集群中的节点</strong>以及<strong>选举master节点</strong>&#xff09;&#xff0c;发现规则为单播发现&#xff0c;以防止节点无意中加入集群。<strong>只有在同一台机器上运行的节点才会自动组成集群。如果集群的节点运行在不同的机器上&#xff0c;使用单播&#xff0c;可以为 Elasticsearch 提供它应该去尝试连接的节点列表</strong>。 模拟发现按照如下步骤&#xff1a;</p>
+<ol><li>每个节点的配置文件都维护一个初始节点主机列表&#xff0c;单播列表不需要包含集群中的所有节点&#xff0c; 它只是需要足够的节点&#xff0c;当一个新节点联系上其中一个并且说上话就可以了&#xff0c;<code>discovery.zen.ping.unicast.hosts: [&#34;host1&#34;, &#34;host2:port&#34;]</code></li><li>节点使用发现机制通过Ping的方式查找其他节点&#xff0c;节点启动后先 ping&#xff0c; <code>如果discovery.zen.ping.unicast.hosts</code> 有设置&#xff0c;则 ping 设置中的 host &#xff0c;否则尝试 ping localhost 的几个端口</li><li>节点检测cluster.name是否一致&#xff0c;如果一致&#xff0c;就联系上了这个集群&#xff0c;之后会联系这个集群的master&#xff0c;<strong>来通知集群它已经准备好加入到集群中了</strong></li></ol>
+<p>当一个节点联系到单播列表中的成员时&#xff0c;它就会得到整个集群所有节点的状态&#xff0c;然后它会联系 master 节点&#xff0c;并加入集群发现规则&#xff0c;通过这种方式节点就能发现集群&#xff0c;进而之后加入集群成为集群的一部分了。</p>
+<h4><a rel="noopener noreferrer" id="_403"></a>选举机制</h4>
+<p>集群中可能会有多个master-eligible node&#xff0c;此时就要进行master选举&#xff0c;保证只有一个当选master。如果有多个node当选为master&#xff0c;则集群会出现<strong>脑裂</strong>&#xff0c;脑裂会破坏数据的一致性&#xff0c;导致集群行为不可控&#xff0c;产生各种非预期的影响。为了避免产生脑裂&#xff0c;ES采用了常见的分布式系统思路&#xff0c;保证选举出的master被多数派(quorum)的master-eligible node认可&#xff0c;以此来保证只有一个master。这个quorum通过<code>discovery.zen.minimum_master_nodes</code>进行配置&#xff0c;<strong>要求可用节点必须大于 quorum &#xff08;这个属性一般设置为 eligibleNodesNum / 2 &#43; 1&#xff09;</strong>&#xff0c;才能对外提供服务。</p>
+<h5><a rel="noopener noreferrer" id="_405"></a>选举发起条件</h5>
+<p>master选举由<strong>master-eligible</strong>节点发起&#xff0c;当一个master-eligible节点发现满足以下条件时发起选举&#xff1a;</p>
+<ol><li>当前master eligible节点不是master&#xff0c;<font color="red"><strong>我不是master</strong></font></li><li>当前master eligible节点与其它的节点通信无法发现master&#xff0c;<font color="red"><strong>我联系不上master</strong></font></li><li>集群中无法连接到master的master eligible节点数量已达到 <code>discovery.zen.minimum_master_nodes</code> 所设定的值&#xff0c;<font color="red"><strong>超过一半的兄弟们联系不上master</strong></font></li></ol>
+<p>即当一个master-eligible节点发现<strong>包括自己在内的多数派的master-eligible节点认为集群没有master时&#xff0c;就可以发起master选举</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_414"></a>选举规则</h5>
+<p>选举规则由两个参数决定&#xff0c;一个是<strong>clusterStateVersion</strong>&#xff0c;一个是<strong>节点的ID</strong>&#xff0c;按照如下步骤进行选举&#xff0c;即每个候选主节点</p>
+<ol><li><strong>clusterStateVersion越大&#xff0c;优先级越高</strong>。这是为了保证新Master拥有最新的clusterState(即集群的meta)&#xff0c;避免已经commit的meta变更丢失。因为Master当选后&#xff0c;就会以这个版本的clusterState为基础进行更新。<strong>候选主节点寻找clusterStateVersion比自己高的master eligible的节点&#xff0c;向其发送选票</strong></li><li><strong>当clusterStateVersion相同时&#xff0c;节点的Id越小&#xff0c;优先级越高</strong>。即总是倾向于选择Id小的Node&#xff0c;这个Id是节点第一次启动时生成的一个随机字符串。之所以这么设计&#xff0c;应该是为了让选举结果尽可能稳定&#xff0c;不要出现都想当master而选不出来的情况。<strong>如果clusterStatrVersion一样&#xff0c;则计算自己能找到的master eligible节点&#xff08;包括自己&#xff09;中节点id最小的一个节点&#xff0c;向该节点发送选举投票</strong></li><li><strong>如果一个节点收到足够多的投票&#xff08;即 minimum_master_nodes 的设置&#xff09;</strong>&#xff0c;并且它也向自己投票了&#xff0c;那么该节点成为master开始发布集群状态</li></ol>
+<p>选举时分两种情况&#xff0c;一种是当前候选主节点选自己当Master&#xff0c;另一种是当前候选主节点选别的节点当Master&#xff0c;当一个master-eligible node(我们假设为Node_A)发起一次选举时&#xff0c;它会按照上述排序策略选举</p>
+<blockquote>
+ <p><strong>当前候选主节点选自己&#xff08;Node_A&#xff09;当Master</strong></p>
+</blockquote>
+<p>NodeA会等别的node来join&#xff0c;即等待别的node的选票&#xff0c;当收集到超过半数的选票时&#xff0c;认为自己成为master&#xff0c;然后变更cluster_state中的master node为自己&#xff0c;并向集群发布这一消息</p>
+<blockquote>
+ <p><strong>当前候选主节点选别的节点&#xff08;Node_B&#xff09;当Master</strong></p>
+</blockquote>
+<ol><li>如果Node_B已经成为Master&#xff0c;Node_B就会把Node_A加入到集群中&#xff0c;然后发布最新的cluster_state, 最新的cluster_state就会包含Node_A的信息。相当于一次正常情况的新节点加入。对于Node_A&#xff0c;等新的cluster_state发布到Node_A的时候&#xff0c;Node_A也就完成join了</li><li>如果Node_B在竞选Master&#xff0c;并且选了自己为Master&#xff0c;那么Node_B会把这次join当作一张选票。对于这种情况&#xff0c;Node_A会等待一段时间&#xff0c;看Node_B是否能成为真正的Master&#xff0c;直到超时或者有别的Master选成功。</li><li>如果Node_B认为自己不是Master(现在不是&#xff0c;将来也选不上)&#xff0c;那么Node_B会拒绝这次join。对于这种情况&#xff0c;Node_A会开启下一轮选举。</li></ol>
+<p>以上就是整个选举的流程&#xff0c;如果没有特殊情况是一定能选举出一个master的。</p>
+<h5><a rel="noopener noreferrer" id="_435"></a>脑裂现象和避免</h5>
+<p>选举时当出现多个master竞争时&#xff0c;主分片和副本的识别也发生了分歧&#xff0c;对一些分歧中的分片标识为了坏片&#xff0c;更新的时候造成数据混乱或其它非预期结果&#xff0c;也就是我们上文提到的脑裂。其实按照如上的选举规则&#xff0c;能选举出一个确定的master是一定的&#xff0c;就算clusterStateVersion一样&#xff0c;也不可能有两个节点id一致&#xff0c;总会有大有小&#xff0c;按照此规则&#xff0c;所有节点其实是能达成共识的。“脑裂”问题可能有以下几个原因造成&#xff1a;</p>
+<ul><li><strong>网络问题</strong>&#xff1a;集群间的网络延迟导致一些节点访问不到master&#xff0c;认为master挂掉了从而选举出新的master&#xff0c;并对master上的分片和副本标红&#xff0c;分配新的主分片</li><li><strong>节点负载</strong>&#xff1a;主节点的角色既为master又为data&#xff0c;访问量较大时可能会导致ES停止响应&#xff08;假死状态&#xff09;造成大面积延迟&#xff0c;此时其他节点得不到主节点的响应认为主节点挂掉了&#xff0c;会重新选取主节点。</li><li><strong>内存回收</strong>&#xff1a;主节点的角色既为master又为data&#xff0c;当data节点上的ES进程占用的内存较大&#xff0c;引发JVM的大规模内存回收&#xff0c;造成ES进程失去响应。</li></ul>
+<p>为了避免脑裂现象的发生&#xff0c;我们可以从根源着手通过以下几个方面来做出优化措施&#xff1a;</p>
+<ul><li><strong>适当调大响应时间&#xff0c;减少误判</strong>&#xff1a;通过参数<code>discovery.zen.ping_timeout</code>设置节点状态的响应时间&#xff0c;默认为3s&#xff0c;可以适当调大&#xff0c;如果master在该响应时间的范围内没有做出响应应答&#xff0c;判断该节点已经挂掉了。调大参数&#xff08;如6s&#xff0c;discovery.zen.ping_timeout:6&#xff09;&#xff0c;可适当减少误判。</li><li><strong>角色分离</strong>&#xff1a;即是上面我们提到的候选主节点和数据节点进行角色分离&#xff0c;这样可以减轻主节点的负担&#xff0c;防止主节点的假死状态发生&#xff0c;减少对主节点“已死”的误判。</li><li><strong>选举触发</strong>&#xff1a;在候选集群中的节点的配置文件中设置参数<code>discovery.zen.munimum_master_nodes</code>的值&#xff0c;这个参数表示在选举主节点时需要参与选举的候选主节点的节点数&#xff0c;默认值是1&#xff0c;官方建议取值(master_eligibel_nodes/2) &#43; 1&#xff0c;这样做既能防止脑裂现象的发生&#xff0c;也能最大限度地提升集群的高可用性&#xff0c;因为只要不少于<strong>discovery.zen.munimum_master_nodes</strong>个候选节点存活&#xff0c;选举工作就能正常进行。当小于这个值的时候&#xff0c;无法触发选举行为&#xff0c;集群无法使用&#xff0c;不会造成分片混乱的情况。</li></ul>
+<p>当然这里只讨论当前master连接不上重新发起选举的情况&#xff0c;其实在选举过程中也存在重复投票的问题&#xff0c;不做深入讨论。</p>
+<h3><a rel="noopener noreferrer" id="ElasticSearch_450"></a>ElasticSearch工作流程</h3>
+<p>主分片和副本分片是如何同步的&#xff1f;创建索引的流程是什么样的&#xff1f;ES如何将索引数据分配到不同的分片上的&#xff1f;本节讨论以上的问题来详细解读当一个索引相关请求进入ElasticSearch集群时&#xff0c;经历了哪些流程。</p>
+<p>下图描述了3个节点的集群&#xff0c;共拥有12个分片&#xff0c;包括4个主分片&#xff08;<strong>S0、S1、S2、S3</strong>&#xff09;和8个复制分片&#xff08;<strong>R0、R1、R2、R3</strong>&#xff09;&#xff0c;每个主分片对应两个副本分片&#xff0c;节点1是主节点&#xff08;Master节点&#xff09;负责整个集群状态<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-10-0fb2c10cb9.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_455"></a>路由规则</h4>
+<p>需要注意&#xff0c;<font color="red"><strong>写索引是只能写在主分片上&#xff0c;然后同步到副本分片</strong></font>。这里有4个主分片&#xff0c;一条数据ES是根据什么规则写到特定分片上的呢&#xff1f;这个过程是根据下面这个公式决定的&#xff1a;</p>
+<pre><code class="prism language-java">shard <span class="token operator">&#61;</span> <span class="token function">hash</span><span class="token punctuation">(</span>routing<span class="token punctuation">)</span> <span class="token operator">%</span> number_of_primary_shards
+</code></pre>
+<p>以上公式中涉及注意事项如下如下&#xff1a;</p>
+<ul><li>routing 是一个可变值&#xff0c;默认是<strong>文档的 _id</strong> &#xff0c;也可以设置成一个自定义的值<font color="red"><strong>【例如租户ID】</strong></font>。 routing 通过 hash 函数生成一个数字&#xff0c;然后这个数字再除以 number_of_primary_shards &#xff08;主分片的数量&#xff09;后得到余数 。这个在 0 到 <code>number_of_primary_shards-1</code> 之间的余数&#xff0c;即文档所在分片位置</li><li>如果是自定义的routing&#xff0c;在查询时&#xff0c;一定要<strong>指定routing</strong>进行查询&#xff0c;否则是查询不到文档的。这并不是局限性&#xff0c;恰恰相反&#xff0c;指定routing的查询&#xff0c;性能上会好很多&#xff0c;因为指定_routing意味着直接去存储数据的shard上搜索&#xff0c;而不会搜索所有shard</li></ul>
+<p>公式解释了为什么要在<strong>创建索引的时候就确定好主分片的数量并且永远不会改变这个数量</strong>&#xff1a;因为如果数量变化了&#xff0c;那么所有之前路由的值都会无效&#xff0c;文档也再也找不到了</p>
+<h4><a rel="noopener noreferrer" id="_467"></a>写操作流程</h4>
+<p>每个节点都有处理读写请求的能力。在一个写请求被发送到某个节点后&#xff0c;该节点即为上文提到的协调节点&#xff0c;协调节点会根据路由公式计算出需要写到哪个分片上&#xff0c;再将请求转发到<strong>该分片的主分片节点上</strong>。假如此时数据通过路由计算公式取余后得到的值是 shard &#61; hash(routing) % 4 &#61; 0&#xff0c;则具体流程如下&#xff1a;</p>
+<ol><li>客户端向E-Node2节点&#xff08;协调节点&#xff09;发送写请求&#xff0c;通过路由计算公式得到值为0&#xff0c;则当前数据应被写到主分片S0上。</li><li>E-Node2节点将请求转发到S0主分片所在的节点E-Node3&#xff0c;E-Node3接受请求并写入到磁盘S0。</li><li>并发将数据复制到两个副本分片R0上&#xff0c;其中通过乐观并发控制数据的冲突。</li><li>一旦所有的副本分片都报告成功&#xff0c;则节点ES3将向协调节点报告成功&#xff0c;协调节点向客户端报告成功。</li></ol>
+<p>下图为流程说明图&#xff0c;后续各操作流程类似&#xff0c;不多余画图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-11-ac01be97df.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_476"></a>读操作流程</h4>
+<p>同写操作一样&#xff0c;GET某一条数据的流程也会计算路由&#xff0c;当写入了某个document后&#xff0c;这个document会自动给你分配一个全局唯一的id&#xff0c;doc id&#xff0c;同时也是根据doc id进行hash路由到对应的primary shard上去&#xff1a;</p>
+<ol><li>客户端发送请求到E-Node2节点&#xff0c;该节点成为协调节点</li><li>协调节点对document进行路由&#xff0c;路由规则同上&#xff0c;将请求转发到路由主分片E-Node3节点&#xff0c;此时会使用round-robin【<strong>这个轮询算法在我的Kafka相关blog介绍过</strong>】随机轮询算法&#xff0c;在E-Node3_S0以及其所有replica【E-Node1_R0、E-Node2_R0】中随机选择一个&#xff0c;让读请求负载均衡</li><li>接收请求的节点【E-Node3_S0、E-Node1_R0、E-Node2_R0中随机的一个】返回document给coordinate node【E-Node2】</li><li>协调节点向客户端报告成功&#xff0c;返回document给客户端</li></ol>
+<p>以上就是通过一个具体的文档Id读数据的流程&#xff0c;当然其实ES我们更多用到的是它的搜索。</p>
+<h4><a rel="noopener noreferrer" id="_487"></a>搜索操作流程</h4>
+<p>其实我们在ES的大多数使用场景都是检索&#xff0c;那么检索的原理是什么呢&#xff1f;这里举个例子&#xff0c;例如我有三条数据&#xff0c;分别叫&#xff1a;<strong>E-Node1_S3tml超级帅、E-Node1_S2tml很丑、E-Node2_S1tml很丑、E-Node3_S0tml其实挺帅的</strong>。前缀表明他们存储的主分片。我们搜索【帅】这个关键字&#xff1a;</p>
+<ol><li>客户端发送请求到E-Node2节点&#xff0c;该节点成为协调节点</li><li>协调节点将请求转发到所有分片上【主分片或副本分片&#xff0c;采取随机轮询的方式】&#xff0c;假设这里都是主分片处理请求&#xff0c;那么请求被转发到了E-Node1、E-Node1和E-Node3两个节点</li><li><strong>query phase</strong>&#xff1a;每个分片将自己的搜索结果&#xff08;其实就是一些doc id&#xff09;&#xff0c;返回给协调节点&#xff0c;由协调节点进行数据的合并、排序、分页等操作&#xff0c;产出最终结果&#xff0c;这里【帅】命中了两条数据&#xff1a;E-Node1的S3分片上【E-Node1_S3tml超级帅】&#xff0c;E-Node3的S0分片上【E-Node3_S0tml其实挺帅的】&#xff0c;这两条数据的doc id被返回给协调节点E-Node2</li><li><strong>fetch phase</strong>&#xff1a;协调节点E-Node2根据doc id去各个节点上拉取实际的document数据&#xff0c;最终返回给客户端</li></ol>
+<p>这里需要注意&#xff0c;第一次只检索数据id返回给协调节点&#xff0c;并不是真正的取数据&#xff0c;整合之后再取数据。</p>
+<h4><a rel="noopener noreferrer" id="_496"></a>删除操作流程</h4>
+<p>删除其实是假删除&#xff0c;先进行标记删除&#xff0c;然后在段合并&#xff08;这个概念后文提到&#xff09;的时候再进行彻底删除&#xff0c;删除时给定了文档id&#xff0c;这样按照我们的流程&#xff0c;要删除文档【E-Node1_S3tml超级帅】</p>
+<ol><li>客户端发送请求到E-Node2节点&#xff0c;该节点成为协调节点</li><li>协调节点对document id进行路由&#xff0c;路由规则同上&#xff0c;将请求转发到路由主分片E-Node1_S3的节点E-Node1&#xff0c;此时不直接删除文档&#xff0c;而是把文档id标记到.del的删除文件</li><li>将删除请求路由到所有副本节点【E-Node2_R3、E-Node3_R3】执行同样的操作</li><li>协调节点向客户端报告成功</li></ol>
+<p>下面会讲到&#xff0c;只有在进行段合并的时候才会真正的删除文件&#xff0c;其它时候只是检索到后将结果集过滤了一遍.del文件。</p>
+<h4><a rel="noopener noreferrer" id="_504"></a>更新操作流程</h4>
+<p>更新其实是一次删除加一次写入&#xff0c;已标记删除的V1版本&#xff0c;在检索时可能会被检索到&#xff0c;然后在结果集里被过滤掉&#xff0c;所以.del文件还需要记录文档的版本&#xff0c;这样按照我们的流程&#xff0c;要更新文档【E-Node1_S3tml超级帅】</p>
+<ol><li>客户端发送请求到E-Node2节点&#xff0c;该节点成为协调节点</li><li>协调节点对document id进行路由&#xff0c;路由规则同上&#xff0c;将请求转发到路由主分片E-Node1_S3的节点E-Node1&#xff0c;此时不直接删除文档&#xff0c;而是把文档id标记到.del的删除文件&#xff0c;然后索引一个文档的新版本</li><li>将更新请求路由到所有副本节点对分片【E-Node2_R3、E-Node3_R3】执行同样的操作</li><li>协调节点向客户端报告成功</li></ol>
+<p>那么在具体的更新流程中&#xff0c;版本合并如何处理呢&#xff1f;在下边的更新版本合并策略中介绍到。</p>
+<h3><a rel="noopener noreferrer" id="ElasticSearch_513"></a>ElasticSearch存储原理及策略</h3>
+<p>上面介绍了在ES内部索引的CRSUD处理流程&#xff0c;这个流程是在<strong>ES的内存中执行的</strong>&#xff0c;数据被分配到特定的分片和副本上之后&#xff0c;最终持久化到磁盘上&#xff0c;这样断电的时候就不会丢失数据。具体的存储路径可在配置文件<code>../config/elasticsearch.yml</code>中进行设置&#xff0c;默认存储在安装目录的data文件夹下。建议不要使用默认值&#xff0c;因为若ES进行了升级&#xff0c;则可能导致数据全部丢失</p>
+<pre><code class="prism language-java">path<span class="token punctuation">.</span>data<span class="token operator">:</span> <span class="token operator">/</span>path<span class="token operator">/</span><span class="token keyword">to</span><span class="token operator">/</span>data  <span class="token comment">//索引数据</span>
+path<span class="token punctuation">.</span>logs<span class="token operator">:</span> <span class="token operator">/</span>path<span class="token operator">/</span><span class="token keyword">to</span><span class="token operator">/</span>logs  <span class="token comment">//日志记录</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_520"></a>分段存储</h4>
+<p>索引文档以段的形式存储在<strong>磁盘</strong>上&#xff0c;索引文件被拆分为多个子文件&#xff0c;则<strong>每个子文件叫作段【其实和Kafka将Partion切分为段类似】</strong>&#xff0c; 每一个段本身都是一个倒排索引&#xff0c;并且<strong>段具有不变性</strong>&#xff0c;一旦索引的数据被写入硬盘&#xff0c;就不可再修改。在底层采用了分段的存储模式&#xff0c;使它在读写时几乎完全避免了锁的出现&#xff0c;大大提升了读写性能。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-12-c2f5101f8a.png" loading="lazy"></p>
+<p>段在不同存储模式下拥有不同的读写能力&#xff0c;可以避免使用锁的开销&#xff0c;提升读写性能</p>
+<ol><li><strong>当索引在内存中时&#xff0c;就只有写的权限&#xff0c;而不具备读数据的权限&#xff0c;意味着不能被检索【只能写不能读】</strong>。</li><li><strong>当索引被刷到文件缓存系统里成为段之后才能被检索【只能读不能写】</strong>。</li><li>段被写入到磁盘后会生成一个提交点&#xff08;checkpoint&#xff09;&#xff0c;<strong>提交点是一个用来记录所有提交后段信息的文件</strong>。一个段一旦拥有了提交点&#xff0c;就说明这个段的数据在断电时也不会丢失了</li></ol>
+<p>为什么要有段呢&#xff1f;早期全文检索为整个文档集合建立了一个很大的倒排索引&#xff0c;并将其写入磁盘中。如果索引有更新&#xff0c;就需要重新全量创建一个索引来替换原来的索引。这种方式在数据量很大时效率很低&#xff0c;并且由于创建一次索引的成本很高&#xff0c;所以对数据的更新不能过于频繁&#xff0c;也就不能保证时效性&#xff0c;索引文件分段存储并且不可修改&#xff0c;那么新增、更新和删除如何处理呢&#xff1f;</p>
+<ul><li><strong>新增</strong>&#xff0c;新增很好处理&#xff0c;由于数据是新的&#xff0c;所以只需要对当前文档新增一个段就可以了。</li><li><strong>删除</strong>&#xff0c;由于不可修改&#xff0c;所以对于删除操作&#xff0c;不会把文档从旧的段中移除而是通过新增一个.del文件&#xff0c;文件中会列出这些被删除文档的段信息。这个被标记删除的文档仍然可以被查询匹配到&#xff0c; <strong>但它会在最终结果被返回前从结果集中移除</strong>。</li><li><strong>更新</strong>&#xff0c;不能修改旧的段来进行反映文档的更新&#xff0c;其实更新相当于是删除和新增这两个动作组成。会将旧的文档在.del文件中标记删除&#xff0c;然后文档的<strong>新版本</strong>被索引到一个新的段中。<strong>可能两个版本的文档都会被一个查询匹配到&#xff0c;但被删除的那个旧版本文档在结果集返回前就会被移除</strong>。</li></ul>
+<p>段被设定为不可修改具有一定的优势也有一定的缺点。</p>
+<h5><a rel="noopener noreferrer" id="_538"></a>段不变性的优势</h5>
+<p>段不变性的优势主要体现在&#xff1a;</p>
+<ol><li><strong>不需要锁</strong>。如果不更新索引&#xff0c;就不需要担心多进程同时修改数据的问题&#xff0c;也就是<strong>单纯读写时不会有锁的问题</strong>。</li><li>一旦索引被读入内核的<strong>文件系统缓存</strong>&#xff0c;便会留在哪里&#xff0c;由于其不变性。只要文件系统缓存中还有足够的空间&#xff0c;那么大部分读请求会直接请求<strong>文件系统缓存【内存】</strong>&#xff0c;而不会命中磁盘。这提供了很大的性能提升。</li><li>filter缓存在索引的生命周期内始终有效。它们不需要在每次数据改变时被重建&#xff0c;因为数据不会变化。</li><li>写入单个大的倒排索引允许数据被压缩&#xff0c;减少磁盘 I/O 和 需要被缓存到内存的索引的使用量。</li></ol>
+<p>总结而言就是不需要考虑读写的并发&#xff0c;以及高性能的读数据和压缩数据能力。</p>
+<h5><a rel="noopener noreferrer" id="_547"></a>段不变性的缺点</h5>
+<p>段的不变性的缺点如下&#xff1a;</p>
+<ol><li><strong>新增时</strong>&#xff1a;每次新增数据时都需要新增一个段来存储数据。当段的数量太多时&#xff0c;对服务器的资源例如文件句柄的消耗会非常大。</li><li><strong>删除时</strong>&#xff1a;当对旧数据进行删除时&#xff0c;旧数据不会马上被删除&#xff0c;而是在.del文件中被标记为删除。而旧数据只能等到段更新时才能被移除&#xff0c;这样会造成大量的空间浪费。</li><li><strong>更新时</strong>&#xff1a;若有一条数据频繁的更新&#xff0c;每次更新都是新增新的标记旧的&#xff0c;则会有大量的空间浪费。</li><li><strong>查询时</strong>&#xff1a;在查询的结果中包含所有的结果集&#xff0c;<strong>需要排除被标记删除的旧数据&#xff0c;这增加了查询的负担</strong>。</li></ol>
+<p>我们说没有任何一种结构或算法是万能的&#xff0c;空间和时间一定有其平衡性&#xff0c;段其实就是牺牲了空间成就了时间。</p>
+<h4><a rel="noopener noreferrer" id="_557"></a>索引操作策略</h4>
+<p>在介绍了索引的CRSUD以及ES的存储结构后我们来看看在CRSUD过程中&#xff0c;结合存储&#xff0c;有什么策略让索引的使用更高效呢&#xff1f;</p>
+<h5><a rel="noopener noreferrer" id="_559"></a>延迟写策略</h5>
+<p>如果直接写入磁盘&#xff0c;磁盘的I/O消耗上会严重影响性能&#xff0c;写数据量大的时候会造成ES停顿卡死&#xff0c;查询也无法做到快速响应。如果真是这样ES也就不会称之为近实时全文搜索引擎了&#xff0c;为了提升写的性能&#xff0c;ES并没有每新增一条数据就增加一个段到磁盘上&#xff0c;而是采用延迟写的策略&#xff1a;</p>
+<ol><li><strong>写入内存</strong>&#xff1a;每当有新增的数据时&#xff0c;就将其先写入到内存中&#xff0c;在内存和磁盘之间是文件系统缓存。这里的内存使用的是<strong>ES的JVM内存</strong>&#xff0c;新的数据会继续的被写入内存&#xff0c;但内存中的数据并不是以段的形式存储的&#xff0c;因此不能提供检索功能</li><li><strong>写入文件系统缓存</strong>&#xff1a;当达到默认的时间&#xff08;1秒钟&#xff09;或者内存的数据达到一定量时&#xff0c;会触发一次刷新&#xff08;Refresh&#xff09;&#xff0c;将内存中的数据生成到一个新的段上并缓存到文件缓存系统 上&#xff0c;<strong>文件缓存系统使用的是操作系统的内存</strong>&#xff0c;由内存刷新到文件缓存系统的时候会生成了新的段&#xff0c;并将段打开以供搜索使用&#xff0c;而不需要等到被刷新到磁盘</li><li><strong>写入磁盘</strong>&#xff1a;稍后再被刷新到磁盘中并生成提交点。</li></ol>
+<p>在 Elasticsearch 中&#xff0c;写入和打开一个新段的轻量的过程叫做 refresh &#xff08;即内存刷新到文件缓存系统&#xff09;。 默认情况下每个分片会每秒自动刷新一次。这就是为什么我们说 Elasticsearch 是近实时搜索&#xff0c;因为文档的变化并不是立即对搜索可见&#xff0c;但会在一秒之内变为可见。我们也可以手动触发 refresh&#xff0c;<code>POST /_refresh</code> 刷新所有索引&#xff0c;<code>POST /nba/_refresh</code>刷新指定的索引。</p>
+<p>虽然通过延时写的策略可以减少数据往磁盘上写的次数提升了整体的写入能力&#xff0c;但是我们知道<strong>文件缓存系统也是内存空间&#xff0c;属于操作系统的内存&#xff0c;只要是内存都存在断电或异常情况下丢失数据的危险</strong>。为了避免丢失数据&#xff0c;Elasticsearch添加了事务日志&#xff08;Translog&#xff09;&#xff0c;<font color="red"><strong>事务日志记录了所有还没有持久化到磁盘的数据</strong></font>。添加了事务日志后整个写索引的流程如下图所示:<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-13-1ff3cdcd3c.png" loading="lazy"><br /> 添加了事务日志后的优化流程如下&#xff1a;</p>
+<ol><li><strong>写入内存及事务日志</strong>&#xff0c;先将数据写入buffer【ES的内存】&#xff0c;在buffer里的时候数据是搜索不到的&#xff1b;同时将数据写入translog日志文件&#xff0c;这时<strong>新数据还不能被检索和查询</strong>。需要注意的是&#xff1a;当Elasticsearch作为NoSQL数据库时&#xff0c;查询方式是<strong>GetById&#xff0c;这种查询可以直接从TransLog中查询</strong>&#xff0c;这时候就成了RT&#xff08;Real Time&#xff09;实时系统</li><li><strong>写入文件系统缓存&#xff08;os cache&#xff09;</strong>&#xff0c; 如果buffer快满了&#xff0c;或者到一定时间&#xff08;每隔1s&#xff09;&#xff0c;就会将buffer数据<strong>refresh</strong>到一个新的segment file中&#xff08;此时数据不是直接进入segment file的磁盘文件的&#xff0c;而是先进入os cache&#xff09;并且将buffer清空。只要数据进入os cache&#xff0c;此时就可以让这个segment file的数据对外提供搜索了&#xff0c;为什么叫es是准实时的&#xff1f;NRT&#xff0c;near real-time&#xff0c;准实时。默认是每隔1秒refresh一次的&#xff0c;所以es是准实时的&#xff0c;因为写入的数据1秒之后才能被看到。</li><li>重复1~2步骤&#xff0c;新的数据不断进入buffer和translog&#xff0c;不断将buffer数据写入一个又一个新的segment file中去&#xff0c;每次refresh完buffer清空&#xff0c;translog保留。随着这个过程推进&#xff0c;translog会变得越来越大。当translog达到一定长度的时候&#xff0c;就会触发commit操作。</li><li><strong>写入磁盘并删除事务日志</strong>&#xff0c;当日志数据大小超过512M或者时间超过30分钟时&#xff0c;会触发一次 flush&#xff0c;也就是 <strong>commit操作</strong>分为如下几步&#xff1a;
+  <ol><li>就是将buffer中现有数据refresh到os cache中去&#xff0c;清空buffer</li><li>将一个commit point写入磁盘文件&#xff0c;里面标识着这个commit point对应的所有segment file</li><li>强行将os cache中目前所有的数据都fsync到磁盘文件中去</li><li>清空translog日志文件然后再次重启启用一个translog</li></ol> </li></ol>
+<p>也可以通过es api&#xff0c;手动执行flush操作&#xff0c;手动将os cache中的数据fsync强刷到磁盘上去&#xff0c;记录一个commit point&#xff0c;清空translog日志文件。</p>
+<p>通过这种方式当断电或需要重启时&#xff0c;ES不仅要根据提交点去加载已经持久化过的段&#xff0c;还需要查看Translog里的记录&#xff0c;把未持久化的数据重新持久化到磁盘上&#xff0c;避免了数据丢失的可能。到这里&#xff0c;<font color="red"><strong>其实ES1秒延迟的问题有两个不成熟的解决方案</strong></font>&#xff1a;</p>
+<ol><li>可以通过es的restful api或者java api&#xff0c;在写入内存后&#xff0c;手动执行一次refresh操作&#xff0c;就是手动将buffer中的数据刷入os cache中&#xff0c;让数据立马就可以被搜索到</li><li>查询方式是GetById时&#xff0c;直接从TransLog中查询</li></ol>
+<p>当然这肯定会牺牲性能&#xff0c;所以并不是完备的解决方案&#xff0c;但其实是解决问题的入口&#xff0c;值得一提的是&#xff0c;translog其实也是先写入os cache的&#xff0c;默认每隔5秒刷一次到磁盘中去&#xff0c;因为日志每隔5秒从文件缓存系统flush一次到磁盘&#xff0c;所以最多会丢5秒的数据。</p>
+<h5><a rel="noopener noreferrer" id="_590"></a>段合并策略</h5>
+<p>由于自动刷新流程每秒会创建一个新的段 &#xff0c;这样会导致短时间内的段数量暴增。而段数目太多会带来较大的麻烦。 每一个段都会消耗文件句柄、内存和cpu运行周期。更重要的是&#xff0c;每个搜索请求都必须轮流检查每个段然后合并查询结果&#xff0c;所以段越多&#xff0c;搜索也就越慢。</p>
+<p>Elasticsearch通过在后台定期进行段合并来解决这个问题。<strong>小的段被合并到大的段&#xff0c;然后这些大的段再被合并到更大的段</strong>。</p>
+<ul><li>段合并的时候会将那些<strong>旧的已删除文档从文件系统中清除。被删除的文档不会被拷贝到新的大段中</strong>。</li><li>合并的过程中<strong>不会中断索引和搜索</strong></li></ul>
+<p>这可以解决段不可变带来的空间占用问题<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-14-e90761a032.png" loading="lazy"><br /> 段合并时机和步骤&#xff1a;</p>
+<ol><li>段合并在进行索引和搜索时会自动进行&#xff0c;合并进程选择一小部分大小相似的段&#xff0c;并且在后台将它们合并到更大的段中</li><li>待合并的段<strong>既可以是未提交的也可以是已提交【文件操作系统缓存里的或磁盘里的】<strong>的。合并结束后</strong>老的段会被删除&#xff0c;新的段被 flush 到磁盘</strong>&#xff0c;同时写入一个包含新段&#xff08;已排除旧的被合并的段&#xff09;的新提交点</li><li>新的段被打开可以用来搜索</li></ol>
+<p>段合并的计算量庞大&#xff0c; 而且还要吃掉大量磁盘 I/O&#xff0c;段合并会拖累写入速率&#xff0c;如果任其发展会影响搜索性能。Elasticsearch在默认情况下会对合并流程进行资源限制&#xff0c;所以搜索仍然有足够的资源很好地执行。整体执行流程如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-15-4bb2f0de2b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="ElasticSearch_608"></a>ElasticSearch检索</h3>
+<p>ES最核心的内容就是检索了&#xff0c;重头戏往往放到后边&#xff0c;在了解了集群的工作原理和存储机制后&#xff0c;正式了解ElasticSearch检索操作。</p>
+<h4><a rel="noopener noreferrer" id="_610"></a>分词器</h4>
+<p>中文在stander中的切分是按照单字的&#xff0c;例如<strong>服务器</strong>三个字在标准分词器下会被分为<strong>服、务、器</strong>&#xff0c;所以我们在<strong>term查询</strong>的时候检索<strong>服务</strong>的时候检索不到数据&#xff0c;因为没有<strong>服务</strong>这个分词&#xff0c;所以我们需要使用IK分词器&#xff0c;IK提供了两个分词算法ik_smart 和 ik_max_word&#xff0c;其中 ik_smart 为最少切分&#xff0c;ik_max_word为最细粒度划分。</p>
+<ul><li>最小切分不切分到单字&#xff0c;这样querstring搜【服务】就不再能搜到了&#xff0c;因为querstring切分的关键词不包含&#xff0c;term搜【服务器】就可以搜到了。<br /> <img alt="在浏览器地址栏输入地址" src="./posts/assets/112599998-16-e5303cbfbd.png" loading="lazy"></li><li>最大切分的情况下&#xff0c;有可能被单字切分&#xff0c;粒度更细一些。此时term搜【服务】就可以搜到了<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-17-2225610ef3.png" loading="lazy"></li></ul>
+<p>其实不光有ik、stander两种分词器&#xff0c;分词器种类有很多&#xff0c;<font color="red"><strong>核心是搜索的内容是如何被切分的</strong></font>。</p>
+<h4><a rel="noopener noreferrer" id="_618"></a>查询语句及关键字</h4>
+<p>按照查询条件的多少&#xff0c;从网上找了一些文章&#xff0c;看起来真的是不知所云&#xff0c;分类为所欲为&#xff0c;于是想对整个的ES查询方式做个整理&#xff0c;分为如下几个维度去讨论&#xff0c;防止大家读起来混乱。</p>
+<table><thead><tr><th>查询大类</th><th>查询小类</th><th>细分关键词</th></tr></thead><tbody><tr><td>普通查询</td><td>ID查询【通过ID精确匹配】</td><td>id</td></tr><tr><td></td><td>语法查询【QueryString查询】</td><td>query_string</td></tr><tr><td></td><td>DSL查询【 ES领域专用】</td><td>term、terms、much、much_all、match_phrase、muti_match、range、exists、prefix、wildcard、regexp、fuzzy</td></tr><tr><td>复合查询</td><td>Boolean复合查询</td><td>must、should、must_not、filter【四种子句关系类型】</td></tr><tr><td>聚合查询</td><td>桶聚合</td><td>terms、range</td></tr><tr><td>聚合查询</td><td>指标聚合</td><td>min、max、avg、sum、cardinalit、stats、percentile、 percentile_rank、top hits</td></tr></tbody></table>
+<p>以上所有的查询方式&#xff0c;都支持查询结果的&#xff1a;<strong>排序、分页【fromsize&#43;scroll】和高亮查询</strong> 这些基本特性&#xff0c;所以拜托各位大佬的文章不要把这些当做分类带进去&#xff0c;很容易误导人。详细的查询方式见blog<a href="https://editor.csdn.net/md/?articleId&#61;109146784" rel="nofollow">Elasticsearch常用查询方式讨论及实践</a>&#xff0c;这里只简单记录部分关键字的使用方式&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_633"></a>普通查询</h4>
+<p>1&#xff0c; ID查询顾名思义就是通过ID进行查询&#xff0c;例如这里我们想<strong>查询ID为9</strong>的数据&#xff0c;通过如下的Get查询请求即可</p>
+<pre><code class="prism language-java"><span class="token constant">GET</span><span class="token operator">:</span>localhost<span class="token operator">:</span><span class="token number">9200</span><span class="token operator">/</span>tml<span class="token operator">-</span>userinfo<span class="token operator">/</span>_doc<span class="token operator">/</span><span class="token number">9</span>
+</code></pre>
+<p>2&#xff0c;语法查询相当于我的查询语句会进行分词</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;query_string&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;default_field&#34;</span><span class="token operator">:</span> <span class="token string">&#34;name&#34;</span><span class="token punctuation">,</span>  <span class="token comment">//要查询的字段</span>
+            <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token string">&#34;林玲&#34;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>3&#xff0c;term查询用来查询某个关键字在文档里是否存在&#xff0c;所以Term需要是文档切分的一个关键字</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>4&#xff0c;terms查询用来查询<strong>某几个个关键字</strong>在文档里是否存在&#xff0c;Terms可以同时对一个字段检索多个关键字</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;terms&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">18</span><span class="token punctuation">,</span><span class="token number">28</span><span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>4&#xff0c; match查询和queryString有点类似&#xff0c;就是先对查询内容做分词&#xff0c;然后再去进行匹配</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;match&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男女&#34;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>5&#xff0c;<strong>match_all的查询方式简单粗暴&#xff0c;就是匹配所有</strong>&#xff0c;不需要传递任何参数</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;match_all&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>6&#xff0c;<strong>match_phrase属于短语匹配&#xff0c;能保证分词间的邻近关系</strong>&#xff0c;相当于对文档的关键词进行重组以匹配查询内容&#xff0c;对于匹配了短语&#34;<strong>森 小 林</strong>&#34;的文档&#xff0c;下面的条件必须为true&#xff1a;</p>
+<ul><li><strong>森 、小、 林</strong>必须全部出现在某个字段中</li><li><strong>小</strong>的位置必须比<strong>森</strong>的位置大1</li><li><strong>林</strong>的位置必须比<strong>森</strong>的位置大2</li></ul>
+<p>我们来尝试下对姓名进行检索&#xff0c;请求头和上边完全一样&#xff0c;就不再赘述&#xff0c;直接看请求体&#xff0c;先来看一个不按顺序的</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;match_phrase&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森小林&#34;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>7&#xff0c;multi_match表示多字段匹配关键词&#xff0c;我们<strong>试着在name和sex里找</strong>&#xff0c;只要包含<strong>男</strong>的我们就返回该数据</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;multi_match&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+             <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">,</span>
+             <span class="token string">&#34;fields&#34;</span><span class="token operator">:</span>  <span class="token punctuation">[</span><span class="token string">&#34;name&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;sex&#34;</span><span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>8&#xff0c;range查询&#xff0c;顾明思意就是范围查询&#xff0c;例如我们这里要查询<strong>年龄在19到28</strong>的人的数据:</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+             <span class="token string">&#34;age&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                        <span class="token string">&#34;gte&#34;</span> <span class="token operator">:</span> <span class="token number">19</span><span class="token punctuation">,</span>
+                        <span class="token string">&#34;lt&#34;</span>  <span class="token operator">:</span> <span class="token number">29</span>
+                    <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这里需要解释下&#xff1a;range 查询可同时提供包含&#xff08;inclusive&#xff09;和不包含&#xff08;exclusive&#xff09;这两种范围表达式&#xff0c;可供组合的选项如下&#xff1a;</p>
+<ul><li>gt: &gt; 大于&#xff08;greater than&#xff09;</li><li>lt: &lt; 小于&#xff08;less than&#xff09;</li><li>gte: &gt;&#61; 大于或等于&#xff08;greater than or equal to&#xff09;</li><li>lte: &lt;&#61; 小于或等于&#xff08;less than or equal to&#xff09;</li></ul>
+<p>可以依据自己的需求自由进行组合。</p>
+<p>9&#xff0c;exists允许你过滤文档&#xff0c;只<strong>查找那些在特定字段有值的文档</strong>&#xff0c;无论其值是多少&#xff0c;为了验证&#xff0c;需要注意&#xff0c;这里的有值即使是空值也算有值&#xff0c;只要不是null</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token string">&#34;exists&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;field&#34;</span><span class="token operator">:</span> <span class="token string">&#34;sex&#34;</span>
+          <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>10&#xff0c;wildcard&#xff0c;通配符查询&#xff0c;其中【&#xff1f;】代表任意一个字符【*】代表任意的一个或多个字符&#xff0c;例如我们想查名字结尾为<strong>林</strong>的文档&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token string">&#34;wildcard&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;*林&#34;</span>
+          <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>11, prefix&#xff0c;前缀查询&#xff0c;我们为了找到所有姓名以<strong>森</strong>开头的文档&#xff0c;可以使用这种方式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token string">&#34;prefix&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森&#34;</span>
+          <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>12&#xff0c;regexp&#xff0c;正则匹配&#xff0c;ES兼容了正则的查询方式&#xff0c;例如我们想查询<strong>性别为汉字字符</strong>的文档</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token string">&#34;regexp&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;[\u4e00-\u9fa5]&#34;</span>
+          <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>13&#xff0c;fuzzy&#xff0c;纠错检索&#xff0c;让输入条件有容错性&#xff0c;例如我要检索性别为woman的数据&#xff0c;但是我拼错了&#xff0c;输入的是wman&#xff0c;用fuzzy照样可以检索到&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+         <span class="token string">&#34;fuzzy&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;wman&#34;</span>
+          <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_795"></a>复合查询</h4>
+<p>复合查询通俗的说就是多个条件拼接查询&#xff0c;就是用Bool去拼接一系列的查询条件&#xff0c;来完成表达式的查询方式&#xff0c;其实就是将普通条件进行重新组合&#xff0c;常用的有四种复合类型&#xff1a;</p>
+<ul><li>filter&#xff1a;只过滤符合条件的文档&#xff0c;与must唯一的区别是&#xff1a;不计算相关系得分&#xff0c;但因为有缓存&#xff0c;所以性能高</li><li>must&#xff1a;用must连接的多个条件必须都满足&#xff0c;是and的关系&#xff0c;逻辑&amp;与的关系。</li><li>should&#xff1a;用should连接的多个条件只要满足一个即可&#xff0c;是or的关系&#xff0c;逻辑||或的关系</li><li>must_not&#xff1a;用must_not绑定的条件表示一定不能满足该条件&#xff0c;是not的关系&#xff0c;逻辑^非的关系。</li></ul>
+<p>用这些条件的连接词将多个查询条件连接起来就能进行复杂的复合查询了。</p>
+<h5><a rel="noopener noreferrer" id="filter_804"></a>filter使用</h5>
+<p>过滤器&#xff0c;文档必须匹配该过滤条件&#xff0c;跟must子句的唯一区别是&#xff0c;filter不影响查询的score,我们这里设置要查询的内容为【年龄在10-19岁之间 且 性别为男 且 姓名开头为森】的员工&#xff0c;查询语句为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span><span class="token string">&#34;query&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;filter&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;gte&#34;</span> <span class="token operator">:</span> <span class="token number">18</span><span class="token punctuation">,</span> <span class="token string">&#34;lt&#34;</span>  <span class="token operator">:</span> <span class="token number">29</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;prefix&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;took&#34;</span><span class="token operator">:</span> <span class="token number">7</span><span class="token punctuation">,</span>             <span class="token comment">// 请求花了多少时间                      </span>
+    <span class="token string">&#34;timed_out&#34;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>    <span class="token comment">//有没有超时</span>
+    <span class="token string">&#34;_shards&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>           <span class="token comment">//执行请求时查询的分片信息                             </span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>            <span class="token comment">//查询的分片数量         </span>
+        <span class="token string">&#34;successful&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>      <span class="token comment">// 成功返回结果的分片数量</span>
+        <span class="token string">&#34;skipped&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token comment">// 跳过的分片数量</span>
+        <span class="token string">&#34;failed&#34;</span><span class="token operator">:</span> <span class="token number">0</span>                <span class="token comment">// 失败的分片数量</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;value&#34;</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>                        <span class="token comment">//查询返回的文档总数</span>
+            <span class="token string">&#34;relation&#34;</span><span class="token operator">:</span> <span class="token string">&#34;eq&#34;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;max_score&#34;</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>                <span class="token comment">//计算所得的最高分</span>
+        <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;_index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;tml-userinfo&#34;</span><span class="token punctuation">,</span>    <span class="token comment">//索引</span>
+                <span class="token string">&#34;_type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;_doc&#34;</span><span class="token punctuation">,</span>                 <span class="token comment">//类型</span>
+                <span class="token string">&#34;_id&#34;</span><span class="token operator">:</span> <span class="token string">&#34;2&#34;</span><span class="token punctuation">,</span>                        <span class="token comment">//标识符</span>
+                <span class="token string">&#34;_score&#34;</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>                  <span class="token comment">//得分</span>
+                <span class="token string">&#34;_source&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>                            <span class="token comment">//发送到索引的Json对象</span>
+                    <span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token number">28</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森小林&#34;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;_index&#34;</span><span class="token operator">:</span> <span class="token string">&#34;tml-userinfo&#34;</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;_type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;_doc&#34;</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;_id&#34;</span><span class="token operator">:</span> <span class="token string">&#34;1&#34;</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;_score&#34;</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;_source&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token number">18</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森小辰&#34;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="must_865"></a>must使用</h5>
+<p>文档必须匹配must查询条件&#xff0c;我们这里设置要查询的内容为【年龄在10-19岁之间 且 性别为男 且 姓名开头为森】的员工&#xff0c;查询语句为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span><span class="token string">&#34;query&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;must&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;gte&#34;</span> <span class="token operator">:</span> <span class="token number">18</span><span class="token punctuation">,</span> <span class="token string">&#34;lt&#34;</span>  <span class="token operator">:</span> <span class="token number">29</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;prefix&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h5><a rel="noopener noreferrer" id="should_881"></a>should使用</h5>
+<p>文档应该匹配should子句查询的一个或多个&#xff0c;这里我们来查询【年龄在10-19岁之间 或 性别为男 或 姓名开头为森】&#xff0c;查询语句为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span><span class="token string">&#34;query&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;should&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;gte&#34;</span> <span class="token operator">:</span> <span class="token number">18</span><span class="token punctuation">,</span> <span class="token string">&#34;lt&#34;</span>  <span class="token operator">:</span> <span class="token number">29</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;prefix&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h5><a rel="noopener noreferrer" id="must_not_897"></a>must_not使用</h5>
+<p>文档不能匹配该查询条件&#xff0c;这里我们来查询【年龄不在10-19岁之间 且 性别不为男 且 姓名开头不为森】&#xff0c;查询语句为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span><span class="token string">&#34;query&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;must_not&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;gte&#34;</span> <span class="token operator">:</span> <span class="token number">18</span><span class="token punctuation">,</span> <span class="token string">&#34;lt&#34;</span>  <span class="token operator">:</span> <span class="token number">29</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{<!-- --></span><span class="token string">&#34;prefix&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span><span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森&#34;</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_913"></a>复合条件查询</h5>
+<p>我们在真实使用复合查询的时候肯定不仅仅要查单种条件的复合关系&#xff0c;还需要查多种关联条件&#xff0c;这里我们查一个【年龄在10-19岁之间 且 性别为男 且 姓名开头为森】或【姓名以男字结尾】但【年龄不能是28岁的】&#xff0c;需要注意&#xff1a;<font color="red"><strong>Boolean在同时有must和should的时候&#xff0c;should就被过滤掉了&#xff0c;因为should表示有也可以没有也可以</strong></font>&#xff0c;所以我们常把must放到should字句里&#xff0c;确保should的子句能执行</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;should&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;wildcard&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                        <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;*男&#34;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                        <span class="token string">&#34;must&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                            <span class="token punctuation">{<!-- --></span>
+                                <span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                                    <span class="token string">&#34;sex&#34;</span><span class="token operator">:</span> <span class="token string">&#34;男&#34;</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">{<!-- --></span>
+                                <span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                                    <span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                                        <span class="token string">&#34;gte&#34;</span><span class="token operator">:</span> <span class="token number">18</span><span class="token punctuation">,</span>
+                                        <span class="token string">&#34;lt&#34;</span><span class="token operator">:</span> <span class="token number">29</span>
+                                    <span class="token punctuation">}</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">{<!-- --></span>
+                                <span class="token string">&#34;prefix&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                                    <span class="token string">&#34;name&#34;</span><span class="token operator">:</span> <span class="token string">&#34;森&#34;</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span>
+                        <span class="token punctuation">]</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">]</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;must_not&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+                        <span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token number">28</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_962"></a>聚合查询</h4>
+<p>聚合查询实际上是一种统计和计算&#xff0c;按照官方文档的解释共有四类</p>
+<ul><li>Metric(指标): 指标分析类型&#xff0c;如计算最大值、最小值、平均值等等 &#xff08;对桶内的文档进行聚合分析的操作&#xff09;</li><li>Bucket(桶): 分桶类型&#xff0c;类似SQL中的GROUP BY语法 &#xff08;满足特定条件的文档的集合&#xff09;</li><li>Pipeline(管道): 管道分析类型&#xff0c;基于上一级的聚合分析结果进行在分析</li><li>Matrix(矩阵): 矩阵分析类型&#xff08;聚合是一种面向数值型的聚合&#xff0c;用于计算一组文档字段中的统计信息&#xff09;</li></ul>
+<p>一般聚合的写法如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token string">&#34;aggregations&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;&lt;aggregation_name&gt;&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>                                 <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>聚合的名字 <span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token string">&#34;&lt;aggregation_type&gt;&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>                               <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>聚合的类型 <span class="token operator">--</span><span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>aggregation_body<span class="token punctuation">&gt;</span></span>                                 <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>聚合体&#xff1a;对哪些字段进行聚合 <span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token punctuation">}</span>
+        <span class="token punctuation">[</span><span class="token punctuation">,</span><span class="token string">&#34;meta&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>  <span class="token punctuation">[</span><span class="token generics"><span class="token punctuation">&lt;</span>meta_data_body<span class="token punctuation">&gt;</span></span><span class="token punctuation">]</span> <span class="token punctuation">}</span> <span class="token punctuation">]</span><span class="token operator">?</span>               <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>元 <span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token punctuation">[</span><span class="token punctuation">,</span><span class="token string">&#34;aggregations&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">[</span><span class="token generics"><span class="token punctuation">&lt;</span>sub_aggregation<span class="token punctuation">&gt;</span></span><span class="token punctuation">]</span><span class="token operator">&#43;</span> <span class="token punctuation">}</span> <span class="token punctuation">]</span><span class="token operator">?</span>   <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>在聚合里面在定义子聚合 <span class="token operator">--</span><span class="token operator">&gt;</span>
+    <span class="token punctuation">}</span>
+    <span class="token punctuation">[</span><span class="token punctuation">,</span><span class="token string">&#34;&lt;aggregation_name_2&gt;&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span> <span class="token punctuation">]</span><span class="token operator">*</span>                     <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>聚合的名字 <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>其中aggregations 也可简写为 aggs&#xff0c;虽然Elasticsearch有四种聚合方式&#xff0c;但在一般实际开发中&#xff0c;用到的比较多的就是Metric和Bucket。其实从功能上只有前两类&#xff1a;</p>
+<ul><li>一类是进行数学计算聚合使用的【max、min、avg、sum、stats 】&#xff0c;类似sql里的函数&#xff0c;也就是ES里的统计聚合</li><li>另一类则是进行分组聚合使用的&#xff0c;类似sql里的group&#xff0c;也就是ES里的桶聚合。</li></ul>
+<p>剩余的两类就是程序上的辅助聚合方式&#xff0c;一种是管道二次处理&#xff0c;一种似是分桶同时处理统计计算。</p>
+<h5><a rel="noopener noreferrer" id="_989"></a>桶聚合</h5>
+<p>简单来说桶就是满足特定条件的文档的集合。当聚合开始被执行&#xff0c;每个文档里面的值通过计算来决定符合哪个桶的条件&#xff0c;如果匹配到&#xff0c;文档将放入相应的桶并接着开始聚合操作。桶也可以被嵌套在其他桶里面。我们先来看一个桶聚合&#xff0c;例如我们想要进行如下聚合【按照年龄聚合&#xff0c;0-10&#xff0c;10-20&#xff0c;20-30】&#xff0c;查询语句如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+  <span class="token string">&#34;size&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+  <span class="token string">&#34;aggs&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;user_age_info&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>              <span class="token comment">//聚合的名字</span>
+      <span class="token string">&#34;range&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>                    <span class="token comment">//聚合的类型</span>
+        <span class="token string">&#34;field&#34;</span><span class="token operator">:</span> <span class="token string">&#34;age&#34;</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;ranges&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+          <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;to&#34;</span><span class="token operator">:</span> <span class="token number">10</span>
+          <span class="token punctuation">}</span><span class="token punctuation">,</span>
+          <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">11</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;to&#34;</span><span class="token operator">:</span> <span class="token number">20</span>
+          <span class="token punctuation">}</span><span class="token punctuation">,</span>
+          <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">21</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;to&#34;</span><span class="token operator">:</span> <span class="token number">30</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">]</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;took&#34;</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;timed_out&#34;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_shards&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;successful&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;skipped&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;failed&#34;</span><span class="token operator">:</span> <span class="token number">0</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;value&#34;</span><span class="token operator">:</span> <span class="token number">15</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;relation&#34;</span><span class="token operator">:</span> <span class="token string">&#34;eq&#34;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;max_score&#34;</span><span class="token operator">:</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aggregations&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;user_age_info&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;buckets&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;key&#34;</span><span class="token operator">:</span> <span class="token string">&#34;0.0-10.0&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;to&#34;</span><span class="token operator">:</span> <span class="token number">10.0</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;doc_count&#34;</span><span class="token operator">:</span> <span class="token number">4</span>     <span class="token comment">//该范围内命中4个文档</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;key&#34;</span><span class="token operator">:</span> <span class="token string">&#34;11.0-20.0&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">11.0</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;to&#34;</span><span class="token operator">:</span> <span class="token number">20.0</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;doc_count&#34;</span><span class="token operator">:</span> <span class="token number">7</span>      <span class="token comment">//该范围内命中7个文档</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token string">&#34;key&#34;</span><span class="token operator">:</span> <span class="token string">&#34;21.0-30.0&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">21.0</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;to&#34;</span><span class="token operator">:</span> <span class="token number">30.0</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;doc_count&#34;</span><span class="token operator">:</span> <span class="token number">4</span>      <span class="token comment">//该范围内命中4个文档</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_1064"></a>指标聚合</h5>
+<p>指标聚合分为两种&#xff0c;分别是单值分析和多值分析&#xff0c;各自有几个查询关键字&#xff1a;</p>
+<ul><li><strong>单值分析</strong>只输出一个分析结果&#xff1a;<strong>min,max,avg,sum,cardinality</strong>&#xff0c;cardinality表示求唯一值&#xff0c;即不重复的字段有多少&#xff08;相当于mysql中的distinct&#xff09;</li><li><strong>多值分析</strong>输出多个分析结果:<strong>stats, extended_stats, percentile, percentile_rank, top hits</strong>&#xff0c;<strong>Percentiles</strong>表示对指定字段的值按从小到大累计每个值对应的文档数的占比&#xff0c;返回指定占比比例对应的值。默认按照[ 1, 5, 25, 50, 75, 95, 99 ]来统计&#xff0c;例如我们想统计各个年龄百分区间内员工的数量会用到&#xff0c;<strong>Percentile Ranks</strong>通过文档值求百分比&#xff0c;例如我们想统计某个年龄在整个年龄list占比百分区间</li></ul>
+<p>统计计算这里我们分别使用一下以上几种方式进行分析&#xff0c;最后再结合分组进行一些复合的统计计算查询。</p>
+<h6><a rel="noopener noreferrer" id="_1070"></a>单值分析</h6>
+<p>单值分析以max举例&#xff0c;这里我们想查询&#xff0c;所有员工信息中&#xff0c;【年龄最大的员工】&#xff0c;则查询参数为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;size&#34;</span><span class="token operator">:</span><span class="token number">0</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aggs&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;max_age&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;max&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;field&#34;</span><span class="token operator">:</span><span class="token string">&#34;age&#34;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;took&#34;</span><span class="token operator">:</span> <span class="token number">19</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;timed_out&#34;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_shards&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;successful&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;skipped&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;failed&#34;</span><span class="token operator">:</span> <span class="token number">0</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;value&#34;</span><span class="token operator">:</span> <span class="token number">15</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;relation&#34;</span><span class="token operator">:</span> <span class="token string">&#34;eq&#34;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;max_score&#34;</span><span class="token operator">:</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aggregations&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;avg_age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;value&#34;</span><span class="token operator">:</span> <span class="token number">18.0</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>其它几种单值查询sum、min、avg、cardinality 也类似。</p>
+<h6><a rel="noopener noreferrer" id="_1113"></a>多值分析</h6>
+<p>多值分析以stats举例&#xff0c;我想统计所有员工年龄的各种单值分析状态&#xff0c;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;size&#34;</span><span class="token operator">:</span><span class="token number">0</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aggs&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;age_stats&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;stats&#34;</span><span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+                <span class="token string">&#34;field&#34;</span><span class="token operator">:</span><span class="token string">&#34;age&#34;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回值为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;took&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;timed_out&#34;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;_shards&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;successful&#34;</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;skipped&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;failed&#34;</span><span class="token operator">:</span> <span class="token number">0</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;total&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;value&#34;</span><span class="token operator">:</span> <span class="token number">15</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;relation&#34;</span><span class="token operator">:</span> <span class="token string">&#34;eq&#34;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;max_score&#34;</span><span class="token operator">:</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;hits&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;aggregations&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;age_stats&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;count&#34;</span><span class="token operator">:</span> <span class="token number">15</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;min&#34;</span><span class="token operator">:</span> <span class="token number">8.0</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;max&#34;</span><span class="token operator">:</span> <span class="token number">28.0</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;avg&#34;</span><span class="token operator">:</span> <span class="token number">18.0</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;sum&#34;</span><span class="token operator">:</span> <span class="token number">270.0</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_1159"></a>分页查询</h4>
+<p>分页查询方式有很多种&#xff0c;我们就适用场景各自聊一种&#xff0c;也就是在浅度分页和深度分页中各自适用方式。还是3个节点的集群&#xff0c;共拥有12个分片&#xff0c;包括4个主分片&#xff08;<strong>S0、S1、S2、S3</strong>&#xff09;和8个复制分片&#xff08;<strong>R0、R1、R2、R3</strong>&#xff09;&#xff0c;每个主分片对应两个副本分片&#xff0c;节点1是主节点&#xff08;Master节点&#xff09;负责整个集群状态<br /> <img alt="在这里插入图片描述" src="./posts/assets/112599998-10-0fb2c10cb9.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="_1162"></a>浅度分页适用场景</h5>
+<p>一个搜索请求到来的时候集群是如何响应的&#xff1f;我们举个例子来回顾下&#xff0c;如果我在ES集群的3个节点全部4个分片上共存储了400条人员信息数据&#xff0c;每个分片100条&#xff0c;接下来我要<strong>分页获取所有人员中【按年龄排序户籍地为乌拉特前旗】的每页10条的第3页的全部人员数据</strong>。也就是依据年龄去排序所有数据&#xff0c;然后取<strong>from为20&#xff0c;size为10</strong>的10条数据。</p>
+<ul><li>size&#xff1a;显示应该返回的结果数量&#xff0c;默认是10。</li><li>from&#xff1a;显示查询数据的偏移量&#xff0c;即应该跳过的初始结果数量&#xff0c;默认是0&#xff0c;我们这里取第三页的数据&#xff0c;则from应该设置为20</li></ul>
+<p>那么依照这样的需求我们请求发送到集群会怎么处理呢&#xff1f;处理流程如下【请求会被随机转发主分片或副本分片&#xff0c;采取随机轮询的方式&#xff0c;我们这里假定都是主分片处理】&#xff1a;</p>
+<ol><li>客户端发送请求到E-Node1节点&#xff0c;该节点成为协调节点&#xff0c;E-Node1上的【S2、S3】各建立一个大小为from&#43;size&#xff08;30&#xff09;的优先级队列来存放查询结果&#xff1b;</li><li>协调节点将请求转发到所有分片上【主分片或副本分片&#xff0c;采取随机轮询的方式】&#xff0c;假设这里都是主分片处理请求&#xff0c;那么请求被转发到了E-Node2上的【S1】和E-Node3上的【S0】&#xff0c;它们各建立一个大小为from&#43;size&#xff08;30&#xff09;的优先级队列来存放查询结果</li><li>每个shards在内部执行查询&#xff08;搜索户籍地为乌拉特前旗&#xff0c;且按照年龄进行排序&#xff09;&#xff0c;把from&#43;size&#xff08;30&#xff09;条记录存到内部的优先级队列&#xff08;top N表&#xff09;中</li><li>每个分片将自己的搜索结果&#xff08;其实就是一些doc id&#xff09;&#xff0c;返回给协调节点</li><li><strong>query phase</strong>&#xff1a;E-Node1获取到各个shards数据后&#xff0c;进行合并排序&#xff0c;选择<strong>30*4共120条</strong>记录里的前 from &#43; size <strong>30</strong>条数据<strong>以及用于排序的 _score</strong> 存到优先级队列即可&#xff0c;以便 fetch 阶段使用。</li><li><strong>fetch phase</strong>&#xff1a;协调节点E-Node2获取到整体的top30后&#xff0c;取其中的<strong>第20-30条也就是第三页的数据中的10个doc id</strong>&#xff0c;根据doc id去各个节点上拉取实际的document数据&#xff0c;最终返回给客户端</li></ol>
+<p>这样一个数据量在这种场景下还是可以hold的&#xff0c;但是如果查询量比较大呢&#xff1f;假设我们每个分片上存储了10万条数据&#xff0c;共计40万条数据&#xff0c;我们要取第1万页的数据&#xff0c;也就是<strong>from为10000&#xff0c;size为10</strong>&#xff0c;那么我们再看一遍流程如下&#xff1a;</p>
+<ol><li>client发送分页查询请求到E-Node1&#xff08;coordinating node&#xff09;上&#xff0c;E-Node1上的【S2、S3】各建立一个大小为from&#43;size&#xff08;10010&#xff09;的优先级队列来存放查询结果&#xff1b;<font color="red"><strong>内存、IO损耗</strong></font></li><li>协调节点将请求转发到E-Node2【S1】和E-Node3【S0】上&#xff0c;它们各建立一个大小为from&#43;size&#xff08;10010&#xff09;的优先级队列来存放查询结果&#xff1b;<font color="red"><strong>内存、IO损耗</strong></font></li><li>每个shards在内部执行查询&#xff08;按照年龄进行排序&#xff09;&#xff0c;把from&#43;size&#xff08;10010&#xff09;条记录存到内部的优先级队列&#xff08;top N表&#xff09;中&#xff1b;<font color="red"><strong>CPU损耗</strong></font></li><li>每个shards把缓存的from&#43;size&#xff08;10010&#xff09;条记录返回给ES1&#xff1b;<font color="red"><strong>网络带宽损耗</strong></font></li><li>query phase&#xff1a;E-Node1获取到各个shards数据后&#xff0c;进行合并排序&#xff0c;选择<strong>10010*4共40040条</strong>记录里的前 from &#43; size <strong>10010</strong>条数据<strong>以及用于排序的 _score</strong> 存到优先级队列即可&#xff0c;以便 fetch 阶段使用。<font color="red"><strong>CPU损耗</strong></font></li><li>fetch phase&#xff1a;协调节点E-Node1获取到整体的top10010后&#xff0c;取其中的<strong>第10001-10010条也就是第10000页的数据中的10个doc id</strong>&#xff0c;根据doc id去各个节点上拉取实际的document数据&#xff0c;最终返回给客户端</li></ol>
+<p>以上的各个阶段可以看到&#xff0c;当页码很深的时候&#xff0c;我们拿10条数据是多么的不容易&#xff0c;性能损耗是多么严重&#xff0c;所以ES对这种获取方式的数据条数做了限制&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">[</span>root<span class="token annotation punctuation">&#64;localhost</span> elasticsearch<span class="token operator">-</span><span class="token number">5.7</span><span class="token number">.4</span><span class="token punctuation">]</span># curl <span class="token operator">-</span><span class="token constant">XGET</span> &#39;http<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span><span class="token number">11.12</span><span class="token number">.84</span><span class="token number">.126</span><span class="token operator">:</span><span class="token number">9200</span><span class="token operator">/</span>_audit_0102<span class="token operator">/</span>_log_0102<span class="token operator">/</span>_search<span class="token operator">?</span>size<span class="token operator">&#61;</span><span class="token number">2</span><span class="token operator">&amp;</span>from<span class="token operator">&#61;</span><span class="token number">10000</span><span class="token operator">&amp;</span>pretty<span class="token operator">&#61;</span><span class="token boolean">true</span>&#39;
+<span class="token punctuation">{<!-- --></span>
+  <span class="token string">&#34;error&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;root_cause&#34;</span> <span class="token operator">:</span> <span class="token punctuation">[</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;type&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;query_phase_execution_exception&#34;</span><span class="token punctuation">,</span>
+      <span class="token string">&#34;reason&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;Result window is too large, from &#43; size must be less than or equal to: [10000] but was [10010]. See the scroll api for a more efficient way to request large data sets. This limit can be set by changing the [index.max_result_window] index level parameter.&#34;</span>
+    <span class="token punctuation">}</span> <span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;type&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;search_phase_execution_exception&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;reason&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;all shards failed&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;phase&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;query&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;grouped&#34;</span> <span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;failed_shards&#34;</span> <span class="token operator">:</span> <span class="token punctuation">[</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;shard&#34;</span> <span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+      <span class="token string">&#34;index&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;_audit_0102&#34;</span><span class="token punctuation">,</span>
+      <span class="token string">&#34;node&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;f_CQitYESZedx8ZbyZ6bHA&#34;</span><span class="token punctuation">,</span>
+      <span class="token string">&#34;reason&#34;</span> <span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;type&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;query_phase_execution_exception&#34;</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;reason&#34;</span> <span class="token operator">:</span> <span class="token string">&#34;Result window is too large, from &#43; size must be less than or equal to: [10000] but was [10010]. See the scroll api for a more efficient way to request large data sets. This limit can be set by changing the [index.max_result_window] index level parameter.&#34;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span> <span class="token punctuation">]</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token string">&#34;status&#34;</span> <span class="token operator">:</span> <span class="token number">500</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>from&#43;size最多限制10000&#xff0c;超过限制即报错&#xff0c;当然这个参数可以通过如下的方式调整&#xff0c;例如调整到50000</p>
+<pre><code class="prism language-java">curl <span class="token operator">-</span><span class="token constant">XPUT</span> <span class="token string">&#34;http://11.12.84.126:9200/_audit_0102/_settings&#34;</span> <span class="token operator">-</span>d &#39;<span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;index&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;max_result_window&#34;</span><span class="token operator">:</span> <span class="token number">50000</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>&#39;
+
+</code></pre>
+<p>但就算调整了也只是一种临时方案&#xff0c;硬件极限承载能力并不是通过调整配置能解决的&#xff0c;需要更换策略。从报错信息也可以看出&#xff0c;ES推荐使用Scroll的方式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token class-name">See</span> the scroll api <span class="token keyword">for</span> a more efficient way <span class="token keyword">to</span> <span class="token namespace">request</span> large data sets
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_1227"></a>深度分页适用场景</h5>
+<p>Scroll 类似于sql中的cursor&#xff0c;使用scroll&#xff0c;<strong>每次只能获取一页的内容&#xff08;按照上边的场景&#xff0c;每次获取10条&#xff09;</strong>&#xff0c;然后会返回一个scroll_id。根据返回的这个scroll_id可以不断地获取下一页的内容&#xff0c;所以scroll并不适用于有跳页的情景。Scroll的流程分为两个步骤</p>
+<ul><li>第一次搜索完成之后&#xff0c;将所有复合条件的搜索结果缓存起来&#xff0c;类似于对结果集做了一个快照&#xff1b;</li><li>在需要返回数据时&#xff0c;从该快照中按照scroll返回数据&#xff1b;在scroll快照生成之后&#xff0c;在快照有效期范围内&#xff0c;对于该索引的增删改都不会影响快照的结果。</li></ul>
+<p>以下是具体操作&#xff1a;</p>
+<h6><a rel="noopener noreferrer" id="_1233"></a>初始化</h6>
+<p>初始化的时候请求接口还需要index和type【6版本后没有了】信息&#xff0c;初始化的作用时<strong>将所有复合条件的搜索结果缓存起来&#xff0c;类似于对结果集做了一个快照</strong>&#xff0c;之后的搜索就是游标在快照上的滚动了。</p>
+<pre><code class="prism language-java"><span class="token constant">GET</span> <span class="token class-name">UserInfo</span><span class="token operator">/</span>_search<span class="token operator">?</span>scroll<span class="token operator">&#61;</span><span class="token number">5</span>m
+<span class="token punctuation">{<!-- --></span>
+  <span class="token string">&#34;query&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;bool&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;filter&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{<!-- --></span>
+          <span class="token string">&#34;term&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;home&#34;</span><span class="token operator">:</span> <span class="token string">&#34;乌拉特前旗&#34;</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token string">&#34;size&#34;</span><span class="token operator">:</span> <span class="token number">10</span><span class="token punctuation">,</span>
+  <span class="token string">&#34;from&#34;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+  <span class="token string">&#34;sort&#34;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{<!-- --></span>
+      <span class="token string">&#34;age&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;order&#34;</span><span class="token operator">:</span> <span class="token string">&#34;desc&#34;</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token string">&#34;_id&#34;</span><span class="token operator">:</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;order&#34;</span><span class="token operator">:</span> <span class="token string">&#34;desc&#34;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>其中&#xff1a;scroll&#61;5m表示设置scroll_id保留5分钟可用&#xff1b;<strong>使用scroll必须要将from设置为0【不允许跳页】</strong>&#xff1b;size决定后面每次调用_search搜索返回的数量【这里为10条】。需要注意&#xff1a;实际返回给协调节点的数量为&#xff1a;<strong>分片的数量*size</strong>&#xff0c;也就是每次返回40条&#xff0c;<strong>共进行10001次请求和返回行为</strong></p>
+<h6><a rel="noopener noreferrer" id="_1265"></a>搜索</h6>
+<p>然后我们可以通过数据返回的_scroll_id读取下一页内容&#xff0c;每次请求将会读取下10条数据&#xff0c;直到数据读取完毕或者scroll_id保留时间截止&#xff0c;请求的接口不再使用索引名了&#xff0c;而是 _search/scroll&#xff0c;其中GET和POST方法都可以使用</p>
+<pre><code class="prism language-java"><span class="token constant">GET</span> _search<span class="token operator">/</span>scroll
+<span class="token punctuation">{<!-- --></span>
+  <span class="token string">&#34;scroll_id&#34;</span><span class="token operator">:</span> <span class="token string">&#34;DnF1ZXJ5VGhlbk【全网唯一Scrollid】&#34;</span><span class="token punctuation">,</span>
+  <span class="token string">&#34;scroll&#34;</span><span class="token operator">:</span> <span class="token string">&#34;5m&#34;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p><strong>需要注意</strong>&#xff1a;每次都要传参数 scroll&#xff0c;刷新搜索结果的缓存时间&#xff0c;相对于流程我们再来看一下请求过程&#xff1a;</p>
+<ol><li>client发送分页查询请求到E-Node1&#xff08;coordinating node&#xff09;上E-Node1上的【S2、S3】各建立一个大小为from&#43;size&#xff08;10&#xff09;的优先级队列来存放查询结果&#xff1b;<font color="red"><strong>内存无损耗、IO无损耗</strong></font></li><li>协调节点将请求转发到ES2【S1】和ES3【S0】上&#xff0c;它们各建立一个大小为from&#43;size&#xff08;10&#xff09;的优先级队列来存放查询结果&#xff1b;<font color="red"><strong>内存无损耗、IO无损耗</strong></font></li><li>每个shards在内部执行查询&#xff08;按照年龄进行排序&#xff09;&#xff0c;把from&#43;size&#xff08;10&#xff09;条记录存到内部的优先级队列&#xff08;top N表&#xff09;中&#xff1b;<font color="red"><strong>CPU无损耗</strong></font></li><li>每个shards把缓存的from&#43;size&#xff08;10&#xff09;条记录返回给E-Node1&#xff1b;<font color="red"><strong>网络带宽无损耗</strong></font></li><li>query phase&#xff1a;E-Node1获取到各个shards数据后&#xff0c;发起下一次请求&#xff0c;直到轮询发起10001次请求&#xff0c;共获得40040条数据后执行合并排序&#xff0c;进行合并排序&#xff0c;选择<strong>10010*4共40040条</strong>记录里的前 from &#43; size <strong>10010</strong>条数据<strong>以及用于排序的 _score</strong> 存到优先级队列即可&#xff0c;以便 fetch 阶段使用。<font color="red"><strong>CPU无损耗、快照堆积</strong></font></li><li>fetch phase&#xff1a;协调节点E-Node1获取到整体的top100010后&#xff0c;取其中的<strong>第10001-10010条也就是第10000页的数据中的10个doc id</strong>&#xff0c;根据doc id去各个节点上拉取实际的document数据&#xff0c;最终返回给客户端</li></ol>
+<h6><a rel="noopener noreferrer" id="Scroll_1284"></a>删除Scroll上下文快照</h6>
+<p>scroll的搜索上下文会在scroll的保留时间截止后自动清除&#xff0c;但是我们知道scroll是非常消耗资源的&#xff0c;所以一个建议就是当不需要scroll数据的时候&#xff0c;尽可能快的把scroll_id显式删除掉&#xff0c;因为每一个 scroll_id 不仅会占用大量的资源&#xff0c;而且会生成历史快照【<strong>在初始化请求时初始化数据快照&#xff0c;后续游标在快照上移动</strong>】&#xff0c;资源占用是很大的【<strong>5版本前scroll_id每次返回是变化的&#xff0c;5版本后就不变了</strong>】。<strong>又是一个经典的以空间换时间的例子</strong></p>
+<p>行文至此&#xff0c;已洋洋洒洒4万言&#xff0c;对ElasticSearch的原理和使用有了一个整体的认识&#xff0c;希望和大家共同进步。</p>

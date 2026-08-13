@@ -1,0 +1,152 @@
+<p>这篇Blog来聊一聊SOLID原则的最后一个&#xff1a;依赖反转原则。依赖反转原则的英文翻译是 Dependency Inversion Principle&#xff0c;缩写为 <strong>DIP</strong>。中文翻译有时候也叫依赖倒置原则</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>理解依赖反转原则</h2>
+<p>依赖反转原则的完整描述是&#xff1a;<font color="red"><strong>高层模块&#xff08;high-level modules&#xff09;不要依赖低层模块&#xff08;low-level&#xff09;。高层模块和低层模块应该通过抽象&#xff08;abstractions&#xff09;来互相依赖。除此之外&#xff0c;抽象&#xff08;abstractions&#xff09;不要依赖具体实现细节&#xff08;details&#xff09;&#xff0c;具体实现细节&#xff08;details&#xff09;依赖抽象&#xff08;abstractions&#xff09;</strong></font>,所谓高层模块和低层模块的划分&#xff0c;简单来说就是&#xff0c;在调用链上&#xff0c;调用者属于高层&#xff0c;被调用者属于低层</p>
+<p>这里可能比较难理解&#xff0c;因为实际项目开发&#xff0c;高层当然是依赖低层实现的&#xff0c;不调用怎么使用功能&#xff1f;这里需要说明的是<font color="red"><strong>依赖反转原则指导的是框架的设计</strong></font>&#xff0c;而且这个原则也可以辨析一下概念&#xff1a;</p>
+<ul><li><strong>所谓反转并不是指反过来低层要依赖高层&#xff0c;而是二者都依赖抽象</strong>&#xff0c;低层和高层共同依赖的抽象接口是一种解耦&#xff0c;也可以理解为一种契约&#xff0c;高层只关心抽象接口实现的功能是否满足自己的需求&#xff0c;低层则按照抽象接口的要求规范自己的实现&#xff0c;但只要符合接口规范&#xff0c;实现可以相对自由&#xff0c;而高层也不会因为直接依赖低层的实现受影响</li><li>依赖倒置原则概念是高层次模块不依赖于低层次模块。看似在要求高层次模块&#xff0c;实际上是在规范低层次模块的设计。低层次模块提供的接口要足够的抽象、通用&#xff0c;在设计时需要考虑高层次模块的使用种类和场景。<strong>明明是高层次模块要使用低层次模块&#xff0c;对低层次模块有依赖性。现在反而低层次模块需要根据高层次模块来设计&#xff0c;出现了「倒置」的显现</strong>。这样做的好处是&#xff1a;高层次模块没有依赖低层次模块的具体实现&#xff0c;方便低层次模块的替换</li></ul>
+<p>举两个比较典型的例子&#xff1a;</p>
+<ul><li><strong>JVM是高层模块&#xff0c;我们编写的Java代码是底层模块</strong>。JVM和Java代码没有直接的依赖关系&#xff0c;两者都依赖同一个抽象&#xff0c;也就是<strong>class字节码</strong>。字节码不依赖具体的JVM虚拟机和Java语言&#xff0c;而JVM虚拟机和Java依赖字节码规范。 这样做的好处就是JVM与Java高度解耦&#xff0c;Java语言可以替换成Groovy、Kotlin&#xff0c;只要能编译为字节码&#xff0c;符合虚拟机的执行规范</li><li>Tomcat 是运行 Java Web 应用程序的容器。我们编写的 Web 应用程序代码只需要部署在 Tomcat 容器下&#xff0c;便可以被 Tomcat 容器调用执行。<strong>Tomcat 就是高层模块&#xff0c;我们编写的 Web 应用程序代码就是低层模块</strong>。Tomcat 和应用程序代码之间并没有直接的依赖关系&#xff0c;两者都依赖同一个“抽象”&#xff0c;也就是 <strong>Servlet 规范</strong>。Servlet 规范不依赖具体的 Tomcat 容器和应用程序的实现细节&#xff0c;而 Tomcat 容器和应用程序依赖 Servlet 规范</li></ul>
+<p>这两个例子体现了&#xff0c;我们要想让框架或者容器能调用我们的实现方法实现功能&#xff0c;我们就得依赖满足高层运行功能抽象规范去写自己的实现。这就是依赖倒置的一种体现了。</p>
+<h2><a rel="noopener noreferrer" id="IOCDIDIP_15"></a>IOC、DI和DIP辨析</h2>
+<p>实际上在学习Spring的时候我花费了大量的精力在这两个概念上&#xff0c;为此写了一篇较长的Blog&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/119750207" rel="nofollow"><strong>【Spring学习笔记 一】Sping基本概念及理论基础</strong></a></p>
+<h3><a rel="noopener noreferrer" id="IOC_17"></a>理解IOC思想</h3>
+<p>控制反转是<strong>一个比较笼统的设计思想&#xff0c;并不是一种具体的实现方法&#xff0c;一般用来指导框架层面的设计</strong>。这里所说的“控制”指的是对程序执行流程的控制&#xff0c;而“反转”指的是在没有使用框架之前&#xff0c;程序员自己控制整个程序的执行。在使用框架之后&#xff0c;整个程序的执行流程通过框架来控制。流程的控制权从程序员“反转”给了框架。</p>
+<p>如下的测试例子中&#xff0c;非控制反转的方式所有逻辑都需要RD去写</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">UserServiceTest</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">doTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ... </span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span><span class="token comment">//这部分逻辑可以放到框架中</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">doTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Test succeed.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Test failed.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>而如果有了测试框架&#xff0c;则RD只需要关注测试代码的核心内容&#xff0c;不需要关注测试类是怎么创建和运行的&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">TestCase</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">doTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Test succeed.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Test failed.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">boolean</span> <span class="token function">doTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">JunitApplication</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">TestCase</span><span class="token punctuation">&gt;</span></span> testCases <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">register</span><span class="token punctuation">(</span><span class="token class-name">TestCase</span> testCase<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    testCases<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>testCase<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">TestCase</span> <span class="token keyword">case</span><span class="token operator">:</span> testCases<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">case</span><span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+</code></pre>
+<p>RD只需要编写测试内容并将其添加到框架预留的扩展点即可&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">UserServiceTest</span> <span class="token keyword">extends</span> <span class="token class-name">TestCase</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">doTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ... </span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 注册操作还可以通过配置的方式来实现&#xff0c;不需要程序员显示调用register()</span>
+<span class="token class-name">JunitApplication</span><span class="token punctuation">.</span><span class="token function">register</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">UserServiceTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="DI_81"></a>理解DI实现</h3>
+<p><strong>依赖注入是控制反转思想的一种具体实现&#xff0c;它是一种具体的编码技巧</strong>&#xff1a;不通过 new 的方式在类内部创建依赖类的对象&#xff0c;而是将依赖的类对象在外部创建好之后&#xff0c;通过构造函数、函数参数等方式传递&#xff08;或注入&#xff09;给类来使用。在发送通知的一种场景下&#xff0c;我们可以比较下非DI的方式&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token comment">// 非依赖注入实现方式</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Notification</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">MessageSender</span> messageSender<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Notification</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>messageSender <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">MessageSender</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//此处有点像hardcode</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sendMessage</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...省略校验逻辑等...</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>messageSender<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>cellphone<span class="token punctuation">,</span> message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageSender</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">send</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//....</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 使用Notification</span>
+<span class="token class-name">Notification</span> notification <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Notification</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>和依赖注入的实现方式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">// 依赖注入的实现方式</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Notification</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">MessageSender</span> messageSender<span class="token punctuation">;</span>
+
+  <span class="token comment">// 通过构造函数将messageSender传递进来</span>
+  <span class="token keyword">public</span> <span class="token class-name">Notification</span><span class="token punctuation">(</span><span class="token class-name">MessageSender</span> messageSender<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>messageSender <span class="token operator">&#61;</span> messageSender<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sendMessage</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...省略校验逻辑等...</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>messageSender<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>cellphone<span class="token punctuation">,</span> message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">//使用Notification</span>
+<span class="token class-name">MessageSender</span> messageSender <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">MessageSender</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token class-name">Notification</span> notification <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Notification</span><span class="token punctuation">(</span>messageSender<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>很明显的可以看出&#xff0c;这大大提高了代码扩展性&#xff0c;因为MessageSender 在外部可以随意初始化。在内部则只有一种初始化方式&#xff0c;而如果MessageSender 是抽象类或接口&#xff0c;那么这种效果更明显了&#xff0c;这个在聊OCP的时候也探讨过&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Notification</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">MessageSender</span> messageSender<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Notification</span><span class="token punctuation">(</span><span class="token class-name">MessageSender</span> messageSender<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>messageSender <span class="token operator">&#61;</span> messageSender<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sendMessage</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>messageSender<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>cellphone<span class="token punctuation">,</span> message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">MessageSender</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">void</span> <span class="token function">send</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 短信发送类</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SmsSender</span> <span class="token keyword">implements</span> <span class="token class-name">MessageSender</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">send</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//....</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 站内信发送类</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">InboxSender</span> <span class="token keyword">implements</span> <span class="token class-name">MessageSender</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token annotation punctuation">&#64;Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">send</span><span class="token punctuation">(</span><span class="token class-name">String</span> cellphone<span class="token punctuation">,</span> <span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//....</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">//使用Notification</span>
+<span class="token class-name">MessageSender</span> messageSender <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">SmsSender</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token class-name">Notification</span> notification <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Notification</span><span class="token punctuation">(</span>messageSender<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>DI在Spring中的一种应用就是&#xff0c;<strong>Spring在运行时通过反射动态的向某个对象提供它所需要的其他对象</strong>&#xff0c;而Spring也可以看做是一个依赖注入框架</p>
+<h2><a rel="noopener noreferrer" id="_171"></a>总结一下</h2>
+<p>理不辨不明&#xff0c;IOC是一种指导框架设计的思想&#xff0c;通过控制反转接管大量与核心业务逻辑无关的内容&#xff0c;让RD能专注业务逻辑开发&#xff0c;按照规范将代码注册到框架预留扩展点即可。而DI是IOC思想的一种具体实现方式&#xff0c;主要用于外部创建对象注入给当前对象&#xff0c;Spring中对DI的使用则更加具体为在运行时通过反射创建外部依赖对象并注入当前对象&#xff0c;所以Spring是一种贯彻IOC思想的通过DI实现的一个框架。依赖反转是一种设计原则&#xff0c;也是指导框架设计的&#xff0c;它关注的是如何约束框架代码和业务代码的关系&#xff0c;高层&#xff08;框架&#xff09;的运行不依赖于底层&#xff08;业务代码&#xff09;&#xff0c;而是底层依据高层的需求来设计自己的实现&#xff0c;这才是倒置的真实含义。</p>

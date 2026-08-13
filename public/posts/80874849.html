@@ -1,0 +1,154 @@
+<p>最近接了个活要解构XML和JSON&#xff0c;武哥说让了解下XML Schema,所以兴致勃勃的打开了W3C来学习一下&#xff0c;结果勒&#xff1a; <br />
+<img alt="这里写图片描述" title="" src="./posts/assets/80874849-01-a1f1a379f9.png" loading="lazy"> <br />
+好吧&#xff0c;因为之前只是用了一下XML&#xff0c;知道大概结构&#xff0c;依据一贯的学习风格&#xff1a;知其然&#xff0c;知其所以然。所以决定成体系的速成一下&#xff0c;HTML和XHTML并不是关注的重点&#xff0c;所以这里只是简单介绍一下,如果以后有这方面学习的需求&#xff0c;再多看看。</p>
+
+<p><strong>1&#xff0c;什么是HTML语言</strong>  <br />
+HTML 是用来描述网页的一种语言。HTML 指的是<strong>超文本标记语言</strong> (Hyper Text Markup Language)&#xff0c;HTML 不是一种编程语言&#xff0c;而是一种标记语言 (markup language)&#xff0c;标记语言是一套标记标签 (markup tag)&#xff0c;<strong>HTML 使用标记标签来描述网页</strong></p>
+
+<p><strong>2&#xff0c;什么是XHTML语言</strong> <br />
+XML 用来<strong>描述</strong>数据&#xff0c;而 HTML 则用来<strong>显示</strong>数据。而XHTML结合了两者的优点。XHTML 指<strong>可扩展超文本标签语言</strong>&#xff08;EXtensible HyperText Markup Language&#xff09;。XHTML 是<strong>更严格更纯净的 HTML 版本</strong>。XHTML 是<strong>作为一种 XML 应用被重新定义的 HTML</strong>。XHTML 是一个 W3C 标准。</p>
+
+<p><strong>3 &#xff0c;HTML和XHTML区别</strong> <br />
+二者的区别实际上主要只有以下四点&#xff0c;在我看来&#xff0c;就是<strong>结合XML的严格规范来对HTML进行了一下约束而已</strong>&#xff0c;本质没有不同。</p>
+
+<ul><li>XHTML 元素必须被正确地嵌套。</li><li>XHTML 元素必须被关闭。</li><li>标签名必须用小写字母。</li><li>XHTML 文档必须拥有根元素。</li></ul>
+
+<p>在基本了解了HTML和XHTML之后&#xff0c;这一篇重点用来理解XML的前世今生。为了在下周一迅速投入Schema讨论&#xff0c;所以这里了解基本概念即可&#xff0c;高级部分内容其实也挺有意思&#xff0c;可以在后续完善本篇博客。</p>
+
+
+
+<h2 id="xml基本概念">XML基本概念</h2>
+
+<p>主要谈了谈XML的定义原理blabla,以及和HTML的对比</p>
+
+
+
+<h3 id="什么是xml">什么是XML</h3>
+
+<p>XML 指<strong>可扩展标记语言</strong>&#xff08;EXtensible Markup Language&#xff09;&#xff0c;XML 是一种标记语言&#xff0c;很类似 HTML。在W3C的描述里可以看到XML定义有以下三个特点&#xff1a;</p>
+
+<ul><li>XML 的设计宗旨是<strong>传输数据</strong>&#xff0c;而非显示数据。</li><li>XML <strong>标签没有被预定义</strong>。需要自行定义标签。</li><li>XML 被设计为具有<strong>自我描述性</strong>。</li></ul>
+
+<p>对于这三个特点我觉得可以这么理解&#xff0c;例如读取远程配置&#xff0c;远程配置文件通常就是用XML写的&#xff0c;在远程配置里我们可以<strong>自己定义一些节点</strong>&#xff0c;这些节点可以自我描述&#xff0c;节点里又存储了我们需要的信息&#xff0c;<strong>而XML仅仅是一种纯文本的格式&#xff0c;所以必须依赖应用程序做特定处理</strong>&#xff0c;例如我写一个配置类来读取配置文件。</p>
+
+
+
+<h3 id="xml和html的区别">XML和HTML的区别</h3>
+
+<p>二者都是标记语言&#xff0c;但有本质区别&#xff0c;因为XML 和 HTML 为不同的<strong>目的</strong>而设计&#xff1a;</p>
+
+<ul><li>XML 被设计为传输和存储数据&#xff0c;其焦点是<strong>数据的内容</strong>。</li><li>HTML 被设计用来显示数据&#xff0c;其焦点是<strong>数据的外观</strong>。</li><li>HTML 旨在<strong>显示信息</strong>&#xff0c;而 XML 旨在<strong>传输信息</strong>。</li></ul>
+
+<p>还有一个比较重要的就是&#xff0c;<strong>HTML 文档只使用在 HTML 标准中定义过的标签&#xff0c;而XML只能自定义标签&#xff0c;它是不作为的。</strong></p>
+
+
+
+<h2 id="基本结构">基本结构</h2>
+
+<p><strong>主要讲了XML的组成部分&#xff0c;树形结构&#xff0c;语法规则&#xff0c;XSTL样式化XML&#xff0c;XML的结构验证</strong></p>
+
+
+
+<h3 id="组成部分">组成部分</h3>
+
+<p>XML主要由两部分组成&#xff1a;元素和属性。<strong><font color="red">元数据&#xff08;有关数据的数据&#xff09;应当存储为属性&#xff0c;而数据本身应当存储为元素。</font></strong>假设我现在有一堆数据&#xff0c;这些数据通过XML结构化存储起来&#xff0c;有些我想给A用&#xff0c;有些我想给B用&#xff0c;这个时候就可以把<strong>用途标记为属性</strong>&#xff0c;程序读取属性后将数据分配给对应的人。</p>
+
+
+
+<h4 id="元素">元素</h4>
+
+<p>XML 元素指的是从&#xff08;且包括&#xff09;开始标签直到&#xff08;且包括&#xff09;结束标签的部分。<strong>元素可包含其他元素、文本或者两者的混合物</strong>。元素也可以<strong>拥有属性</strong>。</p>
+
+<p>XML 元素必须遵循以下<strong>命名规则</strong>&#xff1a;</p>
+
+<ul><li>名称可以含字母、数字以及其他的字符</li><li>名称不能以数字或者标点符号开始 </li><li>名称不能以字符 “xml”&#xff08;或者 XML、Xml&#xff09;开始 </li><li>名称不能包含空格 </li></ul>
+
+<p>最重要的 一点&#xff0c;<strong>没有任何关键字的禁忌</strong>&#xff0c;这点非常爽&#xff0c;更爽的是&#xff0c;<strong>元素可以动态扩展&#xff0c;在不中断程序的情况下随意扩展&#xff01;</strong></p>
+
+
+
+<h4 id="属性">属性</h4>
+
+<p>属性 (Attribute) 提供关于元素的额外&#xff08;附加&#xff09;信息。属性通常提供<strong>不属于数据组成部分的信息</strong>。但对如何处理该元素有很大的用处。<strong><font color="red">尽量使用元素来描述数据&#xff0c;而仅仅使用属性来提供与数据无关的信息。</font>因为属性不像元素那样方便扩展和描述树结构.</strong> <br />
+<strong><font color="red">属性值必须被引号包围&#xff0c;不过单引号和双引号均可使用</font></strong></p>
+
+
+
+<h3 id="树形结构">树形结构</h3>
+
+<p>XML 文档必须包含<strong>根元素</strong>。该元素是所有其他元素的父元素。同时根元素可以有<strong>子元素</strong>&#xff0c;每个元素节点可以有<strong>属性</strong>。 <br />
+<img alt="这里写图片描述" title="" src="./posts/assets/80874849-02-633ec53bfe.png" loading="lazy"> <br />
+该图显示了一个<strong>书店根元素</strong>&#xff0c;<strong>书子元素</strong>&#xff0c;<strong>书的类别属性</strong>&#xff0c;<strong>书的标题子元素的语言属性</strong></p>
+
+
+
+<h3 id="语法规则">语法规则</h3>
+
+<p>XML的四条语法规则同XHTML对HTML的强规范类似&#xff1a;</p>
+
+<ol><li>所有 XML 元素<strong>都须有关闭标签</strong>———对应于XHTML必须被正确关闭</li><li>XML 标签对<strong>大小写敏感</strong>———对应于XHTML标签必须使用小写</li><li>XML <strong>必须正确地嵌套</strong>———对应于XHTML必须被正确地嵌套</li><li>XML 文档<strong>必须有根元素</strong>———对应于XHTML 文档必须拥有根元素</li><li>XML 的<strong>属性值须加引号</strong></li><li>为防止“&lt;”符号而进行的实体引用&#xff0c;实际上类似于我们常常提到的<strong>转义</strong>&#xff0c;<strong>元素内容遇到想要的中间栏符号&#xff0c;用左边栏对应的代替</strong> <br />
+<img alt="这里写图片描述" title="" src="./posts/assets/80874849-03-b8a0d9ab62.png" loading="lazy"></li><li>注释语法&#xff1a;<code>&lt;!-- This is a comment --&gt;</code> </li><li>在 XML 中&#xff0c;空格会被保留&#xff0c;也就是<strong>不用再打一堆变态的&amp;nbsp了&#xff0c;文档有几个就打几个空格</strong></li><li>XML 以 LF 存储换行</li></ol>
+
+
+
+<h3 id="使用xstl样式化-xml">使用XSTL样式化 XML</h3>
+
+<p><strong>就像CSS可以给html提供样式一样&#xff0c;XSL也可以给XML提供样式。</strong></p>
+
+
+
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;ISO-8859-1&#34;?&gt;</span>
+<span class="hljs-pi">&lt;?xml-stylesheet type&#61;&#34;text/xsl&#34; href&#61;&#34;simple.xsl&#34;?&gt;</span> //通过简单的引入&#xff0c;就可以将XSL的样式应用到XML中
+<span class="hljs-tag">&lt;<span class="hljs-title">breakfast_menu</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">food</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">name</span>&gt;</span>Belgian Waffles<span class="hljs-tag">&lt;/<span class="hljs-title">name</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">price</span>&gt;</span>$5.95<span class="hljs-tag">&lt;/<span class="hljs-title">price</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">description</span>&gt;</span>
+       two of our famous Belgian Waffles
+    <span class="hljs-tag">&lt;/<span class="hljs-title">description</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">calories</span>&gt;</span>650<span class="hljs-tag">&lt;/<span class="hljs-title">calories</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-title">food</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">breakfast_menu</span>&gt;</span></code></pre>
+
+
+
+<h3 id="验证xml文档结构">验证XML文档结构</h3>
+
+<p><font color="red"><strong>这里第一次清楚了DTD和Schema到底是什么&#xff0c;其实说白了就是XML结构的元数据&#xff0c;就是文档结构的定义&#xff0c;各个元素和属性的描述。</strong></font></p>
+
+
+
+<h4 id="使用dtd">使用DTD</h4>
+
+<p>DTD 的作用是定义 XML 文档的结构。它使用一系列合法的元素来定义文档结构&#xff1a;</p>
+
+
+
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-doctype">&lt;!DOCTYPE note [
+  &lt;!ELEMENT note (to,from,heading,body)&gt;
+  &lt;!ELEMENT to      (#PCDATA)&gt;
+  &lt;!ELEMENT from    (#PCDATA)&gt;
+  &lt;!ELEMENT heading (#PCDATA)&gt;
+  &lt;!ELEMENT body    (#PCDATA)&gt;
+]&gt;</span> </code></pre>
+
+
+
+<h4 id="使用schema">使用Schema</h4>
+
+<p>W3C 支持一种基于 XML 的 DTD 代替者&#xff0c;它名为 XML Schema&#xff1a;</p>
+
+
+
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;note&#34;</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-title">xs:complexType</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">xs:sequence</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;to&#34;</span>      <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;from&#34;</span>    <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;heading&#34;</span> <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">xs:element</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;body&#34;</span>    <span class="hljs-attribute">type</span>&#61;<span class="hljs-value">&#34;xs:string&#34;</span>/&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-title">xs:sequence</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">xs:complexType</span>&gt;</span>
+
+<span class="hljs-tag">&lt;/<span class="hljs-title">xs:element</span>&gt;</span> </code></pre>

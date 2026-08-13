@@ -1,0 +1,76 @@
+<p>在分布式系统中，故障转移（Failover）是高可用的核心保障。当节点宕机、网络分区或服务不可用时，系统必须能够自动检测故障、选举新的领导者，并同步数据以保证一致性和可用性。本文将深入剖析 ElasticSearch、Redis 和 Kafka 三大流行系统的故障转移机制，分别从选主机制和数据同步两个维度展开，最后进行横向对比，揭示它们的设计哲学与取舍。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="ElasticSearch__4"></a>一、ElasticSearch 集群故障转移机制</h2>
+<h3><a rel="noopener noreferrer" id="1_Raft__6"></a>1 主节点选举（Raft 协调）</h3>
+<p>ES 7.x 及以上版本引入了基于 <strong>Raft 共识算法</strong> 的集群协调机制，取代了旧版的 Zen Discovery。</p>
+<h4><a rel="noopener noreferrer" id="_10"></a>选举触发条件</h4>
+<ul>
+ <li>当前主节点因宕机、网络分区或长时间无响应而被判定为失联。</li>
+ <li>Raft 协议自动维护节点心跳和选举超时，当多数节点感知到主节点失联，便会发起新选举。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="_14"></a>选举规则</h4>
+<ol>
+ <li><strong>比较集群状态版本</strong>：版本高的节点优先，因其持有最新元数据。</li>
+ <li><strong>版本相同则比较节点 ID</strong>：字典序小的节点优先，以保证确定性。</li>
+</ol>
+<p>获得<strong>多数派（超过半数候选主节点）投票</strong>的节点成为新主节点，然后立即发布新的集群状态，接管管理职责。</p>
+<h4><a rel="noopener noreferrer" id="_20"></a>多数派与“预备队”</h4>
+<ul>
+ <li>3 个候选主节点的多数派是 2，所以最多允许 1 个节点故障</li>
+ <li>其他候选主节点看似“闲置”，实则：
+  <ul>
+   <li>持有最新集群状态，随时准备接替；</li>
+   <li>参与元数据变更的投票（确保一致性）；</li>
+   <li>作为健康监测的一部分。</li>
+  </ul> </li>
+</ul>
+<h4><a rel="noopener noreferrer" id="SplitBrain_27"></a>脑裂（Split-Brain）预防与处理</h4>
+<p><strong>1 脑裂原因</strong>：网络分区和主节点假死</p>
+<ul>
+ <li><strong>网络分区</strong>：部分节点与主节点失联，形成两个区域，各自选举主节点。</li>
+ <li><strong>主节点“假死”</strong>：主节点因 GC 或高负载暂停响应，被其他候选主节点误判为宕机，触发新选举，原主恢复后出现双主。</li>
+</ul>
+<p><strong>2 新版 ES 的自动防护</strong>：ES 7.x 引入的 Raft 协调层从根本上解决了脑裂问题：</p>
+<ul>
+ <li>Raft 要求<strong>任何选举和决策必须获得多数派节点同意</strong>。</li>
+ <li>网络分区时，只有包含多数候选节点的分区能选出主节点，少数分区无法完成选举，从而避免双主。</li>
+ <li>集群自动维护投票多数派，无需人工配置防脑裂参数。</li>
+</ul>
+<p><strong>3 极端情况下的处理</strong>：尽管新版 ES 已基本杜绝脑裂，但在极端网络故障或软件 Bug 下仍可能发生。若发生脑裂：</p>
+<ol>
+ <li><strong>立即停止写入</strong>：防止两个主节点同时修改数据造成数据不一致。</li>
+ <li><strong>选择一个正确的分区作为主集群</strong>：通常选择包含数据最新、节点多的分区。</li>
+ <li><strong>重启错误分区的节点</strong>，使其重新加入正确分区，集群自动同步数据（可能需要手动丢弃冲突数据）。</li>
+ <li><strong>检查网络和节点负载</strong>，确保主节点不会因过载假死。</li>
+</ol>
+<h3><a rel="noopener noreferrer" id="2__45"></a>2 故障转移后的数据恢复同步恢复</h3>
+<h4><a rel="noopener noreferrer" id="_47"></a>场景：数据节点宕机</h4>
+<ul>
+ <li>该节点上的所有主分片和副本分片均不可用。</li>
+ <li><strong>主分片丢失时</strong>：集群在<strong>其他存活节点</strong>上查找该主分片的副本，将副本提升为新主分片，并立即对外提供写入服务。</li>
+ <li><strong>副本分片丢失时</strong>：只要主分片正常，集群会在其他节点上创建新的副本，保证冗余度。</li>
+</ul>
+<h4><a rel="noopener noreferrer" id="_52"></a>节点恢复后的处理</h4>
+<p>宕机节点重新加入集群后：</p>
+<ol>
+ <li>该节点向主节点报告自己持有的分片及版本。</li>
+ <li>主节点比较当前集群中的分片信息：
+  <ul>
+   <li>如果该节点上的分片与当前主分片版本一致（即恢复期间无写入），则直接作为副本加入。</li>
+   <li>如果版本落后，则需要从主分片复制增量数据（通过文件同步或恢复机制）。</li>
+   <li>如果该节点上的分片已被重新分配（例如副本已建在其他节点），则可能要求该节点删除旧分片，然后重新分配新副本。</li>
+  </ul> </li>
+</ol>
+<h4><a rel="noopener noreferrer" id="_61"></a>故障恢复时的数据同步机制</h4>
+<p>当数据节点宕机后重新加入集群，或者集群需要为分片创建新的副本时，主分片需要将数据同步到目标副本分片。ES 采用两种同步方式：<strong>基于文件的同步</strong>（全量）和<strong>基于操作的同步</strong>（增量），具体选择取决于副本的落后程度。</p>
+<p><strong>1 基于文件的同步（File-Based Sync）</strong></p>
+<ul>
+ <li><strong>适用场景</strong>：
+  <ul>
+   <li>副本分片完全新建（例如增加副本数时）。</li>
+   <li>副本分片落后太多，且主分片的 translog 中已不再包含缺失的操作（translog 有大小和时间限制，默认情况下当 translog 达到一定大小或每隔一定时间会进行 flush，旧的 translog 会被删除）。</li>
+  </ul> </li>
+ <li><strong>过程</strong>：
+  <ol>
+  </ol></li>
+</ul>

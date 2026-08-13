@@ -1,0 +1,207 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;<strong>程序员永不失业&#xff0c;程序员走向架构</strong>&#xff01;首先&#xff0c;链表对应的数据结构在这篇Blog中&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/115109212" rel="nofollow"><strong>【基本数据结构 一】线性数据结构&#xff1a;链表</strong></a>&#xff0c;基于对基础知识的理解来进行题目解答。本篇Blog的主题是合并有序链表&#xff0c;近半年考察还是比较多的<br /> <img alt="在这里插入图片描述" src="./posts/assets/132525120-01-8a06cf9356.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="EASY_2"></a>合并两个有序链表【EASY】</h2>
+<p>先来个基础版&#xff0c;合并两个已排序的链表</p>
+<h3><a rel="noopener noreferrer" id="_4"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132525120-02-236d016832.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">}</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">}</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_31"></a>解题思路</h3>
+<p>整体目标就是在两个链表中选节点来构建新链表</p>
+<ol><li>设置result为哨兵结点&#xff0c;放置于新链表之前&#xff0c;最后返回的就是<code>dummy.next</code>&#xff1b;</li><li>设置cur为当前节点&#xff0c;从dummy开始&#xff0c;当两个链表都非空时进入循环&#xff0c;令新链表的下一个节点cur.next为val更小的节点&#xff0c;相应的链表节点后移一位&#xff0c;每次循环记得cur也要后移一位</li><li>如果循环结束后还有链表非空&#xff0c;cur指向非空链表&#xff0c;返回<code>dummy.next</code></li></ol>
+<p>如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/132525120-03-13c91bc84f.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_41"></a>代码实现</h3>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param pHead1 ListNode类
+     * &#64;param pHead2 ListNode类
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> <span class="token class-name">Merge</span> <span class="token punctuation">(</span><span class="token class-name">ListNode</span> pHead1<span class="token punctuation">,</span> <span class="token class-name">ListNode</span> pHead2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 如果其中一个为空列表&#xff0c;直接返回另一个</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> pHead2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> pHead2<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> pHead1<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义哨兵节点用来返回最终链表&#xff0c;cur用来检索两个链表的较小值节点</span>
+        <span class="token class-name">ListNode</span> dummy <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ListNode</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> dummy<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> pHead2 <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1<span class="token punctuation">.</span>val <span class="token operator">&lt;&#61;</span> pHead2<span class="token punctuation">.</span>val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead1<span class="token punctuation">;</span>
+                pHead1 <span class="token operator">&#61;</span> pHead1<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead2<span class="token punctuation">;</span>
+                pHead2 <span class="token operator">&#61;</span> pHead2<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+         <span class="token comment">// 3 一个链表空后&#xff0c;直接将另一个链表剩余部分拼接</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead2<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead1<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dummy<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_105"></a>复杂度分析</h3>
+<p><strong>时间复杂度O(N&#43;M)</strong>&#xff1a;M N分别表示pHead1, pHead2的长度&#xff1b; <strong>空间复杂度O(1)</strong>&#xff1a;常数级空间</p>
+<h2><a rel="noopener noreferrer" id="KHARD_107"></a>合并K个有序链表【HARD】</h2>
+<p>OK&#xff0c;难度升级&#xff0c;两个变成K个有序链表进行合并</p>
+<h3><a rel="noopener noreferrer" id="_109"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132525120-04-4d6ab84fd1.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">[</span><span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">}</span><span class="token punctuation">]</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">[</span><span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span><span class="token number">6</span><span class="token punctuation">}</span><span class="token punctuation">]</span>
+
+返回值&#xff1a;
+<span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_128"></a>解题思路</h3>
+<p>归并排序是什么&#xff1f;简单来说就是将一个数组每次划分成等长的两部分&#xff0c;对两部分进行排序即是子问题。对子问题继续划分&#xff0c;直到子问题只有1个元素。还原的时候呢&#xff0c;将每个子问题和它相邻的另一个子问题利用上述双指针的方式&#xff0c;1个与1个合并成2个&#xff0c;2个与2个合并成4个&#xff0c;因为这每个单独的子问题合并好的都是有序的&#xff0c;直到合并成原本长度的数组。</p>
+<p>对于这k个链表&#xff0c;就相当于上述合并阶段的k个子问题&#xff0c;需要划分为链表数量更少的子问题&#xff0c;直到每一组合并时是两两合并&#xff0c;然后继续往上合并&#xff0c;这个过程基于递归&#xff1a;</p>
+<ul><li><strong>终止条件</strong>&#xff1a; 划分的时候直到左右区间相等或左边大于右边。</li><li><strong>返回值</strong>&#xff1a; 每级返回已经合并好的子问题链表。</li><li><strong>本级任务</strong>&#xff1a; 对半划分&#xff0c;将划分后的子问题合并成新的链表。</li></ul>
+<p>具体做法&#xff1a;</p>
+<ol><li>步骤一&#xff1a;从链表数组的首和尾开始&#xff0c;每次划分从中间开始划分&#xff0c;划分成两半&#xff0c;得到左边n/2个链表和右边n/2个链表</li><li>步骤二&#xff1a;继续不断递归划分&#xff0c;直到每部分链表数为1.</li><li>步骤三&#xff1a;将划分好的相邻两部分链表&#xff0c;按照两个有序链表合并的方式合并&#xff0c;合并好的两部分继续往上合并&#xff0c;直到最终合并成一个链表。</li></ol>
+<p>如下图所示&#xff0c;先进行合并链表划分<br /> <img alt="在这里插入图片描述" src="./posts/assets/132525120-05-23afacaf21.png" loading="lazy"><br /> 划分完子问题&#xff0c;子问题处理完返回到上一层级<br /> <img alt="在这里插入图片描述" src="./posts/assets/132525120-06-99b2206481.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_149"></a>代码实现</h3>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>链表</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>分治、迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class ListNode {
+ *   int val;
+ *   ListNode next &#61; null;
+ *   public ListNode(int val) {
+ *     this.val &#61; val;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param lists ListNode类ArrayList
+     * &#64;return ListNode类
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ListNode</span> mergeKLists <span class="token punctuation">(</span><span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ListNode</span><span class="token punctuation">&gt;</span></span> lists<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token function">divideMerge</span><span class="token punctuation">(</span>lists<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> lists<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">ListNode</span> <span class="token function">divideMerge</span><span class="token punctuation">(</span><span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ListNode</span><span class="token punctuation">&gt;</span></span> lists<span class="token punctuation">,</span> <span class="token keyword">int</span> left<span class="token punctuation">,</span> <span class="token keyword">int</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>left <span class="token operator">&gt;</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 终止条件&#xff0c;拿到了单独的链表</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>left <span class="token operator">&#61;&#61;</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> lists<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">int</span> mid <span class="token operator">&#61;</span> <span class="token punctuation">(</span>left <span class="token operator">&#43;</span> right<span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">;</span>
+        <span class="token comment">// 对两个相邻链表进行合并</span>
+        <span class="token keyword">return</span> <span class="token function">merge</span><span class="token punctuation">(</span><span class="token function">divideMerge</span><span class="token punctuation">(</span>lists<span class="token punctuation">,</span> left<span class="token punctuation">,</span> mid<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">divideMerge</span><span class="token punctuation">(</span>lists<span class="token punctuation">,</span> mid <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> right<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">ListNode</span> <span class="token function">merge</span><span class="token punctuation">(</span><span class="token class-name">ListNode</span> pHead1<span class="token punctuation">,</span> <span class="token class-name">ListNode</span> pHead2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 链表非空判断</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> pHead2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> pHead2<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> pHead1<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义哨兵节点和最终返回链表</span>
+        <span class="token class-name">ListNode</span> dummy <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ListNode</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ListNode</span> cur <span class="token operator">&#61;</span> dummy<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> pHead2 <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1<span class="token punctuation">.</span>val <span class="token operator">&lt;&#61;</span> pHead2<span class="token punctuation">.</span>val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead1<span class="token punctuation">;</span>
+                pHead1 <span class="token operator">&#61;</span> pHead1<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead2<span class="token punctuation">;</span>
+                pHead2 <span class="token operator">&#61;</span> pHead2<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            cur <span class="token operator">&#61;</span> cur<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 如果一个链表空了&#xff0c;直接挂载另一个链表剩余节点</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead1 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead2<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pHead2 <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            cur<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> pHead1<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> dummy<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_230"></a>复杂度分析</h3>
+<p><strong>时间复杂度</strong>&#xff1a;O(nlogk)&#xff0c;其中n为所有链表的总节点数&#xff0c;分治为二叉树型递归&#xff0c;最坏情况下二叉树每层合并都是O(n)个节点&#xff0c;而分治次数为&#xff1a;O(logk)&#xff0c;所以总的时间复杂度就是O(nlogk)</p>
+<p><strong>空间复杂度</strong>&#xff1a;最坏情况下合并O(logk)&#xff0c;所以递归栈的深度为O(logk)</p>
+<h2><a rel="noopener noreferrer" id="_234"></a>拓展&#xff1a;递归和分治的区别</h2>
+<p>递归&#xff08;Recursion&#xff09;和分治&#xff08;Divide and Conquer&#xff09;是两种解决问题的方法&#xff0c;它们有一些相似之处&#xff0c;但也存在一些关键的区别。</p>
+<p><strong>递归&#xff08;Recursion&#xff09;</strong>&#xff1a;<br /> 递归是一种问题解决方法&#xff0c;其中函数在其执行过程中调用自身来解决更小规模的子问题&#xff0c;直到达到基本情况&#xff0c;然后逐层返回结果以构建原始问题的解。递归的核心思想是将一个大问题划分为与原问题结构相同但规模更小的子问题&#xff0c;然后通过逐步解决这些子问题来解决原始问题。</p>
+<p><strong>分治&#xff08;Divide and Conquer&#xff09;</strong>&#xff1a;<br /> 分治是一种将问题分解为多个相互独立的子问题&#xff0c;然后解决这些子问题并将它们的解合并以得到原始问题解的方法。分治的核心思想是将一个大问题划分为多个独立的子问题&#xff0c;这些子问题可以并行地解决&#xff0c;然后将它们的解合并起来以得到原问题的解。</p>
+<p>关键区别&#xff1a;</p>
+<ol><li> <p><strong>目标</strong>&#xff1a;</p>
+  <ul><li>递归的目标是通过将问题分解为与原问题结构相同但规模更小的子问题&#xff0c;然后逐层解决这些子问题来得到原问题的解。</li><li>分治的目标是将问题分解为多个相互独立的子问题&#xff0c;然后并行地解决这些子问题&#xff0c;并将它们的解合并以得到原问题的解。</li></ul> </li><li> <p><strong>子问题之间的关系</strong>&#xff1a;</p>
+  <ul><li>递归中&#xff0c;子问题之间的关系通常是相同结构的&#xff0c;但规模不同。</li><li>分治中&#xff0c;子问题通常是相互独立的&#xff0c;没有交叉。</li></ul> </li><li> <p><strong>解决方式</strong>&#xff1a;</p>
+  <ul><li>递归解决问题时&#xff0c;通常需要考虑如何将问题分解为更小的子问题&#xff0c;然后将这些子问题的解组合起来。</li><li>分治解决问题时&#xff0c;通常需要考虑如何将问题分解为独立的子问题&#xff0c;然后并行地解决这些子问题&#xff0c;最后将它们的解合并起来。</li></ul> </li><li> <p><strong>合并过程</strong>&#xff1a;</p>
+  <ul><li>递归中&#xff0c;解决子问题的过程是逐层递归地调用函数&#xff0c;然后逐层返回结果。</li><li>分治中&#xff0c;解决子问题的过程可以并行地进行&#xff0c;然后将子问题的解合并。</li></ul> </li></ol>
+<p>总的来说&#xff0c;递归和分治都是将复杂问题分解为更小的部分来解决的方法&#xff0c;但它们的关注点和执行方式有所不同。在实际应用中&#xff0c;有时候递归和分治可以结合使用&#xff0c;例如在分治算法的子问题解决过程中使用递归。</p>

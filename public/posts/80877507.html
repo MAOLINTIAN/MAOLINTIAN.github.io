@@ -1,0 +1,151 @@
+<p>咱要摒弃旧技术&#xff0c;就得了解旧技术&#xff08;当然这里指的新旧是依然有部分联系的哈&#xff0c;不是截然不同的&#xff09;&#xff0c;我认为原因有二&#xff1a;</p>
+<ol><li>旧的技术有时候不是被全盘抛弃的&#xff0c;新的技术有时候&#xff08;大多时候&#xff09;是脱胎于旧技术的&#xff0c;所以<strong>了解旧的技术并不算是浪费时间</strong>。</li><li>了解了旧技术之后&#xff0c;你就会发现痛点&#xff0c;哪里不好用&#xff0c;哪里限制太死&#xff0c;这个时候再学习新技术&#xff0c;对比理解<strong>一方面可以加深新技术革新部分的记忆&#xff0c;保持印象深刻。</strong>另一方面又可以<strong>对这个技术的整体有个认知</strong>。</li></ol>
+<p>说了以上这么多废话&#xff0c;就是想表达&#xff0c;在了解Schema之前&#xff0c;我得搞明白DTD的工作原理。</p>
+<h2 id="dtd概述">DTD概述</h2>
+<h3 id="概念用途">概念用途</h3>
+<p>文档类型定义&#xff08;DTD&#xff09;可<strong>定义合法的XML文档构建模块</strong>。它使用一系列合法的元素来定义文档的结构。说白了就是对XML文档结构进行定义&#xff0c;<strong>检查XML文档到底合不合法</strong>。好处有如下几点&#xff08;3C上如下所说&#xff0c;我略微理解下&#xff09;&#xff1a;</p>
+<ol><li>通过 DTD&#xff0c;您的每一个 XML 文件均可携带一个有关其自身格式的描述。<strong>说白了就是有了这个东西在&#xff0c;你的任何一个庞大的XML在给别人看之前&#xff0c;都可以先给人家看看DTD,这样给一个目录让人家阅读起来省事儿。</strong></li><li>通过 DTD&#xff0c;独立的团体可一致地使用某个标准的 DTD 来交换数据。<strong>说白了就是几个团队做事情的时候需要交换XML数据&#xff0c;只要使用统一标准的DTD&#xff0c;大家各自的应用程序都能通畅的交换数据。</strong></li><li>而您的应用程序也可使用某个标准的 DTD 来验证从外部接收到的数据。<strong>说白了就是从别人那儿获取的数据我得知道符合不符合格式呀&#xff0c;就比如给运维丢一个xml让发上去,人家拿着DTD一验证没事儿&#xff0c;就省去了肉眼人工检查了。</strong></li><li>您还可以使用 DTD 来验证您自身的数据。<strong>说白了就是自己写完一个XML&#xff0c;没准儿哪儿丢一个或者多一个闭合尖叫号&#xff08;我就犯过这错误&#xff09;&#xff0c;可以用DTD来自己验证一遍格式有没有问题。</strong></li></ol>
+<h3 id="使用方式">使用方式</h3>
+<p>DTD 可被成行地声明于 XML 文档中&#xff0c;也可作为一个外部引用。</p>
+<h4 id="直接声明在xml中">直接声明在XML中</h4>
+<p>其实类似于HTML引入CSS和JS&#xff0c;你可以选择直接在html里边用style。DTD也可以直接声明到到XML中。</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-doctype">&lt;!DOCTYPE 根元素 [元素声明]&gt;</span>     //通过这样的方式声明</code></pre>
+<p>这里举一个例子如下&#xff0c;要注意的是&#xff0c;中括号内部要将各个元素放进去&#xff0c;收尾要加中括号哦。</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>
+<span class="hljs-doctype">&lt;!DOCTYPE note [
+  &lt;!ELEMENT note (name,sex,age,describe)&gt;   //note 元素有四个元素&#xff1a;&#34;name,sex,age,describe&#34;
+  &lt;!ELEMENT name     (#PCDATA)&gt;             //元素为 &#34;#PCDATA&#34; 类型
+  &lt;!ELEMENT sex      (#PCDATA)&gt;
+  &lt;!ELEMENT age      (#PCDATA)&gt;
+  &lt;!ELEMENT describe (#PCDATA)&gt;
+]&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">note</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">name</span>&gt;</span>茂神<span class="hljs-tag">&lt;/<span class="hljs-title">name</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">sex</span>&gt;</span>男<span class="hljs-tag">&lt;/<span class="hljs-title">sex</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">age</span>&gt;</span>24<span class="hljs-tag">&lt;/<span class="hljs-title">age</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">describe</span>&gt;</span>茂神最帅了&#xff01;<span class="hljs-tag">&lt;/<span class="hljs-title">describe</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">note</span>&gt;</span></code></pre>
+<h4 id="作为文件引入xml中">作为文件引入XML中</h4>
+<p>大多数时候其实我们还是采取以下这种方式&#xff0c;这种方式让XML相当干净整洁&#xff0c;<strong>只要根元素名对应上就可以了</strong>。</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-doctype">&lt;!DOCTYPE 根元素 SYSTEM &#34;文件名&#34;&gt;</span></code></pre>
+<p>还是不害臊的举上边那个例子吧</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>
+<span class="hljs-doctype">&lt;!DOCTYPE note SYSTEM &#34;note.dtd&#34;&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">note</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">name</span>&gt;</span>茂神<span class="hljs-tag">&lt;/<span class="hljs-title">name</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">sex</span>&gt;</span>男<span class="hljs-tag">&lt;/<span class="hljs-title">sex</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">age</span>&gt;</span>24<span class="hljs-tag">&lt;/<span class="hljs-title">age</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">describe</span>&gt;</span>茂神最帅了&#xff01;<span class="hljs-tag">&lt;/<span class="hljs-title">describe</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">note</span>&gt;</span></code></pre>
+<p>然后note.dtd文件内容呢如下所示&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs erlang-repl">  &lt;<span class="hljs-exclamation_mark">!</span><span class="hljs-variable">ELEMENT</span> <span class="hljs-function_or_atom">note</span> (<span class="hljs-function_or_atom">name</span>,<span class="hljs-function_or_atom">sex</span>,<span class="hljs-function_or_atom">age</span>,<span class="hljs-function_or_atom">describe</span>)&gt;   //<span class="hljs-function_or_atom">note</span> 元素有四个元素&#xff1a;<span class="hljs-string">&#34;name,sex,age,describe&#34;</span>
+  &lt;<span class="hljs-exclamation_mark">!</span><span class="hljs-variable">ELEMENT</span> <span class="hljs-function_or_atom">name</span>     (#<span class="hljs-variable">PCDATA</span>)&gt;             //元素为 <span class="hljs-string">&#34;#PCDATA&#34;</span> 类型
+  &lt;<span class="hljs-exclamation_mark">!</span><span class="hljs-variable">ELEMENT</span> <span class="hljs-function_or_atom">sex</span>      (#<span class="hljs-variable">PCDATA</span>)&gt;
+  &lt;<span class="hljs-exclamation_mark">!</span><span class="hljs-variable">ELEMENT</span> <span class="hljs-function_or_atom">age</span>      (#<span class="hljs-variable">PCDATA</span>)&gt;
+  &lt;<span class="hljs-exclamation_mark">!</span><span class="hljs-variable">ELEMENT</span> <span class="hljs-function_or_atom">describe</span> (#<span class="hljs-variable">PCDATA</span>)&gt;</code></pre>
+<p>很显然&#xff0c;就是把中括号里边的东西都放到这个文件里来了。</p>
+<h3 id="组成结构">组成结构</h3>
+<p>那么DTD要想描述XML&#xff0c;就得知道XML有哪些组成模块&#xff0c;这样才能对的上&#xff0c;所有的XML均由以下几部分构成&#xff1a;<strong>元素 、属性 、实体 、PCDATA 、CDATA</strong> 其中后边三种都是关于文本的&#xff0c;私以为算不上组成结构&#xff0c;应该是对数据内容的描述。元素和属性在上一篇里已经详细讨论过了&#xff1a;传送门 <a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/80874849">https://blog.csdn.net/sinat_33087001/article/details/80874849</a> 这里重点说一下后边三种。</p>
+<h4 id="实体">实体</h4>
+<p>实体是用来<strong>定义普通文本的变量</strong>。<strong>实体引用是对实体的引用</strong>。就好比说空格是一个普通文本&#xff0c;那么nbsp算作一个实体&#xff0c;那么<code>&amp;nbsp;</code>就算作一个实体引用。XML预置的5种实体和实体引用&#xff1a; <br /> <img alt="这里写图片描述" title="" src="./posts/assets/80877507-01-9cef82bf6c.png" loading="lazy"></p>
+<h4 id="pcdata">PCDATA</h4>
+<p>PCDATA 的意思是<strong>被解析的字符数据</strong>&#xff08;parsed character data&#xff09;。可把字符数据想象为 XML 元素的<strong>开始标签与结束标签之间的文本</strong>。我的理解就是元素的类型&#xff0c;元素中间的文本内容将<strong>被解析器检查实体以及标记</strong>&#xff0c;<strong>文本中的标签会被当作标记来处理&#xff0c;而实体会被展开</strong>。怎么理解呢&#xff0c;举个例子&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>
+<span class="hljs-doctype">&lt;!DOCTYPE note SYSTEM &#34;note.dtd&#34;&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">note</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">descripe</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">font</span> <span class="hljs-attribute">color</span>&#61;<span class="hljs-value">&#39;red&#39;</span>&gt;</span>茂 &amp;nbsp;神<span class="hljs-tag">&lt;/<span class="hljs-title">descripe</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">note</span>&gt;</span></code></pre>
+<p>当设定为PCDATA的时候descripe标签内容被解析后&#xff0c;将会显示为&#xff1a;<font color="red">茂  神</font>&#xff0c;也就是说标签内部的标记都被读取了。</p>
+<h4 id="cdata">CDATA</h4>
+<p>CDATA 的意思是<strong>字符数据</strong>&#xff08;character data&#xff09;<strong>。CDATA 是不会被解析器解析的文本</strong>。在这些文本中的<strong>标签不会被当作标记来对待&#xff0c;其中的实体也不会被展开</strong>。其实也算是一种约束&#xff0c;区别于PCDATA来看的&#xff0c;怎么理解呢&#xff0c;还举上边那个个例子&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34;?&gt;</span>
+<span class="hljs-doctype">&lt;!DOCTYPE note SYSTEM &#34;note.dtd&#34;&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">note</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">descripe</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">font</span> <span class="hljs-attribute">color</span>&#61;<span class="hljs-value">&#39;red&#39;</span>&gt;</span>茂 &amp;nbsp;神<span class="hljs-tag">&lt;/<span class="hljs-title">descripe</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">note</span>&gt;</span></code></pre>
+<p>当设定为CDATA的时候descripe标签内容被解析后&#xff0c;将会显示为&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs rsl">&lt;font <span class="hljs-keyword">color</span>&#61;<span class="hljs-string">&#39;red&#39;</span>&gt;茂 &amp;nbsp;神</code></pre>
+<p>也就是说标签内部的标记都被原封不动的显示出来了。</p>
+<h2 id="dtd使用实战">DTD使用实战</h2>
+<h3 id="元素">元素</h3>
+<p>在一个 DTD 中&#xff0c;元素通过元素声明来进行声明。</p>
+<h4 id="元素声明">元素声明</h4>
+<p>元素声明有两种方式&#xff0c;区别是最后一位是类别或者元素内容</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-tag">&lt;<span class="hljs-title">!ELEMENT</span> 元素名称 类别&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">!ELEMENT</span> 元素名称 (元素内容)&gt;</span></code></pre>
+<h4 id="元素使用">元素使用</h4>
+<h5 id="类型和结构界定">类型和结构界定</h5>
+<p>通过第一种方式声明的&#xff1a;<code>&lt;!ELEMENT 元素名称 类别&gt;</code>&#xff0c;这里类别为下边左一栏标识的</p>
+<table><thead><tr><th>类别</th><th align="center">举例</th><th align="right">描述</th></tr></thead><tbody><tr><td>EMPTY</td><td align="center"><code>&lt;!ELEMENT br EMPTY&gt;</code></td><td align="right">例如html里的换行符<code>&lt;br/&gt;</code>空元素&#xff0c;通过EMPTY来标识</td></tr><tr><td>(#PCDATA)</td><td align="center"><code>&lt;!ELEMENT name (#PCDATA)&gt;</code></td><td align="right">只有 PCDATA 的元素通过圆括号中的 #PCDATA 进行声明</td></tr><tr><td>ANY</td><td align="center"><code>&lt;!ELEMENT 元素名称 ANY&gt;</code></td><td align="right">例如<code>&lt;!ELEMENT note ANY&gt;</code>根节点可以包括任意结构</td></tr><tr><td>(子元素名称 1)</td><td align="center"><code>&lt;!ELEMENT 元素名称 (子元素名称 1,子元素名称 2,.)&gt;</code></td><td align="right">带一个或多个子元素的元素通过圆括号中的<strong>子元素名</strong>进行声明</td></tr></tbody></table>
+<p>要特别注意&#xff1a;当声明带有一个或多个子元素的元素&#xff0c;<strong>这些子元素必须按照相同的顺序出现在文档中</strong>。</p>
+<h5 id="出现次数界定">出现次数界定</h5>
+<p>通过第二种方式声明的&#xff1a;<code>&lt;!ELEMENT 元素名称 (元素内容)&gt;</code>&#xff0c;这里类别为下边左一栏标识的</p>
+<table><thead><tr><th>类别</th><th align="center">举例</th><th align="right">描述</th></tr></thead><tbody><tr><td>(子元素名称&#43;)</td><td align="center"><code>&lt;!ELEMENT note (message&#43;)&gt;</code></td><td align="right">声明<strong>最少出现一次</strong>的元素&#xff0c;message子元素至少在note元素里出现一次</td></tr><tr><td>(子元素名称*)</td><td align="center"><code>&lt;!ELEMENT note (message*)&gt;</code></td><td align="right">声明出现<strong>零次或多次</strong>的元素&#xff0c;message子元素可在note元素里出现零次或多次。</td></tr><tr><td>(子元素名称?)</td><td align="center"><code>&lt;!ELEMENT note (message?)&gt;</code></td><td align="right">声明出现<strong>零次或一次</strong>的元素&#xff0c;message子元素可在note元素里出现零次或一次。</td></tr><tr><td>(子元素1|子元素2)</td><td align="center"><code>&lt;!ELEMENT note (name,(sex</code>|<code>age))&gt;</code></td><td align="right"><strong>非既</strong>&#xff0c;note元素必须包含name子元素&#xff0c;以及sex或age两个元素之一</td></tr></tbody></table>
+<h5 id="混合型内容">混合型内容</h5>
+<pre class="prettyprint"><code class=" hljs lasso"><span class="hljs-subst">&lt;!</span>ELEMENT note (<span class="hljs-variable">#PCDATA</span><span class="hljs-subst">|</span><span class="hljs-keyword">to</span><span class="hljs-subst">|</span>from<span class="hljs-subst">|</span><span class="hljs-keyword">header</span><span class="hljs-subst">|</span>message)<span class="hljs-subst">*&gt;</span></code></pre>
+<p>这个就比较厉害了&#xff0c;类型和元素内容的混合使用&#xff0c;并且非既括号中的内容可以出现零次或多次。</p>
+<h3 id="属性">属性</h3>
+<h4 id="属性声明">属性声明</h4>
+<p>在 DTD 中&#xff0c;属性通过 <strong>ATTLIST</strong> 声明来进行声明。</p>
+<pre class="prettyprint"><code class=" hljs fsharp">&lt;!ATTLIST 元素名称 属性名称 属性类型 默认值&gt;    <span class="hljs-comment">//语法结构</span>
+&lt;!ATTLIST payment <span class="hljs-class"><span class="hljs-keyword">type</span> <span class="hljs-title">CDATA</span> &#34;<span class="hljs-title">check</span>&#34;&gt;       //实例</span>
+&lt;payment <span class="hljs-class"><span class="hljs-keyword">type</span>&#61;</span><span class="hljs-string">&#34;check&#34;</span> /&gt;                   <span class="hljs-comment">//应用到xml中</span></code></pre>
+<h4 id="属性使用">属性使用</h4>
+<p>属性的类型和默认值都有一些备选项。</p>
+<h5 id="属性类型备选">属性类型备选</h5>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/80877507-02-617e61036f.png" loading="lazy"> <br /> 看来属性类型没有PCDATA,也对&#xff0c;没有要解析的标记&#xff0c;直接用CDATA方便些。</p>
+<h5 id="属性默认值备选">属性默认值备选</h5>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/80877507-03-c304ce3e2a.png" loading="lazy"> <br /> 下面解释下四种植的含义&#xff1a;</p>
+<ul><li>第一种值&#xff1a;直接给属性一个默认值&#xff0c;<strong>如果你没赋值&#xff0c;就用我默认的</strong>。</li><li>第二种#REQUIRED&#xff1a;表示<strong>你必须指定属性值&#xff0c;没指定就非法</strong>。</li><li>第三种#IMPLIED:表示无所谓&#xff0c;<strong>你指不指定属性值都合法</strong>。</li><li>第四种FIXED value:表示属性值你必须得有&#xff0c;而且还<strong>必须是我给出的固定的</strong>。也就是说我是规则制定者&#xff0c;要求方&#xff0c;你&#xff08;XML的编写者&#xff09;必须按照我的要求来做。</li></ul>
+<h5 id="列举属性值">列举属性值</h5>
+<pre class="prettyprint"><code class=" hljs fsharp">&lt;!ATTLIST 元素名称 属性名称 (en1|en2|..) 默认值&gt;       <span class="hljs-comment">//语法</span>
+&lt;!ATTLIST payment <span class="hljs-class"><span class="hljs-keyword">type</span> (</span>check|cash) <span class="hljs-string">&#34;cash&#34;</span>&gt;        <span class="hljs-comment">//dtd举例</span></code></pre>
+<p>如果采用了这种列举属性值的语法&#xff0c;那么结果为如下的二选一</p>
+<pre class="prettyprint"><code class=" hljs rust">&lt;payment <span class="hljs-keyword">type</span>&#61;<span class="hljs-string">&#34;check&#34;</span> /&gt;</code></pre>
+<p>或者</p>
+<pre class="prettyprint"><code class=" hljs rust">&lt;payment <span class="hljs-keyword">type</span>&#61;<span class="hljs-string">&#34;cash&#34;</span> /&gt;</code></pre>
+<p><font color="red">这里有一个疑问&#xff0c;使用列举属性值语法&#xff0c;属性值的属性类型如何判断呢&#xff1f;</font></p>
+<h3 id="实体-1">实体</h3>
+<p>实体是用于<strong>定义引用普通文本或特殊字符的快捷方式的变量</strong>。<strong>实体引用是对实体的引用</strong>。实体可在内部或外部进行声明。</p>
+<h4 id="内部实体声明">内部实体声明</h4>
+<p>声明语法</p>
+<pre class="prettyprint"><code class=" hljs cs">&lt;!ENTITY 实体名称 <span class="hljs-string">&#34;实体的值&#34;</span>&gt;  <span class="hljs-comment">//语法</span></code></pre>
+<p>DTD举例</p>
+<pre class="prettyprint"><code class=" hljs vhdl">&lt;!<span class="hljs-keyword">ENTITY</span> writer <span class="hljs-string">&#34;田茂林&#34;</span>&gt;
+&lt;!<span class="hljs-keyword">ENTITY</span> copyright <span class="hljs-string">&#34;Copyright maolintian&#34;</span>&gt;</code></pre>
+<p>XML中使用</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-tag">&lt;<span class="hljs-title">author</span>&gt;</span>&amp;writer;&amp;copyright;<span class="hljs-tag">&lt;/<span class="hljs-title">author</span>&gt;</span>  //当解析的时候就会展开实体</code></pre>
+<p><font color="red">注释: 一个实体由三部分构成: 一个和号 (&amp;), 一个实体名称, 以及一个分号 (;)。<strong>这里W3C表述应该有误&#xff0c;应该是一个实体引用由这三部分组成&#xff0c;参考MSDN得出的结论&#xff0c;这个困扰了一些时间。</strong></font></p>
+<h4 id="外部实体声明">外部实体声明</h4>
+<p>声明语法</p>
+<pre class="prettyprint"><code class=" hljs vhdl">&lt;!<span class="hljs-keyword">ENTITY</span> 实体名称 SYSTEM <span class="hljs-string">&#34;URI/URL&#34;</span>&gt;</code></pre>
+<p>DTD 举例</p>
+<pre class="prettyprint"><code class=" hljs cs"> <span class="hljs-comment">//该url地址下包含文字&#xff1a;田茂林</span>
+&lt;!ENTITY writer SYSTEM <span class="hljs-string">&#34;http://www.w3school.com.cn/dtd/entities.dtd&#34;</span>&gt;
+<span class="hljs-comment">//该url地址下包含文字&#xff1a;Copyright maolintian</span>
+&lt;!ENTITY copyright SYSTEM <span class="hljs-string">&#34;http://www.w3school.com.cn/dtd/entities.dtd&#34;</span>&gt;
+</code></pre>
+<p>XML 中使用</p>
+<pre class="prettyprint"><code class=" hljs xml"><span class="hljs-tag">&lt;<span class="hljs-title">author</span>&gt;</span>&amp;writer;&amp;copyright;<span class="hljs-tag">&lt;/<span class="hljs-title">author</span>&gt;</span></code></pre>
+<h2 id="dtd实战">DTD实战</h2>
+<p>分析一下DTD的实战举例</p>
+<pre class="prettyprint"><code class=" hljs lasso"><span class="hljs-subst">&lt;!</span>DOCTYPE tvschedule <span class="hljs-preprocessor">[</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT tvschedule (channel<span class="hljs-subst">&#43;</span>)<span class="hljs-subst">&gt;</span>                <span class="hljs-comment">//电视节目根元素包括多个频道子元素</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT channel (banner,day<span class="hljs-subst">&#43;</span>)<span class="hljs-subst">&gt;</span>                <span class="hljs-comment">//每个频道子元素都包含一个主题和多个day元素</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT banner (<span class="hljs-variable">#PCDATA</span>)<span class="hljs-subst">&gt;</span>                     <span class="hljs-comment">//每个主题都是PCDATA类型的</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT day (<span class="hljs-built_in">date</span>,(holiday<span class="hljs-subst">|</span>programslot<span class="hljs-subst">&#43;</span>)<span class="hljs-subst">&#43;</span>)<span class="hljs-subst">&gt;</span>   <span class="hljs-comment">//每个day元素又包括一个data日期元素&#xff0c;和至少一个日期排班</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT <span class="hljs-built_in">date</span> (<span class="hljs-variable">#PCDATA</span>)<span class="hljs-subst">&gt;</span>                       <span class="hljs-comment">//data日期元素是PCDATA类型的</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT holiday (<span class="hljs-variable">#PCDATA</span>)<span class="hljs-subst">&gt;</span>                    <span class="hljs-comment">//holiday 假期也是PCDATA类型&#xff0c;说明没有具体节目内容</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT programslot (time,title,description<span class="hljs-subst">?</span>)<span class="hljs-subst">&gt;</span> <span class="hljs-comment">//programslot子元素又包括time,title&#xff0c;零次或一次description</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT time (<span class="hljs-variable">#PCDATA</span>)<span class="hljs-subst">&gt;</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT title (<span class="hljs-variable">#PCDATA</span>)<span class="hljs-subst">&gt;</span>
+<span class="hljs-subst">&lt;!</span>ELEMENT description (<span class="hljs-variable">#PCDATA</span>)<span class="hljs-subst">&gt;</span>
+
+<span class="hljs-subst">&lt;!</span>ATTLIST tvschedule name CDATA <span class="hljs-variable">#REQUIRED</span><span class="hljs-subst">&gt;</span>        <span class="hljs-comment">//tvschedule 必须有属性name</span>
+<span class="hljs-subst">&lt;!</span>ATTLIST channel chan CDATA <span class="hljs-variable">#REQUIRED</span><span class="hljs-subst">&gt;</span>           <span class="hljs-comment">//channel必须有属性chan</span>
+<span class="hljs-subst">&lt;!</span>ATTLIST programslot vtr  CDATA <span class="hljs-variable">#IMPLIED</span><span class="hljs-subst">&gt;</span>
+<span class="hljs-subst">&lt;!</span>ATTLIST title rating CDATA <span class="hljs-variable">#IMPLIED</span><span class="hljs-subst">&gt;</span>
+<span class="hljs-subst">&lt;!</span>ATTLIST title language CDATA <span class="hljs-variable">#IMPLIED</span><span class="hljs-subst">&gt;</span>
+<span class="hljs-preprocessor">]</span><span class="hljs-markup">&gt;</span></code></pre>
+<p><font color="red">这里有个问题&#xff0c;<code>&lt;!ELEMENT day (date,(holiday|programslot&#43;)&#43;)&gt;</code><strong>这里的(holiday|programslot&#43;)外边已经有“&#43;”号了&#xff0c;里边programslot&#43;还有意义么&#xff1f;</strong></font></p>
+<p>DTD实战就浅尝辄止到这里&#xff0c;明显感觉到一个问题是&#xff0c;元素的类型过少啊&#xff0c;只有PCDATE和CDATA两种&#xff0c;如果我是非文本类型呢&#xff1f;希望在SCHEMA里找到答案。</p>

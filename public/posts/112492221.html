@@ -1,0 +1,438 @@
+<p>系统间的耦合高怎么办&#xff0c;我们如何不让一个服务过于庞大&#xff0c;一个好的方式就是依据具体的功能模块拆分服务&#xff0c;降低服务的耦合度&#xff0c;服务间的交互可以通过消息传递数据来实现&#xff0c;除此之外Kafka非常适合在线日志收集等高吞吐场景&#xff0c;kafka有<strong>更好的吞吐量&#xff0c;内置分区&#xff0c;副本和故障转移</strong>&#xff0c;这有利于处理大规模的消息&#xff0c;所以kafka被各大公司广泛运用于消息队列的构建&#xff1a;</p>
+<ol><li><strong>消息队列模型-生产者消费者模型</strong></li><li><strong>Kafka基本概念和架构模型</strong></li><li><strong>Kafka工作流程和文件存储机制</strong></li><li><strong>生产者策略&#xff1a;分区策略、ACK机制、故障转移机制、Kafka可靠高效原因</strong></li><li><strong>消费者策略&#xff1a;消费方式、分区分配策略、offset的维护</strong></li><li><strong>Zookeeper管理</strong></li><li><strong>Kafka框架搭建实战</strong></li></ol>
+<p><strong>适合人群</strong>&#xff1a;不了解Kafka的新手&#xff0c;对Kafka的实现机制感兴趣的技术人员</p>
+<p>本文的全部内容来自我个人在Kafka学习过程中整理的博客&#xff0c;是该博客专栏的精华部分。在书写过程中过滤了流程性的上下文&#xff0c;例如部署环境、配置文件等&#xff0c;而致力于向读者讲述其中的核心部分&#xff0c;如果读者有意对过程性内容深入探究&#xff0c;可以移步<a href="https://tianmaolin.blog.csdn.net/article/details/109325831" rel="nofollow">MaoLinTian的Blog</a>&#xff0c;在这篇索引目录里找到答案分布式技术相关专栏索引<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-01-350fcb6a30.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_16"></a>消息队列模型-生产者消费者模型</h3>
+<p>在正式介绍Kafka之前&#xff0c;先来了解下什么是<strong>生产者消费者模式</strong>&#xff0c;以及什么是<strong>消息队列</strong>&#xff0c;再由消息队列聊到<strong>Kafka</strong>。</p>
+<p><strong>生产者消费者模型</strong>具体来讲&#xff0c;就是在一个系统中&#xff0c;存在生产者和消费者两种角色&#xff0c;他们通过内存缓冲区进行通信&#xff0c;生产者生产消费者需要的资料&#xff0c;消费者把资料做成产品。可以理解为生产者不停的生产馒头&#xff0c;然后把馒头扔到筐里&#xff0c;消费者不停的从筐里拿出馒头吃。具体到消息系统可以这么理解&#xff1a;</p>
+<ul><li><strong>生产者</strong>&#xff1a;消息的制造者&#xff0c;生产馒头的一方</li><li><strong>管道容器</strong>&#xff1a;消息的传递者&#xff0c;也就是放馒头的筐</li><li><strong>消费者</strong>&#xff1a;消息的消费者&#xff0c;也就是吃馒头的一方</li></ul>
+<p>其中最重要的环节就是这个管道容器&#xff0c;其实就是一个<strong>消息队列</strong></p>
+<h4><a rel="noopener noreferrer" id="_25"></a>消息队列的应用场景</h4>
+<p>消息队列具有<strong>低耦合、可靠投递、广播、流量控制、最终一致性</strong>等一系列功能&#xff0c;成为<strong>异步RPC</strong>的主要手段之一。那么为什么要使用队列呢&#xff1f;我这么理解&#xff1a;</p>
+<ul><li>1&#xff0c;在分布式高并发场景下&#xff0c;如何保证系统性能不受影响&#xff0c;请求不会超时中断并且能让用户无感知&#xff08;<font color="red"><strong>削峰、减少响应所需时间</strong>&#xff09;</font>,一般网站响应时间超过200ms就难以忍受了&#xff0c;高并发同步向数据库内写数据&#xff0c;数据库会扛不住压力的&#xff0c;而且响应速度也会明显减慢。</li><li>2&#xff0c;不同系统之间的异步通信如何实现&#xff08; <font color="red"><strong>降低系统耦合性</strong>&#xff09;</font>,一个系统必然有很多模块组成&#xff0c;不同模块各自有实现&#xff0c;各自有自己的迭代&#xff0c;如果耦合性低&#xff0c;不存在强依赖&#xff0c;那最好了&#xff0c;微服务架构的思想也类似此&#xff0c;降低耦合性。</li></ul>
+<p>第一个场景下&#xff0c;例如有个业务&#xff1a;下班打车&#xff0c;企业滴滴&#xff0c;晚上8点半上地这边爆满&#xff0c;各种打车订单同时涌入系统&#xff0c;系统要爆&#xff0c;加上消息队列后&#xff0c;订单进入消息队列&#xff0c;然后反馈给用户订单在处理&#xff0c;然后按照入队顺序一个个处理该消息&#xff0c;直到消费到该消息订单后才将订单入库&#xff0c;当然这个时候才能反馈给用户说打车成功。<strong>这样有效的抵抗了峰值时间的冲击</strong>。</p>
+<p>第二个场景下&#xff0c;系统的不同模块之间各自有各自的实现。模块之间不存在直接调用&#xff0c;那么新增模块或者修改模块就对其他模块影响较小&#xff0c;所以如果有个消息系统在中间作为中转&#xff0c;<strong>消息发送者将消息发送至分布式消息队列即结束对消息的处理&#xff0c;消息接受者从分布式消息队列获取该消息后进行后续处理&#xff0c;并不需要知道该消息从何而来</strong>。对新增业务&#xff0c;只要对该类消息感兴趣&#xff0c;即可订阅该消息&#xff0c;对原有系统和业务没有任何影响&#xff0c;从而实现网站业务的可扩展性设计。</p>
+<h4><a rel="noopener noreferrer" id="_34"></a>消息队列模型</h4>
+<p>消息队列目前有两种协议&#xff1a;JMS和AMQP&#xff0c;JMS轻量不能跨平台&#xff0c;AMQP性能强但是复杂&#xff0c;感觉就是美图秀秀和PS的区别&#xff0c;但是大家用的多的还是美图秀秀&#xff0c;那么就<strong>以JMS为主</strong>吧&#xff0c;咱就好好用轮子吧。</p>
+<p><strong>1 点到点&#xff08;P2P&#xff09;模型</strong></p>
+<p>使用队列&#xff08;Queue&#xff09;作为消息通信载体&#xff1a;满足<strong>生产者与消费者模式</strong>&#xff0c;<strong>一条消息只能被一个消费者使用&#xff0c;未被消费的消息在队列中保留直到被消费或超时</strong>。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-02-5aa88f73af.png" loading="lazy"></p>
+<p>假如我们存在这样⼀种情况&#xff1a;我们需要将⽣产者产⽣的消息分发给多个消费者&#xff0c;并且每个消费者都能接收到完全的消息内容。这种情况&#xff0c;队列模型就不好解决了</p>
+<p><strong>2 发布/订阅&#xff08;Pub/Sub&#xff09;模型</strong></p>
+<p>发布订阅模型&#xff08;Pub/Sub&#xff09; 使用主题&#xff08;Topic&#xff09;作为消息通信载体&#xff0c;类似于广播模式,发布者发布一条消息&#xff0c;<strong>该消息通过主题传递给所有的订阅者</strong>&#xff0c;一条消息可以被多个消费者使用。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-03-fd714cce75.png" loading="lazy"></p>
+<p><strong>在一条消息广播之后才订阅的用户则是收不到该条消息的</strong>。在发布 - 订阅模型中&#xff0c;如果只有⼀个订阅者&#xff0c;那它和队列模型就基本是⼀样的了。所以说&#xff0c;<strong>发布 - 订阅模型在功能层⾯上是可以兼容点到点&#xff08;P2P&#xff09;模型的</strong></p>
+<h4><a rel="noopener noreferrer" id="_51"></a>消息队列问题</h4>
+<p>系统里平白无故加入一个消息队列服务器当然会影响系统的整体性能&#xff0c;增加系统的复杂性&#xff0c;还需要担心异步消息发送的一致性问&#xff0c;消息服务器的稳定性等问题&#xff1a;</p>
+<ul><li><strong>系统可用性降低</strong>&#xff1a; 系统可用性在某种程度上降低&#xff0c;在加入MQ之前&#xff0c;不用考虑消息丢失或者说MQ挂掉等等的情况&#xff0c;但是&#xff0c;引入MQ之后就需要去考虑了</li><li><strong>系统复杂性提高</strong>&#xff1a; 加入MQ之后&#xff0c;需要保证<strong>消息没有被重复消费、处理消息丢失的情况、保证消息传递的顺序性</strong>&#xff0c;消息服务器有没有宕机等问题</li><li><strong>一致性问题</strong>&#xff1a; 消息队列可以实现异步&#xff0c;异步确实可以提高系统响应速度。但是&#xff0c;万一消息的真正消费者并没有正确消费消息就会导致数据不一致的情况了。</li></ul>
+<p>其实这些问题就是作为一个消息队列中间件所要面对的挑战&#xff0c;这个消息中间件该如何设计才能解决消息框架可能遇到的一系列问题&#xff1a;<strong>故障转移恢复、数据一致性保证、数据可靠性保证</strong></p>
+<h3><a rel="noopener noreferrer" id="Kafka_59"></a>Kafka基本概念和架构模型</h3>
+<p>了解了生产者-消费者模型以及消息队列模型后&#xff0c;我们知道如果系统需要<font color="red"><strong>解耦、削峰</strong></font>&#xff0c;一定要使用消息队列&#xff0c;但是消息队列存在诸多问题&#xff0c;所以需要一个功能完备的中间件来解决这些问题。</p>
+<p>Kafka 是⼀个分布式流式处理平台&#xff0c;与大多数消息系统比较&#xff0c;kafka有<strong>更好的吞吐量&#xff0c;内置分区&#xff0c;副本和故障转移</strong>。kafka流平台具有三个关键功能&#xff1a;</p>
+<ol><li><strong>消息队列【传递消息】</strong>&#xff1a;发布和订阅消息流&#xff0c;这个功能类似于消息队列&#xff0c;这也是 Kafka 也被归类为消息队列的原因。</li><li><strong>容错的持久方式存储记录消息流【存储消息】</strong>&#xff1a; Kafka 会把消息持久化到磁盘&#xff0c;有效避免了消息丢失的⻛险·。</li><li><strong>流式处理平台【处理消息】</strong>&#xff1a; 在消息发布的时候进⾏处理&#xff0c;Kafka 提供了⼀个完整的流式处理类库。</li></ol>
+<p>所以Kafka 主要有两⼤应⽤场景&#xff1a;首先基于传递和存储消息的有效和可靠性&#xff0c;<strong>kafka可以建⽴实时流数据管道&#xff0c;以可靠地在系统或应⽤程序之间获取数据</strong>。其次基于处理消息数据流的完备能力&#xff0c;<strong>kafka可以构建实时的流数据处理程序来转换或处理数据流</strong>。</p>
+<h4><a rel="noopener noreferrer" id="Kafka_70"></a>Kafka架构模型</h4>
+<p>看了那么多的Kafka的优点&#xff0c;那么相信各位对Kafka的实现架构有了一些好奇&#xff0c;下图为一个Kafka的基本架构图&#xff0c;接下来我会对其中的概念分点详述并举例说明<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-04-0e2cc0589e.png" loading="lazy"></p>
+<p><strong>1 Producer&#xff08;生产者&#xff09;</strong>&#xff1a;负责发布消息到Kafka broker&#xff0c;就是向kafka broker发消息的客户端。</p>
+<p><strong>2 主题和分区</strong>&#xff1a;<font color="red"><strong>一个主题包含一个或多个Partition</strong></font></p>
+<ul><li><strong>Topics&#xff08;主题&#xff09;</strong>: 属于<strong>特定类别的消息流</strong>称为主题。 数据存储在主题中。主题被拆分成分区。 对于每个主题&#xff0c;Kafka保存一个分区的数据。 每个这样的分区包含不可变有序序列的消息。 分区被实现为具有相等大小的一组分段文件。&#xff08;物理上不同Topic的消息分开存储&#xff0c;逻辑上一个Topic的消息虽然保存于一个或多个broker上但用户只需指定消息的Topic即可生产或消费数据而不必关心数据存于何处&#xff09;&#xff0c;也可以理解为一个队列&#xff0c;通过对消息指定主题可以将消息分类&#xff0c;消费者可以只关注自己需要的Topic中的消息。</li><li><strong>Partition&#xff08;分区&#xff09;</strong>&#xff0c;Parition是<strong>物理</strong>上的概念&#xff0c;每个Topic包含一个或多个Partition。每个Partition包含N个<strong>副本</strong>。为了实现扩展性&#xff0c;一个非常大的topic可以分布到多个broker&#xff08;即服务器&#xff09;上&#xff0c;一个topic可以分为多个partition&#xff0c;每个partition是一个有序的队列&#xff0c; partition中的每条消息都会被分配一个有序的id&#xff08;offset <strong>分区偏移量</strong>&#xff09;。kafka只保证按一个partition中的顺序将消息发给consumer&#xff0c;不保证一个topic的整体&#xff08;多个partition间&#xff09;的顺序&#xff0c;</li><li><strong>Leader&#xff08;领导者&#xff09;【针对某个分区的Leader副本】</strong>&#xff1a; Leader 负责指定分区的所有读取和写入的操作。 每个分区都有一个服务器充当Leader。</li><li><strong>Follower&#xff08;追随者&#xff09;【针对某个分区的Follower副本】</strong>&#xff1a;跟随领导者指令的节点被称为Follower。 如果领导失败&#xff0c;一个追随者将自动成为新的领导者。 跟随者作为正常消费者&#xff0c;拉取消息并更新其自己的数据存储。 <strong>follower从不用来读取或写入数据</strong>&#xff0c; 它们用于防止数据丢失。</li></ul>
+<p><strong>3 Kafka集群和Kafka服务器</strong>&#xff1a;<strong><font color="red">一个Kafka集群包含多个Kafka服务器</font></strong></p>
+<ul><li><strong>Kafka Cluster&#xff08;Kafka集群&#xff09;</strong>&#xff1a;Kafka有多个服务器被称为Kafka集群。 可以扩展Kafka集群&#xff0c;无需停机。 这些集群用于管理消息数据的持久性和复制。</li><li><strong>Broker&#xff08;Kafka服务器&#xff09;</strong>&#xff1a;一台kafka服务器就是一个broker。一个集群由多个broker组成。一个broker可以容纳多个topic。</li></ul>
+<p><strong>4 Consumer(消费者)和 Consumer Group&#xff08;消费者集群&#xff09;</strong>&#xff1a;<strong><font color="red">一个消费者集群包含多个消费者</font></strong></p>
+<ul><li><strong>Consumer Group&#xff08;消费者集群&#xff09;</strong>&#xff1a;consumer group是kafka提供的可扩展且具有容错性的消费者机制。组内可以有多个消费者或消费者实例&#xff0c;它们共享一个公共的group ID。组内的所有消费者协调在一起来共享订阅主题的所有分区。</li><li><strong>Consumer(消费者)</strong>&#xff1a;消息消费者&#xff0c;向Kafka broker读取消息的客户端。</li></ul>
+<p>综合而言我理解就是&#xff0c;<strong><font color="red">Kafka集群和Kafka服务器属于物理机器上的概念&#xff0c;而主题和分区属于发出去的消息的分类&#xff0c;一个纵向&#xff0c;一个横向&#xff0c;一个broker上可以有很多主题的分区&#xff0c;一个主题也可以在很多broker上放置分区&#xff0c;是多对多的关系</font></strong>。由于这部分比较难理解&#xff0c;这里我举个例子&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="Kafka_91"></a>Kafka概念举例</h4>
+<p>我在<strong>有三台机器【broker的id分别为101、102、103】的Kafka集群上创建了一个主题为tml-kafka的集群&#xff0c;指定副本数为3</strong>&#xff0c;查看详情时第一个行显示所有partitions的一个总结&#xff0c;以下每一行给出一个partition中的信息&#xff0c;如果我们只有一个partition&#xff0c;则只显示一行。</p>
+<ul><li><strong>leader 和follwer都是针对某个分区的概念</strong>&#xff0c;例如对于分区0&#xff0c;其leader在0也就是broker为101的机器&#xff0c;而对于分区1和分区2其leader在2也就是broker为103的机器上</li><li><strong>Replicas</strong> 显示给定partiton所有副本所存储节点的节点列表&#xff0c;不管该节点是否是leader或者是否存活&#xff0c;这里就是我们的三台机器、0、1、2&#xff0c;分别对应101、102、103。</li><li><strong>Isr 副本</strong>都已同步的的节点集合&#xff0c;这个集合中的所有节点都是存活状态&#xff0c;并且跟leader同步,这里也是我们的三台机器、0、1、2&#xff0c;分别对应101、102、103.说明我们三台机器都在集群里没有脱机&#xff0c;ISR的概念在后续会提到。</li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/112492221-05-e72e4480ba.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Kafka_99"></a>Kafka工作流程和文件存储机制</h3>
+<p>了解了Kafka的基本架构和示例后我们来了解下Kafka到底是怎么工作的&#xff0c;以及消息是如何在Kafka持久化存储的。</p>
+<h4><a rel="noopener noreferrer" id="Kafka_101"></a>Kafka的工作流程</h4>
+<p>通过基础概念的学习可以知道kafka的消息分为Topic&#xff0c;而Topic从逻辑上又可以划分为Partion&#xff0c;关于Topic&amp;Partion需要注意以下几点&#xff1a;</p>
+<ul><li>一个 Topic可以认为是一类消息&#xff0c;每个 topic 将被分成多个 Partion&#xff0c;每个 Partion在存储层面是 <strong>append log</strong> 文件。Kafka 机制中&#xff0c;producer push 来的消息是追加&#xff08;append&#xff09;到 Partion中的&#xff0c;这是一种<strong>顺序写磁盘的机制</strong>&#xff0c;效率远高于随机写内存</li><li><strong>任何发布到partition 的消息都会被追加到log文件的尾部</strong>&#xff0c;每条消息在文件中的位置称为 offset&#xff08;偏移量&#xff09;&#xff0c;offset 为一个 long 型的数字&#xff0c;它<font color="red"><strong>唯一标记一条消息</strong>。<strong>Kafka只<font color="red">保证Partion内的消息有序&#xff0c;不能保证全局Topic的消息有序</font></strong></font></li><li>消费者组中的每个消费者&#xff0c;都会<strong>实时记录自己消费到了哪个 offset</strong>&#xff0c;以便出错恢复时&#xff0c;从上次的位置继续消费</li></ul>
+<p>下图为一个消息写入过程&#xff0c;Producer向同一主题的不同分区写消息&#xff0c;也即不停的在各个append log文件后顺序追加消息&#xff0c;每追加一个append log文件偏移量加一&#xff0c;只有单append log文件中有序<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-06-ed6735367d.png" loading="lazy"><br /> 整体消息的生产传递和消费的的流程如下图所示&#xff0c;注意这里偏移量数字从consumer消费的视角来看&#xff0c;<strong>无论是生产者还是消费者对消息的处理都是偏移量从小到大的</strong>&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-07-1c0d98f4df.png" loading="lazy"><br /> 消息由生产者生产&#xff0c;并发往Kafka集群&#xff0c;Kafka集群获取到消息后再发往消费者&#xff0c;以下是Pub-Sub消息的逐步工作流程 &#xff1a;</p>
+<ol><li><strong>Producer生产者定期向Kafka集群发送消息</strong>&#xff0c;在发送消息之前&#xff0c;会对消息进行分类&#xff0c;即Topic, Kafka集群存储该Topic配置的分区中的所有消息。 它确保消息在分区之间平等共享。 如果生产者发送两个消息并且有两个分区&#xff0c;Kafka将在第一分区中存储一个消息&#xff0c;在第二分区中存储第二消息。</li><li><strong>Kafk接收生产者消息并转发给消费者</strong>&#xff0c;消费者订阅特定主题&#xff0c;一旦消费者订阅Topic&#xff0c;Kafka将向消费者提供Topic下分区的当前offset&#xff0c;并且还将偏移保存在Zookeeper系统中。消费者通过与kafka集群建立长连接的方式&#xff0c;不断地从集群中拉取消息&#xff0c;然后可以对这些消息进行处理&#xff0c;一旦Kafka收到来自生产者的消息&#xff0c;它将这些消息转发给消费者。</li><li><strong>消费者将收到消息进行处理</strong>,一旦消息被处理&#xff0c;消费者将向Kafka代理发送确认。消费者需要实时的记录自己消费到了哪个offset&#xff0c;便于后续发生故障恢复后继续消费。Kafka 0.9版本之前&#xff0c;consumer默认将offset保存在Zookeeper中&#xff0c;从0.9版本开始&#xff0c;consumer默认将offset保存在Kafka一个内置的topic中 一旦Kafka收到确认&#xff0c;它将offset更改为新值&#xff0c;并在Zookeeper中更新它。</li></ol>
+<p>以上流程将重复&#xff0c;直到消费者停止请求。消费者可以随时回退/跳到所需的主题偏移量&#xff0c;并阅读所有后续消息</p>
+<h4><a rel="noopener noreferrer" id="Kafka_118"></a>Kafka文件存储机制</h4>
+<p>我们上文提到每个partion是一个<strong>append log</strong> 文件&#xff0c;虽然我们已经把Topic物理上划分为多个Partion用来<strong>负载均衡</strong>&#xff0c;但即使是对一个Partition 而言&#xff0c;如果消息量过大的话也会有堵塞的风险&#xff0c;所以我们需要定期清理消息。</p>
+<p>清理消息时如果只有一个Partion&#xff0c;那么就得全盘清除&#xff0c;这将对消息文件的维护以及已消费的消息的清理带来严重的影响。<strong>所以我们需要在物理上进一步细分Partition</strong></p>
+<ul><li>Kafka<font color="red"><strong>以 segment 为单位将 partition 进一步细分</strong></font>&#xff0c;每个 partition&#xff08;目录&#xff09;相当于一个巨型文件被平均分配到多个<strong>大小相等的 segment</strong>&#xff08;段&#xff09;数据文件中&#xff08;每个 segment 文件中消息数量不一定相等&#xff09;</li></ul>
+<p>这种特性也方便 old segment 的删除&#xff0c;即方便已被消费的消息的清理&#xff0c;提高磁盘的利用率&#xff0c;每个 partition 只需要支持顺序读写就行。</p>
+<h5><a rel="noopener noreferrer" id="PartitionSegment_126"></a>Partition&amp;Segment</h5>
+<p>接下来我们发送一条消息&#xff0c;看看在物理存储上是什么样的&#xff0c;在机器上我们可以看到&#xff0c;<strong>一组index和log</strong>&#xff0c;这就是<strong>一个segment</strong>的内容&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/112492221-08-ae32dc1d84.png" loading="lazy"><br /> <strong>segment 文件由两部分组成&#xff0c;分别为 “.index” 文件和 “.log” 文件&#xff0c;分别表示为 segment 索引文件和数据文件</strong>。这两个文件的命令规则为&#xff1a;<strong>partition 全局的第一个 segment 从 0 开始</strong>&#xff0c;后续每个 segment 文件名为上一个 segment 文件最后一条消息的 offset 值&#xff0c;数值大小为 64 位&#xff0c;20 位数字字符长度&#xff0c;没有数字用 0 填充&#xff0c;我这里只有一条数据&#xff0c;所以是从0开始的&#xff0c;整体的存储架构如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-09-f3814b9f47.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="Segment_133"></a>Segment存储结构</h5>
+<p>通过以上对Segment落盘文件的了解&#xff0c;我们基本搞清楚了Segment的结构&#xff0c;当然我这里是单segment&#xff0c;看不出来。这里从网上找了一个大量文件的示例&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//第一段segment&#xff0c;起始位置为0</span>
+<span class="token number">00000000000000000000.</span>index
+<span class="token number">00000000000000000000.</span>log
+<span class="token comment">//第二段segment&#xff0c;起始位置为170410</span>
+<span class="token number">00000000000000170410.</span>index
+<span class="token number">00000000000000170410.</span>log
+<span class="token comment">//第三段segment&#xff0c;起始位置为239430</span>
+<span class="token number">00000000000000239430.</span>index
+<span class="token number">00000000000000239430.</span>log
+</code></pre>
+<p>以上面的 segment 文件为例&#xff0c;展示出 segment&#xff1a;00000000000000170410 的 “.index” 文件和 “.log” 文件的对应的关系&#xff0c;如下图&#xff1a;<img alt="在这里插入图片描述" src="./posts/assets/112492221-10-b93397705b.png" loading="lazy"><br /> 如上图&#xff0c;“.index” 索引文件存储大量的元数据&#xff0c;“.log” 数据文件存储大量的消息&#xff0c;索引文件中的元数据指向对应数据文件中 message 的物理偏移地址。其中以 “.index” 索引文件中的元数据 [3, 348] 为例&#xff0c;在 <strong>“.log” 数据文件表示第 3 个消息&#xff0c;即在全局 partition 中表示 170410&#43;3&#61;170413 个消息&#xff0c;<font color="red">该消息的segementoffset为3&#xff0c;全局offset为170413&#xff0c;物理偏移地址为 348&#xff08;注意此物理偏移地址不是消息数量的offset&#xff0c;而是消息的内存存储偏移量 &#xff09;</font></strong></p>
+<h4><a rel="noopener noreferrer" id="partion_149"></a>快速定位partion中消息</h4>
+<p>既然消息在Partion中被分为了一段段的segment&#xff0c;那么我们如何快速定位消息的位置&#xff0c;来精准的对消息进行操作呢&#xff1f;以上图为例&#xff0c;读取 offset&#61;170418 的消息&#xff1a;</p>
+<ul><li>首先查找 segment 文件&#xff0c;其中 00000000000000000000.index 为最开始的文件&#xff0c;第二个文件为 00000000000000170410.index&#xff08;起始偏移为 170410&#43;1&#61;170411&#xff09;&#xff0c;而第三个文件为 00000000000000239430.index&#xff08;起始偏移为 239430&#43;1&#61;239431&#xff09;&#xff0c;所以这个 offset&#61;170418 就落到了第二个文件之中。其它后续文件依次类推&#xff0c;以其偏移量命名并排列这些文件&#xff0c;然后根据<font color="red"><strong>二分查找法</strong></font>就可以快速定位到具体文件位置。</li><li>其次根据 00000000000000170410.index 文件中的170418 -170410&#61;8&#xff0c;得出是该segment 中的第8个消息&#xff0c;再次依据<font color="red"><strong>二分查找法</strong></font>定位到该索引&#xff0c;得到segment内[<strong>消息偏移量&#xff0c;物理偏移量</strong>]坐标 <strong>[8,1325]</strong> 定位到 00000000000000170410.log 文件中的 1325 的位置进行读取。</li><li>找到1325位置后&#xff0c;<strong>顺序读取</strong>消息即可&#xff0c;确定读完本条消息【本条消息读到哪里结束】由消息的物理结构解决&#xff0c;消息都具有固定的物理结构&#xff0c;包括&#xff1a;offset&#xff08;8 Bytes&#xff09;、消息体的大小&#xff08;4 Bytes&#xff09;、crc32&#xff08;4 Bytes&#xff09;、magic&#xff08;1 Byte&#xff09;、attributes&#xff08;1 Byte&#xff09;、key length&#xff08;4 Bytes&#xff09;、key&#xff08;K Bytes&#xff09;、payload&#xff08;N Bytes&#xff09;等等字段&#xff0c;可以确定一条消息的大小&#xff0c;即读取到哪里截止。</li></ul>
+<p>以上就是定位消息的详细方法&#xff0c;通过索引的方式&#xff0c;可以在kafka顺序写磁盘的基础上仍然能快速的找到对应的消息。</p>
+<h3><a rel="noopener noreferrer" id="_156"></a>生产者策略&#xff1a;分区策略、数据可靠性保证、故障转移机制</h3>
+<p>前面提到消息系统的三大问题&#xff1a; <strong>系统可用性降低</strong>&#xff0c;<strong>系统复杂性提高</strong>&#xff0c;<strong>数据一致性问题</strong>&#xff0c;为了解决这些问题&#xff0c;Kafka支持一些机制&#xff0c;例如&#xff1a;</p>
+<ul><li>使用<strong>分区策略来提高系统可用性和进行负载均衡</strong>【高可扩展】</li><li>使用<strong>ACK应答机制</strong>来保障数据的可靠性【副本同步策略、ISR、Exactly Once语义】保证的一系列策略来解决系统复杂性问题&#xff0c;例如保证<strong>消息的不重不漏</strong>【高并发】</li><li>使用<strong>故障转移机制</strong>【HW&amp;LEO概念、故障同步机制、Leader选举】来<strong>保证消息的数据一致性</strong>&#xff0c;防止意外宕机丢数据导致不一致【高可用】</li></ul>
+<p>接下来就这三个机制以及其附加的策略来进行详细的讨论。</p>
+<h4><a rel="noopener noreferrer" id="_163"></a>生产者分区策略</h4>
+<p>Kafka 每个 topic 的 partition 有 N 个副本&#xff08;replicas&#xff09;&#xff0c;其中 N&#xff08;大于等于 1&#xff09;是 topic 的复制因子&#xff08;replica fator&#xff09;的个数。Kafka 通过多副本机制实现故障自动转移&#xff0c;当 Kafka 集群中出现 broker 失效时&#xff0c;副本机制可保证服务可用。对于任何一个 partition&#xff0c;<strong>它的 N 个 replicas 中&#xff0c;其中一个 replica 为 leader&#xff0c;其他都为 follower</strong>&#xff0c;leader 负责处理 partition 的所有读写请求&#xff0c;follower 则负责被动地去复制 leader 上的数据。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-11-eae9364465.png" loading="lazy"></p>
+<h5><a rel="noopener noreferrer" id="_166"></a>分区的原因</h5>
+<p>为什么要分区呢&#xff1f;对于分布式系统的三高我们已经很熟悉了&#xff0c;我们再来强调一下&#xff1a;</p>
+<ul><li><strong>高可扩展</strong>&#xff1a;方便在集群中扩展&#xff0c;每个 Partition 可以通过调整以适应它所在的机器&#xff0c;而一个 topic&#xff0c;又可以有多个 Partition 组成&#xff0c;因此整个集群就可以适应任意大小的数据了</li><li><strong>高并发</strong>&#xff1a;可以提高并发&#xff0c;因为可以以 Partition 为单位读写了&#xff0c;可以并发的往一个Topic的多个Partion中发送消息</li><li><strong>高可用</strong>&#xff1a;当然有了高可用和高可扩展了&#xff0c;我们还希望整个集群稳定&#xff0c;并发的情况下消息不会有丢失现象&#xff0c;为了保证数据的可靠性&#xff0c;我们每个分区都有多个副本来保证不丢消息&#xff0c;如果 leader 所在的 broker 发生故障或宕机&#xff0c;对应 partition 将因无 leader 而不能处理客户端请求&#xff0c;这时副本的作用就体现出来了&#xff1a;一个新 leader 将从 follower 中被选举出来并继续处理客户端的请求</li></ul>
+<p>如上图所示展示的&#xff0c;我们分布式集群的特性才能体现出来&#xff0c;其实不光是Kafka&#xff0c;所有的分布式中间件&#xff0c;都需要满足以上的特性。</p>
+<h5><a rel="noopener noreferrer" id="_173"></a>分区的原则</h5>
+<p>producer 采用 push 模式将消息发布到 broker&#xff0c;每条消息都被 append 到 patition 中&#xff0c;属于顺序写磁盘&#xff08;顺序写磁盘效率比随机写内存要高&#xff0c;保障 kafka 吞吐率&#xff09;。producer 发送消息到 broker 时&#xff0c;既然分区了&#xff0c;我们怎么知道生产者的消息该发往哪个分区呢&#xff1f;producer 会根据<strong>分区算法</strong>选择将其存储到哪一个 partition。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-12-c606ed9157.png" loading="lazy"><br /> 从代码结构里我们可以看到实际上可以归纳为三种方法&#xff0c;也就是三种路由机制&#xff0c;决定消息被发往哪个分区&#xff0c;分别是&#xff1a;</p>
+<ol><li>指明 partition 的情况下&#xff0c;<strong>直接将指明的值直接作为 partiton 值</strong>&#xff1b;</li><li>没有指明 partition 值但有 key 的情况下&#xff0c;<strong>将 key 的 hash 值与 topic 的 partition数进行取余得到 partition 值</strong></li><li>既没有 partition 值又没有 key 值的情况下&#xff0c;<strong>第一次调用时随机生成一个整数&#xff08;后面每次调用在这个整数上自增&#xff09;&#xff0c;将这个值与 topic 可用的 partition 总数取余得到 partition值&#xff0c;也就是常说的 round-robin 算法</strong>【轮询算法】。</li></ol>
+<p>可以说分区策略对于Kafka来说是三高机制的基础&#xff0c;有了分区才能实现Kafka的高可扩展&#xff0c;在这样的构建模型之上我们来看看基于分区机制&#xff0c;Kafka如何实现<strong>数据可靠性【高并发】<strong>和</strong>故障转移【高可用】</strong>。</p>
+<h4><a rel="noopener noreferrer" id="ACK_184"></a>ACK应答机制</h4>
+<p>为保证 producer 发送的数据&#xff0c;能可靠的发送到指定的 topic&#xff0c;<strong>topic 的每个 partition 收到producer 发送的数据后&#xff0c;都需要向 producer 发送 ack</strong>&#xff08;acknowledgement 确认收到&#xff09;&#xff0c;如果producer 收到 ack&#xff0c;就会进行下一轮的发送&#xff0c;否则重新发送数据。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-13-08b9aaa31d.png" loading="lazy"><br /> 那么基于此&#xff0c;因为在Kafka集群中一个分区会存在多个副本&#xff0c;leader负责读写&#xff0c;但同时需要把消息可靠的同步&#xff0c;防止消息丢失和遗漏或者重复。基于性能考虑&#xff0c;同时存在多种ACK应答机制。</p>
+<p>Kafka 为用户提供了三种可靠性级别&#xff0c;<strong>用户根据对可靠性和延迟的要求进行权衡</strong>&#xff0c;当 producer 向 leader 发送数据时&#xff0c;可以通过 request.required.acks 参数来设置数据可靠性的级别&#xff1a;</p>
+<ol><li> <p>request.required.acks &#61; 0&#xff0c;producer 不停向leader发送数据&#xff0c;而不需要 leader 反馈成功消息&#xff0c;这种情况下数据传输效率最高&#xff0c;但是数据可靠性确是最低的。可能在发送过程中丢失数据&#xff0c;可能在 leader 宕机时丢失数据。【<strong>传输效率最高&#xff0c;可靠性最低</strong>】</p> </li><li> <p>request.required.acks &#61; 1&#xff0c;这是默认情况&#xff0c;即&#xff1a;producer 发送数据到 leader&#xff0c;leader 写本地日志成功&#xff0c;返回客户端成功&#xff1b;此时 ISR 中的其它副本还没有来得及拉取该消息&#xff0c;如果此时 leader 宕机了&#xff0c;那么此次发送的消息就会丢失。【<strong>传输效率中&#xff0c;可靠性中</strong>】<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-14-6ef621b6d5.png" loading="lazy"></p> </li><li> <p>request.required.acks &#61; -1&#xff08;all&#xff09;&#xff0c;producer 发送数据给 leader&#xff0c;leader 收到数据后要等到 ISR 列表中的所有副本都同步数据完成后&#xff08;强一致性&#xff09;&#xff0c;才向生产者返回成功消息&#xff0c;如果一直收不到成功消息&#xff0c;则认为发送数据失败会自动重发数据。这是可靠性最高的方案&#xff0c;当然&#xff0c;性能也会受到一定影响。【<strong>传输效率低&#xff0c;可靠性高</strong>】&#xff0c;同时<font color="red"><strong>如果在 follower 同步完成后&#xff0c;broker 发送 ack 之前&#xff0c;leader 发生故障&#xff0c;那么会造成数据重复</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-15-ceff8f9c18.png" loading="lazy"></font></p> </li></ol>
+<p>当 request.required.acks &#61; -1时需要注意&#xff0c;如果要提高数据的可靠性&#xff0c;在设置 request.required.acks&#61;-1 的同时&#xff0c;还需参数 <code>min.insync.replicas</code> 配合&#xff0c;如此才能发挥最大的功效。min.insync.replicas 这个参数用于设定 ISR 中的最小副本数&#xff0c;默认值为1&#xff0c;<strong>当且仅当 request.required.acks 参数设置为-1时&#xff0c;此参数才生效。当 ISR 中的副本数少于 min.insync.replicas 配置的数量时&#xff0c;客户端会返回异常</strong>&#xff1a;<code>org.apache.kafka.common.errors.NotEnoughReplicasExceptoin: Messages are rejected since there are fewer in-sync replicas than required</code>。通过将参数 min.insync.replicas 设置为 2&#xff0c;当 ISR 中实际副本数为 1 时&#xff08;只有leader&#xff09;&#xff0c;将无法保证可靠性&#xff0c;<strong>因为如果发送ack后leader宕机&#xff0c;那么此时该条消息就会被丢失&#xff0c;所以应该拒绝客户端的写请求以防止消息丢失</strong>。在-1策略下有三个问题单独讨论一下&#xff1a;</p>
+<h5><a rel="noopener noreferrer" id="_199"></a>副本同步策略</h5>
+<p>我们知道当 request.required.acks&#61;-1时需要ISR中的全部副本都同步完成&#xff0c;才返回ACK&#xff0c;但是其实在最终确定这个方案之前还有一些别的方案&#xff0c;讨论核心是那么到底多少foller副本同步完成&#xff0c;才发送ack呢&#xff1f;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-16-7e53ba47ed.png" loading="lazy"><br /> 现有的两种方案我们选择了第二种&#xff0c;第一种占用的机器资源过多&#xff0c;造成了大量的数据冗余&#xff0c;而网络延迟对于Kafka的影响并不大。</p>
+<h5><a rel="noopener noreferrer" id="ISR_204"></a>ISR选举策略</h5>
+<p>采用全量副本同步方案后&#xff0c;我们发送ack的时机确定如下&#xff1a;<strong>leader 收到数据&#xff0c;所有 follower 都开始同步数据</strong>&#xff0c;但是设想如下情况&#xff1a;有一个 follower&#xff0c;因为某种故障&#xff0c;迟迟不能与 leader 进行同步&#xff0c;那 leader 就要一直等下去&#xff0c;直到它完成同步&#xff0c;才能发送 ack。这个问题怎么解决呢&#xff1f;我们引入ISR的概念</p>
+<ul><li><strong>所有的副本&#xff08;replicas&#xff09;统称为 Assigned Replicas&#xff0c;即 AR</strong></li><li>ISR 是 AR 中的一个子集&#xff0c;由 leader 维护 ISR列表&#xff0c;follower 从 leader 同步数据有一些延迟&#xff08;由参数 replica.lag.time.max.ms <strong>设置超时阈值</strong>&#xff09;&#xff0c;超过阈值的 follower 将被剔除出 ISR&#xff0c; 存入 OSR&#xff08;Outof-Sync Replicas&#xff09;列表&#xff0c;新加入的 follower 也会先存放在 <strong>OSR</strong> 中</li><li><strong>AR&#61;ISR&#43;OSR</strong>&#xff0c;也就是<strong>所有副本&#61;可用副本&#43;备用副本</strong>。</li><li>ISR列表包括&#xff1a;leader &#43; 与leader保持同步的followers&#xff0c;Leader 发生故障之后&#xff0c;会从 ISR 中选举新的 leader</li></ul>
+<p>在这种机制下&#xff0c;ISR始终是动态保持稳定的集群&#xff0c;消息来了之后&#xff0c;leader先读取&#xff0c;然后推送到各个follwer里&#xff0c;保证ISR中各个副本处于同步状态&#xff0c;<strong>只要所有ISR中的follwer都同步完成即可发布ACK</strong>&#xff0c;leader挂掉后&#xff0c;立即能从ISR中选举新的leader来处理消息。</p>
+<h5><a rel="noopener noreferrer" id="Exactly_Once_214"></a>Exactly Once语义</h5>
+<p>对于一些非常重要的信息&#xff0c;消费者要求数据既不重复也不丢失&#xff0c;即 <strong>Exactly Once 语义</strong>。其实以上讨论的三种策略可以如此归类语义&#xff1a;</p>
+<ol><li>将服务器 ACK 级别设置为 0&#xff0c;可以保证生产者每条消息只会被发送一次&#xff0c;即 At Most Once 语义&#xff0c;极容易丢失数据。</li><li>将服务器 ACK 级别设置为 1&#xff0c;可以理解为碰运气语义&#xff0c;正常情况下&#xff0c;leader不宕机且刚好宕机前将数据同步给了副本的话不会丢失数据&#xff0c;其它情况就会造成数据的丢失。</li><li>将服务器的 ACK 级别设置为-1&#xff0c;可以保证 Producer 到 Server 之间不会丢失数据&#xff0c;即 At Least Once 语义&#xff0c;At Least Once <strong>可以保证数据不丢失&#xff0c;但是不能保证数据不重复</strong></li></ol>
+<p>顾名思义&#xff0c;我们一定是需要在不丢数据的基础上去去重&#xff0c;在 0.11 版本以前的 Kafka&#xff0c;对此是无能为力的&#xff0c;只能保证数据不丢失&#xff0c;再在下游消费者对数据做全局去重。对于多个下游应用的情况&#xff0c;每个都需要单独做全局去重&#xff0c;这就对性能造成了很大影响。</p>
+<h6><a rel="noopener noreferrer" id="partion_Exactly_Once_222"></a>幂等性【partion Exactly Once】</h6>
+<p>0.11 版本的 Kafka&#xff0c;引入了一项重大特性&#xff1a;幂等性。所谓的幂等性就是指 Producer 不论向 Server 发送多少次重复数据&#xff0c;Server 端都只会持久化一条。幂等性结合 At Least Once 语义&#xff0c;就构成了 Kafka 的 Exactly Once 语义。即&#xff1a;<strong><font color="red">At Least Once &#43; 幂等性 &#61; Exactly Once</font></strong></p>
+<p>要启用幂等性&#xff0c;只需要将 Producer 的参数中 enable.idompotence 设置为 true 即可。Kafka的幂等性实现其实就是将原来下游需要做的去重放在了数据上游。开启幂等性的 Producer 在初始化的时候会被分配一个 PID&#xff0c;发往同一 Partition 的消息会附带 Sequence Number。而Broker 端会对&lt;PID, Partition, SeqNumber&gt;做缓存&#xff0c;当具有相同主键的消息提交时&#xff0c;Broker 只会持久化一条。但是 <strong>PID 重启就会变化&#xff0c;同时不同的 Partition 也具有不同主键&#xff0c;所以幂等性无法保证跨分区跨会话的 Exactly Once</strong>。</p>
+<h6><a rel="noopener noreferrer" id="topic_Exactly_Once_226"></a>生产者事务【topic Exactly Once】</h6>
+<p>为了实现跨分区跨会话的事务以及防止PID重启造成的数据重复&#xff0c;需要引入一个Topic全局唯一的 Transaction ID&#xff0c;并<strong>将 Producer获得的PID和Transaction ID绑定</strong>。这样当Producer重启后就可以通过正在进行的TransactionID 获得原来的 PID。为了管理 Transaction&#xff0c;Kafka 引入了一个新的组件 Transaction Coordinator。Producer 就是通过和 Transaction Coordinator 交互获得 Transaction ID 对应的任务状态TransactionCoordinator 还负责将事务所有写入 Kafka 的一个内部 Topic&#xff0c;这样即使整个服务重启&#xff0c;由于事务状态得到保存&#xff0c;进行中的事务状态可以得到恢复&#xff0c;从而继续进行。</p>
+<h4><a rel="noopener noreferrer" id="_229"></a>故障转移机制</h4>
+<p>在数据可靠性保障策略中我们了解到如何通过分区和副本&#xff0c;以及动态的ISR和ACK机制来确保消息的可靠&#xff0c;那么接下来深入探讨下&#xff0c;<strong>故障发生的时候&#xff0c;我们如何将集群恢复正常</strong>&#xff1f;首先需要明确两个概念&#xff1a;LEO和HW&#xff1a;</p>
+<ul><li><strong>Base Offset</strong>&#xff1a;是起始位移&#xff0c;该副本中第一条消息的offset&#xff0c;如下图&#xff0c;这里的起始位移是0&#xff0c;如果一个日志文件写满1G后&#xff08;默认1G后会log rolling&#xff09;&#xff0c;这个起始位移就不是0开始了。</li><li><strong>HW&#xff08;high watermark&#xff09;</strong>&#xff1a;副本的高水位值&#xff0c;<strong>replica中leader副本和follower副本都会有这个值&#xff0c;通过它可以得知副本中已提交或已备份消息的范围&#xff0c;leader副本中的HW&#xff0c;决定了消费者能消费的最新消息能到哪个offset</strong>。如下图所示&#xff0c;HW值为8&#xff0c;代表offset为[0,8]的9条消息都可以被消费到&#xff0c;它们是对消费者可见的&#xff0c;而[9,12]这4条消息由于未提交&#xff0c;对消费者是不可见的。注意HW最多达到LEO值时&#xff0c;这时可见范围不会包含HW值对应的那条消息了&#xff0c;如下图如果HW也是13&#xff0c;则消费的消息范围就是[0,12]。</li><li><strong>LEO&#xff08;log end offset&#xff09;</strong>&#xff1a;日志末端位移&#xff0c;代表日志文件中下一条待写入消息的offset&#xff0c;<strong>这个offset上实际是没有消息的。不管是leader副本还是follower副本&#xff0c;都有这个值。当leader副本收到生产者的一条消息&#xff0c;LEO通常会自增1</strong>&#xff0c;而follower副本需要从leader副本fetch到数据后&#xff0c;才会增加它的LEO&#xff0c;最后<strong>leader副本会比较自己的LEO以及满足条件的follower副本上的LEO&#xff0c;选取两者中较小值作为新的HW&#xff0c;来更新自己的HW值</strong>。</li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/112492221-17-749eebb904.png" loading="lazy"><br /> 而leader和副本之间LEO及HW的更新时机如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-18-aa9d6c596e.png" loading="lazy"></p>
+<ul><li><strong>remote LEO是保存在leader副本上的follower副本的LEO</strong>&#xff0c;可以看出leader副本上保存所有副本的LEO&#xff0c;当然也包括自己的。remote LEO是保存在leader副本上的follower副本的LEO&#xff0c;可以看出leader副本上保存所有副本的LEO&#xff0c;当然也包括自己的。</li><li><strong>follower LEO就是follower副本的LEO</strong>&#xff0c;它的更新是在follower副本得到leader副本发送的数据并随后写入到log文件&#xff0c;就会更新自己的LEO</li></ul>
+<p>HW和LEO在消息流转的层面上过程如下。</p>
+<h5><a rel="noopener noreferrer" id="_245"></a>标准写入流程</h5>
+<p>在了解故障转移机制前&#xff0c;我们先来看看标准的写入流程是什么样的&#xff0c;这样在故障的时候我们可以看到故障发生在哪些节点影响标准写入流程&#xff0c;以及故障转移机制如何处理使其恢复正常&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-19-519d33b718.png" loading="lazy"><br /> 整个过程分为如下几个步骤</p>
+<ol><li>producer发送消息4、5给leader【之前提到过只有leader可以读写数据】&#xff0c;leader收到后更新自己的LEO为5</li><li>fetch尝试更新remote LEO&#xff0c;因为此时leader的HW为3&#xff0c;且follower1和follower2的最小LEO也是3&#xff0c;所以remote LEO为3</li><li>leader判读ISR中哪些副本还和自己保持同步&#xff0c;剔除不能保持同步的follower&#xff0c;得出follower1和follower2都可以</li><li>leader计算自己的HW&#xff0c;取所有分区LEO的最小值为HW为3</li><li>leader将消息4、5以及自己的HW发往follower1和follower2&#xff0c;follower1和follower2开始向自己的log写日志并更新消息4、5&#xff0c;但是follower1更新的快些&#xff0c;leo为5&#xff0c;而follower2更新的慢些&#xff0c;leo为4</li><li>fetch再次更新remote LEO&#xff0c;取所有follower中的最小LEO为4&#xff0c;然后更新Leader的HW为4</li><li>leader将自己的HW发往follower1和follower2&#xff0c;直到follower2同步完了更新自己的LEO为5&#xff0c;remote LEO为5&#xff0c;leaderHW为5&#xff0c;更新follower2中的HW为5则同步结束</li></ol>
+<p>实质上&#xff0c;<font color="red"><strong>Leader的HW是所有LEO最短的offset&#xff0c;并且是消费者需要认定的offset&#xff0c;Follower的HW则是Leader的HW和自身LEO取最小值&#xff0c;也就是长度不能超过消费者认定的offset</strong></font>Kafka 的复制机制既不是完全的同步复制&#xff0c;也不是单纯的异步复制。</p>
+<ul><li>同步复制要求所有能工作的 follower 都复制完&#xff0c;这条消息才会被 commit&#xff0c;这种复制方式受限于复制最慢的 follower&#xff0c;会极大的影响吞吐率。<strong>也就是 request.required.acks &#61; -1策略</strong></li><li>异步复制方式下&#xff0c;follower 异步的从 leader 复制数据&#xff0c;数据只要被 leader 写入 log 就被认为已经 commit&#xff0c;这种情况下如果 follower 都还没有复制完&#xff0c;落后于 leader 时&#xff0c;突然 leader 宕机&#xff0c;则会丢失数据&#xff0c;降低可靠性&#xff0c;<strong>也就是 request.required.acks &#61; 1策略</strong></li></ul>
+<p>而 Kafka 使用<code>request.required.acks &#61; -1 &#43; ISR</code> 的策略则在可靠性和吞吐率方面取得了较好的平衡&#xff0c;<strong>同步复制并干掉复制慢的副本&#xff0c;只同步ISR中的Follwer</strong>&#xff0c;</p>
+<h5><a rel="noopener noreferrer" id="_262"></a>故障转移机制</h5>
+<p>当不同的机器宕机故障时来看看ISR如何处理集群以及消息&#xff0c;分为 follower 故障和leader故障&#xff1a;</p>
+<ul><li><strong>follower故障</strong>&#xff0c;follower 发生故障后会被临时踢出 ISR&#xff0c;待该 follower 恢复后&#xff0c;follower 会读取本地磁盘记录的上次的 follower HW&#xff0c;并<strong>将 log 文件高于follower HW 的【follower HW一定小于leader HW】部分截取掉&#xff0c;令副本的LEO与故障时的follower HW一致&#xff0c;然后follower LEO 开始从 leader 同步</strong>。等该 follower 的 LEO 大于等于该 Partition 的 的 HW【<strong>也就是leader的HW</strong>】&#xff0c;即 follower 追上 leader 之后&#xff0c;就可以重新加入 ISR 了。你可能会问为什么不从follower的LEO之后开始截呢&#xff1f;试想一下&#xff0c;如果follower故障离场后&#xff0c;leader也故障离场&#xff0c;一个LEO比故障follower低的ISR follower当选为新leader&#xff0c;那么故障follower回归后会比新leader多消息&#xff0c;这显然造成了数据不一致。</li><li><strong>leader 故障</strong>&#xff0c;leader 发生故障之后&#xff0c;会从 ISR 中选出一个新的 leader之后&#xff0c;为保证多个副本之间的数据一致性&#xff0c;其余的 follower 会先将各自的 log 文件高于HW【<strong>也就是leader的HW</strong>】的部分截掉&#xff0c;然后从新的 leader同步数据。如果新leader的LEO就是HW&#xff0c;则直接接收新的消息即可&#xff0c;如果是其它某个Follower的LEO是HW&#xff0c;则从新Leader同步Leader的LEO-HW之间的消息给所有副本</li></ul>
+<p>总而言之&#xff0c;要以所有副本都同步好的<strong>最新的HW为准&#xff08;这样可以保证follower的消息永远是小于等于leader的&#xff09;</strong>。但这只是处理方法&#xff0c;并不能保证数据不重复或者不丢失&#xff0c;我们来看一种数据重复的案例&#xff1a; <strong>Leader宕机</strong>&#xff1a;考虑这样一种场景&#xff1a;acks&#61;-1&#xff0c;部分 ISR 副本完成同步&#xff0c;此时leader挂掉&#xff0c;如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-20-8491fce145.png" loading="lazy"><br /> 整个过程分为如下几个步骤</p>
+<ol><li>follower1 同步了消息 4、5&#xff0c;follower2 同步了消息 4&#xff0c;HW为4。</li><li>leader宕机&#xff0c;由于还未收到follower2 同步完成的消息&#xff0c;所以没有给生产者发送ACK&#xff0c;与此同时 follower1 被选举为 leader&#xff0c;follower2从follower1开始同步数据。当然如果follower2被选为leader&#xff0c;那么follower就需要截断自己的消息5。</li><li>producer未收到ACK&#xff0c;于是重新发送&#xff0c;发送了给了新的leader(老的follower1)&#xff0c;但因为follower1其实已经同步了4、5&#xff0c;所以此时来的消息就是重复消息。</li></ol>
+<p>这样就出现了<strong>数据重复</strong>的现象&#xff0c;<strong><font color="red">所以HW&amp;LEO机制只能保证副本之间保持同步&#xff0c;并不能保证数据不重复或不丢失&#xff0c;要想都保证&#xff0c;需要结合ACK机制食用</font></strong></p>
+<h5><a rel="noopener noreferrer" id="Leader_275"></a>Leader选举</h5>
+<p>在可能发生的故障中&#xff0c;当Leader挂了的时候我们需要选举新的leader&#xff0c;遵循如下策略&#xff1a;Kafka 在 ZooKeeper 中为每一个 partition 动态的维护了一个 ISR&#xff0c;这个 ISR 里的所有 replica 都与 leader 保持同步&#xff0c;<strong>只有 ISR 里的成员才能有被选为 leader 的可能。</strong></p>
+<p>当然也有 <strong>极端情况</strong>&#xff1a;当 ISR 中至少有一个 follower 时&#xff08;ISR 包括 leader&#xff09;&#xff0c;Kafka 可以确保已经 commit 的消息不丢失&#xff0c;但如果某一个 partition 的所有 replica 都挂了&#xff0c;自然就无法保证数据不丢失了。这种情况下如何进行 leader 选举呢&#xff1f;通常有两种方案&#xff1a;</p>
+<ul><li>等待 ISR 中任意一个 replica 恢复过来&#xff0c;并且选它作为 leader【<strong>高可靠性</strong>】&#xff0c;如果一定要等待 ISR 中的 replica 恢复过来&#xff0c;不可用的时间就可能会相对较长。而且如果 ISR 中所有的 replica 都无法恢复了&#xff0c;或者数据丢失了&#xff0c;这个 partition 将永远不可用。</li><li>选择第一个恢复过来的 replica&#xff08;并不一定是在 ISR 中&#xff09;作为leader【<strong>高可用性</strong>】&#xff0c;选择第一个恢复过来的 replica 作为 leader&#xff0c;如果这个 replica 不是 ISR 中的 replica&#xff0c;那么&#xff0c;它可能并不具备所有已经 commit 的消息&#xff0c;从而造成消息丢失。</li></ul>
+<p>默认情况下&#xff0c;Kafka 采用第二种策略&#xff0c;即 unclean.leader.election.enable&#61;true&#xff0c;也可以将此参数设置为 false 来启用第一种策略</p>
+<h4><a rel="noopener noreferrer" id="Kafka_284"></a>Kafka可靠高效原因</h4>
+<p>Kafka是如何保证高效读写数据的呢&#xff0c;有三点支持&#xff1a;<strong>分布式读写、顺序写磁盘以及零拷贝技术</strong>&#xff0c;其实前两点在之前的blog中也有提到</p>
+<ul><li><strong>分布式读写</strong>&#xff0c;我们提到的各种策略都是为了满足分布式的可靠高效读写</li><li><strong>顺序写磁盘</strong>&#xff0c;Kafka 的 producer 生产数据&#xff0c;要写入到 log 文件中&#xff0c;写的过程是一直追加到文件末端&#xff0c;为顺序写。同样的磁盘&#xff0c;顺序写能到 600M/s&#xff0c;而随机写只有 100K/s。这与磁盘的机械机构有关&#xff0c;顺序写之所以快&#xff0c;是因为其<strong>省去了大量磁头寻址的时间</strong>。</li><li><strong>零拷贝技术</strong>&#xff0c;简单来说就是数据不需要经过用户态&#xff0c;传统的文件读写或者网络传输&#xff0c;通常需要将数据从内核态转换为用户态。应用程序读取用户态内存数据&#xff0c;写入文件 / Socket之前&#xff0c;需要从用户态转换为内核态之后才可以写入文件或者网卡当中&#xff0c;而Kafka使用零拷贝技术让数据直接在内核态中进行传输。详细原理可以参照<a href="https://www.cnblogs.com/zz-ksw/p/12801632.html" rel="nofollow">Kafka是如何利用零拷贝提高性能的</a></li></ul>
+<p>通过以上这几种技术可以实现Kafka的高并发读写</p>
+<h3><a rel="noopener noreferrer" id="offset_291"></a>消费者策略&#xff1a;消费方式、分区分配策略、offset的维护</h3>
+<p>聊完了生产者策略&#xff0c;知道了消息是如何发送到Kafka集群并且保证不重不漏&#xff0c;以及在故障时如何保证多个副本的数据一致性之后&#xff0c;我们再从消费端来看下&#xff0c;消费者是如何消费消息的。</p>
+<h4><a rel="noopener noreferrer" id="_293"></a>两种消费方式</h4>
+<p>消息有两种方式被投递&#xff0c;一种是broker推给消费者&#xff0c;一种是消费者从broker拉。这两种方式各自有优缺点&#xff1a;</p>
+<ul><li><strong>push 模式很难适应消费速率不同的消费者</strong>&#xff0c;因为消息发送速率是由 broker 决定的。它的目标是尽可能以最快速度传递消息&#xff0c;但是这样很容易造成 consumer 来不及处理消息&#xff0c;典型的表现就是拒绝服务以及网络拥塞。</li><li><strong>pull 模式则可以根据 consumer 的消费能力以适当的速率消费消息</strong>。pull 模式不足之处是&#xff0c;如果 kafka 没有数据&#xff0c;消费者可能会陷入循环中&#xff0c;一直返回空数据</li></ul>
+<p>Kafka 采取的是pull 模式&#xff0c;它可简化 broker 的设计&#xff0c;consumer 可自主控制消费消息的速率&#xff0c;同时 consumer 可以自己控制消费&#xff1a;</p>
+<ul><li>控制消费方式——<strong>既可批量消费也可逐条消费</strong>&#xff0c;同时还能选择不同的提交方式从而实现不同的传输语义</li><li>超时返回机制——Kafka 的消费者在消费数据时会传入一个时长参数 timeout&#xff0c;如果当前没有数据可供消费&#xff0c;consumer 会等待一段时间之后再返回&#xff0c;这段时长即为 timeout</li></ul>
+<p>通过pull以及一定的策略可以满足Kafka的消费诉求。需要注意&#xff1a;</p>
+<ul><li>如果消费线程大于 patition 数量&#xff0c;则有些线程将收不到消息&#xff1b;</li><li>如果 patition 数量大于消费线程数&#xff0c;则有些线程多收到多个 patition 的消息&#xff1b;如果一个线程消费多个 patition&#xff0c;则无法保证你收到的topic消息的顺序&#xff0c;而一个 patition 内的消息是有序的。</li></ul>
+<p>这三点需要注意&#xff0c;消息的消费和分区个数的关系。</p>
+<h4><a rel="noopener noreferrer" id="_307"></a>消费者分区分配策略</h4>
+<p>一个 consumer group 中有多个 consumer&#xff0c;一个 topic 有多个 partition&#xff0c;所以必然会涉及到 partition 的分配问题&#xff0c;即确定那个 partition 由哪个 consumer 来消费。Kafka 有三种分配策略&#xff1a; <strong>RoundRobin&#xff0c; Range&#xff0c;Sticky</strong>。。</p>
+<ul><li>目前我们还不能自定义分区分配策略&#xff0c;只能通过partition.assignment.strategy参数选择 range 或 roundrobin。<strong>partition.assignment.strategy参数默认的值是range</strong></li><li><strong>同一个组内同一分区只能被一个消费者消费&#xff0c;可以理解&#xff0c;如果一个组内多个消费者消费同一个分区&#xff0c;那么该消费者组如何保证单分区消息的顺序性呢&#xff1f;</strong></li></ul>
+<p>无论是哪种策略&#xff0c;<font color="red"><strong>当消费者组里的消费者个数的变化【增多或减少】或者订阅主题分区的增加都会触发重新分配</strong></font>,<strong>这种将分区的所有权从一个消费者移到另一个消费者称为</strong>重新平衡&#xff08;rebalance&#xff09;**</p>
+<h5><a rel="noopener noreferrer" id="Rang_313"></a>Rang策略</h5>
+<p>Range分配策略是面向每个主题的&#xff0c;首先会对<strong>同一个topic里面的分区按照序号进行排序&#xff0c;并把消费者线程按照字母顺序进行排序</strong>。然后用分区数除以消费者线程数量来判断每个消费者线程消费几个分区。如果除不尽&#xff0c;那么前面几个消费者线程将会多消费一个分区。当然&#xff0c;这样的缺点就是对<font color="red"><strong>每个组内的每个消费者分布不均匀</strong></font>。举例如下&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/112492221-21-13aefdcd8e.png" loading="lazy"><br /> 这样ConsumerA承受的压力会越来越大。<font color="red"><strong>局部打散【计算后顺序整体分&#xff0c;不是轮询分】&#xff0c;每个topic的局部压力都会压向消费者组中的某个消费者</strong></font></p>
+<h5><a rel="noopener noreferrer" id="RoudRobin_318"></a>RoudRobin策略</h5>
+<p>RoudRobin策略也即轮询策略&#xff0c;<strong>RoundRobin策略的原理是将消费组内所有消费者以及消费者所订阅的所有topic的partition按照字典序排序</strong>&#xff0c;然后通过<strong>轮询算法</strong>逐个将分区以此分配给每个消费者&#xff1a;</p>
+<ul><li>如果同一消费组内&#xff0c;所有的消费者订阅的消息都是相同的【也就是所有消费者订阅的topic数量相同】&#xff0c;那么 RoundRobin 策略的分区分配会是均匀的。</li><li>如果同一消费者组内&#xff0c;所订阅的消息是不相同的&#xff0c;那么在执行分区分配的时候&#xff0c;就不是完全的轮询分配&#xff0c;有可能会导致分区分配的不均匀。<strong>如果某个消费者没有订阅消费组内的某个 topic&#xff0c;那么在分配分区的时候&#xff0c;此消费者将不会分配到这个 topic 的任何分区</strong>。</li></ul>
+<p><font color="red"><strong>这样的好处是&#xff0c;分配较为均衡</strong></font>。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-22-416476c290.png" loading="lazy"></p>
+<p>当然前提是<strong>同一个消费者组里的每个消费者订阅的主题必须相同</strong>&#xff0c;当然也一定是相同的&#xff0c;如果不同也就没必要放到一个消费组里了。</p>
+<h5><a rel="noopener noreferrer" id="Sticky_329"></a>Sticky策略</h5>
+<p>这样的分区策略是从0.11版本才开始引入的&#xff0c;它主要有两个目的</p>
+<ul><li>分区的分配要尽可能的均匀&#xff0c;分配给消费者者的主题分区数最多相差一个</li><li>分区的分配要尽可能与上次分配的保持相同</li></ul>
+<p>举例进行分析&#xff1a;比如有3个消费者&#xff08;C0&#xff0c;C1&#xff0c;C2&#xff09;&#xff0c;都订阅了2个主题&#xff08;T0 和 T1&#xff09;并且每个主题都有 3 个分区(p0、p1、p2)&#xff0c;那么所订阅的所有分区可以标识为T0p0、T0p1、T0p2、T1p0、T1p1、T1p2。此时使用Sticky分配策略后&#xff0c;得到的分区分配结果和RoudRobin相同&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-23-c32c4d4cdf.png" loading="lazy"><br /> 但如果这里假设C2故障退出了消费者组&#xff0c;然后需要对分区进行再平衡操作&#xff0c;如果使用的是RoundRobin分配策略&#xff0c;它会按照消费者C0和C1进行重新轮询分配&#xff0c;再平衡后的结果如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-24-5118cb2997.png" loading="lazy"></p>
+<p>但是如果使用的是Sticky分配策略&#xff0c;再平衡后的结果会是这样&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/112492221-25-fcad015deb.png" loading="lazy"><br /> 虽然触发了再分配&#xff0c;但是记忆了上一次C0和C1的分配结果。这样的好处是发生分区重分配后&#xff0c;<strong>对于同一个分区而言有可能之前的消费者和新指派的消费者不是同一个&#xff0c;对于之前消费者进行到一半的处理还要在新指派的消费者中再次处理一遍&#xff0c;这时就会浪费系统资源</strong>。而使用Sticky策略就可以让分配策略具备一定的“粘性”&#xff0c;尽可能地让前后两次分配相同&#xff0c;进而可以减少系统资源的损耗以及其它异常情况的发生</p>
+<h4><a rel="noopener noreferrer" id="offset_344"></a>offset的维护</h4>
+<p>在现实情况下&#xff0c;消费者在消费数据时可能会出现各种会导致宕机的故障问题&#xff0c;这个时候&#xff0c;如果消费者后续恢复了&#xff0c;它就需要<strong>从发生故障前的位置开始继续消费</strong>&#xff0c;而不是从头开始消费。所以消费者需要实时的记录自己消费到了哪个offset&#xff0c;便于后续发生故障恢复后继续消费。Kafka 0.9版本之前&#xff0c;consumer默认将offset保存在Zookeeper中&#xff0c;从0.9版本开始&#xff0c;consumer默认将offset保存在Kafka一个内置的topic中&#xff0c;该topic为 <code>__consumer_offsets</code> :</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/112492221-26-0657507eb6.png" loading="lazy"><br /> 同一个组里的&#xff0c;当动态扩展分区分配时新进入的消费者接着消费分区消息而不是重新消费。offset是按照&#xff1a;<strong>goup&#43;topic&#43;partion</strong>来划分的&#xff0c;这样保证组内机器有问题时能接着消费</p>
+<h3><a rel="noopener noreferrer" id="Zookeeper_350"></a>Zookeeper管理</h3>
+<p>在基于 Kafka 的分布式消息队列中&#xff0c;ZooKeeper 的作用有&#xff1a;Producer端注册及管理、Consumer端注册及管理以及Kafka集群策略管理 等。<br /> <img alt="在这里插入图片描述" src="./posts/assets/112492221-27-ac69cdd582.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="Producer_354"></a>Producer端注册及管理</h4>
+<p>在Producer端Zookeeper能够实现&#xff1a;注册并动态调整broker&#xff0c;注册并动态调整topic&#xff0c;Producers负载均衡。</p>
+<h5><a rel="noopener noreferrer" id="Broker_356"></a>注册并动态调整Broker</h5>
+<p>broker是注册在zookeeper中的&#xff0c;还记得在分布式集群搭建的时候&#xff0c;我们在zk的配置文件中添加的服务节点&#xff0c;就是用来注册broker的。</p>
+<ul><li><strong>存放地址</strong>&#xff1a;为了记录 broker 的注册信息&#xff0c;在 ZooKeeper 上&#xff0c;专门创建了属于 Kafka 的一个节点&#xff0c;其路径为 <strong>/brokers</strong></li><li><strong>创建节点</strong>&#xff1a; Kafka 的每个 broker 启动时&#xff0c;都会到 ZooKeeper 中进行注册&#xff0c;告诉 ZooKeeper 其 broker.id&#xff0c;<strong>在整个集群中&#xff0c;broker.id 应该全局唯一&#xff0c;并在 ZooKeeper 上创建其属于自己的节点</strong>&#xff0c;其节点路径为<code>/brokers/ids/{broker.id}</code>&#xff1b; 创建完节点后&#xff0c;Kafka 会将该 broker 的 <strong>broker.name 及端口号</strong>记录到该节点&#xff1b;</li><li><strong>删除节点</strong>&#xff1a;该 broker 节点属性为临时节点&#xff0c;当 broker 会话失效时&#xff0c;ZooKeeper 会删除该节点&#xff0c;这样&#xff0c;我们就可以很方便的监控到broker 节点的变化&#xff0c;及时调整负载均衡等。</li></ul>
+<p>当然注册完Broker还需要注册Topic</p>
+<h5><a rel="noopener noreferrer" id="Topic_363"></a>注册并动态调整Topic</h5>
+<p>在 Kafka 中&#xff0c;所有 topic 与 broker 的对应关系都由 ZooKeeper 进行维护&#xff0c;在 ZooKeeper 中&#xff0c;建立专门的节点来记录这些信息&#xff0c;其节点路径为 <code>/brokers/topics/{topic_name}</code>前面说过&#xff0c;为了保障数据的可靠性&#xff0c;每个 Topic 的 Partitions 实际上是存在备份的&#xff0c;并且备份的数量由 Kafka 机制中的 replicas 来控制。</p>
+<h5><a rel="noopener noreferrer" id="Producers_366"></a>Producers负载均衡</h5>
+<p>对于同一个 topic 的不同 partition&#xff0c;Kafka会尽力将这些 partition 分布到不同的 broker 服务器上&#xff0c;<strong>这种均衡策略实际上是基于 ZooKeeper 实现的</strong>。</p>
+<ul><li><strong>监听broker变化</strong>&#xff0c;producers 启动后也要到 ZooKeeper 下注册&#xff0c;创建一个临时节点来监听 broker 服务器列表的变化。由于ZooKeeper 下 broker 创建的也是临时节点&#xff0c;当 brokers 发生变化时&#xff0c;producers 可以得到相关的通知&#xff0c;从改变自己的 broker list。</li><li><strong>监听topic变化</strong>&#xff0c;topic 的变化以及broker 和 topic 的关系变化&#xff0c;也是通过 ZooKeeper 的 Watcher 监听实现的</li></ul>
+<p>当broker变化以及topic变化的时候&#xff0c;zookeeper能监听到&#xff0c;并控制消息和分区的分布。</p>
+<h4><a rel="noopener noreferrer" id="Kafka_374"></a>Kafka集群策略管理</h4>
+<p>除了生产者涉及的管理行为&#xff0c;在我们前面提到的故障转移机制以及分区策略等内容中相关的其它管理行为也是由Zookeeper完成的</p>
+<ul><li><strong>选举leader</strong>&#xff0c;Kafka 为每一个 partition 找<strong>一个节点作为 leader&#xff0c;其余备份作为 follower</strong>&#xff0c;<strong>如果 leader 挂了&#xff0c;follower 们会选举出一个新的 leader 替代</strong>&#xff0c;继续业务</li><li><strong>副本同步</strong>&#xff0c;当 producer push 的消息写入 partition&#xff08;分区) 时&#xff0c;<strong>作为 leader 的 broker&#xff08;Kafka 节点&#xff09; 会将消息写入自己的分区&#xff0c;同时还会将此消息复制到各个 follower&#xff0c;实现同步</strong>。</li><li><strong>维护ISR</strong>&#xff0c;<strong>如果某个follower 挂掉&#xff0c;leader 会再找一个替代并同步消息</strong></li></ul>
+<p>所有的这些操作都是Zookeeper做的。</p>
+<h4><a rel="noopener noreferrer" id="Consumer_382"></a>Consumer端注册及管理</h4>
+<p>在Consumer端Zookeeper能够实现&#xff1a;注册并动态调整Consumer&#xff0c;Consumer负载均衡。</p>
+<h5><a rel="noopener noreferrer" id="Consumer_384"></a>注册并动态调整Consumer</h5>
+<p>在消费者端ZooKeeper 做的工作有那些呢&#xff1f;</p>
+<ul><li><strong>注册新的消费者分组</strong>&#xff0c;当新的消费者组注册到 ZooKeeper 中时&#xff0c;ZooKeeper 会创建专用的节点来保存相关信息&#xff0c;其节点路径为 <code>/consumers/{group_id}</code>&#xff0c;其节点下有三个子节点&#xff0c;分别为 [ids, owners, offsets]。
+  <ul><li><strong>ids 节点&#xff1a;记录该消费组中当前正在消费的消费者</strong>&#xff0c;<font color="red"><strong>记录分组下消费者</strong></font></li><li><strong>owners 节点&#xff1a;记录该消费组消费的 topic 信息</strong>&#xff0c;<code>/consumers/[group_id]/owners/[topic]/[broker_id-partition_id]</code>&#xff0c;其中&#xff0c;<code>[broker_id-partition_id]</code>就是一个消息分区的标识&#xff0c;节点内容就是该 消息分区上消费者的Consumer ID&#xff0c;这样分区和消费者就能关联起来了。<font color="red"><strong>关联分区和消费者</strong></font></li><li><strong>offsets 节点&#xff1a;记录每个 topic 的每个分区offset</strong>&#xff0c;在消费者对指定消息分区进行消息消费的过程中&#xff0c;需要定时将分区消息的消费进度Offset记录到Zookeeper上&#xff0c;以便在该消费者进行重启或者其他消费者重新接管该消息分区的消息消费后&#xff0c;能从之前进度继续消息消费。Offset在Zookeeper中由一个专门节点进行记录&#xff0c;其节点路径为:<code>/consumers/[group_id]/offsets/[topic]/[broker_id-partition_id]</code>节点内容就是Offset的值&#xff0c;<font color="red"><strong>记录消费者offset</strong></font>&#xff0c;当然新版本的不记录在zookeeper中</li></ul> </li><li><strong>注册新的消费者</strong>&#xff0c;当新的消费者注册到 Kafka 中时&#xff0c;会在 <code>/consumers/{group_id}/ids</code> 节点下创建临时子节点&#xff0c;并记录相关信息。</li><li><strong>监听消费者分组中消费者的变化</strong>&#xff0c;每个消费者都要关注其所属消费者组中消费者数目的变化&#xff0c;即监听 <code>/consumers/{group_id}/ids</code> 下子节点的变化。一但发现消费者新增或减少&#xff0c;就会触发消费者的负载均衡。</li></ul>
+<p>其实不光是注册consumer&#xff0c;还包括对消费者策略的管理&#xff0c;例如Consumer负载均衡</p>
+<h5><a rel="noopener noreferrer" id="Consumer_394"></a>Consumer负载均衡</h5>
+<p>Consumer在启动时会到 ZooKeeper下以自己的 Consumer-id 创建临时节点 <code>/consumer/[group-id]/ids/[conusmer-id]</code>&#xff0c;并对 <code>/consumer/[group-id]/ids</code> 注册监听事件&#xff1a;</p>
+<ul><li><strong>监听消费者列表</strong>&#xff0c;当消费者发生变化时&#xff0c;同一 group 的其余消费者会得到通知。</li><li><strong>监听broker列表</strong>&#xff0c;消费者还要监听 broker 列表的变化。</li></ul>
+<p>然后按照我们之前提到的策略进行排序和消费</p>
+<h3><a rel="noopener noreferrer" id="Kafka_401"></a>Kafka框架搭建实战</h3>
+<p>好了&#xff0c;在了解了这么多基础知识以及核心原理之后&#xff0c;我们再来看看真正的实战场景是如何操作的。我们有如下场景&#xff0c;假设我们要从当前站点发送一个导出消息给导出ESB&#xff0c;由导出ESB处理业务逻辑来达到解耦的目标该怎么通过Kafka实现呢&#xff1f;</p>
+<h4><a rel="noopener noreferrer" id="_403"></a>发送消息</h4>
+<p>我们发送Kafka消息的时候&#xff0c;外层的封装方法如下&#xff0c;需要传递<strong>一个Kafka的topic、一个用来计算Partition【路由转发】的标识key【tenantId】&#xff0c;以及需要传递的消息</strong>。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token function">SendKafkaExportData</span><span class="token punctuation">(</span>
+      <span class="token keyword">string</span> appName<span class="token punctuation">,</span>
+      <span class="token keyword">int</span> tenantId<span class="token punctuation">,</span>
+      <span class="token keyword">int</span> userId<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> metaObjName<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> viewName<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> exportFileName<span class="token punctuation">,</span>
+      <span class="token class-name">SearchCondition</span> condition<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> version <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+      <span class="token keyword">int</span> total <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span>
+      <span class="token class-name">ExportFileType</span> fileType <span class="token operator">&#61;</span> ExportFileType<span class="token punctuation">.</span>Xlsx<span class="token punctuation">,</span>
+      <span class="token keyword">string</span> applicationContext <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">,</span>
+      <span class="token keyword">string</span> msgTemplate <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>appName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>appName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>metaObjName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>metaObjName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>viewName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>viewName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>exportFileName<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>exportFileName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>tenantId<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>tenantId<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>userId<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>userId<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      Common<span class="token punctuation">.</span>HelperObjects<span class="token punctuation">.</span>ArgumentHelper<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">AssertNotNull</span><span class="token punctuation">&lt;</span><span class="token class-name">SearchCondition</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>condition<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">bool</span> flag <span class="token operator">&#61;</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">ExportRequestDataModel</span> exportRequestData <span class="token operator">&#61;</span> ExportRequestDataModel<span class="token punctuation">.</span><span class="token function">GetExportRequestData</span><span class="token punctuation">(</span>appName<span class="token punctuation">,</span> tenantId<span class="token punctuation">,</span> userId<span class="token punctuation">,</span> metaObjName<span class="token punctuation">,</span> viewName<span class="token punctuation">,</span> exportFileName<span class="token punctuation">,</span> condition<span class="token punctuation">,</span> version<span class="token punctuation">,</span> total<span class="token punctuation">,</span> fileType<span class="token punctuation">,</span> applicationContext<span class="token punctuation">,</span> msgTemplate<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">long</span> num <span class="token operator">&#61;</span> KafkaProducer<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Send</span><span class="token punctuation">&lt;</span><span class="token class-name">ExportRequestDataModel</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token string">&#34;TMLSent&#34;</span><span class="token punctuation">,</span> tenantId<span class="token punctuation">,</span> exportRequestData<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ExportRequestDataModel<span class="token punctuation">.</span>logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> <span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;{0}-{1}-{2}发送Kafka消息{3}成功&#34;</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> appName<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> tenantId<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> userId<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> num<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        ExportRequestDataModel<span class="token punctuation">.</span>logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> <span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;{0}-{1}-{2}发送Kafka消息异常&#34;</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> appName<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> tenantId<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> userId<span class="token punctuation">)</span><span class="token punctuation">,</span> ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        flag <span class="token operator">&#61;</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">return</span> flag<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>而其中的核心方法&#xff1a; <code>long num &#61; KafkaProducer.Send&lt;ExportRequestDataModel&gt;(&#34;TMLSent&#34;, tenantId, exportRequestData);</code>的实现逻辑如下&#xff0c;将kafka携带的消息序列化为二进制数组&#xff1a;</p>
+<pre><code class="prism language-csharp">    <span class="token comment">/// &lt;summary&gt;Send a message to a topic.&lt;/summary&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;topic&#34;&gt;The name of the topic to send the message to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;tenant&#34;&gt;The id of the tenant the message belongs to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;value&#34;&gt;The message content.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;returns&gt;The offset of the message.&lt;/returns&gt;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token generic-method"><span class="token function">Send</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token keyword">string</span> topic<span class="token punctuation">,</span> <span class="token keyword">int</span> tenant<span class="token punctuation">,</span> <span class="token class-name">T</span> <span class="token keyword">value</span><span class="token punctuation">)</span> <span class="token keyword">where</span> T <span class="token punctuation">:</span> IBinarySerializable
+    <span class="token punctuation">{<!-- --></span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>tenant<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>tenant<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span> KafkaProducer<span class="token punctuation">.</span><span class="token function">Send</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">object</span><span class="token punctuation">)</span> <span class="token keyword">value</span> <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> <span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token keyword">null</span> <span class="token punctuation">:</span> BigEndianEncoder<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Encode</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>消息发送机制如下&#xff0c;获取到需要的topic&#xff0c;用于计算Partition的标识tenantId以及序列化后可以直接发送的二进制字符串消息&#xff1a;</p>
+<pre><code class="prism language-csharp">    <span class="token comment">/// &lt;summary&gt;Send a message to a topic.&lt;/summary&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;topic&#34;&gt;The name of the topic to send the message to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;tenant&#34;&gt;The id of the tenant the message belongs to.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;param name&#61;&#34;value&#34;&gt;The message content.&lt;/param&gt;</span>
+    <span class="token comment">/// &lt;returns&gt;The offset of the message.&lt;/returns&gt;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token function">Send</span><span class="token punctuation">(</span><span class="token keyword">string</span> topic<span class="token punctuation">,</span> <span class="token keyword">int</span> tenant<span class="token punctuation">,</span> <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token keyword">value</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertPositive</span><span class="token punctuation">(</span>tenant<span class="token punctuation">,</span> nameof <span class="token punctuation">(</span>tenant<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">Produce</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">ConnectionPoolException</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">Produce</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">KafkaException</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>ex<span class="token punctuation">.</span>Error <span class="token operator">&#61;&#61;</span> ErrorCode<span class="token punctuation">.</span>NotLeaderForPartition <span class="token operator">||</span> ex<span class="token punctuation">.</span>Error <span class="token operator">&#61;&#61;</span> ErrorCode<span class="token punctuation">.</span>LeaderNotAvailable<span class="token punctuation">)</span>
+          <span class="token keyword">return</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">Produce</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> tenant<span class="token punctuation">,</span> <span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">throw</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>核心的发送方法为&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">long</span> <span class="token function">Produce</span><span class="token punctuation">(</span><span class="token keyword">string</span> topic<span class="token punctuation">,</span> <span class="token keyword">int</span> tenant<span class="token punctuation">,</span> <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token keyword">value</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">TopicConfig</span> topicConfig <span class="token operator">&#61;</span> BaseConfig<span class="token operator">&lt;</span>KafkaMapping<span class="token operator">&gt;</span><span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">GetTopicConfig</span><span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">int</span> num <span class="token operator">&#61;</span> tenant <span class="token operator">%</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">GetTopicPartitionCount</span><span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//计算要发往哪个分区</span>
+      <span class="token keyword">int</span> partitionLeader <span class="token operator">&#61;</span> KafkaProtocol<span class="token punctuation">.</span><span class="token function">GetPartitionLeader</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> num<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//获取分区leader</span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token class-name">KafkaSession</span> kafkaSession <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">KafkaSession</span><span class="token punctuation">(</span>topicConfig<span class="token punctuation">.</span>Cluster<span class="token punctuation">,</span> partitionLeader<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">//创建一个kafka消息发送实例</span>
+        <span class="token punctuation">{<!-- --></span>
+          <span class="token class-name">Message</span> message <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Message</span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">,</span> TimeUtil<span class="token punctuation">.</span>CurrentTimestamp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token class-name">ProduceRequest</span> request <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ProduceRequest</span><span class="token punctuation">(</span><span class="token punctuation">(</span>IDictionary<span class="token operator">&lt;</span>TopicAndPartition<span class="token punctuation">,</span> MessageSet<span class="token operator">&gt;</span><span class="token punctuation">)</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">Dictionary</span><span class="token punctuation">&lt;</span><span class="token class-name">TopicAndPartition</span><span class="token punctuation">,</span> <span class="token class-name">MessageSet</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+            <span class="token punctuation">{<!-- --></span>
+              <span class="token keyword">new</span> <span class="token class-name">TopicAndPartition</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> num<span class="token punctuation">)</span><span class="token punctuation">,</span>   <span class="token comment">//将设置好的topic和partition传入参数</span>
+              <span class="token keyword">new</span> <span class="token class-name">MessageSet</span><span class="token punctuation">(</span>topicConfig<span class="token punctuation">.</span>Codecs<span class="token punctuation">,</span> <span class="token punctuation">(</span>IList<span class="token operator">&lt;</span>Message<span class="token operator">&gt;</span><span class="token punctuation">)</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Message</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+              <span class="token punctuation">{<!-- --></span>
+                message
+              <span class="token punctuation">}</span><span class="token punctuation">)</span>
+            <span class="token punctuation">}</span>
+          <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//设置要发送的消息</span>
+          <span class="token class-name">ProduceResponse</span> produceResponse <span class="token operator">&#61;</span> kafkaSession<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Issue</span><span class="token punctuation">&lt;</span><span class="token class-name">ProduceRequest</span><span class="token punctuation">,</span> <span class="token class-name">ProduceResponse</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//发送Kafka消息并</span>
+          KafkaProtocol<span class="token punctuation">.</span><span class="token function">CheckErrorCode</span><span class="token punctuation">(</span>produceResponse<span class="token punctuation">.</span>Error<span class="token punctuation">,</span> topic<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token operator">?</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token operator">?</span><span class="token punctuation">(</span>tenant<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">return</span> produceResponse<span class="token punctuation">.</span>Offset<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+        KafkaProtocol<span class="token punctuation">.</span><span class="token function">RefreshPartitionMetadata</span><span class="token punctuation">(</span>topic<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">throw</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>这样一个我们需要传递的消息就发送到对应的topic和对应的partition上了&#xff08;不同的partition可以存放在不同 的机器上&#xff0c;这样取同样余数的租户的数据会被放置到相同分区&#xff09;&#xff0c;无需再自己封装消息分发。</p>
+<h4><a rel="noopener noreferrer" id="_522"></a>消费消息</h4>
+<p>在消费者端&#xff0c;机器需要预热并开启消息消费服务&#xff0c;当然也要有关闭消息服务的方法&#xff0c;开启消费服务意味着开启消息接收和开启消息处理线程&#xff0c;关闭消息服务同理表示关闭消息接收和关闭消息处理线程。</p>
+<pre><code class="prism language-csharp">  <span class="token comment">/// &lt;summary&gt;</span>
+  <span class="token comment">/// 接收导出消息的服务</span>
+  <span class="token comment">/// &lt;/summary&gt;</span>
+  <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ReceiveMsgProvider</span> <span class="token punctuation">:</span> <span class="token class-name">IReceiveMsgProvider</span>
+  <span class="token punctuation">{<!-- --></span>
+      <span class="token preprocessor property">#<span class="token directive keyword">region</span> 日志、构造方法以及单例</span>
+
+      <span class="token keyword">protected</span> <span class="token keyword">static</span> <span class="token keyword">readonly</span> <span class="token class-name">LogWrapper</span> Logger <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LogWrapper</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token keyword">private</span> <span class="token function">ReceiveMsgProvider</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">ReceiveMsgProvider</span> Instance <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ReceiveMsgProvider</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> 日志、构造方法以及单例</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">region</span> 开启消息接收服务</span>
+
+      <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">_ActivateService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token comment">// 预热</span>
+         Cloud<span class="token punctuation">.</span>Plugins<span class="token punctuation">.</span>Helper<span class="token punctuation">.</span>ESBProxy<span class="token punctuation">.</span><span class="token function">WarmUp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token comment">//开启消息接收服务</span>
+          <span class="token function">StartMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token comment">//开始处理ExportQueue队列中的消息</span>
+          ExportConsumer<span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">BeginImportData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          Logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;_ActivateService was called.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">StartMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">try</span>
+          <span class="token punctuation">{<!-- --></span>
+              <span class="token comment">//开始消费消息</span>
+              ExportConsumer<span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+          <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+              Logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> 开启消息接收服务</span>
+
+      <span class="token preprocessor property">#<span class="token directive keyword">region</span> 关闭消息接收服务</span>
+
+      <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">_UnActivateService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token comment">//关闭消息接收服务</span>
+          <span class="token function">StopMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          <span class="token comment">//关闭处理queue的线程</span>
+          ExportConsumer<span class="token punctuation">.</span><span class="token function">CloseQueueThreads</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          Logger<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;_UnActivateService was called.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">return</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">StopMessageService</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">try</span>
+          <span class="token punctuation">{<!-- --></span>
+              <span class="token comment">//停止消费消息</span>
+              ExportConsumer<span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">Stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+          <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> ex<span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+              Logger<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>ex<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+
+
+  <span class="token punctuation">}</span>
+</code></pre>
+<p>其中&#xff0c;开启和关闭消息接收服务的核心方法如下&#xff1a;</p>
+<pre><code class="prism language-csharp">
+       <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// ESB服务调用入口:启动</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+             _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;ESB服务调用入口:启动&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token comment">//开启一个消费者组实例&#xff0c;这里设置启用了消费者组来接收消息&#xff0c;相当于启动了一个消费者组实例&#xff0c;在OnMessage里去具体写接收到消息之后的代码处理逻辑</span>
+            _consumer <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">KafkaGroupConsumer</span><span class="token punctuation">(</span>ExportKafkaConst<span class="token punctuation">.</span>ExportKafkaConsumerGroup<span class="token punctuation">,</span> ExportKafkaConst<span class="token punctuation">.</span>ExportKafkaTopic<span class="token punctuation">,</span> OnMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            _consumer <span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// ESB服务调用入口:停止</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            _loggging<span class="token punctuation">.</span><span class="token function">Debug</span><span class="token punctuation">(</span><span class="token string">&#34;ESB服务调用入口:停止&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>_consumer  <span class="token operator">!&#61;</span> <span class="token keyword">null</span> <span class="token operator">&amp;&amp;</span> _consumer <span class="token punctuation">.</span>IsRunning<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                _consumer <span class="token punctuation">.</span><span class="token function">Stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>其中消费者的核心实现方法如下&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token keyword">public</span> <span class="token function">KafkaGroupConsumer</span><span class="token punctuation">(</span>string consumerGroup<span class="token punctuation">,</span> string topic<span class="token punctuation">,</span> Func<span class="token generics function"><span class="token punctuation">&lt;</span>Message<span class="token punctuation">,</span> bool<span class="token punctuation">&gt;</span></span> handler<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>consumerGroup<span class="token punctuation">,</span> <span class="token string">&#34;consumerGroup&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//消费者组</span>
+            ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotEmpty</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> <span class="token string">&#34;topic&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//消费主题</span>
+            ArgumentHelper<span class="token punctuation">.</span><span class="token function">AssertNotNull</span><span class="token punctuation">(</span>handler<span class="token punctuation">,</span> <span class="token string">&#34;handler&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//消息处理函数</span>
+            _consumerGroup <span class="token operator">&#61;</span> consumerGroup<span class="token punctuation">;</span>  <span class="token comment">//设置消费者组</span>
+            _topic <span class="token operator">&#61;</span> topic<span class="token punctuation">;</span>  <span class="token comment">//设置topic</span>
+            _consumerId <span class="token operator">&#61;</span> <span class="token function">GenerateConsumerId</span><span class="token punctuation">(</span>consumerGroup<span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//按照自定义规则给消费者组内生成一个消费者id</span>
+            _handler <span class="token operator">&#61;</span> handler<span class="token punctuation">;</span>
+            ConsumerConfig consumerConfig <span class="token operator">&#61;</span> BaseConfig<span class="token generics function"><span class="token punctuation">&lt;</span>KafkaMapping<span class="token punctuation">&gt;</span></span><span class="token punctuation">.</span>Instance<span class="token punctuation">.</span><span class="token function">GetConsumerConfig</span><span class="token punctuation">(</span>consumerGroup<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//获取消费者组配置&#xff0c;例如该组内消费者的重试机制、reblance原则等等消费者组的配置</span>
+            _context <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ConsumerContext</span><span class="token punctuation">(</span>consumerGroup<span class="token punctuation">,</span> topic<span class="token punctuation">,</span> _consumerId<span class="token punctuation">,</span> consumerConfig<span class="token punctuation">,</span> Trace<span class="token punctuation">.</span><span class="token function">GetTraceHandler</span><span class="token punctuation">(</span>topic<span class="token punctuation">,</span> consumerGroup<span class="token punctuation">,</span> handler<span class="token punctuation">,</span> newConsumer<span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//整个消费者的上下文&#xff0c;包括组的设置&#xff0c;当前id以及调用trace链路[便于排查问题]</span>
+            _zooKeeperStateManager <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ZooKeeperStateManager</span><span class="token punctuation">(</span>_context<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//将该上下文注册到zookeeper中</span>
+            BaseConfig<span class="token generics function"><span class="token punctuation">&lt;</span>KafkaMapping<span class="token punctuation">&gt;</span></span><span class="token punctuation">.</span>ConfigChanged <span class="token operator">&#43;&#61;</span> ReloadConfig<span class="token punctuation">;</span>    <span class="token comment">//将消费者变更注册到Zookeeper&#xff0c;当消费者发生变化时&#xff0c;同一 group 的其余消费者会得到通知</span>
+        <span class="token punctuation">}</span>
+
+</code></pre>
+<p>使用Kafka实现生产者消费者系统的整体流程就是这样。</p>
+<p>行文至此&#xff0c;已洋洋洒洒3万5千言&#xff0c;希望能让你对Kafka有个整体的认知&#xff0c;大家共同进步&#xff0c;与诸君共勉</p>

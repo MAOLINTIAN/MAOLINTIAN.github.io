@@ -1,0 +1,379 @@
+<p>本篇Blog介绍另一个常用的技术Ajax。虽然Ajax可以脱离SpringMVC去使用&#xff0c;但是SpringMVC对AJax有更好的支持</p>
+<h2><a rel="noopener noreferrer" id="AJAX_1"></a>AJAX概念概述</h2>
+<p>AJAX即<strong>Asynchronous Javascript And XML</strong>&#xff08;异步JavaScript和XML&#xff09;&#xff0c;AJAX不是一种新的编程语言&#xff0c;而是一种用于创建更好更快以及交互性更强的 Web 应用程序的技术。它是一套综合了多项技术的浏览器端网页开发技术。这些技术包括Javascript、XHTML和CSS、DOM、XML和XMLHttpRequest。</p>
+<p><strong>通过在浏览器与服务器进行少量数据交换&#xff0c;AJAX 可以使网页实现异步更新。这意味着可以在不重新加载整个网页的情况下&#xff0c;对网页的某部分进行更新</strong></p>
+<h3><a rel="noopener noreferrer" id="AJAX_6"></a>AJAX优缺点归纳</h3>
+<p>使用AJAX的最大优点&#xff0c;就是<strong>能在不更新整个页面的前提下维护数据</strong>。这使得Web应用程序更为迅捷地回应用户动作&#xff0c;并避免了在网络上发送那些没有改变的html代码信息。</p>
+<ol><li>减轻服务器负担&#xff0c;按需要获得数据。</li><li>无刷新更新页面&#xff0c;减少用户的实际和心理的等待时间。</li><li>更好的用户体验。</li><li>减轻宽带的负担。</li><li>主流浏览器支持。</li></ol>
+<p>当然缺点也比较明显&#xff1a;</p>
+<ol><li>AJAX大量使用了Javascript和AJAX引擎&#xff0c;使用<strong>AJAX的程序必须测试针对各个浏览器的兼容性</strong>。</li><li>AJAX更新页面内容的时候并没有刷新整个页面&#xff0c;因此&#xff0c;网页的后退功能是失效的。</li><li>对搜索引擎支持不好</li></ol>
+<p>索性AJAX提供了一些浏览器的兼容使用方式。</p>
+<h3><a rel="noopener noreferrer" id="AJAX_22"></a>AJAX原理</h3>
+<p>AJAX的原理简单来说<strong>通过浏览器的javascript对象XmlHttpRequest(Ajax引擎)对象来向服务器发异步请求并接收服务器的响应数据&#xff0c;然后用javascript来操作DOM而更新页面</strong>。这其中最关键的一步就是从服务器获得请求数据。即<strong>用户的请求间接通过AJAX引擎发出而不是通过浏览器直接发出,同时Ajax引擎也接收服务器返回响应的数据,所以不会导致浏览器上的页面全部刷新</strong>&#xff0c;<font color="red"><strong>通俗的说&#xff0c;就是浏览器使用AJAX引擎做代理来处理请求和响应</strong></font><br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-01-24bfb1aa95.png" loading="lazy"><br />
+浏览器创建ajax对象&#xff0c;AJAX对象向后端发送请求&#xff0c;后端接收请求响应数据给前端&#xff0c;AJAX对象接收响应数据通过dom操作更新视图&#xff0c;整个过程浏览器“不刷新”&#xff0c;真正的请求是由AJAX引擎发出。不是由浏览器窗口发出,所以浏览器窗口是不会刷新的, AJAX引擎同时也接收服务器返回的响应内容</p>
+<h2><a rel="noopener noreferrer" id="AJAX_27"></a>AJAX发送请求方式</h2>
+<p>上述我们提到了AJAX引擎&#xff0c;AJAX引擎就是XMLHttpRequest对象,所有现代浏览器均支持 XMLHttpRequest 对象&#xff08;IE5 和 IE6 使用 ActiveXObject&#xff09;。它同时也是一个Javascript对象&#xff0c;常用方法与属性如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-02-6458e2e158.png" loading="lazy"><br />
+常用属性&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-03-7c4d884eaa.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="JavaScript_32"></a>使用JavaScript语法发送请求</h3>
+<p>以下是使用JavaScript语法发送请求的get请求方式的标准步骤&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//1.创建ajax对象</span>
+    <span class="token keyword">var</span> xhr <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">XMLHttpRequest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//2.配置请求方式和请求地址</span>
+   xhr<span class="token punctuation">.</span><span class="token keyword">open</span><span class="token punctuation">(</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;xxx地址&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//如果要传入参数</span>
+    xhr<span class="token punctuation">.</span><span class="token keyword">open</span><span class="token punctuation">(</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;xxx地址?参数名1&#61;参数值1&amp;参数名2&#61;参数值2&#34;</span><span class="token punctuation">)</span>
+    <span class="token comment">//如果要设置请求方式,true表示同步&#xff0c;false表示异步</span>
+    xhr<span class="token punctuation">.</span><span class="token keyword">open</span><span class="token punctuation">(</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;xxx地址?参数名1&#61;参数值1&amp;参数名2&#61;参数值2&#34;</span><span class="token punctuation">,</span><span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token comment">//3.发送请求</span>
+   xhr<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//4.监听状态变化&amp;接收响应数据</span>
+   xhr<span class="token punctuation">.</span>onreadystatechange <span class="token operator">&#61;</span> <span class="token function">function</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>xhr<span class="token punctuation">.</span>readyState<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;</span><span class="token number">4</span> <span class="token operator">&amp;&amp;</span> xhr<span class="token punctuation">.</span>status<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;</span><span class="token number">200</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+               <span class="token keyword">var</span> data <span class="token operator">&#61;</span> xhr<span class="token punctuation">.</span>reponseText<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+</code></pre>
+<p>这里需要注意两点&#xff0c;同步异步以及事件监听机制。</p>
+<blockquote>
+<p><strong>同步和异步的概念</strong></p>
+</blockquote>
+<ul><li><strong>同步</strong>&#xff1a;就是在发出一个功能调用时&#xff0c;在没有得到结果之前&#xff0c;不能够继续调用其他功能。</li><li><strong>异步</strong>&#xff1a;异步的概念和同步相对。当一个异步过程调用发出后&#xff0c;调用者不能立刻得到结果,程序继续向下执行。实际处理这个调用的部件在完成后&#xff0c;通过状态、通知和回调来通知调用者。</li></ul>
+<p>同步是阻塞模式&#xff0c;异步是非阻塞模式。发送请求的区别:</p>
+<ul><li>同步是指&#xff1a;发送方发出数据后&#xff0c;等接收方发回响应以后才发下一个数据包的通讯方式。</li><li>异步是指&#xff1a;发送方发出数据后&#xff0c;不等接收方发回响应&#xff0c;接着发送下个数据包的通讯方式</li></ul>
+<p>AJAX中的异步请求是异步的真正的实现&#xff0c;是指用户页面(HTML)没有直接和服务器打交道而是通过Ajax引擎间接和服务器打交道的, 而用户页面和Ajax引擎打交道时并不会等待服务器返回的响应内容&#xff0c;页面中的Javascript代码继续执行&#xff0c;也可以继续发出新的Ajax请求</p>
+<blockquote>
+<p><strong>事件监听的概念</strong></p>
+</blockquote>
+<p>需要注意其中<strong>onreadystatechange</strong>是一个监听事件(监听ajax对象的状态(readyState)变化&#xff0c;整个过程中readyState状态值会不断发生改变)&#xff0c;<strong>readyState</strong>: 一共有五个值(状态4需要记忆)</p>
+<ul><li>0 刚创建的ajax对象状态为0</li><li>1 调用了open方法之后</li><li>2 后端接收请求</li><li>3 后端处理数据&#xff0c;响应数据中&#xff0c;数据可能没有完全传输完</li><li>4 数据传输完成已就绪&#xff0c;放在responseText属性中。</li></ul>
+<p>status是状态码&#xff0c;标识请求结果&#xff0c;responseText用来存放后端响应的数据&#xff0c;是字符串格式。post的方式类似&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//1.创建ajax对象</span>
+   <span class="token keyword">var</span> xhr <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">XMLHttpRequest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//2.配置请求方式和请求地址</span>
+    xhr<span class="token punctuation">.</span><span class="token keyword">open</span><span class="token punctuation">(</span><span class="token string">&#34;post&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;xxx地址&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//如果要传入参数</span>
+    xhr<span class="token punctuation">.</span><span class="token keyword">open</span><span class="token punctuation">(</span><span class="token string">&#34;post&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;xxx地址?参数名1&#61;参数值1&amp;参数名2&#61;参数值2&#34;</span><span class="token punctuation">)</span>
+    <span class="token comment">//如果要设置请求方式,true表示同步&#xff0c;false表示异步</span>
+    xhr<span class="token punctuation">.</span><span class="token keyword">open</span><span class="token punctuation">(</span><span class="token string">&#34;post&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;xxx地址?参数名1&#61;参数值1&amp;参数名2&#61;参数值2&#34;</span><span class="token punctuation">,</span><span class="token boolean">true</span><span class="token punctuation">)</span>
+
+<span class="token comment">//3.设置请求头</span>
+    xhr<span class="token punctuation">.</span><span class="token function">setRequestHeader</span><span class="token punctuation">(</span><span class="token string">&#34;Content-Type&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;application/x-www-form-encoded&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//4.发送</span>
+    xhr<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//5.监听状态和接收数据</span>
+    xhr<span class="token punctuation">.</span>onreadystatechange <span class="token operator">&#61;</span> <span class="token function">function</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+       <span class="token keyword">if</span><span class="token punctuation">(</span>xhr<span class="token punctuation">.</span>readyState<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;</span><span class="token number">4</span> <span class="token operator">&amp;&amp;</span> xhr<span class="token punctuation">.</span>status<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;</span><span class="token number">200</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">var</span> data <span class="token operator">&#61;</span> xhr<span class="token punctuation">.</span>responseText<span class="token punctuation">;</span>
+       <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="JQuery_103"></a>使用JQuery语法发送请求</h3>
+<p>上述示例是使用原生JS语法发送AJAX请求&#xff0c;下面这几种是JQuery语法的形式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//1.get方式</span>
+    $<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">&#39;xxx地址&#39;</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;属性名1&#34;</span><span class="token operator">:</span><span class="token string">&#34;属性值1&#34;</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;属性名2&#34;</span><span class="token operator">:</span><span class="token string">&#34;属性值2&#34;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token function">function</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//data存储就是后端响应的数据</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//2.post方式</span>
+    $<span class="token punctuation">.</span><span class="token function">post</span><span class="token punctuation">(</span><span class="token string">&#39;xxx地址&#39;</span><span class="token punctuation">,</span><span class="token punctuation">{<!-- --></span>
+        <span class="token string">&#34;属性名1&#34;</span><span class="token operator">:</span><span class="token string">&#34;属性值1&#34;</span><span class="token punctuation">,</span>
+        <span class="token string">&#34;属性名2&#34;</span><span class="token operator">:</span><span class="token string">&#34;属性值2&#34;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token function">function</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//data存储就是后端响应的数据</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//3.万能模式</span>
+   $<span class="token punctuation">.</span><span class="token function">ajax</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span>
+       url<span class="token operator">:</span><span class="token string">&#39;xxx地址&#39;</span><span class="token punctuation">,</span>
+       type<span class="token operator">:</span><span class="token string">&#34;请求方式&#34;</span><span class="token punctuation">,</span>
+       dataType<span class="token operator">:</span>”json” <span class="token punctuation">,</span> <span class="token comment">//告诉后端我们想要的数据格式</span>
+       data<span class="token operator">:</span><span class="token punctuation">{<!-- --></span>
+            <span class="token string">&#34;属性名1&#34;</span><span class="token operator">:</span><span class="token string">&#34;属性值1&#34;</span><span class="token punctuation">,</span>
+            <span class="token string">&#34;属性名2&#34;</span><span class="token operator">:</span><span class="token string">&#34;属性值2&#34;</span>
+       <span class="token punctuation">}</span><span class="token punctuation">,</span>
+       success<span class="token operator">:</span><span class="token function">function</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+          <span class="token comment">//data存放的就是后端响应的数据</span>
+          console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+   <span class="token punctuation">}</span><span class="token punctuation">)</span>
+</code></pre>
+<p>我们一般更多的是使用JQuery的形式去实现</p>
+<h2><a rel="noopener noreferrer" id="SpringMVCAJAX_141"></a>SpringMVC整合AJAX</h2>
+<p>我们一般使用AJAX作为表单的验证和用户信息的验证&#xff0c;这样提示信息就可以直接打到前端页面上。我们的目标是模拟一个用户验证&#xff0c;只用用户名和密码输入完全正确才允许登录。</p>
+<h3><a rel="noopener noreferrer" id="1__143"></a>1 新建一个项目</h3>
+<p>首先我们新建一个AJAX的SpringMVC项目<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-04-3b76ec82cb.png" loading="lazy"></p>
+<p>配置<code>pom.xml</code>依赖&#xff0c;同时也引入jackson包</p>
+<pre><code class="prism language-xml"> <span class="token comment">&lt;!--https://mvnrepository.com/仓库获取的最新包 20210831--&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependencies</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!-- jackson包引入--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.fasterxml.jackson.core<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jackson-databind<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.12.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--Spring MVC框架依赖--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-webmvc<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>5.3.9<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--JSP相关依赖--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>javax.servlet.jsp<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jsp-api<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>javax.servlet<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jstl<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--servlet相关依赖--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>javax.servlet<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>javax.servlet-api<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>4.0.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>provided<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--单元测试相关依赖--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.junit.jupiter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>junit-jupiter-api<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>${junit.version}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>test<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.junit.jupiter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>junit-jupiter-engine<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>${junit.version}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>test<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.projectlombok<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>lombok<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>RELEASE<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>compile<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependencies</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2_Model_203"></a>2 创建Model类</h3>
+<p>我们创建一个Model类&#xff0c;这个Model类就是要返回给前端的<strong>VO</strong></p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>ajax<span class="token punctuation">.</span>model</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Data</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">User</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> username<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> password<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3_AJAXController_217"></a>3 编写AJAX控制器Controller</h3>
+<p>我们需要编写一个控制器&#xff0c;注意控制器可以使用注解&#64;RestController来标明所有返回的数据都将被序列化为Json格式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>ajax<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RequestMapping</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RestController</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;RestController</span>
+<span class="token annotation punctuation">&#64;RequestMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/user&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AjaxController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;RequestMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/argcheck&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token class-name">ArgCheck</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">,</span><span class="token class-name">String</span> pwd<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">String</span> msg <span class="token operator">&#61;</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+        <span class="token comment">//模拟数据库中存在数据</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>name<span class="token operator">!&#61;</span><span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">&#34;admin&#34;</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                msg <span class="token operator">&#61;</span> <span class="token string">&#34;OK&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                msg <span class="token operator">&#61;</span> <span class="token string">&#34;用户名输入错误&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pwd<span class="token operator">!&#61;</span><span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">&#34;111111&#34;</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>pwd<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                msg <span class="token operator">&#61;</span> <span class="token string">&#34;OK&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                msg <span class="token operator">&#61;</span> <span class="token string">&#34;密码输入有误&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> msg<span class="token punctuation">;</span> <span class="token comment">//由于&#64;RestController注解&#xff0c;将msg转成json格式返回</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4_DispatcherServlet_253"></a>4 注册DispatcherServlet</h3>
+<p>接着是我们的传统艺能&#xff0c;注册SpringMVC过滤器来拦截请求</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34;?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>web-app</span> <span class="token attr-name">xmlns</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://xmlns.jcp.org/xml/ns/javaee<span class="token punctuation">&#34;</span></span>
+         <span class="token attr-name"><span class="token namespace">xmlns:</span>xsi</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.w3.org/2001/XMLSchema-instance<span class="token punctuation">&#34;</span></span>
+         <span class="token attr-name"><span class="token namespace">xmlns:</span>context</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.springframework.org/schema/context<span class="token punctuation">&#34;</span></span>
+         <span class="token attr-name"><span class="token namespace">xmlns:</span>mvc</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.springframework.org/schema/mvc<span class="token punctuation">&#34;</span></span>
+         <span class="token attr-name"><span class="token namespace">xsi:</span>schemaLocation</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd<span class="token punctuation">&#34;</span></span>
+         <span class="token attr-name">version</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>4.0<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!--配置前端控制器--&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>servlet</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--1.注册DispatcherServlet--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>servlet-name</span><span class="token punctuation">&gt;</span></span>springMVC<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>servlet-name</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>servlet-class</span><span class="token punctuation">&gt;</span></span>org.springframework.web.servlet.DispatcherServlet<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>servlet-class</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--通过初始化参数指定SpringMVC配置文件的位置&#xff0c;进行关联--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>init-param</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>param-name</span><span class="token punctuation">&gt;</span></span>contextConfigLocation<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>param-name</span><span class="token punctuation">&gt;</span></span>
+            <span class="token comment">&lt;!--关联一个springMVC的配置文件:【servlet-name】-servlet.xml--&gt;</span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>param-value</span><span class="token punctuation">&gt;</span></span>classpath:springmvc-servlet.xml<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>param-value</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>init-param</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--启动级别-1,在Tomcat启动时就初始化Spring容器--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>load-on-startup</span><span class="token punctuation">&gt;</span></span>1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>load-on-startup</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>servlet</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!--/ 匹配所有的请求&#xff1b;&#xff08;不包括.jsp&#xff09;--&gt;</span>
+    <span class="token comment">&lt;!--/* 匹配所有的请求&#xff1b;&#xff08;包括.jsp&#xff09;--&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>servlet-mapping</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>servlet-name</span><span class="token punctuation">&gt;</span></span>springMVC<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>servlet-name</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>url-pattern</span><span class="token punctuation">&gt;</span></span>/<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>url-pattern</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>servlet-mapping</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>web-app</span><span class="token punctuation">&gt;</span></span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="5_springmvcservletxml_290"></a>5 编写springmvc-servlet.xml配置文件</h3>
+<p>编写springmvc-servlet.xml文件&#xff0c;并且在这里加一部分配置让返回的数据不会乱码。</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34;?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>beans</span> <span class="token attr-name">xmlns</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.springframework.org/schema/beans<span class="token punctuation">&#34;</span></span>
+       <span class="token attr-name"><span class="token namespace">xmlns:</span>xsi</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.w3.org/2001/XMLSchema-instance<span class="token punctuation">&#34;</span></span>
+       <span class="token attr-name"><span class="token namespace">xmlns:</span>context</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.springframework.org/schema/context<span class="token punctuation">&#34;</span></span>
+       <span class="token attr-name"><span class="token namespace">xmlns:</span>mvc</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.springframework.org/schema/mvc<span class="token punctuation">&#34;</span></span>
+       <span class="token attr-name"><span class="token namespace">xsi:</span>schemaLocation</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!-- 自动扫描包&#xff0c;让指定包下的注解生效,由IOC容器统一管理 --&gt;</span>
+     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span><span class="token namespace">context:</span>component-scan</span> <span class="token attr-name">base-package</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>com.example.ajax.controller<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+    <span class="token comment">&lt;!-- 让Spring MVC不处理静态资源 --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span><span class="token namespace">mvc:</span>default-servlet-handler</span> <span class="token punctuation">/&gt;</span></span>
+    <span class="token comment">&lt;!--
+    支持mvc注解驱动
+        在spring中一般采用&#64;RequestMapping注解来完成映射关系
+        要想使&#64;RequestMapping注解生效
+        必须向上下文中注册DefaultAnnotationHandlerMapping
+        和一个AnnotationMethodHandlerAdapter实例
+        这两个实例分别在类级别和方法级别处理。
+        而annotation-driven配置帮助我们自动完成上述两个实例的注入。
+     --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span><span class="token namespace">mvc:</span>annotation-driven</span> <span class="token punctuation">/&gt;</span></span>
+
+    <span class="token comment">&lt;!--视图解析器--&gt;</span>
+    <span class="token comment">&lt;!--通过视图解析器解析处理器返回的逻辑视图名并传递给DispatcherServlet--&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>bean</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>org.springframework.web.servlet.view.InternalResourceViewResolver<span class="token punctuation">&#34;</span></span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>InternalResourceViewResolver<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--前缀--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>prefix<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>/WEB-INF/jsp/<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+        <span class="token comment">&lt;!--后缀--&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>suffix<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>.jsp<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>bean</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span><span class="token namespace">mvc:</span>annotation-driven</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span><span class="token namespace">mvc:</span>message-converters</span> <span class="token attr-name">register-defaults</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>true<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>bean</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>org.springframework.http.converter.StringHttpMessageConverter<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>constructor-arg</span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>UTF-8<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>bean</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>bean</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>org.springframework.http.converter.json.MappingJackson2HttpMessageConverter<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>objectMapper<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+                    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>bean</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+                        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>property</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>failOnEmptyBeans<span class="token punctuation">&#34;</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>false<span class="token punctuation">&#34;</span></span><span class="token punctuation">/&gt;</span></span>
+                    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>bean</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>property</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>bean</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span><span class="token namespace">mvc:</span>message-converters</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span><span class="token namespace">mvc:</span>annotation-driven</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>beans</span><span class="token punctuation">&gt;</span></span>
+
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="6_JSP_347"></a>6 编写前端JSP视图文件</h3>
+<p>接下来我们要编写前端的请求文件&#xff0c;格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> <span class="token number">13304</span>
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">9</span><span class="token operator">/</span><span class="token number">12</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">15</span><span class="token operator">:</span><span class="token number">02</span>
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>ajax<span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>script src<span class="token operator">&#61;</span><span class="token string">&#34;https://code.jquery.com/jquery-3.1.1.min.js&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>script<span class="token operator">&gt;</span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>script<span class="token punctuation">&gt;</span></span>
+
+        function <span class="token function">username</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            $<span class="token punctuation">.</span><span class="token function">post</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span>
+                url<span class="token operator">:</span><span class="token string">&#34;${pageContext.request.contextPath}/user/argcheck&#34;</span><span class="token punctuation">,</span>
+                data<span class="token operator">:</span><span class="token punctuation">{<!-- --></span><span class="token string">&#39;name&#39;</span><span class="token operator">:</span>$<span class="token punctuation">(</span><span class="token string">&#34;#name&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">val</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+                success<span class="token operator">:</span>function <span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>data<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#61;&#61;</span><span class="token string">&#39;OK&#39;</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                        $<span class="token punctuation">(</span><span class="token string">&#34;#userInfo&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">css</span><span class="token punctuation">(</span><span class="token string">&#34;color&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;green&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span><span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                        $<span class="token punctuation">(</span><span class="token string">&#34;#userInfo&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">css</span><span class="token punctuation">(</span><span class="token string">&#34;color&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;red&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    $<span class="token punctuation">(</span><span class="token string">&#34;#userInfo&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">html</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        function <span class="token function">password</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            $<span class="token punctuation">.</span><span class="token function">post</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span>
+                url<span class="token operator">:</span><span class="token string">&#34;${pageContext.request.contextPath}/user/argcheck&#34;</span><span class="token punctuation">,</span>
+                data<span class="token operator">:</span><span class="token punctuation">{<!-- --></span><span class="token string">&#39;pwd&#39;</span><span class="token operator">:</span>$<span class="token punctuation">(</span><span class="token string">&#34;#pwd&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">val</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+                success<span class="token operator">:</span>function <span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>data<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#61;&#61;</span><span class="token string">&#39;OK&#39;</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                        $<span class="token punctuation">(</span><span class="token string">&#34;#pwdInfo&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">css</span><span class="token punctuation">(</span><span class="token string">&#34;color&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;green&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span><span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                        $<span class="token punctuation">(</span><span class="token string">&#34;#pwdInfo&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">css</span><span class="token punctuation">(</span><span class="token string">&#34;color&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;red&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    $<span class="token punctuation">(</span><span class="token string">&#34;#pwdInfo&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">html</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token operator">&lt;</span><span class="token operator">/</span>script<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>
+    用户名<span class="token operator">:</span><span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;text&#34;</span> id<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> onblur<span class="token operator">&#61;</span><span class="token string">&#34;username()&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>span id<span class="token operator">&#61;</span><span class="token string">&#34;userInfo&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>span<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>
+    密码<span class="token operator">:</span><span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;text&#34;</span> id<span class="token operator">&#61;</span><span class="token string">&#34;pwd&#34;</span> onblur<span class="token operator">&#61;</span><span class="token string">&#34;password()&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>span id<span class="token operator">&#61;</span><span class="token string">&#34;pwdInfo&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>span<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="6_Tomcat_409"></a>6 配置Tomcat服务器并测试</h3>
+<p>最后我们配置并启动Tomcat服务器来测试&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-05-f7f506d6ad.png" loading="lazy"></p>
+<p>在浏览器中输入&#xff1a;<code>http://localhost:8080/ajax/login.jsp</code>&#xff0c;返回结果为&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/120228438-06-5a067919af.png" loading="lazy"><br />
+接下来当我们在框中输入内容可以看到ajax请求而页面并没有刷新&#xff0c;观察请求的url我们发现ajax请求了我们的控制器&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-07-2c7cdff5a0.png" loading="lazy"><br />
+然后将结果返回给dom<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120228438-08-db2fbf749d.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_421"></a>总结一下</h2>
+<p>AJAX还是比较经典的&#xff0c;我理解它的常用案例就是通过局部刷新进行逻辑处理&#xff0c;整体页面的资源无需再被处理&#xff0c;也就是我们不需要提交表单给controller&#xff0c;然后controller再将结果打回去进行一个页面刷新操作&#xff0c;在带宽资源紧张的情况下这么使用还是挺方便的。所以AJAX只是一种模式&#xff0c;Struts框架和SpringMVC框架都可以使用&#xff0c;只不过因为SpringMVC可以使用&#64;RestController注解轻易的实现JSON传输&#xff0c;Struts却不易实现&#xff0c;而对于AJAX而言&#xff0c;JSON 可通过 JavaScript 进行解析&#xff0c;更加适合于AJAX 进行传输&#xff0c;所以对于自动集成AJAX这一点&#xff0c;SpringMVC又更胜一筹。</p>

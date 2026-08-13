@@ -1,0 +1,32 @@
+<p>分布式锁是分布式系统中控制共享资源互斥访问的核心技术。Redis因其高性能成为实现分布式锁的热门选择，但一个可靠的分布式锁需要考虑诸多细节。本文将从最基础的实现开始，逐步剖析每个环节可能出现的问题及其解决方案，最终引出Redisson客户端的成熟实现。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="SETNX_5"></a>一、最简单的实现：SETNX</h3>
+<p>最初级的分布式锁实现基于Redis的<code>SETNX</code>命令：</p>
+<pre><code class="prism language-bash">SETNX lock_key unique_value
+</code></pre>
+<p>这个命令的含义是：如果<code>lock_key</code>不存在，则设置成功并返回1；否则返回0。这保证了互斥性。</p>
+<p><strong>问题1：没有过期时间，可能死锁</strong></p>
+<p>如果客户端获取锁后崩溃，锁将永不过期，其他客户端永远无法获取锁。</p>
+<p>为了解决这个问题，我们加上<code>EXPIRE</code>命令：</p>
+<pre><code class="prism language-java"><span class="token class-name">Boolean</span> locked <span class="token operator">=</span> jedis<span class="token punctuation">.</span><span class="token function">setnx</span><span class="token punctuation">(</span><span class="token string">"lock"</span><span class="token punctuation">,</span> <span class="token string">"value"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span>locked<span class="token punctuation">)</span> <span class="token punctuation">{
+
+   <!-- --></span>
+    jedis<span class="token punctuation">.</span><span class="token function">expire</span><span class="token punctuation">(</span><span class="token string">"lock"</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 设置30秒过期</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>问题2：加锁与设置过期时间非原子操作</strong></p>
+<p>如果<code>SETNX</code>成功后，在设置<code>EXPIRE</code>之前程序崩溃，锁依然无法释放。</p>
+<p><strong>解决方案：使用<code>SET NX EX</code>原子命令</strong></p>
+<p>Redis从2.6.12开始支持<code>SET</code>命令的扩展参数，可以一步完成：</p>
+<pre><code class="prism language-bash">SET lock_key unique_value NX EX <span class="token number">30</span>
+</code></pre>
+<ul>
+ <li><code>NX</code>：只在键不存在时设置。</li>
+ <li><code>EX 30</code>：设置过期时间为30秒。</li>
+</ul>
+<p>这个命令保证了加锁和设置过期时间的原子性，解决了死锁问题。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="_47"></a>二、业务执行时间过长导致锁过期</h3>
+<p><strong>问题3：锁过期但业务未完成</strong></p>
+<p>假设业务逻辑需要35秒才能执行完，而锁只有30秒有效期。30秒后锁自动释放，其他客户端可能获取锁，导致并发冲突。</p>

@@ -1,0 +1,168 @@
+<p>Java中的集合主要分为以下集合类&#xff1a;<strong>Map、List、Set、Queue和JUC包下供多线程环境下使用的以上几种集合类</strong>&#xff0c;JUC包下的相关类我在另一篇<a href="https://tianmaolin.blog.csdn.net/article/details/114435255" rel="nofollow">JUC下集合类</a>相关的Blog详细介绍过&#xff0c;本篇Blog重点介绍Java单线程环境下的几种集合类。我们知道<strong>数组</strong>是很常用的一种的数据结构&#xff0c;我们用它可以满足很多的功能&#xff0c;但有时我们会遇到如下这样的问题&#xff1a;</p>
+<ul><li>我们需要该容器的<strong>长度是不确定的</strong>&#xff0c;在添加数据时也不确定需要添加多少。</li><li>我们需要它能<strong>自动排序</strong>&#xff0c;添加数据进行是有序的</li><li>我们需要存储以<strong>键值对</strong>方式存在的数据。</li></ul>
+<p>这些数组类都满足不了&#xff0c;于是我们使用与数组类似的数据结构——集合类&#xff0c;集合类在Java中有很重要的意义&#xff0c;保存临时数据&#xff0c;管理对象&#xff0c;泛型&#xff0c;Web框架等&#xff0c;很多都大量用到了集合类。以下是一张集合类图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-01-6a26af8290.png" loading="lazy"><br /> Collection接口是集合类的根接口&#xff0c;Java中没有提供这个接口的直接的实现类。但是却让其被继承产生了三个接口&#xff0c;就是Set、List和Queue。我们重点关注Set和List这两个集合类。Map是Java.util包中的另一个接口&#xff0c;它和Collection接口没有关系&#xff0c;是相互独立的&#xff0c;但是都属于集合类的一部分</p>
+<h2><a rel="noopener noreferrer" id="List_9"></a>List集合</h2>
+<p>实现List接口的类有三个&#xff0c;ArrayList&amp;Vector&amp;LinkedList&#xff0c;它们都有插入元素<strong>有序、可重复</strong>的特征</p>
+<h3><a rel="noopener noreferrer" id="ArrayList_11"></a>ArrayList集合类</h3>
+<p>ArrayList集合的类继承关系如下图所示<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-02-b658c648b9.png" loading="lazy"><br /> 基本使用方法如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">/* 新建一个ArrayList */</span>
+        ArrayList<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> list <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;初始化大小:&#34;</span> <span class="token operator">&#43;</span> list<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/* 添加元素 */</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;tml1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;tml2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;tml3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;tml4&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;当前容量:&#34;</span> <span class="token operator">&#43;</span> list<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/* 将ArrayList的大小和实际所含元素的大小设置一致 */</span>
+        list<span class="token punctuation">.</span><span class="token function">trimToSize</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;遍历--------------&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">/* 遍历 */</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>String string <span class="token operator">:</span> list<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;插入后遍历-----------&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/* 在指定位置插入元素 */</span>
+        list<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">&#34;tml5&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>String string <span class="token operator">:</span> list<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;清空后遍历-----------&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/* 清空list */</span>
+        list<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">/* 遍历 */</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>String string <span class="token operator">:</span> list<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>打印结果如下&#xff1a;</p>
+<pre><code class="prism language-java">初始化大小<span class="token operator">:</span><span class="token number">0</span>
+当前容量<span class="token operator">:</span><span class="token number">4</span>
+遍历<span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span>
+tml1
+tml2
+tml3
+tml4
+插入后遍历<span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">-</span>
+tml1
+tml2
+tml5
+tml3
+tml4
+清空后遍历<span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">--</span><span class="token operator">-</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="LinkedList_77"></a>LinkedList集合类</h3>
+<p><strong>LinkedList类的继承关系</strong>如下图所示&#xff0c;可以看到其实现了队列Queue的接口。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-03-a3f3311038.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Vector_81"></a>Vector集合类</h3>
+<p><strong>Vector集合的继承关系</strong>如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-04-720becc933.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="List_85"></a>List下集合类对比</h3>
+<blockquote>
+ <p><strong>ArrayList和Vector的特征比较</strong></p>
+</blockquote>
+<ol><li><strong>vector是线程同步的&#xff0c;所以它也是线程安全的</strong>&#xff0c;而arraylist线程不安全。如果不考虑到线程安全因素&#xff0c;一般用arraylist效率比较高。</li><li>如果集合中的元素的数目大于目前集合数组的长度时&#xff0c;vector增长率为目前数组长度的100%&#xff0c;而arraylist增长率为目前数组长度的50%。<strong>如果在集合中使用数据量比较大的数据&#xff0c;用vector有一定的优势</strong></li><li><strong>如果查找一个指定位置的数据&#xff0c;vector和arraylist使用的时间是相同的</strong>&#xff0c;如果频繁的访问数据&#xff0c;这个时候使用vector和arraylist都可以。而如果移动一个指定位置会导致后面的元素都发生移动&#xff0c;这个时候就应该考虑到使用<strong>linkedlist</strong>&#xff0c;因为指针结构&#xff0c;移动一个指定位置的数据时其它元素不需要移动。</li></ol>
+<blockquote>
+ <p><strong>ArrayList和LinkedList的特征比较</strong></p>
+</blockquote>
+<ul><li>相同点&#xff1a;都实现了Collection接口</li><li>不同点&#xff1a;<strong>ArrayList基于数组&#xff0c;具有较高的查询速度</strong>&#xff0c;而<strong>LinkedList基于双向循环链表&#xff0c;具有较快的添加或者删除的速度</strong>&#xff0c;二者的区别&#xff0c;其实就是数组和列链表的区别。</li></ul>
+<blockquote>
+ <p><strong>ArrayList&amp;Vector&amp;LinkedList性能比较</strong></p>
+</blockquote>
+<ul><li>ArrayList 和Vector是采用<strong>数组方式存储数据</strong>&#xff0c;此数组元素数大于实际存储的数据以便增加和插入元素&#xff0c;都允许直接序号索引元素&#xff0c;但是插入数据要涉及到数组元素移动等内存操作&#xff0c;所以<strong>索引数据快&#xff0c;插入数据慢</strong></li><li>Vector由于使用了synchronized方法&#xff08;<strong>线程安全</strong>&#xff09;所以性能上比ArrayList要差</li><li>LinkedList使用双向链表实现存储&#xff0c;按序号索引数据需要进行向前或向后遍历&#xff0c;<strong>查询性能较差</strong>&#xff0c;但是插入数据时只需要记录本项的前后项即可&#xff0c;所以<strong>插入速度较快</strong>。</li></ul>
+<p>依据自己的需求选择合适的集合使用。</p>
+<h2><a rel="noopener noreferrer" id="Set_106"></a>Set集合</h2>
+<p>实现Set接口的类有四个&#xff0c;<strong>HashSet&amp;TreeSet&amp;LinkedHashSet</strong>&#xff0c;它们都有插入元素<strong>无序、不可重复</strong>的特征&#xff0c;</p>
+<h3><a rel="noopener noreferrer" id="HashSet_108"></a>HashSet集合类</h3>
+<p>HashSet内部使用<strong>Map</strong>保存数据&#xff0c;即将HashSet的数据作为Map的key值保存&#xff0c;这也是HashSet中元素不能重复的原因。而Map中保存key值前&#xff0c;会去判断当前Map中是否含有该key对象&#xff0c;内部是先通过key的hashCode&#xff0c;确定有相同的hashCode之后&#xff0c;再通过equals方法判断是否相同。HashSet集合的类继承关系如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-05-6cc0ee4631.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="TreeSet_111"></a>TreeSet集合类</h3>
+<p><strong>TreeSet的继承关系实现如下图所示</strong>&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-06-32c59ef596.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="LinkedHashSet_114"></a>LinkedHashSet集合类</h3>
+<p><strong>LinkedHashSet的继承关系实现如下图所示</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-07-a5be588dac.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Set_117"></a>Set下集合类对比</h3>
+<p>HashSet&amp;TreeSet&amp;LinkedHashSet比较三者的联系和区别如下&#xff1a;</p>
+<ul><li>HashSet&#xff0c;<strong>为快速查找而设计的Set</strong>。存入HashSet的对象必须实现hashCode()和equals()&#xff0c;<strong>底层由HashMap实现</strong>。如果覆盖了equals方法&#xff0c;需要重写hashCode方法</li><li>TreeSet是 <strong>提供排序功能的Set&#xff0c;底层为树结构</strong> 。相比较HashSet其查询速度低&#xff0c;<strong>如果只是进行元素的查询&#xff0c;我们一般使用HashSet</strong></li><li>LinkedHashSet&#xff0c;具有HashSet的查询速度&#xff0c;<strong>且内部使用链表维护元素的顺序(插入的次序)</strong>&#xff0c;于是在使用迭代器遍历Set时&#xff0c;结果会按元素插入的次序显示&#xff0c;底层由<strong>LinkedHashMap</strong>实现</li></ul>
+<p>我们可以看的出&#xff0c;Set的很多实现方式都是通过组合的方式使用了Map&#xff0c;举个例子&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token function">HashSet</span><span class="token punctuation">(</span><span class="token keyword">int</span> initialCapacity<span class="token punctuation">,</span> <span class="token keyword">float</span> loadFactor<span class="token punctuation">,</span> <span class="token keyword">boolean</span> dummy<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        map <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedHashMap</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>initialCapacity<span class="token punctuation">,</span> loadFactor<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="Map_132"></a>Map集合</h2>
+<p>Map是Java.util包中的另一个接口&#xff0c;它和Collection接口没有关系&#xff0c;是相互独立的&#xff0c;但是都属于集合类的一部分。Map包含了key-value对。<strong>Map不能包含重复的key&#xff0c;但是可以包含相同的value</strong>&#xff0c;Map集合中存储的是<strong>键值对&#xff0c;键不能重复&#xff0c;值可以重复</strong>。根据键得到值&#xff0c;<strong>对map集合遍历时先得到键的set集合&#xff0c;对set集合进行遍历&#xff0c;得到相应的值。</strong></p>
+<h3><a rel="noopener noreferrer" id="HashMap_135"></a>HashMap集合类</h3>
+<p>在插入值的过程中HashMap可以插入<strong>null的key或value</strong>&#xff0c;插入的时候&#xff0c;检查是否已经存在相同的key&#xff0c;如果不存在&#xff0c;则直接插入&#xff0c;<strong>如果存在&#xff0c;则用新的value替换旧的value</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-08-bdd9d6a1dc.png" loading="lazy"><br /> HashMap有两种遍历方式&#xff0c;第一种方式&#xff1a;KeySet&#xff0c;第二种方式entrySet</p>
+<h4><a rel="noopener noreferrer" id="KeySet_139"></a>KeySet遍历</h4>
+<p>将Map中所有的键存入到set集合中。因为set具备迭代器。所有可以迭代方式取出所有的键&#xff0c;再根据get方法。获取每一个键对应的值。 keySet迭代后只能通过get取key 。<strong>取到的结果会乱序</strong>&#xff0c;因为取得数据行主键时&#xff0c;使用了<code>HashMap.keySet</code>方法&#xff0c;而这个方法返回的Set结果&#xff0c;里面的数据是乱序排放的。</p>
+<pre><code class="prism language-java">Map map <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key1&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key2&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key3&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key4&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi4&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">//获取迭代器</span>
+Iterator it <span class="token operator">&#61;</span> map<span class="token punctuation">.</span><span class="token function">keySet</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">iterator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">//通过迭代器获取遍历set&#xff0c;然后取值</span>
+<span class="token keyword">while</span><span class="token punctuation">(</span>it<span class="token punctuation">.</span><span class="token function">hasNext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+   Object key <span class="token operator">&#61;</span> it<span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+   System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为</p>
+<pre><code class="prism language-java">lisi1
+lisi2
+lisi3
+lisi4
+</code></pre>
+<h4><a rel="noopener noreferrer" id="entrySet_163"></a>entrySet遍历</h4>
+<p>返回此映射中包含的映射关系的 Set 视图&#xff08;一个关系就是一个键-值对&#xff09;&#xff0c;就是把(key-value)作为一个整体一对一对地存放到Set集合当中的。Map.Entry表示映射关系。<strong>entrySet迭代后可以e.getKey&#xff0c;e.getValue</strong>两种方法来取key和value。返回的是Entry接口。</p>
+<pre><code class="prism language-java"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        Map map <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key1&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key2&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key3&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">&#34;key4&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;lisi4&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+       <span class="token comment">//将map集合中的映射关系取出&#xff0c;存入到set集合</span>
+        Iterator it <span class="token operator">&#61;</span> map<span class="token punctuation">.</span><span class="token function">entrySet</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">iterator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span><span class="token punctuation">(</span>it<span class="token punctuation">.</span><span class="token function">hasNext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            Map<span class="token punctuation">.</span>Entry e <span class="token operator">&#61;</span><span class="token punctuation">(</span>Map<span class="token punctuation">.</span>Entry<span class="token punctuation">)</span> it<span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;键&#34;</span><span class="token operator">&#43;</span>e<span class="token punctuation">.</span>getKey <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;的值为&#34;</span> <span class="token operator">&#43;</span> e<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>返回结果为&#xff1a;</p>
+<pre><code class="prism language-java">键key1的值为lisi1
+键key2的值为lisi2
+键key3的值为lisi3
+键key4的值为lisi4
+</code></pre>
+<h3><a rel="noopener noreferrer" id="LinkedHashMap_189"></a>LinkedHashMap集合类</h3>
+<p>以下为LinkedHashMap集合类的继承关系图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-09-ee69e09c4c.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="TreeMap_192"></a>TreeMap集合类</h3>
+<p>以下为TreeMap集合类的继承关系图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-10-3953a2e075.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="HashTable_196"></a>HashTable集合类</h3>
+<p>以下为HashTable集合类的继承关系图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114501775-11-b775910b70.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Map_199"></a>Map下集合类对比</h3>
+<blockquote>
+ <p><strong>HashMap和HashTable的联系和区别如下</strong></p>
+</blockquote>
+<ol><li> <p>二者都实现了Map接口&#xff0c;因此具有一系列Map接口提供的方法。</p> </li><li> <p><strong>继承不同</strong>&#xff0c;<code>Hashtable extends Dictionary</code>&#xff0c;而<code>HashMap extends AbstractMap</code></p> </li><li> <p><strong>同步级别不同</strong>&#xff0c;Hashtable 中的方法是同步的&#xff0c;而HashMap中的方法在缺省情况下是非同步的。在多线程并发的环境下&#xff0c;可以直接使用Hashtable&#xff0c;但是要使用HashMap的话就要自己增加同步处理了。</p>
+  <ul><li>使用Collections类的synchronizedMap方法包装一下。方法如下&#xff1a;<code>public static &lt;K,V&gt; Map&lt;K,V&gt; synchronizedMap(Map&lt;K,V&gt; m)</code> 返回由指定映射支持的同步&#xff08;线程安全的&#xff09;映射</li><li>使用ConcurrentHashMap&#xff0c;它使用分段锁来保证线程安全</li></ul> </li><li> <p><strong>对key、value的null值要求不同</strong></p>
+  <ul><li>Hashtable中key和value都不允许出现null值</li><li>HashMap中&#xff0c;<strong>key可以为null&#xff0c;这样的键只有一个</strong>&#xff1b;可以有一个或多个key所对应的value为null。当get方法返回null值时&#xff0c;既可以表示 HashMap中没有该键&#xff0c;也可以表示该键所对应的值为null。因此&#xff0c;<strong>在HashMap中不能由get方法来判断HashMap中是否存在某个键&#xff0c; 而应该用containsKey方法来判断</strong></li></ul> </li><li> <p><strong>遍历方式的内部实现不同</strong>。Hashtable、HashMap都使用了 Iterator。而由于历史原因&#xff0c;<strong>Hashtable还使用了Enumeration的方式</strong></p> </li><li> <p><strong>哈希值的使用不同</strong>&#xff0c;HashTable直接使用对象的hashCode。而HashMap重新计算hash值&#xff0c;而且用与代替求模</p> </li><li> <p><strong>内部实现方式的数组的初始大小和扩容的方式不同</strong>&#xff0c;HashTable中hash数组默认大小是11&#xff0c;增加的方式是 <strong>old*2&#43;1</strong>。HashMap中hash数组的默认大小是16&#xff0c;而且一定是2的指数。</p> </li><li> <p>Hashtable有contains方法而HashMap没有contains方法</p> </li></ol>
+<p>这些就是一些比较突出的不同点&#xff0c;实际上他们在实现的过程中会有很多的不同&#xff0c;如初始化的大小、计算hash值的方式等等。毕竟这两个类包含了很多方法&#xff0c;有很重要的功能&#xff0c;综合推荐使用<strong>HashMap</strong>&#xff0c;因为它提供了比HashTable更多的方法&#xff0c;以及较高的效率&#xff0c;如果大家需要在多线程环境中使用&#xff0c;那么做一下同步即可。</p>
+<blockquote>
+ <p><strong>HashMap和TreeMap的联系和区别如下</strong></p>
+</blockquote>
+<p>HashMap具有较高的速度(查询)&#xff0c;TreeMap则提供了按照键进行排序的功能。</p>
+<blockquote>
+ <p><strong>HashMap和LinkedHashMap的联系和区别如下</strong></p>
+</blockquote>
+<p>LinkedHashMap具有HashMap的查询速度&#xff0c;<strong>且内部使用链表维护元素的顺序</strong>(插入的次序)&#xff0c;<strong>于是在使用迭代器遍历Map时&#xff0c;结果会按元素插入的次序显示</strong></p>

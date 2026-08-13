@@ -1,0 +1,46 @@
+<p>上篇博客介绍了基本的数值类型&#xff0c;以及字符、字符串的使用方式&#xff0c;本篇博客详细介绍下更多的常用数据类型&#xff1a;<strong>元组、数组</strong>&#xff0c;并且介绍下<strong>可空修饰符</strong>以及<strong>值类型和引用类型的区别</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_2"></a>元组</h3>
+<p>元组允许在一个语句中完成所有变量的赋值并且允许每一项都有不同的数据类型&#xff0c;<strong>在我看来元组更像是一个阉割版本的类&#xff0c;因为我们这么做的时候通过是因为这些变量存在某些业务关系&#xff0c;但是它又不需要像类那样重&#xff0c;需要有很多方法什么的</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103287176-01-bfcdfdba49.png" loading="lazy"><br />
+元组的使用方式多种多样&#xff0c;既支持显示、又支持隐式变量声明&#xff0c;在5中还可以将元组数据赋值给一个元组类型&#xff0c;不仅如此&#xff0c;<font color="red">元组不单支持具名访问还支持8中不具名的使用item顺序访问&#xff0c;以及9中的<strong>弃元</strong>操作。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103287176-02-416adb1fc3.png" loading="lazy"></font></p>
+<h3><a rel="noopener noreferrer" id="_7"></a>数组</h3>
+<p>数组再熟悉不过了&#xff0c;不管是C&#xff0c;C#&#xff0c;Java基本啥都有&#xff0c;那我就聊点儿不一样的。在赋值的时候&#xff0c;要么开辟内存空间&#xff0c;要么将地址的引用赋给数组变量。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103287176-03-70d4dc202d.png" loading="lazy"><br />
+需要注意的是&#xff0c;<strong>如果指定了大小&#xff0c;并且包含了元素&#xff0c;那么元素个数一定要和大小一致</strong>。若只是指定了大小但未分配值&#xff0c;则每个元素使用默认值。<strong>引用类型&#xff0c;为null; 数值类型为0; bool类型为false; char类型为\0</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_11"></a>多维数组和交错数组</h4>
+<p>多维数组是一个n*m的矩形&#xff0c;<strong>每一维的大小必须一致</strong>。而交错数组表示在一个数组里添加了一堆数组&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> aa <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span> <span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>aa<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//返回true</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">ReadKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>每一维的大小可以不一致。</p>
+<h4><a rel="noopener noreferrer" id="_24"></a>数组方法的使用</h4>
+<p>包括一些常用方法&#xff1a;Sort用于排序&#xff0c;BinarySearch用于先排序后获取指定元素的索引&#xff0c;目标元素不存在返回索引&#xff0c;值得特别注意的是&#xff1a;</p>
+<ul><li><strong>Length方法&#xff1a;如果是多维数组会返回多维数组的总数&#xff0c;而如果是<font color="red">交错数组&#xff0c;会返回交错数组里的数组个数</font></strong></li><li><strong>Clear方法&#xff1a;不删除数组元素&#xff0c;只是将数组里的元素没一个都设置为其默认值</strong></li><li><strong>Clone方法</strong>&#xff1a;返回一个数组的拷贝&#xff0c;该拷贝是一个堆数据的拷贝&#xff0c;修改新数组不会影响原始数组</li><li><strong>Rank方法</strong>&#xff1a;获取整个数组的维数&#xff0c;也就是N*M里的N.</li></ul>
+<p>除了以上常用方法&#xff0c;还可以使用ToCharArray将字符串转为字符数组。再使用Reverse方法反转该字符串数组</p>
+<h3><a rel="noopener noreferrer" id="C_35"></a>C#冷知识</h3>
+<p>1&#xff0c;一个类型要么是值类型、要么是引用类型。<strong>值类型的数据总是拷贝值&#xff0c;而引用类型的数据总是拷贝引用</strong>。所以比较推荐的用法是&#xff0c;<strong>值类型内存占用最好不要超过16字节</strong>。</p>
+<p>2&#xff0c;引用类型的实例指向堆&#xff0c;<strong>运行时要先从变量读到内存位置&#xff0c;然后再跳转到堆里数据存储的实际位置</strong>。</p>
+<p>3&#xff0c;一般不能将null赋给值类型&#xff0c;但是在值本来缺失的时候&#xff0c;由不希望编译报错&#xff0c;<strong>可以使用可空修饰符&#xff1a;&#xff1f;</strong></p>
+<pre><code class="prism language-csharp">     <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span><span class="token operator">?</span> count <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>count<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>一个好处是&#xff0c;<font color="red"><strong>在进行数据库编程的时候不用担心取到null值给值类型会报错了&#xff0c;因为数据库里没有数据的时候就是null&#xff0c;这时候用可空修饰符就没有关系</strong></font>。int的默认值0在表里可是也是有意义的&#xff0c;所以说一定要给值类型一个缺失而不是指定某个值。</p>
+<p>4&#xff0c;可以使用var来隐式声明变量&#xff0c;编译器会依据编译时赋的值来确定类型。<strong>但是如果不是显而易见的的类型&#xff0c;尽量不要使用var&#xff0c;而是使用本来类型来声明变量</strong>。</p>
+<h3><a rel="noopener noreferrer" id="C_53"></a>C#新知识</h3>
+<p>1&#xff0c;可以使用default关键字来获取任何数据类型的默认值:</p>
+<pre><code class="prism language-csharp"><span class="token keyword">int</span> count <span class="token operator">&#61;</span><span class="token keyword">default</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span>   <span class="token comment">//0</span>
+</code></pre>
+<p>2&#xff0c;从C#3.0开始&#xff0c;创建数组时不需要显示指定数据类型&#xff0c;也可以依据元素来确认&#xff1a;</p>
+<pre><code class="prism language-csharp">       <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">var</span> people <span class="token operator">&#61;</span> <span class="token keyword">new</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;hhh&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;ttt&#34;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>

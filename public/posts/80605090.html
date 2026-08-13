@@ -1,0 +1,67 @@
+<p>上一篇的结束标志着第一部分&#xff1a;CLR基础的结束。上一篇主要介绍了强命名程序集&#xff0c;安全策略&#xff0c;运行时类型的解析&#xff08;如何一步步找到程序集并进行加载&#xff09;等内容。回顾一下第一部分&#xff1a;</p>
+<ol><li><strong>CLR的执行模型&#xff08;JIT编译器如何工作&#xff09;</strong></li><li><strong>类型如何生成到托管模块以及托管模块如何合并为程序集</strong></li><li><strong>强命名程序集、安全策略和运行时如何解析类型引用</strong></li></ol>
+<p>对了&#xff0c;恭喜微软在6月4号喜提GitHub,世界最大的闭源公司收购世界最大的开源社区&#xff0c;哈哈哈&#xff0c;<a href="http://xn--ghqrz6b27qxwad4xd7s3a227fpr0cij4bivk.net" rel="nofollow">估计接下来社区会大力推进.net</a> core了吧&#xff0c;<a href="http://xn--4gqx4c04olmfgmhba214a9m43gtx3d.net" rel="nofollow">看来是时候开始搞一搞.net</a> core了&#xff0c;前途无量啊。闲言少叙&#xff0c;书归正传&#xff0c;这部分开始对类型涉及的各个方面进行介绍。&#xff0c;本篇博客从以下几个方面分析类型基础&#xff1a;</p>
+<ol><li><strong>类型如何转换&#xff08;包括is和as的使用&#xff09;也就是类型安全问题</strong></li><li><strong>命名空间和程序集之间的关系</strong></li><li><strong>运行时代码如何执行的&#xff08;JIT编译IL代码的具体操作&#xff09;</strong></li></ol>
+<p>**本文的行文主线&#xff1a;**万类始祖System.Object—类型转换—命名空间和程序集的关系----运行时代码如何执行&#xff08;当你new一个对象的时候你做了什么&#xff09;</p>
+<p>#万类始祖System.Object<br /> ##System.Object提供的方法<br /> System.Object是万类始祖&#xff0c;也就是任何类型都隐式或显示派生自System.Object&#xff0c;所以所有的类也都具备System.Object提供的一组基本方法&#xff1a;</p>
+<table><thead><tr><th>公共方法</th><th>说明</th></tr></thead><tbody><tr><td>Equals</td><td>判断两个对象是否具有相等的值</td></tr><tr><td>GetHashCode</td><td>返回该对象知道的哈希码</td></tr><tr><td>ToString</td><td>默认返回类型的完整名称&#xff08;this.GetType.FullName&#xff09;</td></tr><tr><td>GetType</td><td>返回从Type派生出的一个类型的实例&#xff0c;指出调用GetType的对象的类型</td></tr></tbody></table>
+<p>对GetType做一个解释&#xff0c;我们知道**所有对象都是从类型new出的实例&#xff0c;但其实类型本质上也是对象&#xff0c;也就是类型对象&#xff0c;而所有的类型对象都派生自Type。**所以说GetType获取到的类型&#xff08;类型对象&#xff09;其实是Type的一个实例&#xff0c;也就是当前调用对象的类型。这一点后边会介绍到。</p>
+<table><thead><tr><th>受保护方法</th><th>说明</th></tr></thead><tbody><tr><td>MemberwiseClone</td><td>创建一个与当前对象完全相同的实例&#xff0c;并返回该实例引用</td></tr><tr><td>Finalize</td><td>在垃圾回收器判断对象该被回收后但、未被实际回收前调用</td></tr></tbody></table>
+<p>和Java对比&#xff0c;方法大同小异&#xff0c;我在之前的博客中介绍过java里的Object常用方法&#xff1a;</p>
+<blockquote>
+ <p>传送门https://blog.csdn.net/sinat_33087001/article/details/73883929</p>
+</blockquote>
+<p>也许是看到这里还没出现&#xff0c;也许是C#没有&#xff0c;比JAVA的少了5个线程相关操作。之后看到再回来补上吧。<br /> ##new操作的时候发生了什么</p>
+<pre><code>TML t &#61; new TML(&#34;tml最帅了&#34;)
+</code></pre>
+<p>当new一个对象的时候发生了以下事情&#xff1a;</p>
+<ol><li> <p>计算**类型及所有基类型&#xff08;一直到System.Object&#xff09;定义的所有实例字段需要的字节数、**堆上的每个对象所需的额外成员&#xff1a;<strong>类型对象指针和同步块索引</strong>。</p> </li><li> <p>从托管堆中分配类型要求的字节数&#xff0c;从而分配对象的内存&#xff08;包括类型对象指针和同步块索引&#xff09;&#xff0c;也就是上一步中所要求的总字节数。<strong>分配的所有字节都设为0。</strong></p> </li><li> <p>初始化对象的<strong>类型对象指针和同步块索引</strong></p> </li><li> <p><strong>调用类型的实例构造器</strong>&#xff0c;传递在new调用中指定的实参&#xff08;“tml最帅了”&#xff09;&#xff0c;每个构造器都隐式调用基类构造器&#xff08;这点和Java的一样&#xff0c;一般在构造方法第一行执行&#xff09;&#xff0c;层层调用&#xff0c;<strong>每层构造器都负责初始化本层类型的实例字段</strong>&#xff0c;最终调用到System.Object</p> </li></ol>
+<p>new执行完之后返回一个指向新建对象的引用&#xff0c;也就是t。<br /> #类型转换<br /> CLR的一个重要特性就是类型安全&#xff0c;运行时&#xff0c;CLR总是知道对象的类型是什么&#xff08;通过GetType方法&#xff0c;因为它是非虚方法&#xff0c;所以一个类型不能伪装成另一个&#xff09;<strong>CLR允许将对象转为它实际类型或者它的任何基类型</strong><font color="red"> 注意不能将实际基对象转为派生类型。这点很重要&#xff0c;接下来我会解释。<br /> ##显示和隐式类型转换</font></p>
+<pre><code>Object o &#61; new Object();
+TML t &#61; new TML(&#34;tml最帅了&#34;);
+</code></pre>
+<p>切记&#xff1a;<strong>不管是显示转换还是隐式转换&#xff0c;父类对象&#xff08;o&#xff09;都不能转为子类类型TML</strong>&#xff0c;这是因为&#xff0c;假设 <code>TML t &#61; new Object&#xff08;&#xff09;</code>那么t想要调用自己特有的实例方法的时候&#xff08;不是从Object继承的方法&#xff0c;是TML自有的&#xff09;发现自己实际指向的对象是Object,在运行时就会找不到该方法而导致报错&#xff0c;而<code>Object o &#61; new TML(&#34;tml最帅了&#34;);</code> o能调用的方法在TML里都能找到。当然这只是我的猜测&#xff0c;应该是符合面向对象原理依据的。</p>
+<p>接下来介绍下显式和隐式转换&#xff1a;</p>
+<pre><code>Object o  &#61; new TML(&#34;tml最帅了&#34;);  //隐式转换
+TML t &#61; (TML)o;                 //显示转换
+</code></pre>
+<p>要注意的是&#xff0c;CLR在编译期间无法准确获取对象的类型&#xff0c;只有在运行期间才会检查核实对象的类型&#xff0c;所谓&#xff1a;<strong>编译看左边&#xff0c;运行看右边</strong><br /> <img alt="这里写图片描述" src="./posts/assets/80605090-01-86de8940a3.png" loading="lazy"><br /> 从上到下我来讲解一下&#xff1a;</p>
+<ul><li>1-7都是对象类型本身或者隐式转换&#xff0c;对象&#xff08;右边new出来的&#xff09;转为自己实际类型或者自己基类型。</li><li>8-9都是要把对象转为自己的子类型&#xff0c;编译时就可以报错。10只是添加了引用&#xff0c;</li><li>11这里需要加强转&#xff0c;确没有加&#xff0c;编译时报错。</li><li>12其实可以不加强转&#xff0c;加了也不报错&#xff0c;</li><li>13加了强转&#xff0c;没问题。</li><li><strong>14-15类型加了强转&#xff0c;所以编译的时候会通过&#xff0c;因为CLR在编译时不核实具体对象&#xff0c;但运行的时候发现对象是自己的基类型&#xff0c;是不安全的类型转换。</strong></li><li>16里b2本身是B类型的执行D对象&#xff0c;强转为D类型当然可以&#xff0c;然后对于左边的b6相当于隐式转换&#xff0c;所以编译运行都能通过<br /> ##is和as类型转换操作符</li></ul>
+<pre><code>Object o &#61; new Object();
+TML t &#61; new TML(&#34;tml最帅了&#34;);
+Boolean b1 &#61; (o is Object)  /b1为true
+Boolean b2 &#61; (o is TML)  /b1为false
+</code></pre>
+<p><strong>is操作符检查对象是否兼容于指定类型</strong>&#xff0c;注意&#xff0c;is操作符永远不会抛出异常。</p>
+<pre><code>if(t is Object){         //第一次检查&#xff1a;t是否兼容于Object
+    Object o &#61; (Object)t;//第二次检查&#xff1a;如果兼容&#xff0c;则可以执行类型转换
+}
+</code></pre>
+<p>两次安全检查性能损耗无疑是比较大的&#xff08;<strong>因为每次开销都大&#xff0c;CLR会判断t引用 对象的实际类型&#xff0c;然后遍历其继承层次结构&#xff0c;用每个基类型去核对指定类型Object</strong>&#xff09;。</p>
+<p>所以as操作符横空出世&#xff1a;<strong>as操作符会返回null或者对同一个对象的非null引用</strong></p>
+<pre><code>Object o &#61; t as Object;   //只执行这一次类型检查
+if(o!&#61;null){
+    o.ToString();  //打印结果&#xff1a;TML太帅了
+}
+</code></pre>
+<p>#命名空间和程序集<br /> 命名空间是对相关类型的<strong>逻辑分组</strong>&#xff0c;所以你的类的名称完全可以和命名空间无关。注意CLR对命名空间一无所知&#xff0c;它检查的都是全类名&#xff0c;所以我们常使用的using来避免全名书写和CLR无关。<br /> ##引用方式<br /> ###全名引用<br /> 就是将类的全名写进来<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-02-7b34b59308.png" loading="lazy"><br /> ###using&#43;简写<br /> 使用using的时候&#xff0c;C#编译器会自动在类型名称前附加System.Text前缀&#xff0c;检查这样生成的名称是否与现有类型匹配&#xff0c;<strong>注意&#xff0c;是盲匹&#xff0c;每个using会和所有类型匹配一遍&#xff0c;因为编译器不知道哪个类型属于该using引用的命名空间。</strong><br /> <img alt="这里写图片描述" src="./posts/assets/80605090-03-91e479fa64.png" loading="lazy"><br /> ##发生冲突<br /> 当发生两个命名空间存在同样名字的类型的时候&#xff0c;在使用<strong>using&#43;简写</strong>的时候就会编译错误&#xff1a;类型存在不明确的引用。<strong>这个时候就要全名指定啦。</strong><br /> 当然还可以像下面这样指定别名&#xff1a;</p>
+<pre><code>using  TMLNewName &#61; beijing.TML;
+</code></pre>
+<p>如果出现极端情况&#xff0c;两个命名空间相同&#xff0c;且类型名相同&#xff0c;以上解决方法也都失去作用&#xff0c;这样可以使用<strong>外部别名</strong>来解决&#xff0c;这里不详细讨论了。</p>
+<p>##命名空间和程序集的关系<br /> 命名空间和程序集之间没有必然的关系&#xff0c;同一命名空间的类可能来自不同程序集&#xff0c;同一个程序集也可能包含不同命名空间的类。一般来说程序集是类型的集合&#xff0c;完成一个功能&#xff0c;命名空间一般来说也是这个程序集的名字&#xff0c;不过当然可以更改。<br /> <strong>一般&#xff1a;项目----程序集-----命名空间</strong>&#xff0c;当然也可以修改。只要找的到类就行。<br /> <strong>编译器在给类型指定全名后&#xff0c;会遍历引用的程序集&#xff0c;直到找到对应的类型&#xff0c;然后确定程序集的位置&#xff0c;接下来执行编译。</strong></p>
+<p>#运行时的相互关系<br /> 运行时栈&#xff0c;注意&#xff0c;<strong>栈从高位内存地址向低位内存地址构建</strong><br /> 1&#xff0c;如下右边栈已经初始化分配给局部变量name的内存。<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-04-88f8aa0031.png" loading="lazy"><br /> 2&#xff0c;接下来执行M2方法&#xff0c;M2方法内部使用参数s标识栈位置&#xff0c;并且添加调用方法结束后的返回地址。<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-05-6c43daf41e.png" loading="lazy"><br /> 3&#xff0c;接下来执行M2内部的代码&#xff1a;<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-06-fe10269c97.png" loading="lazy"></p>
+<p>return之后&#xff0c;返回到状态1&#xff0c;继续执行M1内部的其它代码。<br /> ##运行时CLR如何Jit编译<br /> 通过如下继承关系代码来举例&#xff1a;<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-07-9c0a355bee.png" loading="lazy"><br /> 在如下代码中执行&#xff0c;检测执行过程&#xff1a;<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-08-f56a8fcdbd.png" loading="lazy"><br /> 执行流程如下所示&#xff1a;</p>
+<ol><li>CLR检测M3方法内代码所涉及的类型&#xff1a;Employee,Int32,Manager,String(通过“joe”得知)</li><li>CLR确定定义这些类型的程序集都被加载&#xff08;通过命名空间找程序集&#xff09;&#xff0c;然后利用程序集中的元数据来构建类型&#xff0c;这个过程在我另一篇博文里介绍过&#xff1a;如何加载和利用程序集来构建类型&#xff1a;</li></ol>
+<blockquote>
+ <p>传送门https://blog.csdn.net/sinat_33087001/article/details/80485418</p>
+</blockquote>
+<ol start="3"><li>依据步骤2构建<strong>类型对象</strong>&#xff0c;在堆上&#xff08;这里不展示Stirng和Int32&#xff09;</li></ol>
+<p>这三步相当于初始化的过程&#xff0c;初始化之后&#xff1a;<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-09-352c87d6ea.png" loading="lazy"></p>
+<p>接下来的流程就按照M3方法内部的方法顺序开始执行。<br /> ###new一个对象<br /> 在初始化局部变量之后&#xff0c;<strong>CLR会自动将所有局部变量设置为null或者0(这里就是e为null,year为0)</strong>.接下来按照之前说到的new的执行过程创建对象&#xff1a;<br /> <img alt="这里写图片描述" src="./posts/assets/80605090-10-856b845556.png" loading="lazy"></p>
+<p>###静态方法的执行<br /> 执行静态方法时&#xff0c;**CLR会定位与定义静态方法的类型对应的类型对象,这里也就是&#xff08;Employee&#xff09;**假设lookup返回一个Manager对象的引用&#xff0c;在堆上又构建了一个Manager&#xff0c;当然假设返回的是Employe对象的引用&#xff0c;就是在堆上创建了一个Manager对象&#xff1a;</p>
+<p><img alt="这里写图片描述" src="./posts/assets/80605090-11-4509716b75.png" loading="lazy"></p>
+<p>前一个Manager对象会被垃圾回收机制回收掉。该方法被调用后执行Jit编译</p>
+<p>###非虚实例方法的执行<br /> 执行非虚实例方法的时候&#xff0c;<strong>CLR会定位发出调用的那个变量&#xff08;e&#xff09;的类型&#xff08;Employee&#xff09;对应的类型对象</strong><br /> <img alt="这里写图片描述" src="./posts/assets/80605090-12-e099a51f05.png" loading="lazy"><br /> ###虚实例方法的执行<br /> 执行虚实例方法的时候&#xff0c;<strong>CLR会首先检查发出调用的变量&#xff08;e&#xff09;&#xff0c;并跟随地址来到具体发出调用的对象(Manager)。</strong><br /> <img alt="这里写图片描述" src="./posts/assets/80605090-13-e655d4828b.png" loading="lazy"><br /> ###所有类型对象都是System.Type的类型实例</p>
+<p><img alt="这里写图片描述" src="./posts/assets/80605090-14-b0363f2d75.png" loading="lazy"></p>
+<p>GetType方法返回指向对象的类型对象的指针。这也解释了为什么可以通过<strong>GetType获取任何对象的类型对象了。</strong></p>
+<p>依照惯例唠叨两句&#xff0c;本篇博客主要介绍了类型转换如何进行&#xff0c;is和as操作符有什么区别&#xff0c;命名空间程序集的关系&#xff0c;当然最重要的就是方法执行的时候内存堆栈是如何执行的&#xff0c;在上一篇博客里提到的加程序集生成类型之后&#xff0c;CLR如何对应不同方法进行定位&#xff0c;<strong>再次恭喜微软喜提GitHub&#xff0c;<a href="http://xn--ykqu3hh3ga098exme99dxr5j.net" rel="nofollow">这大大加强了我搞.net</a> core的决心。</strong></p>

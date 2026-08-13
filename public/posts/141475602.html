@@ -1,0 +1,37 @@
+<p>第一个学习阶段就是夯实基础&#xff0c;打通DDD的一个最小闭环&#xff0c;首先明确下DDD的最小闭环包含哪些步骤<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141475602-01-731e67c8e8.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="DDD_2"></a>DDD的优势</h2>
+<p>在传统软件工程里&#xff0c;建立分析模型强调完全从业务领域出发&#xff0c;不考虑技术视角。然后&#xff0c;才会把分析模型交给技术专家&#xff0c;转化为设计模型<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141475602-02-373f2fbf69.png" loading="lazy"></p>
+<p>DDD 的领域模型则是业务视角&#xff08;原来的分析模型&#xff09;和技术视角&#xff08;原来的设计模型&#xff09;的交集。它反映了业务人员和技术人员的共识<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141475602-03-dcf35bacc0.png" loading="lazy"><br />
+对比传统软件开发多了一个核心要素&#xff0c;就是领域建模<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141475602-04-6428fede16.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_14"></a>开发流程</h2>
+<p>DDD的整体开发流程如下图所示&#xff0c;包含两个大的时间节点&#xff0c;模型的建立和模型的实现。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/141475602-05-aa4cd7b61e.png" loading="lazy"><br />
+这样就是一个DDD的最小闭环&#xff0c;在实践中&#xff0c;尤其是对敏捷软件开发来说&#xff0c;<font color="red"><strong>这些步骤不是线性的&#xff0c;而是反复迭代、互相穿插的</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_18"></a>战略设计阶段</h3>
+<p>也就是<strong>模型的建立阶段</strong>&#xff0c;使用的都是业务术语&#xff0c;归根结底来自业务人员&#xff0c;业务人员不仅能听懂&#xff0c;而且负责评价建模的正确性&#xff0c;所以必须由<font color="red"><strong>技术人员&#43;业务人员共同主导</strong></font></p>
+<h4><a rel="noopener noreferrer" id="1__20"></a>1 需求分析</h4>
+<p>在整个开发流程中&#xff0c;首先是要捕获行为需求&#xff0c;也就是传统软件工程里的“获取需求”。这一步&#xff0c;我们要识别<strong>需求里有哪些流程、哪些功能&#xff0c;每个功能由什么人操作&#xff0c;会产生什么结果</strong>&#xff0c;我们使用的分析方式是&#xff1a;<font color="red"><strong>业务事件风暴</strong></font></p>
+<h4><a rel="noopener noreferrer" id="2__22"></a>2 领域建模</h4>
+<p>需求捕获完成后&#xff0c;接下来&#xff0c;我们就可以进行领域建模了&#xff0c;也就是通过建立领域模型&#xff0c;把需求里的主要业务知识描述清楚</p>
+<h3><a rel="noopener noreferrer" id="_24"></a>战术设计阶段</h3>
+<p>也就是<strong>模型的实现阶段</strong>&#xff0c;业务人员不需要理解也不关注的&#xff0c;会包含技术实现方面的内容&#xff0c;所以由<font color="red"><strong>技术人员主导</strong></font></p>
+<h4><a rel="noopener noreferrer" id="3__26"></a>3 架构设计</h4>
+<p>基于领域模型&#xff0c;我们就可以做架构设计&#xff0c;包括<strong>进程间和进程内的架构</strong>。比如说</p>
+<ul><li><strong>进程间架构</strong>&#xff1a;微服务设计、中台设计都属于进程间架构。</li><li><strong>进程内架构</strong>&#xff1a;通常说的 DDD 分层架构是进程内架构</li></ul>
+<p>对于项目实践来说&#xff0c;其实进程间可以理解为服务间的交互方式&#xff0c;进程内指的是服务内各个模块的交互方式。</p>
+<h4><a rel="noopener noreferrer" id="4__32"></a>4 数据库设计</h4>
+<p>依据架构设计进行对应的数据库表设计</p>
+<h4><a rel="noopener noreferrer" id="5__34"></a>5 代码实现</h4>
+<p>最后一步是按照设计完成代码编写。从这里也可以看的出来&#xff0c;代码实现其实是最容易的&#xff0c;一旦整体的设计成型了&#xff0c;代码实现就是水到渠成的事情&#xff0c;把文本语言翻译成计算机语言的过程。</p>
+<h2><a rel="noopener noreferrer" id="_36"></a>参与人员</h2>
+<p>参与人员分为业务方和技术方&#xff0c;对于不同的业务&#xff0c;角色是不一定的</p>
+<ul><li><strong>领域专家</strong>&#xff1a;领域专家需要对业务有总体性和本质性的把握&#xff0c;同时对业务发展也要有一定前瞻性&#xff0c;对于商户可能就是&#xff1a;<strong>业务策略、商业分析师、运营、PA、PM</strong>等各种角色</li><li><strong>架构师及核心开发人员</strong>&#xff1a;要懂一些业务基础概念能够和业务讨论&#xff0c;了解相关业务模式&#xff0c;技术上一定要过硬。</li></ul>
+<p>核心就是这两方&#xff0c;不同阶段可能会有所补充&#xff0c;例如实现阶段可能会有一些<strong>基础RD、QA、FE等角色</strong>参与进来。</p>
+<h2><a rel="noopener noreferrer" id="_42"></a>统一语言</h2>
+<p>在设计前一定要通过事件风暴形成UL语言表&#xff0c;确保大家对一件事物的理解是一致的&#xff0c;提到这个名词对它背后的含义和本质信息有共识&#xff0c;如果前期认知有GAP&#xff0c;后期实现阶段问题会被放大很多。</p>
+<h2><a rel="noopener noreferrer" id="_44"></a>总结一下</h2>
+<p>其实我们日常开发都比较伪DDD&#xff0c;整体实现还是使用 MVC&#xff0c;代码结构类似 Controller、Service、DAO&#xff0c;个人认为这也无可厚非&#xff0c;只是代码的组织形式而已&#xff0c;关键是我们在整体设计时往往缺乏&#xff08;<strong>领域建模-架构设计</strong>&#xff09;这关键两步&#xff0c;很多时候都是就着一个功能点进行&#xff08;需求分析-数据库 -&gt; 代码实现&#xff09;。这样没有全局的视角很容易盲人摸象&#xff0c;导致后续摸到一点打个补丁&#xff0c;项目难以维护。DDD的关键不全然是代码架构设计的指导&#xff0c;更是一种应对复杂业务的开发及协作模式&#xff0c;关键人员先通过UL建立有全局共识认知&#xff0c;不确认的地方预留扩展点&#xff0c;再进行穿插迭代式的小闭环补足认知和功能偏差更好些。</p>

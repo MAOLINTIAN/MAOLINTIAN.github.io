@@ -1,0 +1,79 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>操作给定的二叉树&#xff0c;将其变换为源二叉树的镜像。</p>
+
+
+
+<h3 id="输入描述">输入描述</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs tex">二叉树的镜像定义&#xff1a;
+
+  源二叉树
+            8
+           /  <span class="hljs-command">\
+</span>          6   10
+         / <span class="hljs-command">\ </span> / <span class="hljs-command">\
+</span>        5  7 9 11
+ 镜像二叉树
+            8
+           /  <span class="hljs-command">\
+</span>          10   6
+         / <span class="hljs-command">\ </span> / <span class="hljs-command">\
+</span>        11 9 7  5</code></pre>
+
+
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;交换左右子树 <br />
+2&#xff0c;递归交换左右子树的左右子节点</p>
+
+
+
+<h3 id="代码">代码</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> offerTest;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:Mirror
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月20日 下午9:07:06
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Mirror</span> {<!-- --></span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Mirrors</span>(TreeNode root) {
+        <span class="hljs-keyword">if</span> (root &#61;&#61; <span class="hljs-keyword">null</span> || root.left &#61;&#61; <span class="hljs-keyword">null</span> &amp;&amp; root.right &#61;&#61; <span class="hljs-keyword">null</span>){
+        <span class="hljs-comment">//为了保证代码的严谨性&#xff0c;这里最好加上左右子节点不能都为null</span>
+            <span class="hljs-keyword">return</span>;
+        }
+        <span class="hljs-comment">// 交换根的左右子节点</span>
+        TreeNode temp &#61; root.left;
+        root.left &#61; root.right;
+        root.right &#61; temp;
+        <span class="hljs-comment">// 递归交换根的左右子树</span>
+        <span class="hljs-keyword">if</span> (root.left !&#61; <span class="hljs-keyword">null</span>)
+            Mirrors(root.left);
+        <span class="hljs-keyword">if</span> (root.right !&#61; <span class="hljs-keyword">null</span>)
+            Mirrors(root.right);
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span>(String[] args) {
+
+    }
+
+}
+
+</code></pre>

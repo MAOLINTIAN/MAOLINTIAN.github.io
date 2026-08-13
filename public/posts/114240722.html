@@ -1,0 +1,63 @@
+<p>什么是进程&#xff1f;<strong>进程</strong>是程序的⼀次执⾏过程&#xff0c;是系统运⾏程序的基本单位&#xff0c;因此进程是动态的。系统运行和关闭⼀个程序即是⼀个进程从<strong>创建&#xff0c;运⾏到消亡</strong>的过程。在 Java 中&#xff0c;当我们启动 main 函数时其实就是启动了⼀个 JVM 的进程&#xff0c;⽽ main 函数所在的线程就是这个进程中的⼀个线程&#xff0c;也称主线程</p>
+<p>什么是线程&#xff1f;<strong>线程</strong>与进程相似&#xff0c;但线程是⼀个⽐进程更⼩的执⾏单位。⼀个进程在其执⾏的过程中可以产⽣多个线程。与进程不同的是同类的多个线程共享进程的<strong>堆</strong>和<strong>⽅法区</strong>资源&#xff0c;但每个线程有⾃⼰的<strong>程序计数器、虚拟机栈</strong>和<strong>本地⽅法栈</strong>&#xff0c;所以系统在产⽣⼀个线程&#xff0c;或是在各个线程之间作切换⼯作时&#xff0c;负担要⽐进程⼩得多&#xff0c;也正因为如此&#xff0c;<strong>线程也被称为轻量级进程</strong></p>
+<p>二者之间的区别与联系如下&#xff1a;</p>
+<ul><li><font color="red"><strong>使用定位</strong></font>&#xff0c;进程是<strong>分配资源</strong>的基本单位&#xff0c;线程是<strong>独立运行和独立调度</strong>的基本单位&#xff0c;<strong>多进程</strong>是指操作系统能同时运行多个任务&#xff08;程序&#xff09;。<strong>多线程</strong>是指在同一程序中有多个顺序流在并发执行</li><li><font color="red"><strong>地址空间和资源</strong></font>&#xff1a;进程间相互独立&#xff0c;同一进程的各线程间共享。某进程内的线程在其它进程不可见&#xff0c;每个进程都有独立的代码和数据空间&#xff08;进程上下文&#xff09;&#xff0c;进程间的切换会有较大的开销&#xff0c;一个进程包含n个线程&#xff1b;线程没有独立的代码和数据空间&#xff0c;一个进程下的多个线程需要共享进程的资源&#xff0c;线程间切换开销小&#xff0c;比进程切换快的多</li><li><font color="red"><strong>状态阶段</strong></font>&#xff1a;<strong>线程和进程一样分为五个阶段&#xff1a;创建、就绪、运行、阻塞、终止。</strong></li><li><font color="red"><strong>通信方式</strong></font>&#xff1a;进程间通信IPC&#xff08;IPC是intent-Process Communication的缩写&#xff0c;含义为进程间通信或者跨进程通信&#xff09;&#xff0c;<strong>线程间可以直接读写进程数据段&#xff08;如全局变量&#xff09;来进行通信——需要进程同步和互斥手段的辅助&#xff0c;以保证数据的一致性。</strong></li></ul>
+<p>对应于我们的JVM模型如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114240722-01-1c3442c9b9.png" loading="lazy"><br />
+启动多少个Java程序&#xff0c;就会创建多少个JVM进程&#xff0c;也称之为JVM实例。而每一个JVM实例都是独立的&#xff0c;它们互不影响。这也是前面所说的一个程序可以被多个进程共用的情况</p>
+<p>程序计数器为什么是私有的?</p>
+<ol><li>字节码解释器通过改变程序计数器来依次读取指令&#xff0c;从⽽实现代码的流程控制&#xff0c;如&#xff1a;顺序执⾏、选择、循环、异常处理。</li><li>在多线程的情况下&#xff0c;程序计数器⽤于记录当前线程执⾏的位置&#xff0c;从⽽当线程被切换回来的时候能够知道该线程上次运⾏到哪⼉了。需要注意的是&#xff0c;如果执⾏的是 native ⽅法&#xff0c;那么程序计数器记录的是 undefined 地址&#xff0c;只有执⾏的是 Java 代码时程序计数器记录的才是下⼀条指令的地址。</li></ol>
+<p><strong>程序计数器私有为了保证线程切换后能恢复到正确的执⾏位置</strong>。</p>
+<p>虚拟机栈和本地⽅法栈为什么是私有的?</p>
+<ul><li>虚拟机栈&#xff1a; 每个 Java ⽅法在执⾏的同时会创建⼀个栈帧⽤于存储局部变量表、操作数栈、常量池引⽤等信息。从⽅法调⽤直⾄执⾏完成的过程&#xff0c;就对应着⼀个栈帧在 Java 虚拟机栈中⼊栈和出栈的过程。</li><li>本地⽅法栈&#xff1a; 和虚拟机栈所发挥的作⽤⾮常相似&#xff0c;区别是&#xff1a; 虚拟机栈为虚拟机执⾏ Java ⽅法&#xff08;也就是字节码&#xff09;服务&#xff0c;⽽本地⽅法栈则为虚拟机使⽤到的 Native ⽅法服务。 在 HotSpot 虚拟机中和 Java 虚拟机栈合⼆为⼀。</li></ul>
+<p><strong>虚拟机栈和本地⽅法栈私有为了保证线程中的局部变量不被别的线程访问到&#xff0c;虚拟机栈和本地⽅法栈是线程私有的</strong>。</p>
+<p>堆和⽅法区为什么是公有的&#xff1f;</p>
+<ul><li>堆是所有线程共享的资源&#xff0c;其中堆是进程中最⼤的⼀块内存&#xff0c;主要⽤于存放新创建的对象 (所有对象都在这⾥分配内存)</li><li>⽅法区主要⽤于存放已被加载的类信息、常量、静态变量、即时编译器编译后的代码等数据</li></ul>
+<p><strong>堆和⽅法区公有为了保证线程都能共享到堆中创建的对象以及方法区中的类型</strong>。</p>
+<h2><a rel="noopener noreferrer" id="_32"></a>多线程的设计原则</h2>
+<p>在进行多线程编程的时候我们需要遵循如下的设计原则&#xff0c;如果违反该原则&#xff0c;则有可能导致错误&#xff1a;</p>
+<ul><li><font color="red"><strong>原子性</strong></font>&#xff0c;原子是世界上最小的单位&#xff0c;具有不可分割性。<strong>在我们编程的世界里&#xff0c;某个操作如果不可分割我们就称之为该操作具有原子性</strong>。例如&#xff1a;i &#61; 0,这个操作是不可分割的&#xff0c;所以该操作具有原子性。如果某个操作可以分割&#xff0c;那么该操作就不具备原子性&#xff0c;例如i&#43;&#43;。<strong>非原子操作都存在线程安全问题&#xff0c;这个时候我们需要使用同步机制来保证这些操作变成原子操作&#xff0c;来确保线程安全</strong>。</li><li><font color="red"><strong>可见性</strong></font>&#xff0c;线程可见性是指线程之间的可见性**&#xff0c;即一个线程对状态的修改对另一个线程是可见的**&#xff0c;也就是一个线程修改的结果&#xff0c;另外一个线程立马就知道了。<strong>比如volitile修饰的变量&#xff0c;就具备可见性</strong>。</li><li><font color="red"><strong>有序性</strong></font>&#xff0c;有序性指的是<strong>数据不相关的变量在并发的情况下&#xff0c;实际执行的结果和单线程的执行结果是一样的&#xff0c;不会因为重排序的问题导致结果不可预知</strong>。volatile, final, synchronized&#xff0c;显式锁都可以保证<strong>有序性</strong>。</li></ul>
+<p>遵循以上设计原则进行编程&#xff0c;才能正确的进行并发编程。</p>
+<h2><a rel="noopener noreferrer" id="_40"></a>多线程的优势</h2>
+<p>为什么我们要使用多线程的设计呢&#xff1f;换句话说我们为什么要使用多线程的设计呢&#xff1f;</p>
+<ul><li><strong>并发能力强</strong>&#xff1a; 现在的系统动辄要求百万级甚⾄千万级的并发量&#xff0c;⽽<strong>多线程并发编程正是开发⾼并发系统的基础</strong>&#xff0c;利⽤好多线程机制可以⼤⼤提⾼系统整体的并发能⼒以及性能。</li><li><strong>切换和调度成本低</strong>&#xff1a; 线程可以⽐作是轻量级的进程&#xff0c;是程序执⾏的最⼩单位&#xff0c;线程间的切换和调度的成本远远⼩于进程。另外&#xff0c;多核 CPU 时代意味着多个线程可以并行&#xff0c;这减少了线程上下⽂切换的开销。</li><li><strong>提高 CPU 利⽤率</strong>&#xff0c;假如我们要计算⼀个复杂的任务&#xff0c;我们只⽤⼀个线程的话&#xff0c;CPU 只会⼀个 CPU 核⼼被利⽤到&#xff0c;⽽创建多个线程就可以让多个 CPU 核⼼被利⽤到&#xff0c;这样就提⾼了 CPU 的利⽤&#xff0c;这样提高了<strong>并行性能</strong>&#xff0c;如果一个子任务在执行过程中阻塞&#xff0c;例如等待文件A从磁盘读取&#xff0c;此时CPU是闲置的&#xff0c;但是CPU如果开启了两个线程&#xff0c;那么第二个线程可以开启读取文件B的任务&#xff0c;CPU不会闲置&#xff0c;等到B文件从磁盘读取时&#xff0c;A文件读取好了CPU再调度到A线程上。</li><li><strong>更快的响应速度</strong>&#xff0c;当再服务端的时候&#xff0c;如果客户端发起一个下载任务&#xff0c;那么服务端主线程执行下载&#xff0c;显示进度的线程显示下载进度&#xff0c;二者交替执行&#xff0c;才能给客户实施的响应&#xff0c;如果没有多线程&#xff0c;那么下载结果不可预知。</li></ul>
+<p>其实也可以认为是多线程和多进程的优势&#xff0c;因为这里我们是针对Java程序这一个运行的进程来看的&#xff0c;所以重点讨论关注范围就是一个进程下的多线程并发编程。</p>
+<h2><a rel="noopener noreferrer" id="_49"></a>多线程的问题</h2>
+<p>我们可以从多线程的设计原则中可以看到&#xff0c;多线程虽然并发能力强、调度成本低&#xff0c;CPU利用率高&#xff0c;但是因为其存在对<strong>共享和可变状态的资源</strong>进行访问&#xff0c;所以存在一定的线程安全问题。</p>
+<ul><li>共享就意味着<strong>变量可以被多个线程同时访问</strong>。我们知道系统中的资源是有限的&#xff0c;不同的线程对资源都是具有着同等的使用权。有限、公平就意味着竞争&#xff0c;竞争就有可能会引发线程竞争问题。</li><li>可变是指<strong>变量的值在其生命周期内是可以发生改变的</strong>。“可变”对应的是“不可变”。我们知道不可变的对象一定是线程安全的&#xff0c;并且永远也不需要额外的同步&#xff08;因为一个不可变的对象只要构建正确&#xff0c;其外部可见状态永远都不会发生改变&#xff09;。所以可变意味着存在线程不安全的风险。</li></ul>
+<p>所以基于多线程的设计原则和产生的问题&#xff0c;我们可以归结&#xff1a; <strong>要通过一些方式解决共享可变带来的不能满足多线程设计原则&#xff08;原子、可见、有序&#xff09;的线程安全问题</strong></p>
+<ul><li>多线程的执行顺序不可重现&#xff0c;但是必须要求执行结果必须可以重现</li><li>线程的共享数据操作不完整性就一定会出现数据被破坏&#xff0c;而导致结果无法预知的问题&#xff0c;线程的安全问题</li></ul>
+<p>要解决线程安全问题&#xff0c;就需要使用线程同步</p>
+<h3><a rel="noopener noreferrer" id="_61"></a>线程同步</h3>
+<p>首先看下什么是线程安全&#xff1f;<strong>其核心概念就是正确性。所谓正确性就是某类的行为与其规范完全一致</strong>&#xff0c;当多个线程访问某各类时&#xff0c;不管运行时环境采用何种调度方式或者这些线程将如何交替执行&#xff0c;并且在主调代码中<strong>不需要任何额外的同步或者协同</strong>&#xff0c;这个类都能表现出正确的行为&#xff0c;那么就称这个类是线程安全的&#xff0c;当然大多数类不一定能满足线程安全的条件&#xff0c;此时就需要<strong>线程同步</strong>来实现。</p>
+<p>什么是线程同步&#xff1f;其核心就在于一个<strong>同</strong>。所谓“同”就是<strong>协同、协助、配合</strong>&#xff0c;也就是按照预定的先后顺序进行运行&#xff0c;即<strong>你先&#xff0c;我等&#xff0c; 你做完&#xff0c;我再做</strong>。</p>
+<ul><li>线程同步&#xff0c;就是<strong>当线程发出一个功能调用时&#xff0c;在没有得到结果之前&#xff0c;该调用就不会返回&#xff0c;其他线程也不能调用该方法</strong>。就一般而言&#xff0c;我们在说同步、异步的时候&#xff0c;特指那些需要其他组件来配合或者需要一定时间来完成的任务。</li><li>在多线程编程里面&#xff0c;一些较为敏感的数据时不允许被多个线程同时访问的&#xff0c;<strong>使用线程同步技术&#xff0c;确保数据在任何时刻最多只有一个线程访问&#xff0c;保证数据和操作的完整性。</strong></li></ul>
+<p>所以我们需要掌握线程同步的机制方式&#xff0c;线程同步的机制主要有&#xff1a;临界区、互斥量、事件、信号量四种方式</p>
+<ul><li><strong>临界区</strong>&#xff1a;通过<strong>对多线程的串行化</strong>来访问公共资源或一段代码&#xff0c;速度快&#xff0c;适合控制数据访问。在任意时刻只允许一个线程对共享资源进行访问&#xff0c;如果有多个线程试图访问公共资源&#xff0c;那么在有一个线程进入后&#xff0c;其他试图访问公共资源的线程将被挂起&#xff0c;并一直等到进入临界区的线程离开&#xff0c;临界区在被释放后&#xff0c;其他线程才可以抢占。</li><li><strong>互斥量</strong>&#xff1a;用互斥对象机制。 <strong>只有拥有互斥对象的线程才有访问公共资源的权限&#xff0c;因为互斥对象只有一个&#xff0c;所以能保证公共资源不会同时被多个线程访问</strong>。互斥不仅能实现同一应用程序的公共资源安全共享&#xff0c;还能实现不同应用程序的公共资源安全共享。</li><li><strong>信号量</strong>&#xff1a;它允许<strong>多个线程在同一时刻访问同一资源&#xff0c;但是需要限制在同一时刻访问此资源的最大线程数目。</strong></li><li><strong>事 件</strong>&#xff1a; 通过通知操作的方式来保持线程的同步&#xff0c;还可以方便实现对多个线程的优先级比较的操作。</li></ul>
+<p>所以其实以上的几种机制都是需要实现对公共资源的控制来达到目的。</p>
+<h2><a rel="noopener noreferrer" id="Java_79"></a>Java多线程实现</h2>
+<p>Java线程模型<strong>基于操作系统原生线程模型</strong>实现。因此操作系统支持怎么样的线程模型&#xff0c;很大程度上决定了<strong>Java虚拟机的线程如何映射</strong>&#xff0c;这一点在不同的平台上没有办法达成一致&#xff0c;虚拟机规范中也未限定Java线程需要使用哪种线程模型来实现。线程模型只对线程的并发规模和操作成本产生影响&#xff0c;对于Java程序来说&#xff0c;这些差异是透明的&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114240722-02-97ff29d713.png" loading="lazy"><br />
+也就是一条</p>
+<ul><li><strong>Java线程就映射到一条轻量级进程&#xff08;Light Weight Process&#xff09;中&#xff0c;而一条轻量级线程又映射到一条内核线程&#xff08;Kernel-Level Thread&#xff09;</strong>。</li><li>我们<strong>平时所说的线程&#xff0c;往往就是指轻量级进程</strong>&#xff08;或者通俗来说我们平时新建的java.lang.Thread就是轻量级进程实例的一个&#34;句柄&#34;&#xff0c;因为<strong>一个java.lang.Thread实例会对应JVM里面的一个JavaThread实例</strong>&#xff0c;而JVM里面的JavaThread就应该理解为轻量级进程&#xff09;。</li><li>我们<strong>在应用程序中创建或者操作的java.lang.Thread实例最终会映射到系统的内核线程</strong></li></ul>
+<p>如果我们恶意或者实验性无限创建<code>java.lang.Thread</code>实例&#xff0c;最终会影响系统的正常运行甚至导致系统崩溃</p>
+<h3><a rel="noopener noreferrer" id="Java_88"></a>Java线程优先级</h3>
+<p>在Java线程中&#xff0c;通过一个整型成员变量priority来控制优先级&#xff0c;优先级的范围从1~10&#xff0c;在线程构建的时候可以通<code>setPriority(int)</code>方法来修改优先级&#xff0c;默认优先级是5&#xff0c;优先级高的线程分配时间片的数量要多于优先级低的线程。设置线程优先级时&#xff0c;针对频繁阻塞&#xff08;休眠或者I/O操作&#xff09;的线程需要设置较高优先级&#xff0c;而偏重计算&#xff08;需要较多CPU时间或者偏运算&#xff09;的线程则设置较低的优先级&#xff0c;确保处理器不会被独占。在不同的JVM以及操作系统上&#xff0c;线程规划会存在差异&#xff0c;<strong>有些操作系统甚至会忽略对线程优先级的设定</strong></p>
+<h3><a rel="noopener noreferrer" id="Java_90"></a>Java线程调度</h3>
+<p>线程调度方式包括两种&#xff0c;协同式线程调度和抢占式线程调度</p>
+
+<table><thead><tr><th align="left">线程调度方式</th><th align="left">描述</th><th align="left">优势</th><th align="left">劣势</th></tr></thead><tbody><tr><td align="left">协同式线程调度</td><td align="left">线程的执行时间由线程本身控制&#xff0c;执行完毕后主动通知操作系统切换到另一个线程上</td><td align="left">某个线程如果不让出CPU执行时间可能会导致整个系统崩溃</td><td align="left">实现简单&#xff0c;没有线程同步的问题</td></tr><tr><td align="left"><strong>抢占式线程调度</strong></td><td align="left">每个线程由操作系统来分配执行时间&#xff0c;线程的切换不由线程自身决定</td><td align="left">实现相对复杂&#xff0c;操作系统需要控制线程同步和切换</td><td align="left">不会出现一个线程阻塞导致系统崩溃的问题</td></tr></tbody></table><p>Java线程最终会映射为系统内核原生线程&#xff0c;所以<strong>Java线程调度最终取决于系操作系统&#xff0c;而目前主流的操作系统内核线程调度基本都是使用抢占式线程调度</strong>。那么Java中线程的生命周期和调度方式是怎样的呢&#xff1f;</p>
+<h3><a rel="noopener noreferrer" id="Java_99"></a>Java线程同步</h3>
+<p>Java中实现线程同步的方式有以下几种&#xff0c;以具体使用的方式来举例&#xff0c;第一类是使用锁&#xff0c;使用锁会使运行效率降低&#xff1a;</p>
+<ul><li><font color="red"><strong>关键字synchronized</strong></font>&#xff0c;可以修饰<strong>同步代码块</strong>和<strong>同步方法</strong>&#xff0c;Java的每个对象都有一个<strong>内置锁</strong>&#xff0c;当用此关键词修饰方法时&#xff0c;内置锁会保护整个方法&#xff0c;在调用该方法前&#xff0c;需要获取内置锁&#xff0c;否则就处于阻塞状态&#xff0c;被该关键字修饰的语句块会自动被加上内置锁&#xff0c;从而实现同步。</li><li><font color="red"><strong>JUC包-使用重入锁类实现线程同步</strong></font>&#xff0c;在JavaSE5.0中新增了一个<code>java.util.concurrent</code>包来支持同步。ReentrantLock类<strong>可重入、互斥</strong>&#xff0c;实现了Lock接口的锁&#xff0c;它与使用synchronized方法和快具有相同的基本行为和语义&#xff0c;并且扩展了其能力</li></ul>
+<p>第二类是使用一些特殊机制避免使用锁&#xff0c;但是可能需要额外开销或功能阉割。</p>
+<ul><li><font color="red"><strong>关键字volatile及JMM内存模型</strong></font>&#xff0c;修饰共享变量&#xff0c;保持数据可见性&#xff0c;volatile关键字为域变量的访问提供了一种免锁机制。要了解具体用法&#xff0c;需要掌握JMM内存。</li><li><font color="red"><strong>使用局部变量实现线程同步</strong></font>&#xff0c;如果使用ThreadLocal管理变量&#xff0c;则每一个使用该变量的线程都获得该变量的副本&#xff0c;副本之间相互独立&#xff0c;这样每一个线程都可以随意修改自己的变量副本&#xff0c;而不会对其他线程产生影响</li></ul>
+<p>第三类是在实现层面上考量而非底层实现机制上考量&#xff1a;</p>
+<ul><li><font color="red"><strong>JUC包-使用并发集合类实现线程同步</strong></font>&#xff0c;使用<code>LinkedBlockingQueue&lt;E&gt;</code>来实现线程的同步<code>LinkedBlockingQueue&lt;E&gt;</code>是一个基于已连接节点的&#xff0c;范围任意的blocking queue。队列是<strong>先进先出</strong>的顺序&#xff0c;类似Redis的list实现方式</li></ul>
+<p>第四类是我们干脆使用操作原子性的线程安全的类来使用就不用考虑同步问题了</p>
+<ul><li><font color="red"><strong>JUC包-原子类</strong></font>&#xff0c;需要使用线程同步的根本原因在于对普通变量的操作不是原子的。那么什么是原子操作呢&#xff1f;原子操作就是指将读取变量值、修改变量值、保存变量值看成一个整体来操作&#xff0c;即-这几种行为要么同时完成&#xff0c;要么都不完成</li></ul>
+<p>依据以上的线程同步方式&#xff0c;接下来本系列的行文布局会分为三大块&#xff1a;</p>
+<ol><li>锁机制&#xff0c;<strong>Java中的锁分类</strong>以及<strong>synchronized关键字</strong>&#xff0c;它的实现原理和机制、<strong>Java中锁的种类切换</strong>、<strong>死锁的现象和避免</strong>&#xff0c;JUC并发包下的<strong>高级锁的使用方式</strong></li><li>JMM内存模型&#xff0c;<strong>JMM内存模型</strong>、<strong>volatile关键字</strong>、<strong>ThreadLocal的实现方式</strong></li><li>JUC并发包下 <strong>并发集合类的使用方式</strong>、<strong>线程池的使用方式</strong>、<strong>原子类的使用方式</strong></li></ol>
+<p>那么接下来正式开启线程同步实现方式的探索之旅吧&#xff01;</p>
+<h2><a rel="noopener noreferrer" id="_125"></a>总结</h2>
+<p>本篇Blog初步介绍了什么是进程和线程、线程的优势和问题&#xff1b;基于这些抽象的概念&#xff0c;我们来看<strong>Java中的多线程具体实现方式和线程同步的实现方式</strong>&#xff0c;所以我们需要掌握Java线程调度的实现以及Java同步方法&#xff0c;这也是后续几篇Blog的行文逻辑。</p>

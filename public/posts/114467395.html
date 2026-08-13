@@ -1,0 +1,195 @@
+<p>事务&#xff08;Transaction&#xff09;是并发控制的单位&#xff0c;<strong>是用户定义的一个操作序列。这些操作要么都做&#xff0c;要么都不做&#xff0c;是一个不可分割的工作单位</strong>事务体现出整体的概念&#xff0c;<strong>要么事务中的操作全部成功&#xff0c;要么全部失败</strong>体现在数据库sql里就是逻辑上相互依赖的一组sql语句。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-01-f9c95e17d6.png" loading="lazy">在 MySQL 中&#xff0c;事务支持是在引擎层实现的。MySQL 是一个支持多引擎的系统&#xff0c;但并不是所有的引擎都支持事务。比如 MySQL 原生的 MyISAM 引擎就不支持事务&#xff0c;这也是 MyISAM 被 <strong>InnoDB</strong> 取代的重要原因之一</p>
+<h2><a rel="noopener noreferrer" id="_3"></a>事务的基本概念</h2>
+<p>包括事务的四大特性&#xff0c;并发隔离问题&#xff0c;通过设置事务的隔离级别解决事务的并发隔离问题。</p>
+<h3><a rel="noopener noreferrer" id="ACID_5"></a>事务的四大特性&#xff08;ACID&#xff09;</h3>
+<p>事务最经典也经常被拿出来说例⼦就是转账了。假如⼩明要给⼩红转账1000元&#xff0c;这个转账会涉及到两个关键操作就是&#xff1a;将⼩明的余额减少1000元&#xff0c;将⼩红的余额增加1000元。万⼀在这两个操作之间突然出现错误⽐如银⾏系统崩溃&#xff0c;导致⼩明余额减少⽽⼩红的余额没有增加&#xff0c;这样就不对了。<strong>事务就是保证这两个关键操作要么都成功&#xff0c;要么都要失败</strong></p>
+<p>事务的四大特性就是ACID&#xff0c;也就是<strong>原子性、一致性、隔离性</strong>以及<strong>持久性</strong></p>
+<ul><li><strong>原子性&#xff08;Atomicity&#xff09;</strong>&#xff0c;事务是最⼩的执⾏单位&#xff0c;不允许分割。<strong>事务包含的所有操作要么全部成功&#xff0c;要么全部失败回滚</strong>&#xff0c;因此事务的操作<strong>如果成功就必须要完全应用到数据库&#xff0c;如果操作失败则不能对数据库有任何影响</strong>。</li><li><strong>一致性&#xff08;Consistency&#xff09;</strong>&#xff0c;是指事务必须使数据库<strong>从一个一致性状态变换到另一个一致性状态</strong>&#xff0c;也就是说一个事务执行之前和执行之后都必须处于一致性状态。拿转账来说&#xff0c;假设用户A和用户B两者的钱加起来一共是5000&#xff0c;那么不管A和B之间如何转账&#xff0c;转几次账&#xff0c;事务结束后两个用户的钱相加起来应该还得是5000&#xff0c;这就是事务的一致性。</li><li><strong>隔离性&#xff08;Isolation&#xff09;</strong>&#xff0c;是当多个用户并发访问数据库时&#xff0c;比如操作同一张表时&#xff0c;<strong>数据库为每一个用户开启的事务&#xff0c;不能被其他事务的操作所干扰&#xff0c;多个并发事务之间要相互隔离</strong>&#xff0c;要串行执行。即要达到这么一种效果&#xff1a;对于任意两个并发的事务T1和T2&#xff0c;在事务T1看来&#xff0c;<strong>T2要么在T1开始之前就已经结束&#xff0c;要么在T1结束之后才开始</strong>&#xff0c;这样每个事务都感觉不到有其他事务在并发地执行。关于事务的隔离性数据库提供了多种隔离级别&#xff0c;稍后会介绍到。</li><li><strong>持久性&#xff08;Durability&#xff09;</strong>&#xff0c;是指一个事务<strong>一旦被提交了&#xff0c;那么对数据库中的数据的改变就是永久性的</strong>&#xff0c;即便是在数据库系统遇到故障的情况下也不会丢失提交事务的操作。例如我们在使用JDBC操作数据库时&#xff0c;在提交事务方法后&#xff0c;提示用户事务操作完成&#xff0c;当我们程序执行完成直到看到提示后&#xff0c;就可以认定事务以及正确提交&#xff0c;<strong>即使这时候数据库出现了问题&#xff0c;也必须要将我们的事务完全执行完成</strong>&#xff0c;否则就会造成我们看到提示事务处理完毕&#xff0c;导致数据库因为故障而没有执行事务的重大错误。</li></ul>
+<p>只有满足这四大特性&#xff0c;才能说这是一个标准的事务。原子性和一致性很好理解&#xff0c;这是从操作状态的角度上来看的&#xff0c;持久性主要关注的是数据库的crash safe能力&#xff0c;这个由MySQL的日志机制来满足&#xff0c;在<a href="https://tianmaolin.blog.csdn.net/article/details/112385362" rel="nofollow">日志机制</a>这篇Blog里我详细的讨论过&#xff0c;那么我们当前最需要关注的其实就是事务的<strong>隔离性</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_15"></a>并发事务的隔离问题</h3>
+<p>当多个线程都开启事务操作数据库中的数据时&#xff0c;数据库系统要能进行隔离操作&#xff0c;以保证各个线程获取数据的准确性&#xff0c;我们先看看如果不考虑事务的隔离性&#xff0c;会发生的几种问题&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_18"></a>脏读</h4>
+<p>脏读&#xff08;dirty reads&#xff09;&#xff0c;是指在<strong>一个事务处理过程里读取了另一个未提交的事务中的数据</strong>。当⼀个事务正在访问数据并且对数据进⾏了修改&#xff0c;⽽这种修改还没有提交到数据库中&#xff0c;这时另外⼀个事务也访问了这个数据&#xff0c;然后使⽤了这个数据。因为这个数据是还没有提交的数据&#xff0c;那么另外⼀个事务读到的这个数据是“脏数据”&#xff0c;依据“脏数据”所做的操作可能是不正确的</p>
+<pre><code class="prism language-java">用户A向用户B转账<span class="token number">100</span>元&#xff0c;对应SQL命令如下&#xff1a;
+update account set money<span class="token operator">&#61;</span>money<span class="token operator">&#43;</span><span class="token number">100</span> where name<span class="token operator">&#61;</span>’B’<span class="token punctuation">;</span>  <span class="token punctuation">(</span>此时A通知B<span class="token punctuation">)</span>
+update account set money<span class="token operator">&#61;</span>money <span class="token operator">-</span> <span class="token number">100</span> where name<span class="token operator">&#61;</span>’A’<span class="token punctuation">;</span>
+</code></pre>
+<ul><li>当只执行第一条SQL时&#xff0c;A通知B查看账户&#xff0c;B发现确实钱已到账&#xff08;此时即发生了脏读&#xff09;</li><li>无论第二条SQL是否执行&#xff0c;只要该事务不提交&#xff0c;则所有操作都将回滚</li><li>当B以后再次查看账户时就会发现钱其实并没有转</li></ul>
+<p>也就是脏读一般针对修改数据而言&#xff0c;Transaction 1 修改了一行数据&#xff0c;然后 Transaction 2 在 Transaction 1 还未提交修改操作之前读取了被修改的行。如果 Transaction 1 回滚了修改操作&#xff0c;那么Transaction 2读取的数据就可以看作是从未存在过的 <font color="red"><strong>A未提交的修改被B读了</strong></font><br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-02-6fbe36ff7f.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_32"></a>不可重复读</h4>
+<p>不可重复读&#xff08;non-repeatable reads&#xff09;&#xff0c;<strong>针对修改</strong>&#xff0c;是指在<strong>对于数据库中的某个数据&#xff0c;一个事务范围内多次查询却返回了不同的数据值&#xff0c;这是由于在查询间隔&#xff0c;被另一个事务修改并提交了。</strong><font color="red"><strong>A已提交的修改被B读了</strong></font></p>
+<pre><code class="prism language-java">A向B转账<span class="token number">100</span>并且提交&#xff0c;B收到读到<span class="token number">100</span>&#xff0c;这时候A又向B转<span class="token number">100</span>并提交&#xff0c;B读到<span class="token number">200</span>
+</code></pre>
+<ul><li><strong>在某些情况下&#xff0c;不可重复读并不是问题&#xff0c;比如我们多次查询某个数据当然以最后查询得到的结果为主</strong></li><li><strong>不可重复读和脏读的区别是&#xff0c;脏读是某一事务读取了另一个事务未提交的脏数据&#xff0c;而不可重复读则是读取了前一事务提交的数据</strong></li></ul>
+<p>Transaction 1 读取一行数据&#xff0c;然后 Transaction 2 修改或删除该行并提交修改操作。当 Transaction 1 试图重新读取该行时&#xff0c;它就会得到不同的数据值&#xff08;如果该行被更新&#xff09;或发现该行不再存在&#xff08;如果该行被删除&#xff09;</p>
+<h4><a rel="noopener noreferrer" id="_42"></a>幻读</h4>
+<p>幻读&#xff08;phantom read&#xff09;是<strong>事务非独立执行时发生的一种现象</strong>。<strong>针对插入</strong>。</p>
+<ul><li>事务T1对一个表中所有的行的某个数据项做了从1修改为2的操作</li><li>这时事务T2又对这个表中插入了一行数据项&#xff0c;而这个数据项的数值还是为1并且提交给数据库。</li><li><strong>而操作事务T1的用户如果再查看刚刚修改的数据&#xff0c;会发现还有一行没有修改&#xff0c;其实这行是从事务T2中添加的&#xff0c;就好像产生幻觉一样&#xff0c;这就是发生了幻读。</strong></li></ul>
+<p>幻读和不可重复读都是读取了另一条已经提交的事务&#xff08;这点就脏读不同&#xff09;&#xff0c;所不同的是<strong>不可重复读查询的都是同一个数据项&#xff08;修改&#xff09;&#xff0c;而幻读针对的是一批数据整体&#xff08;插入或删除&#xff09;。</strong><font color="red"><strong>A已提交的新增删除数据被B读了</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_50"></a>综合举例</h4>
+<p>对于同一个银行帐户A内有200元&#xff0c;甲进行提款操作100元&#xff0c;乙进行转帐操作100元到B帐户。如果事务没有进行隔离可能会并发如下问题&#xff1a;</p>
+<ul><li><strong>脏读</strong>&#xff1a;甲先取款100元未提交&#xff0c;乙进行转帐查到帐户内剩有100元&#xff0c;这时甲放弃操作回滚&#xff0c;乙正常操作转账至B账户提交&#xff0c;帐户内最终更新为0元&#xff0c;乙读取了甲的脏数据&#xff0c;客户损失100元。<br /> <strong>不可重复读</strong>&#xff1a;甲乙同时开始都查到帐户内为200元&#xff0c;甲先开始取款100元提交&#xff0c;这时乙在准备最后更新的时候又进行了一次查询&#xff0c;发现结果是100元&#xff0c;这时乙就会很困惑&#xff0c;不知道转账后该将帐户改为100还是0&#xff0c;如果按照正常操作乙会将账户A更新为0&#xff0c;正确执行&#xff0c;所以说一般不可重复读不一定会有问题。</li><li><strong>幻读</strong>&#xff1a;银行会计甲对所有账户的金额单位更新为美元&#xff0c;这时银行会计乙又插入了两条金额单位为人民币的数据&#xff0c;银行会计甲更新完后查数据发现有几条还是人民币&#xff0c;于是以为自己产生了幻觉</li></ul>
+<p>以上就是事务并发时会产生的问题。</p>
+<h3><a rel="noopener noreferrer" id="_57"></a>事务的隔离级别</h3>
+<p>针对以上的四个常见的并发事务的问题&#xff0c;数据库设置了四种隔离级别来应对&#xff1a;</p>
+<ul><li><strong>Read uncommitted (读未提交)</strong>&#xff1a;<strong>最低级别</strong>&#xff0c;最低的隔离级别&#xff0c;允许读取尚未提交的数据变更&#xff0c;可能会导致<strong>脏读、幻读或不可重复读</strong></li><li><strong>Read committed (读已提交)</strong>&#xff1a;允许读取并发事务已经提交的数据&#xff0c;可以阻⽌脏读&#xff0c;但是幻读或不可重复读仍有可能发⽣</li><li><strong>Repeatable read (可重复读)</strong>&#xff1a;对同⼀字段的多次读取结果都是⼀致的&#xff0c;除⾮数据是被本身事务⾃⼰所修改&#xff0c;可以<strong>阻⽌脏读和不可重复读&#xff0c;但幻读仍有可能发⽣</strong></li><li><strong>Serializable (串行化)</strong>&#xff1a; <strong>最⾼的隔离级别</strong>&#xff0c;完全服从ACID的隔离级别。<strong>所有的事务依次逐个执⾏</strong>&#xff0c;这样事务之间就完全不可能产⽣⼲扰&#xff0c;也就是说&#xff0c;该级别可以防⽌<strong>脏读、不可重复读以及幻读</strong>&#xff0c;对于同一行记录&#xff0c;<strong>写会加写锁</strong>&#xff0c;<strong>读会加读锁</strong>。当出现读写锁冲突的时候&#xff0c;后访问的事务必须等前一个事务执行完成&#xff0c;才能继续执行</li></ul>
+<p>当然&#xff0c;随着隔离级别的增高&#xff0c;并发性能也会逐渐下降。<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-03-795d002a74.png" loading="lazy"></p>
+<p>结合隔离问题和隔离机制举例说明&#xff0c;在这样一个事务流程下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-04-c1cb887735.png" loading="lazy"><br /> 我们来看看在不同的隔离级别下&#xff0c;事务 A 会有哪些不同的返回结果&#xff0c;也就是图里面 V1、V2、V3 的返回值分别是什么。</p>
+<ul><li>若隔离级别是<strong>读未提交</strong>&#xff0c; 则 V1 的值就是 2。这时候事务 B 虽然还没有提交&#xff0c;但是结果已经被 A 看到了。因此&#xff0c;V2、V3 也都是 2。</li><li>若隔离级别是<strong>读提交</strong>&#xff0c;则 V1 是 1&#xff0c;V2 的值是 2。事务 B 的更新在提交后才能被 A 看到。所以&#xff0c; V3 的值也是 2。</li><li>若隔离级别是<strong>可重复读</strong>&#xff0c;则 V1、V2 是 1&#xff0c;V3 是 2。之所以 V2 还是 1&#xff0c;遵循的就是这个要求&#xff1a;事务在执行期间看到的数据前后必须是一致的。</li><li>若隔离级别是<strong>串行化</strong>&#xff0c;则在事务 B 执行“将 1 改成 2”的时候&#xff0c;会被锁住。直到事务 A 提交后&#xff0c;事务 B 才可以继续执行。所以从 A 的角度看&#xff0c; V1、V2 值是 1&#xff0c;V3 的值是 2。</li></ul>
+<p>在实现上&#xff0c;数据库里面会创建一个视图&#xff0c;访问的时候以视图的逻辑结果为准。</p>
+<ul><li><strong>读未提交隔离级别</strong>下直接返回记录上的最新值&#xff0c;没有视图概念&#xff1b;</li><li><strong>读提交隔离级别</strong>下&#xff0c;这个视图是在每个 SQL 语句开始执行的时候创建的&#xff0c;所以会在执行sql时发生变动&#xff08;需要判断事务是否已提交&#xff0c;提交后才变动&#xff09;</li><li><strong>可重复读隔离级别</strong>下&#xff0c;这个视图是在事务启动时创建的&#xff0c;整个事务存在期间都用这个视图。假设你在管理一个个人银行账户表。一个表存了账户余额&#xff0c;一个表存了账单明细。到了月底你要做数据校对&#xff0c;也就是判断上个月的余额和当前余额的差额&#xff0c;是否与本月的账单明细一致。你一定希望在校对过程中&#xff0c;即使有用户发生了一笔新的交易&#xff0c;也不影响你的校对结果。这时候使用“可重复读”隔离级别就很方便。事务启动时的视图可以认为是静态的&#xff0c;不受其他事务更新的影响</li><li><strong>串行化隔离级别</strong>下直接用加<strong>读写锁</strong>的方式来避免并行访问</li></ul>
+<p>我们可以看到在不同的隔离级别下&#xff0c;数据库行为是有所不同的。MySQL InnoDB 存储引擎的默认⽀持的隔离级别是 <strong>REPEATABLE-READ&#xff08;可重读&#xff09;</strong>&#xff0c;与 SQL 标准不同的地⽅在于</p>
+<ul><li>InnoDB 存储引擎在 REPEATABLE-READ&#xff08;可重读&#xff09; 事务隔离级别下使⽤的是<strong>Next-Key Lock</strong> 锁算法&#xff0c;因此可以避免幻读的产⽣&#xff0c;这与其他数据库系统(如SQL Server) 是不同的。</li><li><strong>InnoDB 存储引擎的默认⽀持的隔离级别是 REPEATABLE-READ&#xff08;可重读&#xff09; 已经可以完全保证事务的隔离性要求&#xff0c;即达到了 SQL标准的 SERIALIZABLE(可串⾏化) 隔离级别</strong>。</li><li>因为隔离级别越低&#xff0c;事务请求的锁越少&#xff0c;所以⼤部分数据库系统的隔离级别都是 READ-COMMITTED(读取提交内容) &#xff0c;但是你要知道的是InnoDB 存储引擎默认使⽤REPEATABLE-READ&#xff08;可重读&#xff09;并不会有任何性能损失。</li></ul>
+<p>InnoDB 存储引擎在<strong>分布式事务 的情况下⼀般会⽤到 SERIALIZABLE(可串⾏化) 隔离级别</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-05-69dcde1dff.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_89"></a>隔离机制的实现</h3>
+<p>理解了事务的隔离级别&#xff0c;我们再来看看事务隔离具体是怎么实现的。<strong>视图可以理解为数据副本&#xff0c;每次创建视图时&#xff0c;将当前『已持久化的数据』创建副本&#xff0c;后续直接从副本读取&#xff0c;从而达到数据隔离效果</strong>&#xff0c;存在视图的 2 种隔离级别&#xff1a;</p>
+<ol><li>读提交&#xff0c;在每一条 SQL 开始执行时创建视图&#xff0c;隔离作用域仅限该条 SQL 语句。</li><li>可重复读&#xff0c;事务启动时创建视图&#xff0c;因此&#xff0c;在事务任意时刻&#xff0c;对记录读取的值都是一样的。</li></ol>
+<p>其他 2 种无视图的隔离级别&#xff1a;</p>
+<ol><li>读未提交&#xff0c;直接返回记录最新值。</li><li>串行化&#xff0c;串行化通过<strong>读写锁</strong>来避免并行访问&#xff0c;读-读&#xff1a;允许并发执行&#xff0c;读-写&#xff1a;只能串行&#xff0c;写-写&#xff1a;只能串行</li></ol>
+<p>这里我们展开说明<strong>可重复读</strong>。在 MySQL 中&#xff0c;实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值&#xff0c;通过回滚操作&#xff0c;都可以得到前一个状态的值。假设一个值从 1 被按顺序改成了 2、3、4&#xff0c;在回滚日志里面就会有类似下面的记录<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-06-1457d90ac4.png" loading="lazy"><br /> 当前值是 4&#xff0c;但是在查询这条记录的时候&#xff0c;不同时刻启动的事务会有不同的 read-view。如图中看到的&#xff0c;在视图 A、B、C 里面&#xff0c;这一个记录的值分别是 1、2、4&#xff0c;同一条记录在系统中可以存在多个版本&#xff0c;就是<strong>数据库的多版本并发控制&#xff08;MVCC&#xff09;</strong>。对于 read-view A&#xff0c;要得到 1&#xff0c;就必须将当前值依次执行图中所有的回滚操作得到。</p>
+<h4><a rel="noopener noreferrer" id="_101"></a>回滚日志</h4>
+<p>回滚日志记录在<strong>undo log</strong>&#xff0c;undo log记录的是逆过程流&#xff0c;比如对表进行了一次insert&#xff0c;对应的就是delete&#xff1b;对字段a进行一次&#43;1操作&#xff0c;那undo log就是一次-1操作</p>
+<p>回滚日志总不能一直保留吧&#xff0c;什么时候删除呢&#xff1f;答案是&#xff0c;在不需要的时候才删除。也就是说&#xff0c;系统会判断&#xff0c;当没有事务再需要用到这些回滚日志时&#xff0c;回滚日志会被删除。什么时候才不需要了呢&#xff1f;就是<strong>当一个查询事务开启以后&#xff0c;在这个时刻之后&#xff0c;事务提交/回滚之前&#xff0c;所有更新产生的undo log都不能被删除</strong></p>
+<h4><a rel="noopener noreferrer" id="_106"></a>长事务的问题</h4>
+<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据&#xff0c;所以<strong>这个事务提交之前&#xff0c;数据库里面它可能用到的回滚记录都必须保留</strong>&#xff0c;这就会导致大量占用存储空间。在 MySQL 5.5 及以前的版本&#xff0c;回滚日志是跟数据字典一起放在 ibdata 文件里的&#xff0c;即使长事务最终提交&#xff0c;回滚段被清理&#xff0c;文件也不会变小&#xff08;<strong>逻辑清理</strong>&#xff09;。最终只好为了清理回滚段&#xff0c;重建整个库&#xff08;<strong>物理清理</strong>&#xff09;。除了对回滚段的影响&#xff0c;<strong>长事务还占用锁资源&#xff0c;也可能拖垮整个库</strong></p>
+<h3><a rel="noopener noreferrer" id="_109"></a>事务的启动方式</h3>
+<p>事务启动方式有两种&#xff0c;一种是显式提交&#xff0c;另一种是通过设置禁止自动提交。</p>
+<ul><li>显式启动事务语句&#xff0c; begin 或 start transaction。配套的提交语句是 commit&#xff0c;回滚语句是 rollback。</li><li>set autocommit&#61;0&#xff0c;这个命令会将这个线程的自动提交关掉。意味着如果你只执行一个 select 语句&#xff0c;这个事务就启动了&#xff0c;而且并不会自动提交。这个事务持续存在直到你主动执行 commit 或 rollback 语句&#xff0c;或者断开连接。有些客户端连接框架会默认连接成功后先执行一个 set autocommit&#61;0 的命令。这就导致接下来的查询都在事务中&#xff0c;如果是长连接&#xff0c;就导致了意外的长事务。因此&#xff0c;我会建议你总是使用 set autocommit&#61;1, 通过显式语句的方式来启动事务。</li></ul>
+<p>有的开发同学会纠结“多一次交互”的问题。对于一个需要频繁使用事务的业务&#xff0c;第二种方式每个事务在开始时都不需要主动执行一次 “begin”&#xff0c;减少了语句的交互次数。建议使用 commit work and chain 语法。在 autocommit 为 1 的情况下&#xff0c;用 begin 显式启动的事务&#xff0c;如果执行 commit 则提交事务。如果执行 <strong>commit work and chain&#xff0c;则是提交事务并自动启动下一个事务&#xff0c;这样也省去了再次执行 begin 语句的开销</strong>。同时带来的好处是从程序开发的角度明确地知道每个语句是否处于事务中</p>
+<h2><a rel="noopener noreferrer" id="MySQL_116"></a>MySQL的锁机制</h2>
+<p>数据库锁设计的初衷是处理并发问题。作为多用户共享的资源&#xff0c;当出现并发访问的时候&#xff0c;数据库需要合理地控制资源的访问规则。而锁就是用来实现这些访问规则的重要数据结构针对不同的分类尺度进行分类&#xff0c;根据加锁的范围&#xff0c;MySQL 里面的锁大致可以分成<strong>全局锁、表级锁和行锁</strong>三类&#xff0c;同时依据锁是否可以被共享又有<strong>读写锁</strong>的区别&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="_118"></a>读写锁</h3>
+<p>表级锁和行级锁可以进一步划分为共享锁&#xff08;s&#xff09;和排他锁&#xff08;X&#xff09;&#xff0c;在另一个维度上交叉组合&#xff1a;</p>
+<ul><li><strong>共享锁&#xff08;s&#xff09;</strong>&#xff0c;又被称为<strong>读锁</strong>&#xff0c;<strong>其他用户可以并发读取数据&#xff0c;但任何事务都不能获取数据上的排他锁&#xff0c;直到已释放所有共享锁</strong>。共享锁(S锁)又称为读锁&#xff0c;若事务T对数据对象A加上S锁&#xff0c;则事务T只能读A&#xff1b;其他事务只能再对A加S锁&#xff0c;而不能加X锁&#xff0c;直到T释放A上的S锁。这就保证了其他事务可以读A&#xff0c;但在T释放A上的S锁之前不能对A做任何修改。<code>本线程和其它线程都只能读</code></li><li><strong>排他锁&#xff08;X&#xff09;</strong>&#xff1a;又称为<strong>写锁</strong>&#xff0c;若事务T对数据对象A加上X锁&#xff0c;<strong>则只允许T读取和修改A&#xff0c;其它任何事务都不能再对A加任何类型的锁&#xff0c;直到T释放A上的锁</strong>。它防止任何其它事务获取资源上的锁&#xff0c;直到在事务的末尾将资源上的原始锁释放为止。在更新操作(INSERT、UPDATE 或 DELETE)过程中始终应用排它锁。<code>本线程能读写&#xff0c;其它线程不能读写</code></li></ul>
+<p>两者之间的区别&#xff1a;</p>
+<ul><li><strong>共享锁&#xff08;S锁&#xff09;</strong>&#xff1a;如果事务T对数据A加上共享锁后&#xff0c;则其他事务只能对A再加共享锁&#xff0c;不能加排他锁。<strong>获取共享锁的事务只能读数据&#xff0c;不能修改数据</strong>。</li><li><strong>排他锁&#xff08;X锁&#xff09;</strong>&#xff1a;如果事务T对数据A加上排他锁后&#xff0c;则其他事务不能再对A加任任何类型的封锁。<strong>获取排他锁的事务既能读数据&#xff0c;又能修改数据</strong>。</li></ul>
+<p>当一个事务需要给自己需要的某个资源加锁的时候&#xff0c;如果遇到一个共享锁正锁定着自己需要的资源的时候&#xff0c;自己可以再加一个共享锁&#xff0c;不过不能加排他锁。但是&#xff0c;<strong>如果遇到自己需要锁定的资源已经被一个排他锁占有之后&#xff0c;则只能等待该锁定释放资源之后自己才能获取锁定资源并添加自己的锁定</strong></p>
+<h3><a rel="noopener noreferrer" id="_128"></a>全局锁/表级锁/行级锁</h3>
+<p>根据加锁的范围&#xff0c;MySQL 里面的锁大致可以分成<strong>全局锁、表级锁和行锁</strong>三类。</p>
+<h4><a rel="noopener noreferrer" id="_130"></a>全局锁</h4>
+<p>顾名思义&#xff0c;全局锁就是对整个数据库实例加锁。MySQL 提供了一个<code>加全局读锁</code>的方法&#xff0c;命令是 <code>Flush tables with read lock (FTWRL)</code>。当你需要<strong>让整个库处于只读状态</strong>的时候&#xff0c;可以使用这个命令&#xff0c;之后其他线程的以下语句会被阻塞&#xff1a;<strong>数据更新语句&#xff08;数据的增删改&#xff09;、数据定义语句&#xff08;包括建表、修改表结构等&#xff09;和更新类事务的提交语句</strong>。</p>
+<p>全局锁的典型使用场景是&#xff0c;做<strong>全库逻辑备份</strong>。也就是把整库每个表都 select 出来存成文本。让整库都只读&#xff0c;听上去就很危险&#xff1a;</p>
+<ul><li>如果你在主库上备份&#xff0c;那么在备份期间都不能执行更新&#xff0c;业务基本上就得停摆</li><li>如果你在从库上备份&#xff0c;那么备份期间从库不能执行主库同步过来的 binlog&#xff0c;会导致主从延迟。</li></ul>
+<p>看来加全局锁不太好。但是细想一下&#xff0c;备份为什么要加锁呢&#xff1f;我们来看一下不加锁会有什么问题</p>
+<h5><a rel="noopener noreferrer" id="_138"></a>备份不加锁的问题</h5>
+<p>现在发起一个逻辑备份。假设备份期间&#xff0c;有一个用户&#xff0c;他购买了一门课程&#xff0c;业务逻辑里就要扣掉他的余额&#xff0c;然后往已购课程里面加上一门课。如果时间顺序上是先备份账户余额表 (u_account)&#xff0c;然后用户购买&#xff0c;然后备份用户课程表 (u_course)&#xff0c;会怎么样呢&#xff1f;你可以看一下这个图&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-07-d16b36a465.png" loading="lazy"><br /> 可以看到&#xff0c;这个备份结果里&#xff0c;用户 A 的数据状态是“账户余额没扣&#xff0c;但是用户课程表里面已经多了一门课”。如果后面用这个备份来恢复数据的话&#xff0c;用户 A 就发现&#xff0c;自己赚了&#xff0c;也就是说&#xff0c;不加锁的话&#xff0c;<strong>备份系统备份的得到的库不是一个逻辑时间点&#xff0c;这个视图是逻辑不一致的</strong></p>
+<h5><a rel="noopener noreferrer" id="_142"></a>一致性读</h5>
+<p>前面讲事务隔离的时候&#xff0c;有一个方法能够拿到一致性视图的&#xff0c;就是在可重复读隔离级别下开启一个事务&#xff0c;官方自带的逻辑备份工具是 mysqldump。当 mysqldump 使用参数–single-transaction 的时候&#xff0c;导数据之前就会启动一个事务&#xff0c;来确保拿到一致性视图。<strong>而由于 MVCC 的支持&#xff0c;这个过程中数据是可以正常更新的</strong>&#xff0c;一致性读是好&#xff0c;但<strong>前提是引擎要支持这个隔离级别</strong>&#xff0c;<strong>InnoDB支持而 MyISAM不支持</strong></p>
+<h4><a rel="noopener noreferrer" id="_144"></a>表级锁</h4>
+<p>MySQL 里面表级别的锁有两种&#xff1a;一种是<strong>表锁</strong>&#xff0c;一种是<strong>元数据锁&#xff08;meta data lock&#xff0c;MDL)</strong></p>
+<h5><a rel="noopener noreferrer" id="_146"></a>表锁</h5>
+<p>表锁的语法是 <code>lock tables … read/write</code>。与 FTWRL 类似&#xff0c;可以用 <code>unlock tables</code> 主动释放锁&#xff0c;也可以在客户端断开的时候自动释放。需要注意&#xff0c;<code>lock tables 语法除了会限制别的线程的读写外&#xff0c;也限定了本线程接下来的操作对象</code>。</p>
+<p>举个例子, 如果在某个线程 A 中执行 <code>lock tables t1 read, t2 write;</code> 这个语句&#xff0c;</p>
+<ul><li>其他线程<strong>写 t1、读写 t2</strong> 的语句都会被阻塞。</li><li>线程 A 在执行 unlock tables 之前&#xff0c;<strong>也只能执行读 t1、读写 t2 的操作</strong>。连写 t1 都不允许&#xff0c;自然也不能访问其他表。</li></ul>
+<p><strong>加上读锁&#xff0c;不会限制别的线程读&#xff0c;但会限制别的线程写。加上写锁&#xff0c;会限制别的线程读写</strong>&#xff0c;在还没有出现更细粒度的锁的时候&#xff0c;表锁是最常用的处理并发的方式。而对于 InnoDB 这种支持行锁的引擎&#xff0c;一般不使用 lock tables 命令来控制并发&#xff0c;毕竟锁住整个表的影响面还是太大</p>
+<h5><a rel="noopener noreferrer" id="MDL_154"></a>MDL锁</h5>
+<p>MDL 不需要显式使用&#xff0c;在访问一个表的时候会被自动加上。<strong>MDL 的作用是&#xff0c;保证读写的正确性</strong>。你可以想象一下&#xff0c;如果一个查询正在遍历一个表中的数据&#xff0c;而执行期间另一个线程对这个表结构做变更&#xff0c;删了一列&#xff0c;那么查询线程拿到的结果跟表结构对不上&#xff0c;肯定是不行的。因此&#xff0c;在 MySQL 5.5 版本中引入了 MDL&#xff0c;<strong>当对一个表做增删改查操作的时候&#xff0c;加 MDL 读锁&#xff1b;当要对表做结构变更操作的时候&#xff0c;加 MDL 写锁</strong></p>
+<ul><li>读锁之间不互斥&#xff0c;因此你可以有多个线程同时对一张表增删改查。</li><li>读写锁之间、写锁之间是互斥的&#xff0c;<strong>用来保证变更表结构操作的安全性</strong>。因此&#xff0c;如果有两个线程要同时给一个表加字段&#xff0c;其中一个要等另一个执行完才能开始执行</li></ul>
+<h5><a rel="noopener noreferrer" id="_159"></a>小表问题</h5>
+<p>给一个表<strong>加字段&#xff0c;或者修改字段&#xff0c;或者加索引</strong>&#xff0c;需要扫描全表的数据。这往往会导致不可预知的问题&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/114467395-08-7ca08299f2.png" loading="lazy">我们可以看到 session A 先启动&#xff0c;这时候会对表 t 加一个 MDL 读锁。</p>
+<ol><li>由于 session B 需要的也是 MDL 读锁(<strong>因为读锁是共享锁</strong>)&#xff0c;因此可以正常执行。</li><li>之后 session C 会被 blocked&#xff0c;是因为 session A 的 MDL 读锁还没有释放&#xff0c;而 session C 需要 MDL 写锁&#xff0c;因此只能被阻塞</li><li>之后所有要在表 t 上新申请 MDL 读锁的请求也会被 session C 阻塞。mysql server 端对于sessionC,D有一个队列决定谁先执行</li></ol>
+<p>前面我们说了&#xff0c;所有对表的增删改查操作都需要先申请 MDL 读锁&#xff0c;就都被锁住&#xff0c;等于这个表现在完全不可读写了。如果某个表上的查询语句频繁&#xff0c;而且客户端有重试机制&#xff0c;也就是说超时后会再起一个新 session 再请求的话&#xff0c;这个库的线程很快就会爆满。</p>
+<p>事务中的 MDL 锁&#xff0c;在语句执行开始时申请&#xff0c;但是语句结束后并不会马上释放&#xff0c;而会等到整个事务提交后再释放&#xff0c;梦幻联动到我们对长事务的探索&#xff0c;长事务坏处&#xff1a;1、导致undo log过多&#xff0c;占用存储空间 2、<strong>获取的锁要等到事务结束才释放&#xff0c;有可能会阻塞请求或者线程爆满</strong></p>
+<p>比较理想的机制是&#xff0c;在 alter table 语句里面设定等待时间&#xff0c;如果在这个指定的等待时间里面能够拿到 MDL 写锁最好&#xff0c;拿不到也不要阻塞后面的业务语句&#xff0c;先放弃。之后开发人员或者 DBA 再通过重试命令重复这个过程&#xff0c;其实就是我们在并发中学到的<strong>RetreenedLock等待可中断、超时放弃锁的机制&#xff0c;所以其实机制一通百通</strong></p>
+<h5><a rel="noopener noreferrer" id="_174"></a>其它表级锁【意向共享锁&amp;意向排他锁】</h5>
+<p>意向锁的作用就是当一个事务在需要获取资源锁定的时候&#xff0c;<strong>如果遇到自己需要的资源已经被排他锁占用的时候&#xff0c;该事务可以需要锁定行的表上面添加一个合适的意向锁</strong>。</p>
+<ul><li>如果自己需要一个共享锁&#xff0c;那么就在表上面添加一个意向共享锁。</li><li>而如果自己需要的是某行&#xff08;或者某些行&#xff09;上面添加一个排他锁的话&#xff0c;则先在表上面添加一个意向排他锁。</li><li>这里的意向锁是表级锁&#xff0c;<strong>表示的是一种意向&#xff0c;仅仅表示事务正在读或写某一行记录&#xff0c;在真正加行锁时才会判断是否冲突</strong>。意向锁是InnoDB自动加的&#xff0c;不需要用户干预</li></ul>
+<p><strong>意向共享锁可以同时并存多个&#xff0c;但是意向排他锁同时只能有一个存在</strong></p>
+<ul><li><strong>意向共享锁&#xff08;IS&#xff09;</strong>&#xff1a; 表示事务准备给数据行记入共享锁&#xff0c;事务在一个数据行加共享锁前必须先取得该表的IS锁</li><li><strong>意向排他锁&#xff08;IX&#xff09;</strong>&#xff1a; 表示事务准备给数据行加入排他锁&#xff0c;事务在一个数据行加排他锁前必须先取得该表的IX锁。</li></ul>
+<p>当一个事务请求的锁模式与当前的锁兼容&#xff0c;InnoDB就将请求的锁授予该事务&#xff1b;反之如果请求不兼容&#xff0c;则该事物就等待锁释放</p>
+<h4><a rel="noopener noreferrer" id="_186"></a>行级锁</h4>
+<p>MySQL 的行锁是在引擎层由各个引擎自己实现的。但并不是所有的引擎都支持行锁&#xff0c;比如 <strong>MyISAM 引擎就不支持行锁</strong>。不支持行锁意味着并发控制只能使用表锁&#xff0c;对于这种引擎的表&#xff0c;同一张表上任何时刻只能有一个更新在执行&#xff0c;这就会影响到业务并发度。InnoDB 是支持行锁的&#xff0c;这也是 MyISAM 被 InnoDB 替代的重要原因之一</p>
+<p>顾名思义&#xff0c;行锁就是针对数据表中行记录的锁。这很好理解&#xff0c;比如事务 A 更新了一行&#xff0c;而这时候事务 B 也要更新同一行&#xff0c;则必须等事务 A 的操作完成后才能进行更新</p>
+<h5><a rel="noopener noreferrer" id="_191"></a>两阶段锁</h5>
+<p>在下面的操作序列中&#xff0c;事务 B 的 update 语句执行时会是什么现象呢&#xff1f;假设字段 id 是表 t 的主键<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-09-8b4e17a4b5.png" loading="lazy"><br /> 这个问题的结论取决于事务 A 在执行完两条 update 语句后&#xff0c;持有哪些锁&#xff0c;以及在什么时候释放。可以验证一下&#xff1a;<strong>实际上事务 B 的 update 语句会被阻塞&#xff0c;直到事务 A 执行 commit 之后&#xff0c;事务 B 才能继续执行</strong>&#xff0c;其实<strong>事务 A 持有的两个记录的行锁&#xff0c;都是在 commit 的时候才释放的</strong></p>
+<p>在 InnoDB 事务中&#xff0c;<strong>行锁是在需要的时候才加上的&#xff0c;但并不是不需要了就立刻释放&#xff0c;而是要等到事务结束时才释放</strong>。这个就是两阶段锁协议&#xff0c;所以<strong>如果事务中需要锁多个行&#xff0c;要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放</strong>&#xff0c;假设顾客A、C要在电影院B买票。</p>
+<ol><li>从顾客 A 账户余额中扣除电影票价&#xff1b;</li><li>给影院 B 的账户余额增加这张电影票价&#xff1b;</li><li>记录一条交易日志。</li></ol>
+<p>也就是说&#xff0c;要完成这个交易&#xff0c;我们需要 update 两条记录&#xff0c;并 insert 一条记录。当然&#xff0c;为了保证交易的原子性&#xff0c;我们要把这三个操作放在一个事务中。</p>
+<p>那么&#xff0c;你会怎样安排这三个语句在事务中的顺序呢&#xff1f;试想如果同时有另外一个顾客 C 要在影院 B 买票&#xff0c;那么这两个事务冲突的部分就是语句 2 了。因为它们要更新同一个影院账户的余额&#xff0c;需要修改同一行数据。根据两阶段锁协议&#xff0c;不论你怎样安排语句顺序&#xff0c;所有的操作需要的行锁都是在事务提交的时候才释放的。所以&#xff0c;如果把语句 2 安排在最后&#xff0c;<strong>比如按照 3、1、2 这样的顺序&#xff0c;那么影院账户余额这一行的锁时间就最少。这就最大程度地减少了事务之间的锁等待&#xff0c;提升了并发度</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_206"></a>死锁的检测与避免</h5>
+<p>当并发系统中不同线程出现循环资源依赖&#xff0c;涉及的线程都在等待别的线程释放资源时&#xff0c;就会导致这几个线程都进入无限等待的状态&#xff0c;称为死锁&#xff0c;InnoDB的行级锁是<strong>基于索引实现的</strong>&#xff0c;如果查询语句未命中任何索引&#xff0c;那么<strong>InnoDB会使用表级锁</strong>. 此外&#xff0c;InnoDB的行级锁是针对索引加的锁&#xff0c;不针对数据记录&#xff0c;<strong>因此即使访问不同行的记录&#xff0c;如果使用了相同的索引键仍然会出现锁冲突</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-10-e685d8d9a3.png" loading="lazy"><br /> 这时候&#xff0c;事务 A 在等待事务 B 释放 id&#61;2 的行锁&#xff0c;而事务 B 在等待事务 A 释放 id&#61;1 的行锁。 事务 A 和事务 B 在互相等待对方的资源释放&#xff0c;就是进入了死锁状态。当出现死锁以后&#xff0c;有两种策略&#xff1a;</p>
+<ul><li>一种策略是&#xff0c;<strong>直接进入等待&#xff0c;直到超时</strong>。这个超时时间可以通过参数 <code>innodb_lock_wait_timeout</code> 来设置。</li><li>一种策略是&#xff0c;<strong>主动发起死锁检测</strong>&#xff0c;发现死锁后**&#xff0c;主动回滚死锁链条中的某一个事务&#xff0c;让其他事务得以继续执行**&#xff0c;其实就是破坏不可抢占条件。将参数 innodb_deadlock_detect 设置为 on&#xff0c;表示开启这个逻辑。</li></ul>
+<p>在 InnoDB 中&#xff0c;<code>innodb_lock_wait_timeout</code> 的默认值是 50s&#xff0c;意味着如果采用第一个策略&#xff0c;当出现死锁以后&#xff0c;第一个被锁住的线程要过 50s 才会超时退出&#xff0c;然后其他线程才有可能继续执行。对于在线服务来说&#xff0c;这个等待时间往往是无法接受的。但是&#xff0c;我们又不可能直接把这个时间设置成一个很小的值&#xff0c;比如 1s。这样当出现死锁的时候&#xff0c;确实很快就可以解开&#xff0c;但如果不是死锁&#xff0c;而是简单的锁等待呢&#xff1f;所以&#xff0c;超时时间设置太短的话&#xff0c;会出现很多误伤。所以&#xff0c;正常情况下我们还是要采用第二种策略&#xff0c;即<strong>主动死锁检测</strong>&#xff0c;而且 innodb_deadlock_detect 的默认值本身就是 on。主动死锁检测在发生死锁的时候&#xff0c;是能够快速发现并进行处理的&#xff0c;但是它也是有额外负担的</p>
+<blockquote>
+ <p><strong>主动检测的问题</strong></p>
+</blockquote>
+<p>每个新来的被堵住的线程&#xff0c;都要判断会不会由于自己的加入导致了死锁&#xff0c;这是一个时间复杂度是 O(n) 的操作。假设有 1000 个并发线程要同时更新同一行&#xff0c;那么死锁检测操作就是 100 万这个量级的。虽然最终检测的结果是没有死锁&#xff0c;但是这期间要消耗大量的 CPU 资源。因此&#xff0c;你就会看到 CPU 利用率很高&#xff0c;但是每秒却执行不了几个事务</p>
+<blockquote>
+ <p><strong>如何避免死锁</strong></p>
+</blockquote>
+<p>发生死锁后&#xff0c;InnoDB一般都可以检测到&#xff0c;并使一个事务释放锁回退&#xff0c;另一个则可以获取锁完成事务&#xff0c;我们可以采取以上方式避免死锁&#xff1a;</p>
+<ul><li>通过<strong>表级锁</strong>来减少死锁产生的概率&#xff1b;</li><li>多个程序尽量约定<strong>以相同的顺序访问表</strong></li><li>同一个事务尽可能做到<strong>一次锁定所需要的所有资源</strong></li></ul>
+<p>以上关于死锁</p>
+<h4><a rel="noopener noreferrer" id="_228"></a>表级锁&amp;行级锁总结</h4>
+<p>MyISAM和InnoDB存储引擎使⽤的锁&#xff1a;<strong>MyISAM采⽤表级锁</strong>(table-level locking)。<strong>InnoDB⽀持⾏级锁(row-level locking)和表级锁,默认为⾏级锁</strong>,表级锁和⾏级锁对⽐&#xff1a;</p>
+<ul><li><strong>表级锁</strong>&#xff1a; MySQL中锁定粒度较大的⼀种锁&#xff0c;对当前操作的整张表加锁&#xff0c;<strong>实现简单&#xff0c;资源消耗也⽐较少&#xff0c;加锁快&#xff0c;不会出现死锁</strong>。其锁定粒度最⼤&#xff0c;<strong>触发锁冲突的概率最高&#xff0c;并发度最低</strong>&#xff0c;MyISAM和 InnoDB引擎都⽀持表级锁。</li><li><strong>⾏级锁</strong>&#xff1a; MySQL中锁定 粒度最⼩的⼀种锁&#xff0c;只针对当前操作的⾏进⾏加锁。 ⾏级锁能<strong>⼤⼤减少数据库操作的冲突</strong>。其加锁<strong>粒度最⼩&#xff0c;并发度⾼</strong>&#xff0c;<strong>但加锁的开销也最⼤&#xff0c;加锁慢&#xff0c;会出现死锁</strong>。</li></ul>
+<p>InnoDB行级锁支持的算法有如下三种算法</p>
+<ul><li><strong>Record Lock</strong>: 对索引项加锁&#xff0c;锁定符合条件的行。其他事务不能修改和删除加锁项</li><li><strong>Gap Lock</strong>: 对索引项之间的“间隙”加锁&#xff0c;锁定记录的范围&#xff08;对第一条记录前的间隙或最后一条将记录后的间隙加锁&#xff09;&#xff0c;不包含索引项本身。其他事务不能在锁范围内插入数据&#xff0c;这样就防止了别的事务新增幻影行。Gap锁设计的⽬的是为了阻⽌多个事务将记录插⼊到同⼀范围内&#xff0c;⽽这会导致幻读问题的产⽣&#xff1b;除了<strong>外键约束和唯⼀性检查</strong>外&#xff0c;其余情况关闭Gap&#xff0c;仅使⽤record</li><li><strong>Next-key Lock</strong>&#xff1a; 锁定索引项本身和索引范围。即Record Lock和Gap Lock的结合。Innodb对于⾏的查询使⽤next-key lock&#xff1b;<strong>当查询的索引含有唯⼀属性时&#xff0c;将next-key lock降级为record key</strong></li></ul>
+<p>虽然使用行级索具有粒度小、并发度高等特点&#xff0c;但是表级锁有时候也是非常必要的&#xff1a;</p>
+<ul><li>事务<strong>更新大表中的大部分数据</strong>直接使用表级锁效率更高&#xff1b;</li><li>事务比较复杂**&#xff0c;使用行级索很可能引起死锁导致回滚**</li></ul>
+<p>Next-key Lock的设计其实就是为了解决幻读问题&#xff0c;这样&#xff0c;Innodb就可以在<strong>可重复读</strong>的隔离级别基础之上实现<strong>串行</strong>隔离级别</p>
+<h2><a rel="noopener noreferrer" id="_244"></a>锁与事务的实现</h2>
+<p>上文我们花大量的篇幅介绍了事务的实现和锁的机制&#xff0c;这部分我们来把他们联系起来&#xff0c;即锁是如何在事务的实现中发挥作用&#xff0c;我们知道读未提交不需要做任何控制&#xff0c;所以不讨论&#xff0c;<strong>串行化是指对数据加了读写锁</strong>&#xff0c;而且由于事务提交后才会释放锁&#xff0c;且其它线程不能对数据再加任何锁&#xff0c;也即数据对其它线程不可见&#xff0c;实现机制比较明确&#xff0c;这里也不多做讨论。</p>
+<h3><a rel="noopener noreferrer" id="_247"></a>提出问题</h3>
+<p>可重复读级别下&#xff0c;事务中读取的数据在整个事务过程中都是一致的&#xff0c;那么别的事务更新了数据&#xff0c;当前事务再去更新数据的时候&#xff0c;看到的是更新后的&#xff0c;还是更新前的&#xff1f;举个例子&#xff0c;初始插入值为<code>insert into t(id, k) values(1,1),(2,2);</code><br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-11-08f838dad4.png" loading="lazy"><br /> 需要注意&#xff0c;begin/start transaction 命令并不是一个事务的起点&#xff0c;在执行到它们之后的第一个操作 InnoDB 表的语句&#xff0c;事务才真正启动。如果你想要马上启动一个事务&#xff0c;可以使用 <code>start transaction with consistent snapshot</code> 这个命令</p>
+<ol><li>事务 C 没有显式地使用 begin/commit&#xff0c;表示这个 update 语句本身就是一个事务&#xff0c;语句完成的时候会自动提交&#xff0c;因为事务C本来就只有一条执行语句。</li><li>事务 B 在更新了行之后查询</li><li>事务 A 在一个只读事务中查询&#xff0c;并且时间顺序上是在事务 B 的查询之后&#xff0c;接着提交</li><li>事务 B 提交</li></ol>
+<p>在这里&#xff0c;事务 B 查到的 k 的值是 3&#xff0c;而事务 A 查到的 k 的值是 1&#xff0c;我们需要知道为什么结果是这样</p>
+<h3><a rel="noopener noreferrer" id="MVCC_258"></a>MVCC机制</h3>
+<p>这部分详细讲解下MVCC机制&#xff0c;包括<strong>快照和事务ID</strong></p>
+<h4><a rel="noopener noreferrer" id="_260"></a>快照</h4>
+<p>在 MySQL 里&#xff0c;有两个视图的概念&#xff0c;这两个视图分别用于不同的场景。</p>
+<ul><li>一个是 view。它是一个用查询语句定义的虚拟表&#xff0c;在调用的时候执行查询语句并生成结果。创建视图的语法是 create view … &#xff0c;而它的查询方法与表一样。</li><li>一个是 InnoDB 在实现 MVCC 时用到的一致性读视图&#xff0c;即 <strong>consistent read view</strong>&#xff0c;用于支持 RC&#xff08;Read Committed&#xff0c;读提交&#xff09;和 RR&#xff08;Repeatable Read&#xff0c;可重复读&#xff09;隔离级别的实现。它没有物理结构&#xff0c;作用是事务执行期间用来定义“我能看到什么数据”</li></ul>
+<p>第二种视图更像是一种快照。<strong>在可重复读隔离级别下&#xff0c;事务在启动的时候就“拍了个快照”。注意&#xff0c;这个快照是基于整库的</strong>。</p>
+<h4><a rel="noopener noreferrer" id="ID_267"></a>事务ID</h4>
+<p>InnoDB 里面每个事务有一个唯一的事务 ID&#xff0c;叫作 transaction id。它是在事务开始的时候向 InnoDB 的事务系统申请的&#xff0c;是按申请顺序严格递增的。而每行数据也都是有多个版本的。每次事务更新数据的时候&#xff0c;都会生成一个新的数据版本&#xff0c;并且把 transaction id 赋值给这个数据版本的事务 ID&#xff0c;记为 row trx_id。同时&#xff0c;旧的数据版本要保留&#xff0c;并且在新的数据版本中&#xff0c;能够有信息可以直接拿到它。也就是说&#xff0c;<strong>数据表中的一行记录&#xff0c;其实可能有多个版本 (row)&#xff0c;每个版本有自己的 row trx_id</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-12-4de8fbc578.png" loading="lazy"><br /> 比如&#xff0c;如果有一个事务&#xff0c;它的<strong>低水位事务ID</strong>是 18&#xff0c;那么当它访问这一行数据时&#xff0c;就会从 V4 通过 U3 计算出 V3&#xff0c;<strong>所以在它看来&#xff0c;这一行的值是 11</strong></p>
+<h4><a rel="noopener noreferrer" id="undo_log_271"></a>undo log</h4>
+<p>undo log 在哪呢&#xff1f;实际上&#xff0c;上图的三个虚线箭头&#xff0c;就是 undo log&#xff1b;<strong>而 V1、V2、V3 并不是物理上真实存在的&#xff0c;而是每次需要的时候根据当前版本和 undo log 计算出来的</strong>。比如&#xff0c;需要 V2 的时候&#xff0c;就是通过 V4 依次执行 U3、U2 算出来&#xff0c;返回过来看<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-06-1457d90ac4.png" loading="lazy"><br /> 回滚段是真实存在的&#xff0c;而视图也就是快照是一种逻辑形态&#xff0c;是计算出来的。</p>
+<h4><a rel="noopener noreferrer" id="MVCC_275"></a>MVCC实现</h4>
+<p>按照可重复读的定义&#xff0c;一个事务启动的时候&#xff0c;能够看到所有已经提交的事务结果。但是之后&#xff0c;这个事务执行期间&#xff0c;其他事务的更新对它不可见。因此&#xff0c;一个事务只需要在启动的时候声明说&#xff0c;</p>
+<ul><li>“以我启动的时刻为准&#xff0c;如果一个数据版本是在我启动之前生成的&#xff0c;就认&#xff1b;</li><li>如果是我启动以后才生成的&#xff0c;我就不认&#xff0c;我必须要找到它的上一个版本”。</li></ul>
+<p>当然&#xff0c;如果“上一个版本”也不可见&#xff0c;那就得继续往前找。还有&#xff0c;<strong>如果是这个事务自己更新的数据&#xff0c;它自己还是要认的</strong></p>
+<p>在实现上&#xff0c; InnoDB <strong>为每个事务构造了一个数组</strong>&#xff0c;用来保存这个事务启动瞬间&#xff0c;当前正在“活跃”的所有事务 ID。<strong>“活跃”指的就是&#xff0c;启动了但还没提交</strong>。数组里面<strong>事务 ID 的最小值记为低水位</strong>&#xff0c;<strong>当前系统里面已经创建过的事务 ID 的最大值加 1 记为高水位</strong>。这个视图数组和高水位&#xff0c;就组成了当前事务的一致性视图&#xff08;read-view&#xff09;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-13-c2d8adea6d.png" loading="lazy"></p>
+<p>这样&#xff0c;对于当前事务的启动瞬间来说&#xff0c;一个数据版本的 row trx_id&#xff08;对一个数据的操作ID&#xff09;&#xff0c;有以下几种可能&#xff1a;</p>
+<ol><li>如果落在绿色部分&#xff0c;表示这个版本是<strong>已提交的事务或者是当前事务自己生成的&#xff0c;这个数据是可见的</strong>&#xff1b;</li><li>如果落在黄色部分&#xff0c;那就包括两种情况
+  <ul><li>a. 若 row trx_id 在活跃数组中&#xff0c;表示这个版本是由还没提交的事务生成的&#xff0c;不可见&#xff1b;</li><li>b. 若 row trx_id 不在活跃数组中&#xff0c;表示这个版本是已经提交了的事务生成的&#xff0c;可见。</li></ul> </li><li>如果落在红色部分&#xff0c;表示这个版本是<strong>由将来启动的事务生成的&#xff0c;是肯定不可见的</strong>&#xff1b;事务ID一定大于当前。</li></ol>
+<p>我们举个例子&#xff0c;假如事务ID从【90,100】&#xff0c;其中<strong>90,91,93,95,98,99,100已提交</strong>&#xff0c;则<strong>活跃事务ID数组</strong>为【92,96,97】&#xff0c;<strong>低水位为92&#xff0c;当前事务为94&#xff0c;高水位为101</strong>。则可以进行如下划分&#xff1a;</p>
+<ul><li>绿色区域&#xff0c;低水位之前已提交的事务ID&#xff0c;<strong>90,91</strong>可见。包括当前事务虽然未提交刚开启&#xff0c;但是自身可见&#xff0c;94可见</li><li>黄色区域&#xff0c;低水位到高水位之间&#xff0c;剩下的【92,100】&#xff0c;这一系列事务ID&#xff0c;分为两类
+  <ul><li>a. 若 row trx_id 在活跃数组中&#xff0c;【92,96,97】不可见。</li><li>b. 若 row trx_id 不在活跃数组中&#xff0c;93,95,98,99,100均可见</li></ul> </li><li>红色区域&#xff0c;未开始的事务<strong>101及以后</strong>的事务ID都不可见</li></ul>
+<p>以上就是一致性视图的使用规范。对于上边的行数据版本链问题&#xff0c;低水位是18&#xff0c;<strong>则在所有版本的数据中&#xff0c;trx_id低于18的版本都可见&#xff0c;所以值为11肯定是可见的</strong>&#xff0c;有了这个声明后&#xff0c;系统里面随后发生的更新&#xff0c;是不是就跟这个事务看到的内容无关了呢&#xff1f;因为之后的更新&#xff0c;生成的版本一定属于上面的 3或者 2(a) 的情况&#xff0c;而对它来说&#xff0c;这些新的数据版本是不存在的&#xff0c;所以这个事务的快照&#xff0c;就是“静态”的了</p>
+<h3><a rel="noopener noreferrer" id="_301"></a>解决问题</h3>
+<p>接下来&#xff0c;我们继续看一下开始提出问题的三个事务&#xff0c;分析下事务 A 的语句返回的结果&#xff0c;为什么是 k&#61;1。这里&#xff0c;我们不妨做如下假设&#xff1a;</p>
+<ul><li>事务 A 开始前&#xff0c;系统里面只有一个活跃事务 ID 是 99&#xff1b;</li><li>事务 A、B、C 的版本号分别是 100、101、102&#xff0c;且当前系统里只有这四个事务&#xff1b;</li></ul>
+<p>三个事务开始前&#xff0c;(1,1&#xff09;这一行数据的 row trx_id 是 90。这样&#xff0c;事务 A 的视图数组就是**[99,100]<strong>, 事务 B 的视图数组是</strong>[99,100,101]<strong>, 事务 C 的视图数组是</strong>[99,100,101,102]**。为了简化分析&#xff0c;我先把其他干扰语句去掉&#xff0c;只画出跟事务 A 查询逻辑有关的操作&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-14-969003fb1a.png" loading="lazy"></p>
+<ul><li>从图中可以看到&#xff0c;第一个有效更新是事务 C&#xff0c;把数据从 (1,1) 改成了 (1,2)。这时候&#xff0c;<strong>这个数据的最新版本的 row trx_id 是 102&#xff0c;而 90 这个版本已经成为了历史版本</strong></li><li>第二个有效更新是事务 B&#xff0c;把数据从 (1,2) 改成了 (1,3)。这时候&#xff0c;<strong>这个数据的最新版本&#xff08;即 row trx_id&#xff09;是 101&#xff0c;而 102 又成为了历史版本</strong></li></ul>
+<p>在事务 A 查询的时候&#xff0c;其实事务 B 还没有提交&#xff0c;但是它生成的 (1,3) 这个版本已经变成当前版本了。但这个版本对事务 A 必须是不可见的&#xff0c;否则就变成脏读了</p>
+<h4><a rel="noopener noreferrer" id="_312"></a>读取逻辑</h4>
+<p>好&#xff0c;现在事务 A 要来读数据了&#xff0c;它的视图数组是[99,100]。当然了&#xff0c;读数据都是从当前版本读起的。所以&#xff0c;事务 A 查询语句的读数据流程是这样的&#xff1a;</p>
+<ol><li>找到 (1,3) 的时候&#xff0c;判断出 row trx_id&#61;101&#xff0c;比高水位大&#xff0c;处于红色区域&#xff0c;不可见&#xff1b;</li><li>接着&#xff0c;找到上一个历史版本&#xff0c;一看 row trx_id&#61;102&#xff0c;比高水位大&#xff0c;处于红色区域&#xff0c;不可见&#xff1b;</li><li>再往前找&#xff0c;终于找到了&#xff08;1,1)&#xff0c;它的 row trx_id&#61;90&#xff0c;比低水位小&#xff0c;处于绿色区域&#xff0c;可见。</li></ol>
+<p>这样执行下来&#xff0c;虽然期间这一行数据被修改过&#xff0c;但是事务 A 不论在什么时候查询&#xff0c;看到这行数据的结果都是一致的&#xff0c;所以我们称之为<strong>一致性读</strong>&#xff0c;一个数据版本&#xff0c;对于一个事务视图来说&#xff0c;除了<strong>自己的更新总是可见以外</strong>&#xff0c;有三种情况&#xff1a;</p>
+<ul><li>版本未提交&#xff0c;不可见&#xff1b;</li><li>版本已提交&#xff0c;但是是在视图创建后提交的&#xff0c;不可见&#xff1b;</li><li>版本已提交&#xff0c;而且是在视图创建前提交的&#xff0c;可见。</li></ul>
+<p>现在&#xff0c;我们用这个规则来判断查询结果</p>
+<ol><li>事务 A 的查询语句的视图数组是在事务 A 启动的时候生成的&#xff0c;这时候&#xff1a;(1,3) 还没提交&#xff0c;属于情况 1&#xff0c;不可见&#xff1b;</li><li>(1,2) 虽然提交了&#xff0c;但是是在视图数组创建之后提交的&#xff0c;属于情况 2&#xff0c;不可见</li><li>(1,1) 是在视图数组创建之前提交的&#xff0c;可见。</li></ol>
+<p>去掉数字对比后&#xff0c;只用时间先后顺序来判断&#xff0c;分析起来是不是轻松多了。所以&#xff0c;后面我们就都用这个规则来分析</p>
+<h4><a rel="noopener noreferrer" id="_333"></a>更新逻辑</h4>
+<p>事务 B 的 update 语句&#xff0c;如果按照一致性读&#xff0c;好像结果不对&#xff1f;事务 B 的视图数组是先生成的&#xff0c;之后事务 C 才提交&#xff0c;不是应该看不见 (1,2) 吗&#xff0c;怎么能算出 (1,3) 来<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-15-c17b06d9f4.png" loading="lazy"><br /> 是的&#xff0c;如果事务 B 在更新之前查询一次数据&#xff0c;<strong>这个查询返回的 k 的值确实是 1</strong></p>
+<p>但是&#xff0c;当它要去更新数据的时候&#xff0c;就不能再在历史版本上更新了&#xff0c;否则事务 C 的更新就丢失了。因此&#xff0c;事务 B 此时的 <code>set k&#61;k&#43;1</code> 是在&#xff08;1,2&#xff09;的基础上进行的操作。所以&#xff0c;这里就用到了这样一条规则&#xff1a;<strong>更新数据都是先读后写的&#xff0c;而这个读&#xff0c;只能读当前的值</strong>&#xff0c;称为<code>当前读&#xff08;current read&#xff09;</code></p>
+<p>因此&#xff0c;在更新的时候&#xff0c;当前读拿到的数据是 (1,2)&#xff0c;更新后生成了新版本的数据 (1,3)&#xff0c;这个新版本的 row trx_id 是 <strong>101</strong>。所以&#xff0c;在执行事务 B 查询语句的时候&#xff0c;一看自己的版本号是 101&#xff0c;最新数据的版本号也是 101&#xff0c;是自己的更新&#xff0c;可以直接使用&#xff0c;所以查询得到的 k 的值是 3。<strong>有点像Java的volatile机制</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_341"></a>当前读</h4>
+<p>这里我们提到了一个概念&#xff0c;叫作当前读。其实&#xff0c;<strong>除了 update 语句外&#xff0c;select 语句如果加锁&#xff0c;也是当前读</strong>。所以&#xff0c;如果把事务 A 的查询语句 <code>select * from t where id&#61;1</code> 修改一下&#xff0c;加上 <code>lock in share mode</code> 或 <code>for update</code>&#xff0c;也都可以读到版本号是 101 的数据&#xff0c;返回的 k 的值是 3。下面这两个 select 语句&#xff0c;就是分别加了读锁&#xff08;S 锁&#xff0c;共享锁&#xff09;和写锁&#xff08;X 锁&#xff0c;排他锁&#xff09;</p>
+<pre><code class="prism language-java">
+mysql<span class="token operator">&gt;</span> select k from t where id<span class="token operator">&#61;</span><span class="token number">1</span> lock in share mode<span class="token punctuation">;</span>
+mysql<span class="token operator">&gt;</span> select k from t where id<span class="token operator">&#61;</span><span class="token number">1</span> <span class="token keyword">for</span> update<span class="token punctuation">;</span>
+</code></pre>
+<p>言归正传&#xff0c;假设事务 C 不是马上提交的&#xff0c;而是变成了下面的事务 C’&#xff0c;会怎么样呢&#xff1f;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-16-e22bcc7556.png" loading="lazy"><br /> 事务 C’的不同是&#xff0c;更新后并没有马上提交&#xff0c;在它提交前&#xff0c;事务 B 的更新语句先发起了。前面说过了&#xff0c;虽然事务 C’还没提交&#xff0c;但是 (1,2) 这个版本也已经生成了&#xff0c;并且是当前的最新版本。那么&#xff0c;事务 B 的更新语句会怎么处理呢&#xff1f;</p>
+<p>事务 C’没提交&#xff0c;<strong>也就是说 (1,2) 这个版本上的写锁还没释放</strong>。而事务 B更新时 是当前读&#xff0c;必须要读最新版本&#xff0c;而且必须加锁&#xff0c;因此就被锁住了&#xff0c;必须等到事务 C’释放这个锁&#xff0c;才能继续它的当前读<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-17-380b1a4e40.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_356"></a>可重复读和读提交的实现</h4>
+<p>到这里&#xff0c;我们把<strong>一致性读、当前读和行锁</strong>就串起来了。那么事务的可重复读的能力是怎么实现的&#xff1f;</p>
+<ul><li><strong>可重复读</strong>的核心就是一致性读&#xff08;consistent read&#xff09;&#xff1b;<strong>事务更新数据的时候&#xff0c;只能用当前读。如果当前的记录的行锁被其他事务占用的话&#xff0c;就需要进入锁等待</strong>。</li><li><strong>读提交</strong>的逻辑和可重复读的逻辑类似&#xff0c;它们最主要的区别是&#xff1a;在可重复读隔离级别下&#xff0c;只需要在事务开始的时候创建一致性视图&#xff0c;之后事务里的其他查询都共用这个一致性视图&#xff1b;在读提交隔离级别下&#xff0c;每一个语句执行前都会重新算出一个新的视图。</li></ul>
+<p>那么&#xff0c;我们再看一下&#xff0c;在<strong>读提交隔离级别下&#xff0c;事务 A 和事务 B 的查询语句查到的 k</strong>&#xff0c;分别应该是多少呢&#xff1f;这里需要说明一下&#xff0c;“start transaction with consistent snapshot; ”的意思是从这个语句开始&#xff0c;创建一个持续整个事务的一致性快照。所以&#xff0c;在读提交隔离级别下&#xff0c;这个用法就没意义了&#xff0c;等效于普通的 start transaction。下面是读提交时的状态图&#xff0c;可以看到这两个查询语句的创建视图数组的时机发生了变化&#xff0c;就是图中的 read view 框。&#xff08;注意&#xff1a;这里&#xff0c;我们用的还是事务 C 的逻辑直接提交&#xff0c;而不是事务 C’&#xff09;<br /> <img alt="在这里插入图片描述" src="./posts/assets/114467395-18-da8a496e5b.png" loading="lazy"><br /> 这时&#xff0c;事务 A 的查询语句的视图数组是在执行这个语句的时候创建的&#xff0c;时序上 (1,2)、(1,3) 的生成时间都在创建这个视图数组的时刻之前。但是&#xff0c;在这个时刻&#xff1a;</p>
+<ul><li>(1,3) 事务B还没提交&#xff0c;属于情况 1&#xff0c;不可见&#xff1b;</li><li>(1,2) 事务C提交了&#xff0c;属于情况 3&#xff0c;可见。</li></ul>
+<p>所以&#xff0c;这时候事务 A 查询语句返回的是 k&#61;2。显然地&#xff0c;事务 B 查询结果 k&#61;3&#xff0c;因为B的视图里&#xff0c;C已经提交了。自己状态又可见&#xff0c;直接加2次。</p>
+<h2><a rel="noopener noreferrer" id="_369"></a>隔离级别与行锁</h2>
+<p>Innodb对于行级锁&#xff0c;行文至此&#xff0c;我们最终探讨一次四种隔离级别是如何产生效果的呢&#xff1f;是依据MVCC机制和行级别的锁来实现的&#xff0c;针对每种隔离级别分别介绍一下&#xff1a;</p>
+<ul><li><strong>读未提交</strong>&#xff0c;<font color="red"><strong>不创建视图&#xff0c;所有语句不加任何锁</strong></font>&#xff0c;有<strong>脏读问题</strong>。解决办法就是下面的读已提交</li><li><strong>读已提交</strong>&#xff0c;<font color="red"><strong>执行sql时创建一致性视图&#xff0c;SELECT语句是一致性读&#xff0c;一致性读会根据 row trx_id 和一致性视图确定数据版本的可见性&#xff0c;且SELECT不加锁&#xff0c;更新语句使用当前读机制&#43;两阶段行锁&#xff08;Record Lock排它锁&#xff09;机制&#xff0c;UPDATE加排他锁</strong></font>&#xff0c;存在的问题不可重复读。即在一次事务之间&#xff0c;进行了两次读取&#xff0c;但是结果不一样&#xff0c;<strong>不可重复读问题</strong></li><li><strong>可重复读</strong>&#xff0c;<font color="red"><strong>事务开始时创建一致性视图&#xff0c;查询语句是一致性读&#xff0c;一致性读会根据 row trx_id 和一致性视图确定数据版本的可见性&#xff0c;且SELECT不加锁&#xff0c;更新语句使用当前读机制&#43;两阶段行锁&#xff08;Record Lock排它锁&#xff09;机制&#xff0c;UPDATE加排他锁</strong></font>&#xff0c;可重复读阻止的写事务包括update&#xff08;只给存在的数据行加上了锁&#xff09;&#xff0c;但是不包括insert、delete&#xff08;新行不存在&#xff0c;所以没有办法加锁&#xff09;</li><li><strong>串行化</strong>&#xff0c;<font color="red"><strong>不创建视图&#xff0c;读加读锁&#xff0c;写加跨行级别Next-key Lock排他锁</strong></font>。<strong>阻止其它读写事务</strong> &#xff0c;基本上就是一个个执行事务&#xff0c;所以叫串行化。</li></ul>
+<p>整体的隔离机制介绍如上&#xff0c;可算是对事务和锁的实现有了一个全盘的掌握了。</p>

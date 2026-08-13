@@ -1,0 +1,69 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【字符串转换】&#xff0c;使用【字符串】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/136272570-01-ea138c002b.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_5"></a>字符串转为整数【MID】</h2>
+<p>字符串和栈结合的一道题</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>题干</h3>
+<p>题目如下<br /> <img alt="在这里插入图片描述" src="./posts/assets/136272570-02-753bf5b0fb.png" loading="lazy"><br /> 一些用例的示例&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/136272570-03-111500c0c3.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_13"></a>解题思路</h3>
+<p><a href="https://leetcode.cn/problems/string-to-integer-atoi/solutions/96686/jin-liang-bu-shi-yong-ku-han-shu-nai-xin-diao-shi-/" rel="nofollow"><strong>原题解地址</strong></a>&#xff0c;在这里依据题意罗列几个要点&#xff1a;</p>
+<ul><li>根据示例 1&#xff0c;<strong>需要去掉前导空格</strong>&#xff1b;</li><li>根据示例 2&#xff0c;<strong>需要判断第 1 个字符为 &#43; 和 - 的情况</strong>&#xff0c;因此&#xff0c;可以设计一个变量 sign&#xff0c;初始化的时候为 1&#xff0c;如果遇到 - &#xff0c;将 sign 修正为 -1&#xff1b;</li><li><strong>判断是否是数字</strong>&#xff0c;可以使用字符的 ASCII 码数值进行比较&#xff0c;即 <code>0 &lt;&#61; c &lt;&#61; &#39;9&#39;</code>&#xff1b;</li><li>根据示例 3 &#xff0c;<strong>在遇到第 1 个不是数字的字符的情况下&#xff0c;转换停止&#xff0c;退出循环</strong>&#xff1b;</li><li>根据示例 5&#xff0c;如果转换以后的数字超过了 int 类型的范围&#xff0c;需要截取。这里不能将结果 res 变量设计为 long 类型&#xff0c;注意&#xff1a;<strong>由于输入的字符串转换以后也有可能超过 long 类型&#xff0c;因此需要在循环内部就判断是否越界&#xff0c;只要越界就退出循环&#xff0c;这样也可以减少不必要的计算</strong>&#xff1b;由于涉及下标访问&#xff0c;因此<strong>全程需要考虑数组下标是否越界的情况</strong>。</li></ul>
+<h3><a rel="noopener noreferrer" id="_22"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>字符串</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">myAtoi</span><span class="token punctuation">(</span><span class="token class-name">String</span> s<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 初始化下标&#xff0c;并删除下标前的空格</span>
+        <span class="token keyword">int</span> index <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>index <span class="token operator">&lt;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39; &#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            index<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 极端情况下&#xff0c;字符串全为空格&#xff0c;此时返回0</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>index <span class="token operator">&#61;&#61;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 判断第一个非空格字符的符号&#xff0c;获取整数的符号,无论正负&#xff0c;均继续向前探索</span>
+        <span class="token keyword">int</span> sign <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;-&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            sign <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+            index<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;&#43;&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            index<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 循环判断&#xff0c;进行数字读取</span>
+        <span class="token keyword">int</span> result <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>index <span class="token operator">&lt;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 3-1 如果为非数字&#xff0c;则终止</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token char">&#39;0&#39;</span> <span class="token operator">||</span> s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token char">&#39;9&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 3-2 如果为数字则需要判断增加数字后是否会溢出</span>
+            <span class="token keyword">int</span> curNum <span class="token operator">&#61;</span> s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token char">&#39;0&#39;</span><span class="token punctuation">;</span>
+            <span class="token comment">// 如果当前值*10后大于上届&#xff0c;或当前值*10等于上届但本级数字大于上届的取模&#xff0c;则证明本层遍历完还是大于上届</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>result <span class="token operator">&gt;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span> <span class="token operator">/</span> <span class="token number">10</span> <span class="token operator">||</span> <span class="token punctuation">(</span>result <span class="token operator">&#61;&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span> <span class="token operator">/</span> <span class="token number">10</span> <span class="token operator">&amp;&amp;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span> <span class="token operator">%</span> <span class="token number">10</span> <span class="token operator">&lt;</span> curNum<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> sign <span class="token operator">&gt;</span> <span class="token number">0</span> <span class="token operator">?</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span> <span class="token operator">:</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MIN_VALUE</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 3-3 如果未越界则正常存值,每次新读入值后上一个结果就要扩大10倍</span>
+            result <span class="token operator">&#61;</span> result <span class="token operator">*</span> <span class="token number">10</span> <span class="token operator">&#43;</span> curNum<span class="token punctuation">;</span>
+            index<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> sign <span class="token operator">*</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_83"></a>复杂度分析</h3>
+<p><strong>时间复杂度 O(N)</strong>&#xff0c;一次遍历 s&#xff1b;<br /> <strong>空间复杂度 O(1)</strong>&#xff0c;借助的常量阶的空间</p>

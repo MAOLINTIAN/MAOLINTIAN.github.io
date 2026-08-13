@@ -1,0 +1,237 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【回溯算法】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/133935874-01-25119c7949.png" loading="lazy"><br /> <img alt="在这里插入图片描述" src="./posts/assets/133935874-02-3c1bef8ebe.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="_6"></a>括号生成</h2>
+<p>终于轮到解这两道高频题了</p>
+<h3><a rel="noopener noreferrer" id="_8"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133935874-03-692b4000a9.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_12"></a>解题思路</h3>
+<p><a href="https://labuladong.gitee.io/algo/di-san-zha-24031/bao-li-sou-96f79/hui-su-sua-89170/" rel="nofollow"><strong>原解题思路</strong></a>括号问题可以简单分成两类&#xff0c;<strong>一类是括号的合法性判断 &#xff0c;一类是合法括号的生成</strong>。对于括号合法性的判断&#xff0c;主要是借助「栈」这种数据结构&#xff0c;而<strong>对于括号的生成&#xff0c;一般都要利用回溯递归的思想</strong>。</p>
+<p>有关括号问题&#xff0c;你只要记住以下性质&#xff0c;思路就很容易想出来&#xff1a;</p>
+<ol><li><strong>一个「合法」括号组合的左括号数量一定等于右括号数量</strong>&#xff0c;这个很好理解。</li><li>对于一个「合法」的括号字符串组合 p&#xff0c;必然对于任何 <code>0 &lt;&#61; i &lt; len(p)</code> 都有&#xff1a;子串 <code>p[0..i]</code> 中<strong>左括号的数量都大于或等于右括号的数量</strong>。</li></ol>
+<p>如果不跟你说这个性质&#xff0c;可能不太容易发现&#xff0c;但是稍微想一下&#xff0c;其实很容易理解&#xff0c;<strong>因为从左往右算的话&#xff0c;肯定是左括号多嘛&#xff0c;到最后左右括号数量相等&#xff0c;说明这个括号组合是合法的</strong>。</p>
+<p>算法输入一个整数 n&#xff0c;让你计算 n 对儿括号能组成几种合法的括号组合&#xff0c;可以改写成如下问题&#xff1a;</p>
+<p><strong>现在有 2n 个位置&#xff0c;每个位置可以放置字符 ( 或者 )&#xff0c;组成的所有括号组合中&#xff0c;有多少个是合法的&#xff1f;</strong></p>
+<p>这个命题和题目的意思完全是一样的对吧&#xff0c;那么我们先想想如何得到全部 2^(2n) 种组合&#xff0c;然后再根据我们刚才总结出的合法括号组合的性质筛选出合法的组合&#xff0c;不就完事儿了&#xff1f;那么对于我们的需求&#xff0c;如何打印所有括号组合呢&#xff0c;伪代码如下</p>
+<pre><code class="prism language-java"><span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span><span class="token keyword">int</span> n<span class="token punctuation">,</span> <span class="token keyword">int</span> i<span class="token punctuation">,</span> string<span class="token operator">&amp;</span> track<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// i 代表当前的位置&#xff0c;共 2n 个位置</span>
+    <span class="token comment">// 穷举到最后一个位置了&#xff0c;得到一个长度为 2n 组合</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&#61;&#61;</span> <span class="token number">2</span> <span class="token operator">*</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token function">print</span><span class="token punctuation">(</span>track<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 对于每个位置可以是左括号或者右括号两种选择</span>
+    <span class="token keyword">for</span> choice in <span class="token punctuation">[</span><span class="token char">&#39;(&#39;</span><span class="token punctuation">,</span> <span class="token char">&#39;)&#39;</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span>
+        track<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>choice<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 做选择</span>
+        <span class="token comment">// 穷举下一个位置</span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>n<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> track<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        track<span class="token punctuation">.</span><span class="token function">pop</span><span class="token punctuation">(</span>choice<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 撤销选择</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>那么&#xff0c;现在能够打印所有括号组合了&#xff0c;如何从它们中筛选出合法的括号组合呢&#xff1f;很简单&#xff0c;加几个条件进行「剪枝」就行了。</p>
+<p><strong>对于 2n 个位置&#xff0c;必然有 n 个左括号&#xff0c;n 个右括号&#xff0c;所以我们不是简单的记录穷举位置 i&#xff0c;而是用 left 记录还可以使用多少个左括号&#xff0c;用 right 记录还可以使用多少个右括号</strong>&#xff0c;这样就可以通过刚才总结的合法括号规律进行筛选了</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133935874-04-065f7eed98.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_53"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 定义结果集和路径</span>
+    <span class="token keyword">private</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">StringBuilder</span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型
+     * &#64;return string字符串ArrayList
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> generateParenthesis <span class="token punctuation">(</span><span class="token keyword">int</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>n <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span>  <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 左右括号剩余数当做入参传入</span>
+        <span class="token function">backTrack</span><span class="token punctuation">(</span> n<span class="token punctuation">,</span>  n<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backTrack</span><span class="token punctuation">(</span><span class="token keyword">int</span> leftRemaind<span class="token punctuation">,</span> <span class="token keyword">int</span> rightRemaind<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">// 1 超量使用括号不合法&#xff0c;则剪枝</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>leftRemaind <span class="token operator">&lt;</span> <span class="token number">0</span> <span class="token operator">||</span> rightRemaind <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 如果左括号剩余数量大于右括号&#xff0c;则认为右括号在前面过多使用&#xff0c;无法闭合&#xff0c;剪枝</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>leftRemaind <span class="token operator">&gt;</span> rightRemaind<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 如果左右括号同时消耗完&#xff0c;证明到了叶子节点&#xff0c;结算</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>leftRemaind <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> rightRemaind <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 4 左边括号回溯</span>
+        path<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token char">&#39;(&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">backTrack</span><span class="token punctuation">(</span>leftRemaind <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> rightRemaind<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        path<span class="token punctuation">.</span><span class="token function">deleteCharAt</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 5 右边括号回溯</span>
+        path<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token char">&#39;)&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">backTrack</span><span class="token punctuation">(</span>leftRemaind<span class="token punctuation">,</span> rightRemaind <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        path<span class="token punctuation">.</span><span class="token function">deleteCharAt</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_116"></a>复杂度分析</h3>
+<p>下面是对给定代码的时间和空间复杂度分析&#xff1a;</p>
+<p>时间复杂度&#xff1a;</p>
+<ul><li>生成所有可能的括号组合需要进行回溯操作&#xff0c;因此时间复杂度取决于生成的括号字符串的数量。</li><li>最坏情况下&#xff0c;可以生成的括号字符串数量为卡特兰数的第 n 项&#xff0c;约为 <code>O(4^n / (n^(3/2)))</code>&#xff0c;这是因为每个位置都有两种选择&#xff0c;左括号或右括号&#xff0c;总共 2^(2n) 种组合。</li><li>因此&#xff0c;时间复杂度<code>为 O(4^n / (n^(3/2)))</code>。</li></ul>
+<p>空间复杂度&#xff1a;</p>
+<ul><li>空间复杂度主要取决于递归调用的栈空间和存储结果的数据结构。</li><li>在递归调用中&#xff0c;栈的最大深度不会超过 n&#xff0c;因为每一步都减少一个左括号或右括号&#xff0c;最多递归 n 层。因此&#xff0c;栈空间的空间复杂度为 O(n)。</li><li>存储结果的 <code>result</code> 列表和 <code>path</code> 字符串的长度也会受到影响&#xff0c;但在最坏情况下&#xff0c;<code>result</code> 中的字符串数量为卡特兰数的第 n 项&#xff0c;所以结果列表的空间复杂度也可以视为 O(4^n / (n^(3/2)))。<code>path</code> 字符串的最大长度为 2n&#xff0c;所以它的空间复杂度是 O(n)。</li><li>因此&#xff0c;总的空间复杂度是 O(n) &#43; O(4^n / (n^(3/2)))。</li></ul>
+<p>需要注意的是&#xff0c;在实际应用中&#xff0c;生成括号字符串的数量通常较小&#xff0c;因此代码的实际运行时间和空间占用可能会更加可控。</p>
+<p>对于递归相关的算法&#xff0c;<strong>时间复杂度这样计算&#xff08;递归次数&#xff09;*&#xff08;递归函数本身的时间复杂度&#xff09;</strong></p>
+<h2><a rel="noopener noreferrer" id="IPMID_134"></a>复原IP地址【MID】</h2>
+<p><font color="red"><strong>元素无重不可复选&#xff0c;且不可重排序【子集组合框架】</strong></font>再来一道复原IP地址</p>
+<h3><a rel="noopener noreferrer" id="_136"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133935874-05-8d7d4ea21a.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_138"></a>解题思路</h3>
+<p><a href="https://leetcode.cn/problems/restore-ip-addresses/solutions/100433/hui-su-suan-fa-hua-tu-fen-xi-jian-zhi-tiao-jian-by/" rel="nofollow"><strong>原解题地址</strong></a>回溯算法事实上就是在一个树形问题上做深度优先遍历&#xff0c;因此 <strong>首先需要把问题转换为树形问题</strong>。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133935874-06-0c80743118.png" loading="lazy"></p>
+<p>在画树形图的过程中&#xff0c;你一定会发现有些枝叶是没有必要的&#xff0c;把没有必要的枝叶剪去的操作就是剪枝&#xff0c;在代码中一般通过 break 或者 contine 和 return &#xff08;表示递归终止&#xff09;实现。分析剪枝条件&#xff1a;</p>
+<ol><li>一开始&#xff0c;<strong>字符串的长度小于 4 或者大于 12 &#xff0c;一定不能拼凑出合法的 ip 地址</strong>&#xff08;这一点可以一般化到中间结点的判断中&#xff0c;以产生剪枝行为&#xff09;&#xff1b;</li><li>每一个结点可以选择截取的方法只有 3 种&#xff1a;<strong>截 1 位、截 2 位、截 3 位&#xff0c;因此每一个结点可以生长出的分支最多只有 3 条分支</strong>&#xff0c;根据截取出来的字符串判断是否是合理的 ip 段&#xff0c;这里写法比较多&#xff0c;可以先截取&#xff0c;再转换成 int &#xff0c;再判断。</li><li>由于 ip 段最多就 4 个段&#xff0c;<strong>因此这棵三叉树最多 4 层</strong>&#xff0c;这个条件作为递归终止条件之一&#xff1b;</li><li>每一个结点表示了求解这个问题的不同阶段&#xff0c;需要的状态变量有&#xff1a;<strong>splitTimes&#xff1a;已经分割出多少个 ip 段</strong>&#xff1b;<strong>begin&#xff1a;截取 ip 段的起始位置</strong>&#xff1b;<strong>path&#xff1a;记录从根结点到叶子结点的一个路径</strong>&#xff08;回溯算法常规变量&#xff0c;是一个栈&#xff09;&#xff1b;<strong>res&#xff1a;记录结果集的变量&#xff0c;常规变量</strong>。</li></ol>
+<p>接下来套用回溯模版来写一下</p>
+<h3><a rel="noopener noreferrer" id="_154"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java">
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 1 定义结果集和路径</span>
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">restoreIpAddresses</span><span class="token punctuation">(</span><span class="token class-name">String</span> s<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 字符串合法性判断</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">||</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">4</span> <span class="token operator">||</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">12</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token function">backTrack</span><span class="token punctuation">(</span>s<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 构造的是子集树</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backTrack</span><span class="token punctuation">(</span><span class="token class-name">String</span> s<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">// 剪枝1&#xff1a;暴力遍历结束,指针溢出了</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> start<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 剪枝2&#xff1a;可用字符太多</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> start <span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token number">4</span> <span class="token operator">-</span> path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 剪枝3&#xff1a;可用字符太少</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> start <span class="token operator">&lt;</span> <span class="token number">4</span> <span class="token operator">-</span> path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 叶子节点&#xff0c;路径添加</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token string">&#34;.&#34;</span><span class="token punctuation">,</span> path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 选择列表</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> i <span class="token operator">&lt;</span> start <span class="token operator">&#43;</span> <span class="token number">3</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 1 截取子串,从当前位置出发&#xff0c;横向的3种可能性</span>
+            <span class="token class-name">String</span> subStr <span class="token operator">&#61;</span> s<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>start<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2 如果子串不满足条件&#xff0c;则不添加到路径上</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">isValidSubIpAddress</span><span class="token punctuation">(</span>subStr<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">continue</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token comment">// 3 前进与回溯&#xff0c;子集问题&#xff0c;前面用过的重复可能不再使用&#xff0c;所以start为i&#43;1</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>subStr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">backTrack</span><span class="token punctuation">(</span>s<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 判断一段字符串是否为合法IP段</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">isValidSubIpAddress</span><span class="token punctuation">(</span><span class="token class-name">String</span> subStr<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 如果字符串截取的长度不满足则为false</span>
+        <span class="token keyword">int</span> subIpAddressLen <span class="token operator">&#61;</span> subStr<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>subIpAddressLen <span class="token operator">&lt;</span> <span class="token number">1</span> <span class="token operator">||</span> subIpAddressLen <span class="token operator">&gt;</span> <span class="token number">3</span> <span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 如果长度大于1位&#xff0c;则第1位不能为0&#xff0c;也就是不能有前导0</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>subIpAddressLen <span class="token operator">&gt;</span> <span class="token number">1</span> <span class="token operator">&amp;&amp;</span> subStr<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;0&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 值验证&#xff0c;值必须大于等于0且小于等于255</span>
+        <span class="token keyword">int</span> sum <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> subStr<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            sum <span class="token operator">&#61;</span> sum <span class="token operator">*</span> <span class="token number">10</span> <span class="token operator">&#43;</span>  subStr<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token char">&#39;0&#39;</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>sum <span class="token operator">&gt;</span> <span class="token number">255</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>这里的<code>backTrack(s, i &#43; 1);</code>与子集问题有异曲同工之妙&#xff0c;都是不可复选的意思。这里表示字符串下一层只能往后选&#xff0c;子集里的则表示用过的元素不能再被使用</strong></p>
+<h4><a rel="noopener noreferrer" id="1__256"></a>1 剪枝分析&#xff1a;剩余字符太少</h4>
+<pre><code class="prism language-java"><span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> begin <span class="token operator">&lt;</span> <span class="token punctuation">(</span><span class="token number">4</span> <span class="token operator">-</span> path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+</code></pre>
+<p>让我们通过一个示例来说明代码中的这部分剪枝逻辑。</p>
+<p>假设输入字符串 <code>s</code> 为 “25525511135”&#xff0c;我们希望生成合法的 IP 地址。在这个示例中&#xff0c;<code>s</code> 的长度为 11 个字符。</p>
+<ul><li>初始时&#xff0c;<code>begin</code> 为 0&#xff0c;<code>path</code> 为空&#xff0c;即 <code>path.size()</code> 为 0。</li><li>我们需要生成 4 个IP地址段。</li><li>假设我们已经生成了 <code>path</code> 中的部分IP地址段。</li></ul>
+<p>在这个时刻&#xff0c;剪枝逻辑 <code>if (s.length() - begin &lt; (4 - path.size())) return;</code> 发挥作用。我们可以通过具体的示例来解释&#xff1a;</p>
+<ul><li><code>path.size()</code> 是已经生成的 IP 地址段的数量&#xff0c;假设为 <code>k</code>。</li><li><code>(4 - path.size())</code> 表示剩下需要生成的IP地址段数量&#xff0c;即 <code>4 - k</code>。</li><li><code>s.length() - begin</code> 表示从当前 <code>begin</code> 位置开始的剩余字符串的长度。</li></ul>
+<p>剪枝条件的含义是&#xff0c;如果剩余的字符串长度不足以填充需要生成的剩余IP地址段&#xff0c;那就没有必要继续搜索&#xff0c;因为在这种情况下&#xff0c;无法生成合法的IP地址。</p>
+<p>对于示例 “25525511135”&#xff1a;</p>
+<ul><li>当 <code>begin</code> 为 0 时&#xff0c;已经生成 0 个IP地址段&#xff0c;需要生成 4 个&#xff0c;因此 <code>(4 - path.size())</code> 为 4。</li><li>剩余的字符串长度为 11&#xff08;整个输入字符串的长度&#xff09; - 0&#xff08;当前位置 <code>begin</code>&#xff09; &#61; 11。</li><li>因此&#xff0c;<code>s.length() - begin</code> 大于 <code>(4 - path.size())</code>&#xff0c;即 11 &gt; 4&#xff0c;这意味着可以继续搜索下一个IP地址段。</li></ul>
+<p>这个剪枝条件的目的是在每个搜索步骤中&#xff0c;确保剩余的字符串足够填充所有需要生成的IP地址段。如果不满足这个条件&#xff0c;就没有必要继续搜索&#xff0c;因为无法生成合法的IP地址。</p>
+<h4><a rel="noopener noreferrer" id="2__286"></a>2 剪枝分析&#xff1a;剩余字符太多</h4>
+<pre><code class="prism language-java"><span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> begin <span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token number">4</span> <span class="token operator">-</span> path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+</code></pre>
+<p>这行代码是用于进一步剪枝的逻辑。它的目的是确保剩余的字符串长度不会过长&#xff0c;以至于无法生成合法的 IP 地址。让我通过一个示例来说明这部分剪枝逻辑&#xff1a;</p>
+<p>假设输入字符串 <code>s</code> 为 “25525511135”&#xff0c;我们依然希望生成合法的 IP 地址。</p>
+<ul><li>初始时&#xff0c;<code>begin</code> 为 0&#xff0c;<code>path</code> 为空&#xff0c;即 <code>path.size()</code> 为 0。</li><li>我们需要生成 4 个 IP 地址段。</li></ul>
+<p>在这个示例中&#xff0c;我们将关注这部分剪枝逻辑 <code>if (s.length() - begin &gt; (4 - path.size()) * 3) return;</code>。我们可以通过具体的示例来解释&#xff1a;</p>
+<ul><li><code>path.size()</code> 是已经生成的 IP 地址段的数量&#xff0c;假设为 <code>k</code>。</li><li><code>(4 - path.size())</code> 表示剩下需要生成的 IP 地址段数量&#xff0c;即 <code>4 - k</code>。</li><li><code>s.length() - begin</code> 表示从当前 <code>begin</code> 位置开始的剩余字符串的长度。</li></ul>
+<p>剪枝条件的含义是&#xff0c;如果剩余的字符串长度超过了填充需要生成的剩余 IP 地址段所需的最大字符数&#xff0c;那就没有必要继续搜索&#xff0c;因为在这种情况下&#xff0c;也无法生成合法的 IP 地址。</p>
+<p>对于示例 “25525511135”&#xff1a;</p>
+<ul><li>当 <code>begin</code> 为 0 时&#xff0c;已经生成 0 个 IP 地址段&#xff0c;需要生成 4 个&#xff0c;因此 <code>(4 - path.size())</code> 为 4。</li><li>剩余的字符串长度为 11&#xff08;整个输入字符串的长度&#xff09; - 0&#xff08;当前位置 <code>begin</code>&#xff09; &#61; 11。</li></ul>
+<p>剪枝条件 <code>if (s.length() - begin &gt; (4 - path.size()) * 3)</code> 表示如果剩余字符串长度大于 <code>(4 - path.size()) * 3</code>&#xff0c;就没有必要继续搜索。因为每个 IP 地址段最多有 3 个字符&#xff0c;所以 <code>(4 - path.size()) * 3</code> 表示需要填充剩余 IP 地址段所需的最大字符数。如果剩余字符串长度超过这个最大字符数&#xff0c;那么就不可能生成合法的 IP 地址。</p>
+<p>在这个示例中&#xff0c;<code>11 &lt; 4 * 3</code> 成立&#xff0c;所以搜索会继续。但如果 <code>s</code> 长度更长&#xff0c;例如 “255255111356789”&#xff0c;那么 <code>s.length() - begin</code> 将大于 <code>(4 - path.size()) * 3</code>&#xff0c;并且搜索会被剪枝&#xff0c;因为不可能生成合法的 IP 地址。</p>
+<h3><a rel="noopener noreferrer" id="_314"></a>复杂度分析</h3>

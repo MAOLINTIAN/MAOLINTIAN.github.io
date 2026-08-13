@@ -1,0 +1,118 @@
+<p>了解了抽象类和接口后&#xff0c;再来了解一下面向对象语法和特性的一些最佳使用原则&#xff1a;<strong>基于接口而非实现编程</strong>&#xff0c;从本质上来看&#xff0c;接口就是一组协议或者约定&#xff0c;是功能提供者提供给使用者的一个功能列表。接口在不同的应用场景下会有不同的解读&#xff0c;比如服务端与客户端之间的接口&#xff0c;类库提供的接口&#xff0c;甚至是一组通信的协议都可以叫作接口。<font color="red"><strong>如果落实到具体的编码&#xff0c;基于接口而非实现编程这条原则中的接口&#xff0c;可以理解为编程语言中的接口或者抽象类</strong></font></p>
+<h2><a rel="noopener noreferrer" id="_1"></a>理解原则</h2>
+<p>实际上&#xff0c;基于接口而非实现编程这条原则的另一个表述方式&#xff0c;是<font color="red"><strong>基于抽象而非实现编程</strong></font>&#xff0c;也就是抽象特性。后者的表述方式其实更能体现这条原则的设计初衷。在软件开发中&#xff0c;最大的挑战之一就是需求的不断变化&#xff0c;这也是考验代码设计好坏的一个标准。<strong>越抽象、越顶层、越脱离具体某一实现的设计&#xff0c;越能提高代码的灵活性&#xff0c;越能应对未来的需求变化。好的代码设计&#xff0c;不仅能应对当下的需求&#xff0c;而且在将来需求发生变化的时候&#xff0c;仍然能够在不破坏原有代码设计的情况下灵活应对。而抽象就是提高代码扩展性、灵活性、可维护性最有效的手段之一</strong></p>
+<h2><a rel="noopener noreferrer" id="_3"></a>原则实例</h2>
+<p>假设我们的系统中有很多涉及图片处理和存储的业务逻辑。图片经过处理之后被上传到阿里云上。为了代码复用&#xff0c;我们封装了图片存储相关的代码逻辑&#xff0c;提供了一个统一的 <code>AliyunImageStore</code> 类&#xff0c;供整个系统来使用。具体的代码实现如下所示&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AliyunImageStore</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//...省略属性、构造函数等...</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">createBucketIfNotExisting</span><span class="token punctuation">(</span><span class="token class-name">String</span> bucketName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ...创建bucket代码逻辑...</span>
+    <span class="token comment">// ...失败会抛出异常..</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">generateAccessToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ...根据accesskey/secrectkey等生成access token</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">uploadToAliyun</span><span class="token punctuation">(</span><span class="token class-name">Image</span> image<span class="token punctuation">,</span> <span class="token class-name">String</span> bucketName<span class="token punctuation">,</span> <span class="token class-name">String</span> accessToken<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...上传图片到阿里云...</span>
+    <span class="token comment">//...返回图片存储在阿里云上的地址(url&#xff09;...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Image</span> <span class="token function">downloadFromAliyun</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">,</span> <span class="token class-name">String</span> accessToken<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...从阿里云下载图片...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// AliyunImageStore类的使用举例</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageProcessingJob</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">String</span> BUCKET_NAME <span class="token operator">&#61;</span> <span class="token string">&#34;ai_images_bucket&#34;</span><span class="token punctuation">;</span>
+  <span class="token comment">//...省略其他无关代码...</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">process</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">Image</span> image <span class="token operator">&#61;</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">;</span> <span class="token comment">//处理图片&#xff0c;并封装为Image对象</span>
+    <span class="token class-name">AliyunImageStore</span> imageStore <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">AliyunImageStore</span><span class="token punctuation">(</span><span class="token comment">/*省略参数*/</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    imageStore<span class="token punctuation">.</span><span class="token function">createBucketIfNotExisting</span><span class="token punctuation">(</span>BUCKET_NAME<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> accessToken <span class="token operator">&#61;</span> imageStore<span class="token punctuation">.</span><span class="token function">generateAccessToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    imagestore<span class="token punctuation">.</span><span class="token function">uploadToAliyun</span><span class="token punctuation">(</span>image<span class="token punctuation">,</span> BUCKET_NAME<span class="token punctuation">,</span> accessToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>整个上传流程包含三个步骤&#xff1a;创建 bucket、生成 access token 访问凭证、携带 access token 上传图片到指定的 bucket 中。这样的设计没有问题&#xff0c;但是一段时间后我们自建了私有云&#xff0c;不再将图片存储到阿里云了&#xff0c;而是将图片存储到自建私有云上。为了满足这样一个需求的变化&#xff0c;我们该如何修改代码呢&#xff1f;</p>
+<ul><li>首先&#xff0c;AliyunImageStore 类中有些<strong>函数命名暴露了实现细节</strong>&#xff0c;比如&#xff0c;uploadToAliyun() 和 downloadFromAliyun()&#xff0c;那就意味着&#xff0c;我们要修改项目中所有使用到这两个方法的代码&#xff0c;代码修改量可能就会很大</li><li>其次&#xff0c;<strong>将图片存储到阿里云的流程&#xff0c;跟存储到私有云的流程&#xff0c;可能并不是完全一致的</strong>。比如&#xff0c;阿里云的图片上传和下载的过程中&#xff0c;需要生产 access token&#xff0c;而私有云不需要 access token。一方面&#xff0c;AliyunImageStore 中定义的 generateAccessToken() 方法不能照抄到 PrivateImageStore 中&#xff1b;另一方面&#xff0c;我们在使用 AliyunImageStore 上传、下载图片的时候&#xff0c;代码中用到了 generateAccessToken() 方法&#xff0c;如果要改为私有云的上传下载流程&#xff0c;这些代码都需要做调整。</li></ul>
+<p>解决这个问题的根本方法就是&#xff0c;在编写代码的时候&#xff0c;要遵从<strong>基于接口而非实现编程</strong>的原则</p>
+<ol><li><font color="red"><strong>函数的命名不能暴露任何实现细节</strong></font>。比如&#xff0c;前面提到的 uploadToAliyun() 就不符合要求&#xff0c;应该改为去掉 aliyun 这样的字眼&#xff0c;改为更加抽象的命名方式&#xff0c;比如&#xff1a;upload()。</li><li><font color="red"><strong>封装具体的实现细节</strong></font>。比如&#xff0c;跟阿里云相关的特殊上传&#xff08;或下载&#xff09;流程不应该暴露给调用者。我们对上传&#xff08;或下载&#xff09;流程进行封装&#xff0c;对外提供一个包裹所有上传&#xff08;或下载&#xff09;细节的方法&#xff0c;给调用者使用。</li><li><font color="red"> <strong>为实现类定义抽象的接口</strong></font>。具体的实现类都依赖统一的接口定义&#xff0c;遵从一致的上传功能协议。使用者依赖接口&#xff0c;而不是具体的实现类来编程。</li></ol>
+<p>基于以上措施重构代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">// 接口定义&#xff0c;只包含上传下载</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">ImageStore</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token class-name">String</span> <span class="token function">upload</span><span class="token punctuation">(</span><span class="token class-name">Image</span> image<span class="token punctuation">,</span> <span class="token class-name">String</span> bucketName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token class-name">Image</span> <span class="token function">download</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 阿里云的实现</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AliyunImageStore</span> <span class="token keyword">implements</span> <span class="token class-name">ImageStore</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//...省略属性、构造函数等...</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">upload</span><span class="token punctuation">(</span><span class="token class-name">Image</span> image<span class="token punctuation">,</span> <span class="token class-name">String</span> bucketName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">createBucketIfNotExisting</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> accessToken <span class="token operator">&#61;</span> <span class="token function">generateAccessToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//...上传图片到阿里云...</span>
+    <span class="token comment">//...返回图片在阿里云上的地址(url)...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Image</span> <span class="token function">download</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> accessToken <span class="token operator">&#61;</span> <span class="token function">generateAccessToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//...从阿里云下载图片...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">createBucketIfNotExisting</span><span class="token punctuation">(</span><span class="token class-name">String</span> bucketName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ...创建bucket...</span>
+    <span class="token comment">// ...失败会抛出异常..</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">generateAccessToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ...根据accesskey/secrectkey等生成access token</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 私有云的实现</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PrivateImageStore</span> <span class="token keyword">implements</span> <span class="token class-name">ImageStore</span>  <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//上传下载流程改变&#xff1a;私有云不需要支持access token</span>
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">upload</span><span class="token punctuation">(</span><span class="token class-name">Image</span> image<span class="token punctuation">,</span> <span class="token class-name">String</span> bucketName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">createBucketIfNotExisting</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//...上传图片到私有云...</span>
+    <span class="token comment">//...返回图片的url...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">Image</span> <span class="token function">download</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...从私有云下载图片...</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">createBucketIfNotExisting</span><span class="token punctuation">(</span><span class="token class-name">String</span> bucketName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ...创建bucket...</span>
+    <span class="token comment">// ...失败会抛出异常..</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// ImageStore的使用举例</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageProcessingJob</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">String</span> BUCKET_NAME <span class="token operator">&#61;</span> <span class="token string">&#34;ai_images_bucket&#34;</span><span class="token punctuation">;</span>
+  <span class="token comment">//...省略其他无关代码...</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">process</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">Image</span> image <span class="token operator">&#61;</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">;</span><span class="token comment">//处理图片&#xff0c;并封装为Image对象</span>
+    <span class="token class-name">ImageStore</span> imageStore <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">PrivateImageStore</span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    imagestore<span class="token punctuation">.</span><span class="token function">upload</span><span class="token punctuation">(</span>image<span class="token punctuation">,</span> BUCKET_NAME<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_120"></a>思维误区</h2>
+<p>在日常开发中&#xff0c;经常陷入两个思维误区中通过实现类反推节点定义&#xff0c; 为每个实现类都定义接口。</p>
+<h3><a rel="noopener noreferrer" id="_123"></a>通过实现类反推接口定义</h3>
+<p>很多人在定义接口的时候&#xff0c;希望<strong>通过实现类来反推接口的定义</strong>&#xff08;事实上&#xff0c;在完成大多数需求的时候都是这个思路&#xff0c;先按需求写实现类&#xff0c;再补个接口定义&#xff09;。先把实现类写好&#xff0c;然后看实现类中有哪些方法&#xff0c;照抄到接口定义中。如果按照这种思考方式&#xff0c;就有可能导致接口定义不够抽象&#xff0c;依赖具体的实现。这样的接口设计就没有意义了。不过&#xff0c;如果你觉得这种思考方式更加顺畅&#xff0c;那也没问题&#xff0c;<font color="red"><strong>只是将实现类的方法搬移到接口定义中的时候&#xff0c;要有选择性的搬移&#xff0c;不要将跟具体实现相关的方法搬移到接口中</strong></font>&#xff0c;比如 <code>AliyunImageStore</code> 中的 <code>generateAccessToken()</code> 方法&#xff0c;一直觉得没问题也是因为一般一个接口对应一个实现&#xff0c;很少写多扩展的接口。</p>
+<h3><a rel="noopener noreferrer" id="_126"></a>为每个实现类都定义接口</h3>
+<p>这条原则的设计初衷是&#xff0c;<font color="red"><strong>将接口和实现相分离&#xff0c;封装不稳定的实现&#xff0c;暴露稳定的接口。上游系统面向接口而非实现编程&#xff0c;不依赖不稳定的实现细节&#xff0c;这样当实现发生变化的时候&#xff0c;上游系统的代码基本上不需要做改动&#xff0c;以此来降低代码间的耦合性&#xff0c;提高代码的扩展性</strong></font>。从这个设计初衷上来看&#xff0c;如果在我们的业务场景中&#xff0c;<strong>某个功能只有一种实现方式&#xff0c;未来也不可能被其他实现方式替换&#xff0c;那我们就没有必要为其设计接口&#xff0c;也没有必要基于接口编程&#xff0c;直接使用实现类就可以了</strong>。除此之外&#xff0c;越是不稳定的系统&#xff0c;我们越是要在代码的扩展性、维护性上下功夫。相反&#xff0c;如果某个系统特别稳定&#xff0c;在开发完之后&#xff0c;基本上不需要做维护&#xff0c;那我们就没有必要为其扩展性&#xff0c;投入不必要的开发时间</p>
+<h2><a rel="noopener noreferrer" id="_128"></a>总结一下</h2>
+<p>基于接口而非实现编程&#xff0c;实际上是基于抽象而非实现编程&#xff0c;具体到Java里就是抽象特性的体现&#xff0c;抽象的两个实现方式也就是上篇Blog提到的抽象类和接口类。原则的设计初衷是将接口和实现相分离&#xff0c;封装不稳定的实现&#xff0c;暴露稳定的接口。上游系统面向接口而非实现编程&#xff0c;不依赖不稳定的实现细节&#xff0c;这样当实现发生变化的时候&#xff0c;上游系统的代码基本上不需要做改动&#xff0c;以此来降低代码间的耦合性&#xff0c;提高代码的扩展性。但这个原则使用时也需要注意&#xff0c;设计接口和实现时思维顺序要摆正&#xff0c;不要通过实现去反推接口定义&#xff1b;写代码时候也不要惯性的为每个实现类都定义接口&#xff0c;使用原则时要理解其初衷&#xff0c;如果某个功能不需要扩展那只有实现就行了&#xff0c;具体到我们的实现里就是facade接口是不就大可不必&#xff1f;MVC里的所有service接口都有必要&#xff1f;这些问题可能得动脑思考而非无脑堆砌。</p>

@@ -1,0 +1,497 @@
+<p>从这一章开始&#xff0c;基本就脱离了结构化编程的思维&#xff0c;所以我的博客排版方式也会摒弃之前的节选方式&#xff0c;而是深入的去理解和描述内容&#xff0c;<strong>而这本书给我带来的惊喜就是&#xff1a;<font color="red">能够从设计的角度去帮助我理解为何类要如此设计&#xff0c;其设计缘由是什么&#xff0c;我觉得这一点远比单纯的告诉你怎么用更重要</font></strong>&#xff01;感觉这一章的干货特别多&#xff0c;可以让我的面向对象思维上一个小小的台阶&#xff0c;这里将自己的学习笔记以及自己的理解整理分享出来&#xff0c;希望对大家都有所帮助&#xff0c;还有一点要说明下&#xff1a;<strong>面向对象思维远比语言的选择更重要&#xff0c;所以无论Java、C&#43;&#43;还是C#&#xff0c;不同的语法只是为了满足自己特定场合的用途&#xff0c;而核心思想才是最重要的</strong>&#xff0c;实现方式反而没那么需要重视(<strong>R语言也一样哦&#xff0c;你想学&#xff0c;我就提前学学教你hhh</strong>)&#xff01;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/103445354-01-24162835a2.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_3"></a>宏观认知</h3>
+<p>有别于作者的排列方式&#xff0c;我想先宏观的串讲下概念&#xff0c;然后再填充细节。采用连续发问的方式来引发你的思考和明白没一项的场景需求&#xff1a;</p>
+<p>1&#xff0c;为什么要有类&#xff1f;</p>
+<blockquote>
+<p>相较于之前5章对面向过程编程层面的理解&#xff0c;我觉得面向对象编程的好处就是&#xff1a;<strong><font color="red">可以不必从头创建新程序&#xff0c;而是用现有的一个模板去复制、去扩展&#xff0c;或添加更多&#xff0c;而且整个代码还非常有条理&#xff0c;可以控制访问权限、组织起来不会乱</font></strong>&#xff0c;还有就是理解起来也更加容易&#xff0c;而<font color="red"><strong>类就是用来完成面向对象的使命的</strong>。</font></p>
+</blockquote>
+<p>2&#xff0c;面向对象的三大特性&#xff1a;继承、封装、多态&#xff1f;</p>
+<blockquote>
+<p>依据面向对象编程的好处&#xff0c;我们可以确定&#xff0c;面向对象比面向过程的优势&#xff1a;可扩展、好组织、能控制访问权限。所以对应的类一定要具有这样的能力&#xff1a;<font color="red"><strong>封装类的细节、派生类型来扩展基类型的能力&#xff08;包括数据和方法&#xff09;、方法或类型的多态化实现</strong>。</font></p>
+</blockquote>
+<p>3&#xff0c;如何实现封装这一特性&#xff08;本篇只介绍封装部分&#xff0c;下一章介绍继承和多态&#xff09;&#xff1f;</p>
+<blockquote>
+<p>这就需要很好的组织类的成员&#xff0c;先来了解一下&#xff1a;<strong><font color="red">实例字段、静态字段、实例方法、静态方法、普通构造函数&#xff08;实例&#xff09;、静态构造函数、嵌套类</font></strong>。用<strong>访问修饰符</strong>来限定以上内容的访问方式&#xff0c;当然&#xff0c;如果限定了private的字段&#xff0c;我【实例.字段】是看不到私有成员的&#xff0c;但是我又想给该字段赋值&#xff0c;或者想让数据在外部只读&#xff0c;而能内部修改&#xff0c;简而言之就是想让字段能具有更加细粒度的操作内容&#xff0c;怎么办呢&#xff0c;传统的方式是使用public的get和set方法&#xff0c;但是C#提供了<font color="red"><strong>属性</strong></font>来简化这一实现。</p>
+</blockquote>
+<p>4&#xff0c;既然我都有了实例字段、实例方法&#xff0c;我为啥还需要静态的字段和方法&#xff1f;书上有个例子举的特别好&#xff1a;</p>
+<blockquote>
+<p>类和对象都能关联数据。<strong><font color="red">将类想象成模具&#xff0c;将对象想象成根据该模具浇铸的零件</font></strong>&#xff0c;可以更好地理解这一点。例如&#xff0c;一个模具拥有的数据可能包括&#xff1a;到目前为止已用模具浇铸的零件数、下个零件的序列号、当前注入模具的液态塑料的颜色以及模具每小时生产零件数量。类似地&#xff0c;零件也拥有它自己的数据&#xff1a;序列号、颜色以及生产日期/时间。虽然零件颜色就是生产零件时在模具中注入的塑料的颜色&#xff0c;但它显然不包含模具中当前注入的塑料颜色数据&#xff0c;也不包含要生产的下个零件的序列号数据。</p>
+</blockquote>
+<p>设计对象时&#xff0c;程序员要考虑字段和方法应声明为静态还是基于实例。<strong><font color="red">一般应将不需要访问任何实例数据的方法声明为静态方法&#xff0c;将需要访问实例数据的方法&#xff08;实例不作为参数传递&#xff09;声明为实例方法。静态字段主要存储对应于类的数据&#xff0c;比如新实例的默认值或者已创建实例个数。而实例字段主要存储和对象关联的数据</font></strong>。</p>
+<p>5&#xff0c;扩展方法有啥意义&#xff1f;</p>
+<blockquote>
+<p>其实我感觉没啥意义&#xff0c;就是如果一个已经写好的类缺少你比较需要的一个功能&#xff0c;可以通过扩展方法来创造一个扩展类出来&#xff0c;然后在里面写一个扩展方法&#xff0c;这样你的类的对象就可以直接调用该扩展方法了&#xff0c;就好像你的类本身就具有这样的方法一样。<strong><font color="red">其实我感觉这种方式用的应该比较少&#xff0c;如果对象想实现一个类没有的方法&#xff0c;完全可以搞个派生类出来</font></strong>。</p>
+</blockquote>
+<p>6&#xff0c;嵌套类有啥用&#xff1f;</p>
+<blockquote>
+<p>如果一个类在它的包容类外部没有多大意义&#xff0c;就适合设计成嵌套类&#xff0c;换言之&#xff0c;这个类对于它的包容类比较专属&#xff0c;通过嵌套的方式可以限定它不被滥用。</p>
+</blockquote>
+<p>7&#xff0c;为啥要有分部类和分部方法</p>
+<blockquote>
+<p>我这么理解&#xff1a;其实说白了就是&#xff0c;一个类或方法如果在修改的时候有一部分老是不变&#xff0c;就把它单独抽成一个文件呗&#xff0c;避免反复无意义的重新生成&#xff0c;而且有时候如果多个程序员同时改一个类&#xff0c;虽然有git版本控制&#xff0c;但是拆开来岂不是更好。</p>
+</blockquote>
+<h3><a rel="noopener noreferrer" id="_35"></a>对象和类</h3>
+<p>类的声明和实例化其实已经不必赘述了&#xff0c;需要注意的就是以下两点规范&#xff1a;</p>
+<ol><li>不要在一个源代码文件中放多个类</li><li>要用所含公共类型的名称命名源代码文件&#xff08;如果你非要不听话的在源代码文件中放多个类&#xff09;</li></ol>
+<p>而对象就是类new出来的&#xff0c;将数据和方法&#xff08;行为&#xff09;组合在一起。而访问修饰符可以限定其访问范围&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103445354-02-b1abe84148.png" loading="lazy"><br />
+各种类型<strong>可使用的访问修饰符</strong>&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103445354-03-e948f2c355.png" loading="lazy">需要注意的是&#xff0c;这表明的是可见性&#xff01;<strong>就是你能通过智能感知器关联看到&#xff01;</strong>&#xff0c;<font color="red"><strong>还有就是成员默认私有&#xff01;如果不为类的成员添加访问修饰符&#xff0c;默认的访问修饰符为private</strong>!</font></p>
+<h3><a rel="noopener noreferrer" id="_46"></a>属性的用法</h3>
+<p>为啥要有属性&#xff0c;就像我在上文提到的&#xff0c;如果我又想保证不可见&#xff0c;有想不通过方法调用来赋值或者取值&#xff0c;使用属性多合适啊&#xff01;</p>
+<h4><a rel="noopener noreferrer" id="_48"></a>声明属性</h4>
+<p>1&#xff0c;<strong>简单的属性声明方式</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">class</span> <span class="token class-name">Employee</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// FirstName property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> _FirstName<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">set</span>
+            <span class="token punctuation">{<!-- --></span>
+                _FirstName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _FirstName<span class="token punctuation">;</span>  <span class="token comment">//字段</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>2&#xff0c;花式的使用表达式主题方法的声明方式&#xff0c;C#7.0支持&#xff1a;</p>
+<pre><code class="prism language-csharp">    <span class="token keyword">public</span> <span class="token keyword">string</span> LastName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _LastName<span class="token punctuation">;</span>
+            <span class="token keyword">set</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _LastName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _LastName<span class="token punctuation">;</span>
+</code></pre>
+<p>3&#xff0c;高端玩儿法&#xff1a;C#3.0支持自动属性&#xff1a;</p>
+<pre><code class="prism language-csharp">
+        <span class="token comment">// Title property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Title <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token comment">// Manager property</span>
+        <span class="token keyword">public</span> <span class="token class-name">Employee</span> Manager <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Salary <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token operator">&#61;</span> <span class="token string">&#34;Not Enough&#34;</span><span class="token punctuation">;</span>  <span class="token comment">//C#6.0支持直接赋值</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_92"></a>属性设计规范</h4>
+<p>属性有如下几条使用规范&#xff0c;最需要注意的就是&#xff0c;<strong>属性代表数据&#xff0c;而方法代表行动&#xff0c;不用混为一谈</strong>。</p>
+<ol><li>要使用属性简化对简单数据的访问&#xff08;只进行简单计算&#xff09;。</li><li>避免从属性取值方法抛出异常。</li><li>要在属性抛出异常时保留原始属性值。</li><li><strong>如果不需要额外逻辑&#xff0c;要优先使用自动实现的属性&#xff0c;而不是属性加简单支持字段</strong>。</li></ol>
+<p>当然也有一定的书写和命名规范&#xff1a;</p>
+<ul><li>考虑为支持字段和属性使用相同的大小写风格&#xff0c;为支持字段附加“_”前缀。但不要使用双下划线&#xff0c;它是为C#编译器保留的。</li><li>要使用名词、名词短语或形容词命名属性。</li><li>考虑让属性和它的类型同名。</li><li>避免用camelCase大小写风格命名字段。</li><li>如果有意义的话&#xff0c;要为Boolean属性附加“Is”&#xff0c;“Can”或“Has”前缀。</li><li><strong>不要声明public或protected实例字段&#xff08;而是通过属性公开&#xff09;</strong>。</li><li><strong>要用PascalCase大小写风格命名属性。</strong></li><li><strong>要优先使用自动实现的属性而不是字段。</strong></li><li><strong>如果没有额外的实现逻辑&#xff0c;要优先使用自动实现的属性而不是自己写完整版本。</strong></li></ul>
+<p>总之优先使用自动实现的属性&#xff0c;使用PascalCase风格命名。</p>
+<h4><a rel="noopener noreferrer" id="_113"></a>属性验证</h4>
+<p>属性的一个重要作用就是在设置值或者取值的时候做验证。在验证的时候&#xff0c;<font color="red">关键字value默认为传入参数&#xff0c;不需要单独声明</font>&#xff0c;当然验证的时候自动属性就不好使喽。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Employee</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Initialize</span><span class="token punctuation">(</span>
+            <span class="token keyword">string</span> newFirstName<span class="token punctuation">,</span> <span class="token keyword">string</span> newLastName<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// Use property inside the Employee</span>
+            <span class="token comment">// class as well</span>
+            LastName <span class="token operator">&#61;</span> newLastName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// LastName property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> LastName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _LastName<span class="token punctuation">;</span>
+            <span class="token keyword">set</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Validate LastName assignment</span>
+                <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token keyword">value</span> <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// Report error</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentNullException</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">else</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// Remove any whitespace around</span>
+                    <span class="token comment">// the new last name</span>
+                    <span class="token keyword">value</span> <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">.</span><span class="token function">Trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token keyword">value</span> <span class="token operator">&#61;&#61;</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ArgumentException</span><span class="token punctuation">(</span>
+                            <span class="token string">&#34;LastName cannot be blank.&#34;</span><span class="token punctuation">,</span> <span class="token function">nameof</span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    <span class="token keyword">else</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        _LastName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _LastName<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>还有一条重要规范就是&#xff1a;<strong>避免从属性外部&#xff08;即使是属性所在的类&#xff0c;包括构造方法&#xff09;访问属性的支持字段</strong>。也就是字段一切听属性的&#xff0c;保证修改的单一性。这里简单说说<strong>nameof关键字</strong>&#xff1a;主要作用是方便获取类型、成员和变量的简单字符串名称&#xff08;<font color="red"><strong>非完全限定名</strong></font>&#xff09;&#xff0c;nameof可以用于获取具名表达式的当前名字的简单字符串表示&#xff08;非完全限定名&#xff09;&#xff0c;注意这个非完全限定&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">using</span> <span class="token keyword">static</span> System<span class="token punctuation">.</span>Console<span class="token punctuation">;</span>
+<span class="token keyword">using</span> TML <span class="token operator">&#61;</span> System<span class="token punctuation">.</span>ConsoleColor<span class="token punctuation">;</span>
+<span class="token keyword">internal</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+     <span class="token punctuation">{<!-- --></span>
+         <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+          <span class="token punctuation">{<!-- --></span>
+            <span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>TML <span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//输出TML ,因为它是当前的名字&#xff0c;虽然是指向System.ConsoleColor枚举的别名&#xff0c;但是由于TML是当前的名字&#xff0c;那么nameof运算符的结果就是&#34;TML&#34;。</span>
+            <span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token function">nameof</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span>ConsoleColor<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//ConsoleColor</span>
+        <span class="token punctuation">}</span>
+   <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_174"></a>只读或只写的设定</h4>
+<p>这里以设置只读为例来介绍下几种设定方式&#xff1a;</p>
+<p>1&#xff0c;方式一&#xff0c;传统方式&#xff0c;去掉set方法就行了&#xff0c;如果想赋值<strong>只能通过构造函数或方法对字段赋值</strong>。<font color="red"><strong>本类构造函数或方法不能修改属性值</strong></font></p>
+<pre><code class="prism language-csharp"> <span class="token keyword">class</span> <span class="token class-name">Employee</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Initialize</span><span class="token punctuation">(</span><span class="token keyword">int</span> id<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// Use field because Id property has no setter;</span>
+            <span class="token comment">// it is read-only</span>
+            _Id <span class="token operator">&#61;</span> id<span class="token punctuation">.</span><span class="token function">ToString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//属性不能赋值了&#xff0c;只能通过这种方式</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// Id property declaration</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Id
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _Id<span class="token punctuation">;</span>
+            <span class="token comment">// No setter provided  //没有set方法就行</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _Id <span class="token operator">&#61;</span> <span class="token keyword">default</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>2&#xff0c;方式二&#xff0c;<strong>只读自动属性</strong>方式&#xff0c;如果想赋值&#xff0c;<strong>只能通过初始化器或者&#xff1a;构造函数或方法&#xff08;对字段赋值&#xff09;</strong>。需要注意的是&#xff0c;如果只读的是引用&#xff0c;那么其实可以修改和写入该数组的值。<font color="red"><strong>本类构造函数或方法不能修改属性值</strong></font></p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Class1</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> Cells <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Class2</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token class-name">Class1</span> ctsClass1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Class1</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">first</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            ctsClass1<span class="token punctuation">.</span>Cells<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span>
+            <span class="token keyword">var</span> test <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+          <span class="token comment">//  ctsClass1.Cells &#61; test; </span>
+           <span class="token comment">//报错,因为是只读的&#xff0c;所以其实这里的支持字段是数组类型&#xff0c;只读的其实是引用</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>3&#xff0c;方式三&#xff1a;get和set级别的访问修饰符&#xff0c;<font color="red"><strong>本类构造函数或方法可以修改属性值</strong></font>&#xff0c;实现如下&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Employee</span> employee1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Employee</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            employee1<span class="token punctuation">.</span><span class="token function">Initialize</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// ERROR: The property or indexer &#39;Employee.Id&#39; </span>
+            <span class="token comment">// cannot be used in this context because the set </span>
+            <span class="token comment">// accessor is inaccessible</span>
+            <span class="token comment">//employee1.Id &#61; &#34;490&#34;;                     //will not compile if you uncomment this line</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">class</span> <span class="token class-name">Employee</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Initialize</span><span class="token punctuation">(</span><span class="token keyword">int</span> id<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// Set Id property</span>
+            Id <span class="token operator">&#61;</span> id<span class="token punctuation">.</span><span class="token function">ToString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// ...</span>
+        <span class="token comment">// Id property declaration</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Id
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _Id<span class="token punctuation">;</span>
+            <span class="token comment">// Providing an access modifier is possible in C# 2.0</span>
+            <span class="token comment">// and higher only</span>
+            <span class="token keyword">private</span> <span class="token keyword">set</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _Id <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span>  <span class="token comment">//私有化set</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _Id<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_256"></a>属性作为虚字段</h4>
+<p>属性还能这么玩儿&#xff1a;属性可以不支持字段&#xff0c;也就是当做虚字段玩儿&#xff0c;<strong>也就是根本没往内存中写入Name这个字段值</strong>&#xff01;<strong>属性被当成方法实现了</strong>&#xff0c;其实不太建议这么玩儿。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter06<span class="token punctuation">.</span>Listing06_22
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">using</span> System<span class="token punctuation">;</span>
+    <span class="token keyword">using</span> System<span class="token punctuation">.</span>IO<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Employee</span> employee1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Employee</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            employee1<span class="token punctuation">.</span>Name <span class="token operator">&#61;</span> <span class="token string">&#34;Inigo Montoya&#34;</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>employee1<span class="token punctuation">.</span>Name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">class</span> <span class="token class-name">Employee</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// FirstName property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> _FirstName<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">set</span>
+            <span class="token punctuation">{<!-- --></span>
+                _FirstName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _FirstName<span class="token punctuation">;</span>
+
+        <span class="token comment">// LastName property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> LastName
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _LastName<span class="token punctuation">;</span>
+            <span class="token keyword">set</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> _LastName <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">private</span> <span class="token keyword">string</span> _LastName<span class="token punctuation">;</span>
+        <span class="token comment">// ...</span>
+
+        <span class="token comment">// Name property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Name
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">get</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> $<span class="token string">&#34;{ FirstName } { LastName }&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">set</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// Split the assigned value into </span>
+                <span class="token comment">// first and last names</span>
+                <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> names<span class="token punctuation">;</span>
+                names <span class="token operator">&#61;</span> <span class="token keyword">value</span><span class="token punctuation">.</span><span class="token function">Split</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#39; &#39;</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span><span class="token punctuation">(</span>names<span class="token punctuation">.</span>Length <span class="token operator">&#61;&#61;</span> <span class="token number">2</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    FirstName <span class="token operator">&#61;</span> names<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+                    LastName <span class="token operator">&#61;</span> names<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">else</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// Throw an exception if the full </span>
+                    <span class="token comment">// name was not assigned</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">System<span class="token punctuation">.</span>ArgumentException</span><span class="token punctuation">(</span>
+                        $<span class="token string">&#34;Assigned value &#39;{ value }&#39; is invalid&#34;</span><span class="token punctuation">,</span>
+                        <span class="token string">&#34;value&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Initials <span class="token operator">&#61;</span><span class="token operator">&gt;</span> $<span class="token string">&#34;{ FirstName[0] } { LastName[0] }&#34;</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// Title property</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Title <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token comment">// Manager property</span>
+        <span class="token keyword">public</span> <span class="token class-name">Employee</span> Manager <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>由此引发的思考就是&#xff1a;<font color="red"><strong>为啥不能用ref和out来修饰属性呢&#xff0c;你想啊&#xff0c;如果属性被当成虚字段使&#xff0c;内存中根本没地址&#xff0c;怎么传递地址啊&#xff0c;ref是需要初始化的&#xff0c;你这就相当于没有初始化字段</strong>。</font></p>
+<h4><a rel="noopener noreferrer" id="_345"></a>属性的内部构造</h4>
+<p>事实上&#xff0c;通过观察IL代码&#xff0c;属性就是一种方法实现&#xff0c;我可以理解其为一种语法糖&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103445354-04-c0cf33da66.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_348"></a>构造器和终结器</h3>
+<p>其实构造函数都比较熟悉了&#xff0c;就聊一点儿需要注意的地方&#xff1a;</p>
+<ol><li>构造函数赋值优先于字段声明赋值&#xff0c;所以<strong>构造函数的赋值会覆盖字段声明赋值</strong></li><li><strong>C#编译器默认支持无参构造函数&#xff0c;一旦显式添加&#xff0c;即使是手动添加无参的&#xff0c;编译器也不会再提供默认的</strong></li></ol>
+<p>构造函数可以重载&#xff0c;一个使用规范是&#xff1a;<strong>要优先调用可选参数的方法而不是重载</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_355"></a>对象初始化器</h4>
+<p>对象初始化器&#xff0c;其实就是一种语法糖&#xff0c;需要注意的是&#xff0c;<strong>初始化时会按顺序赋值</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Employee</span> employee <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Employee</span><span class="token punctuation">(</span><span class="token string">&#34;Inigo&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Montoya&#34;</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span> Title <span class="token operator">&#61;</span> <span class="token string">&#34;Computer Nerd&#34;</span><span class="token punctuation">,</span> Salary <span class="token operator">&#61;</span> <span class="token string">&#34;Not enough&#34;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>同样集合初始化器也一个道理&#xff0c;<strong>注意&#xff0c;会按顺序添加哦&#xff01;</strong></p>
+<h4><a rel="noopener noreferrer" id="_366"></a>构造函数链</h4>
+<p>构造函数可以互相调用&#xff0c;避免代码冗余&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Employee</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Employee</span><span class="token punctuation">(</span><span class="token keyword">string</span> firstName<span class="token punctuation">,</span> <span class="token keyword">string</span> lastName<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            FirstName <span class="token operator">&#61;</span> firstName<span class="token punctuation">;</span>
+            LastName <span class="token operator">&#61;</span> lastName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token function">Employee</span><span class="token punctuation">(</span>
+            <span class="token keyword">int</span> id<span class="token punctuation">,</span> <span class="token keyword">string</span> firstName<span class="token punctuation">,</span> <span class="token keyword">string</span> lastName<span class="token punctuation">)</span>
+            <span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">(</span>firstName<span class="token punctuation">,</span> lastName<span class="token punctuation">)</span>  <span class="token comment">//实际情况是参数少的调用参数多的</span>
+        <span class="token punctuation">{<!-- --></span>
+            Id <span class="token operator">&#61;</span> id<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token function">Employee</span><span class="token punctuation">(</span><span class="token keyword">int</span> id<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Id <span class="token operator">&#61;</span> id<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Id <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">private</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> LastName <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Salary <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> <span class="token operator">&#61;</span> <span class="token string">&#34;Not Enough&#34;</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>通常做法是这样的&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token function">Employee</span><span class="token punctuation">(</span><span class="token keyword">string</span> firstName<span class="token punctuation">,</span> <span class="token keyword">string</span> lastName<span class="token punctuation">)</span><span class="token punctuation">:</span><span class="token keyword">this</span><span class="token punctuation">(</span>firstName<span class="token punctuation">,</span> lastName<span class="token punctuation">,</span><span class="token string">&#34;add&#34;</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            FirstName <span class="token operator">&#61;</span> firstName<span class="token punctuation">;</span>
+            LastName <span class="token operator">&#61;</span> lastName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token function">Employee</span><span class="token punctuation">(</span><span class="token keyword">string</span> firstName<span class="token punctuation">,</span> <span class="token keyword">string</span> lastName<span class="token punctuation">,</span><span class="token keyword">string</span> test<span class="token operator">&#61;</span><span class="token keyword">null</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            FirstName <span class="token operator">&#61;</span> firstName<span class="token punctuation">;</span>
+            LastName <span class="token operator">&#61;</span> lastName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>注意&#xff1a;<font color="red"><strong>调用方的参数一定要包含被调用方的全部参数&#xff01;</strong></font>&#xff0c;例如这样调用&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103445354-05-eb56bf7a1c.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_414"></a>集中初始化和解构函数</h4>
+<p>集中初始化没什么好说的&#xff0c;就是把所有属性参数什么的在一个函数里一次性初始化&#xff0c;通常是构造函数。而解构函数就是通过<strong>Deconstruct方法</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">Deconstruct</span><span class="token punctuation">(</span>
+            <span class="token keyword">out</span> <span class="token keyword">int</span> id<span class="token punctuation">,</span> <span class="token keyword">out</span> <span class="token keyword">string</span> firstName<span class="token punctuation">,</span>
+            <span class="token keyword">out</span> <span class="token keyword">string</span> lastName<span class="token punctuation">,</span> <span class="token keyword">out</span> <span class="token keyword">string</span> salary<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+           <span class="token punctuation">(</span>id<span class="token punctuation">,</span> firstName<span class="token punctuation">,</span> lastName<span class="token punctuation">,</span> salary<span class="token punctuation">)</span> <span class="token operator">&#61;</span>
+                <span class="token punctuation">(</span>Id<span class="token punctuation">,</span> FirstName<span class="token punctuation">,</span> LastName<span class="token punctuation">,</span> Salary<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>调用的时候&#xff1a;</p>
+<pre><code class="prism language-csharp">employee<span class="token punctuation">.</span><span class="token function">Deconstruct</span><span class="token punctuation">(</span><span class="token keyword">out</span> id<span class="token punctuation">,</span> <span class="token keyword">out</span> firstName<span class="token punctuation">,</span><span class="token keyword">out</span> lastName<span class="token punctuation">,</span> <span class="token keyword">out</span> salary<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>C#7.0后支持直接将对象解构为元组&#xff0c;无需方法调用&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token punctuation">(</span>_<span class="token punctuation">,</span>firstName<span class="token punctuation">,</span>lastName<span class="token punctuation">,</span>salary<span class="token punctuation">)</span> <span class="token operator">&#61;</span> employee
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_437"></a>静态</h3>
+<p>静态字段、方法已经在前文说明了&#xff0c;这里简单说一下其特性&#xff1a;</p>
+<ul><li>静态字段的作用域为其所属的类。</li><li>无论是方法&#xff08;静态、实例&#xff09;还是字段&#xff08;静态、实例&#xff09;&#xff0c;都不能同名&#xff0c;方法重载除外&#xff0c;<strong>是说这四种都不能重名&#xff01;</strong></li><li>和普通构造函数一样&#xff0c;<strong>静态构造函数赋值优先于静态字段声明&#xff01;</strong></li><li><strong>静态类不包含任何实例成员&#xff1a;包括字段、方法等</strong>。</li></ul>
+<p>有个地方需要注意&#xff1a;<strong>最好在声明时进行静态初始化&#xff08;而不要使用静态构造函数&#xff09;</strong>&#xff1a;静态构造函数在<strong>首次访问类的任何成员之前执行</strong>&#xff0c;无论该成员是静态字段&#xff0c;是其他静态成员&#xff0c;还是实例构造函数。为支持这个设计&#xff0c;编译器添加代码来检查类型的所有静态成员和构造函数&#xff0c;确保首先运行静态构造函数。<font color="red"><strong>如果没有静态构造函数&#xff0c;编译器会将所有静态成员初始化为它们的默认值&#xff0c;而且不会添加对静态构造函数的检查。结果是静态字段会在访问前得到初始化&#xff0c;但不一定在调用静态方法或任何实例构造函数之前</strong></font>。有时对静态成员进行初始化的代价比较高&#xff0c;而且访问前确实没必要初始化&#xff0c;所以这个设计能带来一定的性能提升。有鉴于此&#xff0c;请考虑要么以内联方式初始化静态字段&#xff08;而不要使用静态构造函数&#xff09;&#xff0c;要么在声明时初始化。</p>
+<h4><a rel="noopener noreferrer" id="_446"></a>局部变量、实例字段和静态字段</h4>
+<p>局部变量如果使用前没有赋值会报错&#xff0c;静态字段则会使用默认值&#xff0c;实例字段如果在对象生成后也会使用默认值&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103445354-06-7f0c2ce21d.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_449"></a>静态方法和实例方法</h4>
+<p>实例方法可以直接调用静态方法&#xff0c;静态方法不能通过this调用实例方法&#xff0c;只能实例化一个对象&#xff0c;再调用实例方法&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">fecond</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Class1</span> ct <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Class1</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            ct<span class="token punctuation">.</span><span class="token function">second</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="constreadonly_459"></a>const和readonly</h4>
+<p>const就是常量的意思&#xff0c;默认为静态字段&#xff0c;而且只限于<strong>字面值类型&#xff08;int&#xff0c;long&#xff0c;string&#xff09;</strong>。此时再声明static反而会报错。而readly也可以用来声明字段&#xff0c;值得注意的是&#xff0c;只能声明字段&#xff0c;而不能声明局部变量&#xff01;<strong>readonly表明字段值只能从构造函数中修改或者初始化器指定</strong>&#xff0c;但其实只读自动属性一用&#xff0c;readonly就没啥用了。</p>
+<h3><a rel="noopener noreferrer" id="_461"></a>扩展方法和特殊类</h3>
+<p>包括&#xff1a;<strong>扩展方法、嵌套类、分部类及分部方法</strong>&#xff1a;其实这一部分&#xff0c;我觉得可以用两个字概述&#xff1a;<font color="red"><strong>解耦</strong>&#xff0c;做的事情无非就是将耦合度降低</font>。</p>
+<h4><a rel="noopener noreferrer" id="_463"></a>扩展方法</h4>
+<p>扩展方法在上文提到过&#xff0c;感觉实则没有任何用处&#xff0c;需要注意的是&#xff0c;即使不在一个程序集的类也可以添加。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">DirectoryInfo</span> directory <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">DirectoryInfo</span><span class="token punctuation">(</span><span class="token string">&#34;.\\Source&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            directory<span class="token punctuation">.</span><span class="token function">CopyTo</span><span class="token punctuation">(</span><span class="token string">&#34;.\\Target&#34;</span><span class="token punctuation">,</span>
+                SearchOption<span class="token punctuation">.</span>TopDirectoryOnly<span class="token punctuation">,</span> <span class="token string">&#34;*&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">DirectoryInfoExtension</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">CopyTo</span><span class="token punctuation">(</span>
+            <span class="token keyword">this</span> <span class="token class-name">DirectoryInfo</span> sourceDirectory<span class="token punctuation">,</span> <span class="token keyword">string</span> target<span class="token punctuation">,</span>
+            <span class="token class-name">SearchOption</span> option<span class="token punctuation">,</span> <span class="token keyword">string</span> searchPattern<span class="token punctuation">)</span>  <span class="token comment">//扩展方法的声明&#xff0c;需要this关键字。</span>
+        <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+     <span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_486"></a>嵌套类</h4>
+<p>一般类的 访问修饰符可以定义为默认的internal 或者public&#xff0c;而内嵌类就有比较多的选择&#xff0c;可以是为protected、internal、public以及默认的private。<strong>嵌套类可以访问外部类的方法、属性、字段而不管访问修饰符的限制</strong></p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter06<span class="token punctuation">.</span>Listing06_46
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">using</span> System<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// Define a nested class for processing the command line</span>
+        <span class="token keyword">private</span> <span class="token keyword">class</span> <span class="token class-name">CommandLine</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">public</span> <span class="token function">CommandLine</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> arguments<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+               <span class="token comment">//</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">public</span> <span class="token keyword">string</span> Action<span class="token punctuation">;</span>
+            <span class="token keyword">public</span> <span class="token keyword">string</span> Id<span class="token punctuation">;</span>
+            <span class="token keyword">public</span> <span class="token keyword">string</span> FirstName<span class="token punctuation">;</span>
+            <span class="token keyword">public</span> <span class="token keyword">string</span> LastName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">CommandLine</span> commandLine <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">CommandLine</span><span class="token punctuation">(</span>args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_519"></a>分部类和分部方法</h4>
+<p>无非就是把类和方法分别放到不同的文件中去&#xff0c;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp
+<span class="token punctuation">{<!-- --></span>
+<span class="token comment">// We dont fully implement our switch block here</span>
+<span class="token preprocessor property">#<span class="token directive keyword">pragma</span> warning disable CS1522</span>
+    <span class="token keyword">using</span> System<span class="token punctuation">;</span>
+
+    <span class="token comment">// File: Program.cs</span>
+    <span class="token keyword">partial</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">CommandLine</span> commandLine <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">CommandLine</span><span class="token punctuation">(</span>args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">switch</span><span class="token punctuation">(</span>commandLine<span class="token punctuation">.</span>Action<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// ...</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// File: Program&#43;CommandLine.cs</span>
+    <span class="token keyword">partial</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// Define a nested class for processing the command line</span>
+        <span class="token keyword">private</span> <span class="token keyword">class</span> <span class="token class-name">CommandLine</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">public</span> <span class="token function">CommandLine</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//not implemented</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token comment">// ...</span>
+            <span class="token keyword">public</span> <span class="token keyword">int</span> Action
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">get</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NotImplementedException</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+                <span class="token keyword">set</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NotImplementedException</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token preprocessor property">#<span class="token directive keyword">pragma</span> warning restore CS1522</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>使用关键字partial &#xff0c;这里就不深入探讨了。</p>
+<p>本篇博客从学习到完成历时两天&#xff0c;感觉学到了特别多的干货和东西&#xff0c;最重要的就是从设计的角度去认知为什么要这么设计类&#xff0c;希望能帮助到大家。</p>

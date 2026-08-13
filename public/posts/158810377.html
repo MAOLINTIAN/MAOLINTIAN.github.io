@@ -1,0 +1,35 @@
+<h3><a rel="noopener noreferrer" id="Kafka__1"></a>一、Kafka 为什么不保证全局有序？</h3>
+<p>Kafka 的设计目标是<strong>高吞吐、高并发、可扩展</strong>。如果要求全局有序，意味着所有消息都必须写入同一个分区，这实际上退化成了一个单队列系统，无法水平扩展，也失去了分布式消息系统的优势。</p>
+<p>因此，Kafka <strong>只保证分区内的消息顺序</strong>，而<strong>分区之间不保证顺序</strong>。这是吞吐量和顺序性之间的权衡。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="_9"></a>二、如何保证生产者侧的消息顺序？</h3>
+<h4><a rel="noopener noreferrer" id="21__key__11"></a>2.1 原理：相同 key 的消息路由到同一分区</h4>
+<p>Kafka 生产者发送消息时可以指定一个 key（例如订单ID、商户ID）。如果不指定，默认采用轮询方式将消息均匀分布到各个分区。但如果需要保证顺序，必须让具有相同 key 的消息都进入同一个分区。</p>
+<pre><code class="prism language-java"><span class="token comment">// 以商户ID为key，保证同一个商户的标签变更指令进入同一分区</span>
+<span class="token class-name">ProducerRecord</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> record <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ProducerRecord</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>
+    <span class="token string">"merchant-tag-events"</span><span class="token punctuation">,</span>
+    merchantId<span class="token punctuation">,</span>        <span class="token comment">// key = 商户ID</span>
+    tagChangeJson
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>Kafka 根据 key 的哈希值（<code>hash(key) % partitionCount</code>）决定发送到哪个分区。只要分区数不变，同一个 key 的消息总是进入同一个分区，从而保证分区内有序。</p>
+<h4><a rel="noopener noreferrer" id="22__26"></a>2.2 注意事项</h4>
+<ul>
+ <li>分区数一旦确定，不要轻易变更，否则可能导致 key 的路由发生变化，破坏原有顺序。</li>
+ <li>如果业务需要按多个维度排序，例如既要商户顺序又要订单顺序，可以选择合适的 key（如商户ID+订单ID），但这样可能无法保证单一维度的完全有序，需要根据业务场景权衡。</li>
+</ul>
+<hr>
+<h3><a rel="noopener noreferrer" id="_33"></a>三、消费者侧如何保证消费顺序？</h3>
+<h4><a rel="noopener noreferrer" id="31__35"></a>3.1 基础保证：一个分区只能被同一个消费者组内的一个消费者消费</h4>
+<p>Kafka 的消费组机制确保：同一个消费者组内，每个分区只能被一个消费者实例消费。因此，从<strong>分区到消费者的映射</strong>保证了分区内的消息在消费者端被顺序拉取。</p>
+<pre><code class="prism language-text">Topic: merchant-tag-events (3个分区)
+消费者组: tag-processor-group
+├── 消费者A: 消费 partition 0
+├── 消费者B: 消费 partition 1
+└── 消费者C: 消费 partition 2
+</code></pre>
+<p>这样，每个消费者单独处理一个分区，消息拉取顺序与写入顺序一致。</p>
+<h4><a rel="noopener noreferrer" id="32__49"></a>3.2 消费者内部多线程带来的挑战</h4>
+<p>虽然分区到消费者是一对一的，但消费者内部可能使用多线程处理消息，这会导致乱序：</p>
+<pre><code class="prism language-java"><span class="token comment">// 伪代码：多线程消费，可能乱序</span>
+<span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span></code></pre>

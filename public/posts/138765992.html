@@ -1,0 +1,73 @@
+<p>架构设计的复杂度来源其实就是架构设计要解决的问题&#xff0c;主要有如下几个&#xff1a;<strong>高性能、高可用、可扩展、低成本、安全、规模</strong>。复杂度的关键&#xff0c;就是新旧技术之间不是完全的替代关系&#xff0c;有交叉&#xff0c;有各自的特点&#xff0c;所以才需要具体问题具体分析&#xff0c;基于各方考虑设计合适的架构&#xff0c;<strong>存在合适的架构&#xff0c;不存在最好的架构</strong>。这篇主要讨论高性能问题</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>复杂度来源</h2>
+<p>软件系统中高性能带来的复杂度主要体现在两方面&#xff0c;<strong>一方面是单台计算机内部为了高性能带来的复杂度</strong>&#xff1b;另一方面是<strong>多台计算机集群为了高性能带来的复杂度</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/138765992-01-70fe125372.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_4"></a>单机复杂度</h2>
+<p>单机的性能是基于操作系统体现的。提升单机性能的过程就是不断升级迭代操作系统能力的过程&#xff0c;操作系统和性能最相关的就是进程和线程</p>
+<ol><li><strong>批处理生成指令清单解决手工操作输入慢的问题</strong>&#xff0c;但批处理任务在IO时CPU仍然空闲</li><li><strong>多进程解决CPU分时复用处理任务的问题</strong>&#xff0c;但进程内的任务仍然串行&#xff0c;而实际上很多进程内部的子任务并不要求是严格按照时间顺序来执行的</li><li><strong>多线程解决进程内任务并发问题</strong>&#xff0c;但仍然不是真正意义上的并行操作&#xff0c;本质仍然是分时复用</li></ol>
+<p><font color="red"><strong>单机性能在设计升级中得到了提升&#xff0c;但同时也增加了系统的复杂度&#xff0c;例如为了支撑多进程多线程&#xff0c;需要设计互斥、锁、进程通信等策略</strong></font></p>
+<p>单机情况下要完成一个高性能的软件系统&#xff0c;需要考虑如<strong>多进程、多线程、进程间通信、多线程并发</strong>等技术点&#xff0c;而且这些技术并不是最新的就是最好的&#xff0c;也不是非此即彼的选择。这些技术的出现也是为了不断提升性能过程中解决实际问题发生的</p>
+<h2><a rel="noopener noreferrer" id="_14"></a>集群复杂度</h2>
+<p>进入互联网时代后&#xff0c;业务的发展速度远远超过了硬件的发展速度&#xff0c;当单机的性能无法支撑时&#xff0c;必须采用机器集群的方式来达到高性能。但是机器集群又并不是简单的堆机器。</p>
+<h3><a rel="noopener noreferrer" id="_16"></a>任务分配</h3>
+<p>任务分配的意思是指<strong>每台机器都可以处理完整的业务任务&#xff0c;不同的任务分配到不同的机器上执行</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/138765992-02-ac749fc1aa.png" loading="lazy"><br />
+从图中可以看到&#xff0c;1 台服务器演变为 2 台服务器后&#xff0c;架构上明显要复杂多了&#xff0c;主要体现在&#xff1a;</p>
+<ol><li><strong>需要增加一个任务分配器</strong>&#xff0c;这个分配器可能是硬件网络设备&#xff08;例如&#xff0c;F5、交换机等&#xff09;&#xff0c;可能是软件网络设备&#xff08;例如&#xff0c;LVS&#xff09;&#xff0c;也可能是负载均衡软件&#xff08;例如&#xff0c;Nginx、HAProxy&#xff09;&#xff0c;还可能是自己开发的系统。选择合适的任务分配器也是一件复杂的事情&#xff0c;需要综合考虑性能、成本、可维护性、可用性等各方面的因素。<font color="red"> <strong>需要引入任务分配器</strong></font></li><li><strong>任务分配器和真正的业务服务器之间有连接和交互</strong>&#xff08;即图中任务分配器到业务服务器的连接线&#xff09;&#xff0c;需要选择合适的连接方式&#xff0c;并且对连接进行管理。例如&#xff0c;连接建立、连接检测、连接中断后如何处理等。<font color="red"> <strong>需要对任务分配器与业务服务器进行连接管理</strong></font></li><li><strong>任务分配器需要增加分配算法</strong>。例如&#xff0c;是采用轮询算法&#xff0c;还是按权重分配&#xff0c;又或者按照负载进行分配。如果按照服务器的负载进行分配&#xff0c;则业务服务器还要能够上报自己的状态给任务分配器。<font color="red"> <strong>需要设计任务分配器的算法</strong></font></li></ol>
+<p>如果我们的性能要求继续提高&#xff0c;并不是单纯加业务服务器就能解决问题&#xff0c;因为随着性能的增加&#xff0c;<strong>任务分配器本身又会成为性能瓶颈</strong>&#xff0c;单台任务分配器也不够用了&#xff0c;任务分配器本身也需要扩展为多台机器<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138765992-03-4237905608.png" loading="lazy"><br />
+这样复杂度也进一步升级</p>
+<ol><li><strong>任务分配器从 1 台变成了多台, 这个变化带来的复杂度就是需要将不同的用户分配到不同的任务分配器上</strong>&#xff0c;常见的方法包括 DNS 轮询、智能 DNS、CDN&#xff08;Content Delivery Network&#xff0c;内容分发网络&#xff09;、GSLB 设备&#xff08;Global Server Load Balance&#xff0c;全局负载均衡&#xff09;等 <font color="red"> <strong>复杂度升级&#xff1a;任务分配器之上还需进行用户分配</strong></font></li><li><strong>任务分配器和业务服务器的连接从简单的“1 对多”&#xff08;1 台任务分配器连接多台业务服务器&#xff09;变成了“多对多”&#xff08;多台任务分配器连接多台业务服务器&#xff09;的网状结构</strong>。<font color="red"> <strong>复杂度升级&#xff1a;任务分配器与业务服务器网状连接&#xff0c;连接管理难度升级</strong></font></li><li>机器数量从 3 台扩展到 30 台&#xff08;一般任务分配器数量比业务服务器要少&#xff0c;假设业务服务器为 25 台&#xff0c;任务分配器为 5 台&#xff09;&#xff0c;<strong>状态管理、故障处理复杂度也大大增加。</strong><font color="red"> <strong>复杂度升级&#xff1a;机器增加&#xff0c;分配算法复杂度升级</strong></font></li></ol>
+<p>这个任务可以指很多场景的任务&#xff0c;例如“存储”“运算”“缓存”等都可以作为一项任务&#xff0c;因此<strong>存储系统、运算系统、缓存系统</strong>都可以按照任务分配的方式来搭建架构。此外&#xff0c;<strong>任务分配器也并不一定只能是物理上存在的机器或者一个独立运行的程序&#xff0c;也可以是嵌入在其他程序中的算法</strong>。<font color="red"> <strong>例如kafka集群&#xff08;zk集群作为任务分配器&#xff09;、Redis集群&#xff08;哨兵集群作为任务分配器&#xff09;&#xff0c;ES集群&#xff08;候选主节点&#43;协调节点&#43;逻辑主节点联合作为任务分配器&#xff09;&#xff0c;都能抽象为类似的设计</strong>。</font></p>
+<h3><a rel="noopener noreferrer" id="_34"></a>任务分解</h3>
+<p>通过任务分配的方式&#xff0c;我们能够突破单台机器处理性能的瓶颈&#xff0c;通过增加更多的机器来满足业务的性能需求&#xff0c;但如果业务本身也越来越复杂&#xff0c;单纯只通过任务分配的方式来扩展性能&#xff0c;收益会越来越低。<font color="red"> <strong>水平扩容解决系统性能瓶颈的能力随着业务复杂度边际收益逐渐降低</strong></font> &#xff0c;这个时候需要任务分解<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138765992-04-241f65bbf0.png" loading="lazy"><br />
+通过这种任务分解的方式&#xff0c;能够把原来大一统但复杂的业务系统&#xff0c;拆分成小而简单但需要多个系统配合的业务系统。<strong>从业务的角度来看&#xff0c;任务分解既不会减少功能&#xff0c;也不会减少代码量&#xff08;事实上代码量可能还会增加&#xff0c;因为从代码内部调用改为通过服务器之间的接口调用&#xff09;</strong>&#xff0c;其提升性能的优势体现在&#xff1a;</p>
+<ul><li><strong>简单的系统更加容易做到高性能</strong>&#xff0c;系统的功能越简单&#xff0c;影响性能的点就越少&#xff0c;就更加容易进行有针对性的优化</li><li><strong>可以针对单个任务进行扩展</strong>&#xff0c;当各个逻辑任务分解到独立的子系统后&#xff0c;整个系统的性能瓶颈更加容易发现&#xff0c;而且发现后只需要针对有瓶颈的子系统进行性能优化或者提升&#xff0c;不需要改动整个系统&#xff0c;风险会小很多</li></ul>
+<p>总而言之就是<font color="red"> <strong>按业务逻辑进行任务隔离&#xff0c;精细化进行任务性能提升&#xff0c;性能瓶颈更容易被发现&#xff0c;优化和扩展更加容易&#xff0c;改动也不会影响其它模块&#xff0c;降低系统风险</strong></font></p>
+<p>但也不是越细越好&#xff0c;任务分解带来的性能收益是有一个度的&#xff0c;并不是任务分解越细越好<br />
+<img alt="在这里插入图片描述" src="./posts/assets/138765992-05-ac36215e65.png" loading="lazy"><br />
+最主要的原因是如果系统拆分得太细&#xff0c;为了完成某个业务&#xff0c;系统间的调用次数会呈指数级别上升&#xff0c;而<font color="red"><strong>系统间的调用通道目前都是通过网络传输的方式&#xff0c;性能远比系统内的函数调用要低得多</strong></font></p>
+<h2><a rel="noopener noreferrer" id="_47"></a>总结一下</h2>
+<p>性能差-》提升设计复杂度解决性能问题-》掌握如何编码和集群架构cover复杂的设计。高性能复杂度有单机和集群来源。单机主要通过操作系统&#xff08;多进程、多线程&#xff09;设计来压榨机器CPU进而提升性能&#xff0c;其设计复杂度体现在需要实现互斥、锁、进程通信等策略&#xff0c;所以要掌握并发编程技术。集群主要是搭建机器集群来扛住大的业务增量&#xff0c;其设计复杂度体现在任务分配&#xff08;任务分配器、任务分配器与业务服务器连接管理、任务分配算法&#xff0c;其解决系统性能瓶颈的能力随着业务复杂度边际收益逐渐降低&#xff09;和任务分解&#xff08;业务逻辑垂直拆分&#xff0c;单项扩展或升级&#xff0c;其系统拆分带来的收益会随着系统间调用延迟边际降低&#xff09;&#xff0c;所以要掌握任务分配和任务分解的最佳实现模式。架构设计是取舍&#xff0c;是对度的把握。</p>
+<h2><a rel="noopener noreferrer" id="_49"></a>相关概念</h2>
+<p>关于学习笔记中的相关知识补充</p>
+<blockquote>
+<p><strong>进程之间通信方式 管道、消息队列、信号量、共享存储</strong></p>
+</blockquote>
+<p>进程间通信&#xff08;Inter-Process Communication&#xff0c;IPC&#xff09;是在不同进程之间交换数据的机制。这对于多任务操作系统中的进程协作是非常重要的。常见的进程间通信方式包括管道、消息队列、信号量和共享存储&#xff0c;每种方式都有其特点和适用场景&#xff1a;</p>
+<ol><li>
+<p><strong>管道&#xff08;Pipes&#xff09;</strong>&#xff1a;</p>
+<ul><li>管道是最早的UNIX IPC形式之一&#xff0c;主要用于有血缘关系的进程&#xff08;如父子进程&#xff09;之间的通信。它是单向的&#xff0c;数据只能单向流动。如果需要双向通信&#xff0c;则需使用两个管道。</li><li>管道分为匿名管道和命名管道&#xff08;FIFO&#xff09;。匿名管道在进程间临时创建&#xff0c;不能用于没有共同祖先的进程间&#xff1b;而命名管道可以在文件系统中以文件形式存在&#xff0c;支持没有关联的进程间通信。</li></ul>
+</li><li>
+<p><strong>消息队列&#xff08;Message Queues&#xff09;</strong>&#xff1a;</p>
+<ul><li>消息队列允许一个或多个进程向其发送消息&#xff0c;并由一个或多个进程读取。消息队列具有存储消息的能力&#xff0c;直到它们被接收。</li><li>与管道不同&#xff0c;消息队列不需要以流的形式进行通信&#xff0c;而是以消息为单位发送接收&#xff0c;这有助于避免数据的边界问题。</li></ul>
+</li><li>
+<p><strong>信号量&#xff08;Semaphores&#xff09;</strong>&#xff1a;</p>
+<ul><li>信号量主要用于同步多个进程的执行&#xff0c;而不是直接的数据交换。它可以防止多个进程同时访问共享资源。</li><li>信号量包括二值信号量&#xff08;也称为互斥锁&#xff09;和计数信号量。二值信号量用于实现互斥&#xff0c;即在任意时刻只允许一个进程访问资源&#xff1b;计数信号量则允许多个进程同时访问资源的某个固定数量的实例。</li></ul>
+</li><li>
+<p><strong>共享存储&#xff08;Shared Memory&#xff09;</strong>&#xff1a;</p>
+<ul><li>共享存储允许多个进程访问同一块内存区域。它是最快的IPC方式&#xff0c;因为数据不需要在进程间复制&#xff0c;直接在内存中共享。</li><li>使用共享内存时&#xff0c;通常需要结合信号量来同步对共享内存的访问&#xff0c;以避免竞态条件和数据不一致。</li></ul>
+</li></ol>
+<p>根据应用程序的特定需求和上下文&#xff0c;开发者可以选择最合适的进程间通信方式。例如&#xff0c;对于需要大量数据快速传输的应用&#xff0c;共享内存可能是最佳选择&#xff1b;而对于需要跨机器或模块化通信的系统&#xff0c;消息队列或命名管道可能更适用。</p>
+<blockquote>
+<p><strong>SMP、NUMA和MPP</strong></p>
+</blockquote>
+<p>SMP&#xff08;Symmetric Multi-Processor&#xff0c;对称多处理器结构&#xff09;、NUMA&#xff08;Non-Uniform Memory Access&#xff0c;非一致存储访问结构&#xff09;和MPP&#xff08;Massive Parallel Processing&#xff0c;海量并行处理结构&#xff09;是三种不同的计算机体系结构&#xff0c;它们都旨在通过使用多个处理器来提高性能&#xff0c;但各有其特点和应用领域&#xff1a;</p>
+<ol><li>
+<p><strong>SMP&#xff08;Symmetric Multi-Processor&#xff0c;对称多处理器结构&#xff09;</strong>&#xff1a;</p>
+<ul><li>在SMP架构中&#xff0c;两个或更多的处理器共享同一主内存和I/O总线等资源。这种结构的处理器对于内存和其他资源具有平等的访问权&#xff0c;处理能力基本对等。</li><li>SMP架构简化了数据的共享&#xff0c;因为所有处理器都直接访问同一内存。它通常用于通用服务器和多任务处理&#xff0c;适合执行多线程程序。</li></ul>
+</li><li>
+<p><strong>NUMA&#xff08;Non-Uniform Memory Access&#xff0c;非一致存储访问结构&#xff09;</strong>&#xff1a;</p>
+<ul><li>在NUMA架构中&#xff0c;每个处理器或处理器组都有自己的本地内存&#xff0c;处理器访问本地内存的速度要快于访问远程&#xff08;其他处理器的本地&#xff09;内存。</li><li>NUMA能够扩展更多处理器&#xff0c;是解决SMP扩展性限制的一种方案。适用于内存访问模式较为复杂的大型多处理器系统&#xff0c;如大型数据库系统。</li></ul>
+</li><li>
+<p><strong>MPP&#xff08;Massive Parallel Processing&#xff0c;海量并行处理结构&#xff09;</strong>&#xff1a;</p>
+<ul><li>MPP是一种分布式内存架构&#xff0c;每个节点&#xff08;处理器&#xff09;都有自己的操作系统和内存&#xff0c;节点间通常通过高速网络互联。</li><li>这种架构适用于处理大量计算密集型任务&#xff0c;如大数据分析和科学计算。MPP可以实现极高的并行度和扩展性&#xff0c;但程序需要特别设计来管理数据分割和任务分配。</li></ul>
+</li></ol>
+<p>各种架构的选择取决于应用需求、性能要求和成本考量。在处理并行计算和复杂数据处理任务时&#xff0c;理解这些基础架构对于设计和优化系统至关重要。</p>
+<blockquote>
+<p><strong>硬件网络设备&#xff1a;F5和交换机</strong></p>
+</blockquote>
+<p>&#34;F5&#34;和&#34;交换机&#34;都是网络设备&#xff0c;但它们的功能和应用场景有所不同。二者的区别</p>
+<ul><li><strong>功能焦点</strong>&#xff1a;F5主要关注于应用层面的负载均衡和安全&#xff0c;而交换机主要关注于网络内部的数据传输和连接。</li><li><strong>应用层次</strong>&#xff1a;F5设备一般工作在更高的网络层次&#xff08;第4层至第7层&#xff09;&#xff0c;提供针对应用数据的智能处理&#xff1b;交换机通常在第2层&#xff0c;简单地处理数据帧的转发。</li><li><strong>企业应用</strong>&#xff1a;F5更多出现在需要高度网络安全和应用性能的企业级应用中&#xff0c;交换机则是任何网络环境中不可或缺的基础设备。</li></ul>
+<p>根据网络设计的需求和特定的功能需求选择合适的设备非常重要。F5设备在确保应用交付和安全方面非常有效&#xff0c;而交换机则是实现网络互联的基础。</p>

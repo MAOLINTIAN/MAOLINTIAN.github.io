@@ -1,0 +1,142 @@
+<p>Redis所有的数据都在内存中&#xff0c;而内存又是非常宝贵的资源。对于如何优化内存使用一直是Redis用户非常关注的问题。本文让我们深入到Redis细节中&#xff0c;学习内存优化的技巧&#xff0c;本文内容转载自<a href="https://www.cnblogs.com/williamjie/p/11288062.html" rel="nofollow">Redis的内存优化</a>&#xff1a;</p>
+<ul><li><strong>RedisObject对象的优化</strong>&#xff0c;通过调整redisObject的使用来达到内存的优化。</li><li><strong>缩减键值对象</strong>&#xff0c;降低Redis内存使用最直接的方式就是缩减键&#xff08;key&#xff09;和值&#xff08;value&#xff09;的长度</li><li><strong>共享对象池</strong>&#xff0c;对象共享池指Redis内部维护[0-9999]的整数对象池。</li><li><strong>字符串优化</strong>&#xff0c;通过SDS的预分配机制和重构</li><li><strong>编码优化</strong>&#xff0c;使用压缩列表</li><li><strong>控制key的数量</strong>&#xff0c;当使用Redis存储大量数据时&#xff0c;通常会存在大量键&#xff0c;过多的键同样会消耗大量内存</li></ul>
+<p>详细内容还需要再仔细研究研究Redis的底层结构。</p>
+<h3><a rel="noopener noreferrer" id="RedisObject_9"></a>RedisObject对象的优化</h3>
+<p>Redis存储的所有值对象在内部定义为redisObject结构体&#xff0c;内部结构如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-01-39c7389e51.png" loading="lazy"><br /> Redis存储的数据都使用redisObject来封装&#xff0c;包括string,hash,list,set,zset在内的所有数据类型。理解redisObject对内存优化非常有帮助&#xff0c;下面针对每个字段做详细说明&#xff1a;</p>
+<ul><li><strong>type字段</strong>&#xff0c;表示当前对象使用的数据类型&#xff0c;Redis主要支持5种数据类型:string,hash,list,set,zset。可以使用type {key}命令查看对象所属类型&#xff0c;<strong>type命令返回的是值对象类型&#xff0c;键都是string类型</strong>。</li><li><strong>encoding字段</strong>&#xff0c;表示Redis内部编码类型&#xff0c;encoding在Redis内部使用&#xff0c;代表当<strong>前对象内部采用哪种数据结构实现</strong>。理解Redis内部编码方式对于优化内存非常重要 &#xff0c;同一个对象采用不同的编码实现内存占用存在明显差异&#xff0c;具体细节见之后编码优化部分。</li><li><strong>lru字段</strong>&#xff0c;记录对象最后一次被访问的时间&#xff0c;当配置了 maxmemory和maxmemory-policy&#61;volatile-lru | allkeys-lru 时&#xff0c; <strong>用于辅助LRU算法删除键数据</strong>。可以使用object idletime {key}命令在不更新lru字段情况下查看当前键的空闲时间。</li><li><strong>refcount字段</strong>&#xff0c;记录当前对象被引用的次数&#xff0c;用于通过引用次数回收内存&#xff0c;<strong>当refcount&#61;0时&#xff0c;可以安全回收当前对象空间</strong>。使用object refcount {key}获取当前对象引用。当对象为整数且范围在[0-9999]时&#xff0c;Redis可以使用共享对象的方式来节省内存。具体细节见之后共享对象池部分。</li><li>*<strong>ptr字段</strong>&#xff0c;与对象的数据内容相关&#xff0c;<strong>如果是整数直接存储数据&#xff0c;否则表示指向数据的指针</strong>。Redis在3.0之后对值对象是字符串且长度&lt;&#61;39字节的数据&#xff0c;内部编码为embstr类型&#xff0c;<strong>字符串sds和redisObject一起分配</strong>&#xff0c;从而只要一次内存操作。</li></ul>
+<p>这部分有<font color="red"><strong>四个地方有内存优化点</strong></font>&#xff1a;</p>
+<ul><li><strong>encoding字段开发提示</strong>&#xff1a;使用合适的内部编码类型&#xff0c;有利于节省内存空间</li><li><strong>LRU开发提示</strong>&#xff1a;可以使用scan &#43; object idletime 命令批量查询哪些键长时间未被访问&#xff0c;找出长时间不访问的键进行清理降低内存占用。</li><li><strong>refcount字段开发提示</strong>&#xff1a;使用共享内存记录&#xff0c;可以节省内存空间。</li><li><strong>ptr字段开发提示</strong>&#xff1a;高并发写入场景中&#xff0c;在条件允许的情况下建议字符串长度控制在39字节以内&#xff0c;减少创建redisObject内存分配次数从而提高性能</li></ul>
+<p>接下来在各个部分讨论下内存优化策略。</p>
+<h3><a rel="noopener noreferrer" id="_27"></a>缩减键值对象</h3>
+<p>降低Redis内存使用最直接的方式就是<strong>缩减键&#xff08;key&#xff09;和值&#xff08;value&#xff09;的长度</strong>。</p>
+<ul><li><strong>key长度</strong>&#xff1a;如在设计键时&#xff0c;在完整描述业务情况下&#xff0c;<strong>键值越短越好</strong>。</li><li><strong>value长度</strong>&#xff1a;值对象缩减比较复杂&#xff0c;常见需求是<strong>把业务对象序列化成二进制数组放入Redis</strong>。首先应该在业务上精简业务对象&#xff0c;去掉不必要的属性避免存储无效数据。其次在序列化工具选择上&#xff0c;应该选择更高效的序列化工具来降低字节数组大小。以JAVA为例&#xff0c;内置的序列化方式无论从速度还是压缩比都不尽如人意&#xff0c;这时可以选择更高效的序列化工具&#xff0c;如: protostuff&#xff0c;kryo等&#xff0c;下图是JAVA常见序列化工具空间压缩对比<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-02-0bcb7f8922.png" loading="lazy"></li></ul>
+<p>其中java-built-in-serializer表示JAVA内置序列化方式&#xff0c;更多数据见<a rel="noopener noreferrer" href="https://github.com/eishay/jvm-serializers/wiki">jvm-serializers项目</a>: &#xff0c;其它语言也有各自对应的高效序列化工具。</p>
+<p>值对象除了存储二进制数据之外&#xff0c;通常还会使用通用格式存储数据比如&#xff1a;json&#xff0c;xml等作为字符串存储在Redis中。这种方式优点是方便调试和跨语言&#xff0c;但是同样的数据相比字节数组所需的空间更大&#xff0c;<strong>在内存紧张的情况下&#xff0c;可以使用通用压缩算法压缩json,xml后再存入Redis</strong>&#xff0c;从而降低内存占用&#xff0c;例如使用GZIP压缩后的json可降低约60%的空间。</p>
+<p>开发提示&#xff1a;<strong>当频繁压缩解压json等文本数据时&#xff0c;开发人员需要考虑压缩速度和计算开销成本&#xff0c;这里推荐使用google的Snappy压缩工具</strong>&#xff0c;在特定的压缩率情况下效率远远高于GZIP等传统压缩工具&#xff0c;且支持所有主流语言环境。</p>
+<h3><a rel="noopener noreferrer" id="_39"></a>共享对象池</h3>
+<p>对象共享池指Redis内部<strong>维护[0-9999]的整数对象池</strong>。创建大量的整数类型redisObject存在内存开销&#xff0c;每个redisObject内部结构至少占16字节&#xff0c;甚至超过了整数自身空间消耗。所以Redis内存维护一个[0-9999]的整数对象池&#xff0c;用于节约内存。 除了整数值对象&#xff0c;其他类型如list,hash,set,zset内部元素也可以使用整数对象池。因此开发中在满足需求的前提下&#xff0c;尽量使用整数对象以节省内存。</p>
+<p>这部分有<font color="red"><strong>一个地方有内存优化点</strong></font>&#xff1a;<strong>对象引用数验证启用整数对象池技术</strong>&#xff0c;可以减少整数对象资源浪费&#xff0c;同时尽量创建整数对象&#xff0c;可以直接使用共享对象池</p>
+<p>整数对象池在Redis中通过变量REDIS_SHARED_INTEGERS定义&#xff0c;不能通过配置修改。可以通过object refcount 命令查看对象引用数验证是否启用整数对象池技术&#xff0c;如下:</p>
+<pre><code class="prism language-java">redis<span class="token operator">&gt;</span> set foo <span class="token number">100</span>
+OK
+redis<span class="token operator">&gt;</span> object refcount foo
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">2</span>
+redis<span class="token operator">&gt;</span> set bar <span class="token number">100</span>
+OK
+redis<span class="token operator">&gt;</span> object refcount bar
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+</code></pre>
+<p>设置键foo等于100时&#xff0c;直接使用共享池内整数对象&#xff0c;因此引用数是2&#xff0c;再设置键bar等于100时&#xff0c;引用数又变为3&#xff0c;如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-03-b24c5af735.png" loading="lazy"><br /> 使用整数对象池究竟能降低多少内存&#xff1f;让我们通过测试来对比对象池的内存优化效果&#xff0c;如下表所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-04-6d01b5298e.png" loading="lazy"><br /> 使用共享对象池后&#xff0c;相同的数据内存使用降低30%以上。可见当数据大量使用[0-9999]的整数时&#xff0c;共享对象池可以节约大量内存。需要注意的是对象池并不是只要存储[0-9999]的整数就可以工作。<strong>当设置maxmemory并启用LRU相关淘汰策略如:volatile-lru&#xff0c;allkeys-lru时&#xff0c;Redis禁止使用共享对象池</strong></p>
+<h4><a rel="noopener noreferrer" id="maxmemoryLRU_62"></a>为什么开启maxmemory和LRU淘汰策略后对象池无效?</h4>
+<p>LRU算法需要获取对象最后被访问时间&#xff0c;以便淘汰最长未访问数据&#xff0c;每个对象最后访问时间存储在redisObject对象的lru字段。对象共享意味着多个引用共享同一个redisObject&#xff0c;这时lru字段也会被共享&#xff0c;导致无法获取每个对象的最后访问时间。如果没有设置maxmemory&#xff0c;直到内存被用尽Redis也不会触发内存回收&#xff0c;所以共享对象池可以正常工作。</p>
+<p>综上所述&#xff0c;共享对象池与maxmemory&#43;LRU策略冲突&#xff0c;使用时需要注意。 对于ziplist编码的值对象&#xff0c;即使内部数据为整数也无法使用共享对象池&#xff0c;因为ziplist使用压缩且内存连续的结构&#xff0c;对象共享判断成本过高&#xff0c;ziplist编码细节后面内容详细说明。</p>
+<h4><a rel="noopener noreferrer" id="_67"></a>为什么只有整数对象池&#xff1f;</h4>
+<p>首先整数对象池复用的几率最大&#xff0c;其次对象共享的一个关键操作就是判断相等性&#xff0c;Redis之所以只有整数对象池&#xff0c;是因为整数比较算法时间复杂度为O(1)&#xff0c;只保留一万个整数为了防止对象池浪费。如果是字符串判断相等性&#xff0c;时间复杂度变为O(n)&#xff0c;特别是长字符串更消耗性能(浮点数在Redis内部使用字符串存储)。对于更复杂的数据结构如hash,list等&#xff0c;相等性判断需要O(n 2 )。对于单线程的Redis来说&#xff0c;这样的开销显然不合理&#xff0c;因此Redis只保留整数共享对象池。</p>
+<h3><a rel="noopener noreferrer" id="_70"></a>字符串优化</h3>
+<p>字符串对象是Redis内部最常用的数据类型。所有的键都是字符串类型&#xff0c; 值对象数据除了整数之外都使用字符串存储。比如执行命令:<code>lpush cache:type “redis” “memcache” “tair” “levelDB”</code> &#xff0c;Redis首先创建<code>”cache:type”键字符串</code>&#xff0c;然后创建<code>链表对象&#xff0c;链表对象内再包含四个字符串对象</code>&#xff0c;排除Redis内部用到的字符串对象之外至少创建5个字符串对象。可见字符串对象在Redis内部使用非常广泛&#xff0c;因此深刻理解Redis字符串对于内存优化非常有帮助:</p>
+<h4><a rel="noopener noreferrer" id="_72"></a>字符串结构</h4>
+<p>Redis没有采用原生C语言的字符串类型而是自己实现了字符串结构&#xff0c;内部简单动态字符串(simple dynamic string)&#xff0c;简称SDS。结构下图所示:<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-05-f0c93adda0.png" loading="lazy"><br /> Redis自身实现的字符串结构有如下特点:</p>
+<ul><li><strong>O(1)时间复杂度获取</strong>&#xff1a;字符串长度&#xff0c;已用长度&#xff0c;未用长度。</li><li><strong>可用于保存字节数组</strong>&#xff0c;支持安全的二进制数据存储。</li><li><strong>内部实现空间预分配机制</strong>&#xff0c;降低内存再分配次数。</li><li><strong>惰性删除机制</strong>&#xff0c;字符串缩减后的空间不释放&#xff0c;作为预分配空间保留。</li></ul>
+<p>接下来聊聊重点的内存预分配机制</p>
+<h4><a rel="noopener noreferrer" id="_83"></a>内存预分配机制</h4>
+<p>因为字符串(SDS)存在预分配机制&#xff0c;<strong>日常开发中要小心预分配带来的内存浪费</strong>&#xff0c;例如下表的测试用例。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-06-7e7b1607a6.png" loading="lazy"></p>
+<p>从测试数据可以看出&#xff0c;同样的数据追加后内存消耗非常严重&#xff0c;下面我们结合图来分析这一现象。阶段1每个字符串对象空间占用如下图所示。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-07-f3424f7ea0.png" loading="lazy"><br /> 阶段1插入新的字符串后&#xff0c;free字段保留空间为0&#xff0c;总占用空间&#61;实际占用空间&#43;1字节&#xff0c;最后1字节保存‘\0’标示结尾&#xff0c;这里忽略int类型len和free字段消耗的8字节。在阶段1原有字符串上追加60字节数据空间占用如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-08-295a2b77a6.png" loading="lazy"><br /> 追加操作后字符串对象预分配了一倍容量作为预留空间&#xff0c;而且大量追加操作需要内存重新分配&#xff0c;<strong>造成内存碎片率(mem_fragmentation_ratio)上升。直接插入与阶段2相同数据的空间占用</strong>&#xff0c;如下图所示。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-09-9a37c4a645.png" loading="lazy"><br /> 阶段3直接插入同等数据后&#xff0c;相比阶段2节省了每个字符串对象预分配的空间&#xff0c;同时降低了碎片率。</p>
+<p>字符串之所以采用预分配的方式是<strong>防止修改操作需要不断重分配内存和字节数据拷贝。但同样也会造成内存的浪费</strong>。字符串预分配每次并不都是翻倍扩容&#xff0c;空间预分配规则如下:</p>
+<ol><li>第一次创建len属性等于数据实际大小&#xff0c;free等于0&#xff0c;不做预分配。</li><li>修改后如果已有free空间不够且数据小于1M&#xff0c;每次预分配一倍容量。如原有len&#61;60byte&#xff0c;free&#61;0&#xff0c;再追加60byte&#xff0c;预分配120byte&#xff0c;总占用空间:60byte&#43;60byte&#43;120byte&#43;1byte。</li><li>修改后如果已有free空间不够且数据大于1MB&#xff0c;每次预分配1MB数据。如原有len&#61;30MB&#xff0c;free&#61;0&#xff0c;当再追加100byte ,预分配1MB&#xff0c;总占用空间:1MB&#43;100byte&#43;1MB&#43;1byte。</li></ol>
+<p>这部分有<font color="red"><strong>一个地方有内存优化点</strong></font>&#xff1a;尽量减少字符串频繁修改操作如append&#xff0c;setrange, 改为直接使用set修改字符串&#xff0c;<strong>降低预分配带来的内存浪费和内存碎片化</strong></p>
+<h4><a rel="noopener noreferrer" id="_103"></a>字符串重构</h4>
+<p>字符串重构:指不一定把每份数据作为字符串整体存储&#xff0c;像json这样的数据可以使用hash结构&#xff0c;<strong>使用二级结构存储也能帮我们节省内存。同时可以使用hmget,hmset命令支持字段的部分读取修改&#xff0c;而不用每次整体存取</strong>。例如下面的json数据&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">{<!-- --></span>
+    <span class="token string">&#34;vid&#34;</span><span class="token operator">:</span> <span class="token string">&#34;413368768&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;title&#34;</span><span class="token operator">:</span> <span class="token string">&#34;搜狐屌丝男士&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;videoAlbumPic&#34;</span><span class="token operator">:</span> <span class="token string">&#34;http://photocdn.sohu.com/60160518/vrsa_ver8400079_ae433_pic26.jpg&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;pid&#34;</span><span class="token operator">:</span> <span class="token string">&#34;6494271&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;type&#34;</span><span class="token operator">:</span> <span class="token string">&#34;1024&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;playlist&#34;</span><span class="token operator">:</span> <span class="token string">&#34;6494271&#34;</span><span class="token punctuation">,</span>
+    <span class="token string">&#34;playTime&#34;</span><span class="token operator">:</span> <span class="token string">&#34;468&#34;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>分别使用字符串和hash结构测试内存表现&#xff0c;如下表所示。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-10-49fa15a3a9.png" loading="lazy"><br /> 这部分有<font color="red"><strong>一个地方有内存优化点</strong></font>&#xff1a;<strong>利用二级结构hash存储来代替多个字符串存储</strong></p>
+<p>根据测试结构&#xff0c;第一次默认配置下使用hash类型&#xff0c;内存消耗不但没有降低反而比字符串存储多出2倍&#xff0c;而调整hash-max-ziplist-value&#61;66之后内存降低为535.60M。因为json的<strong>videoAlbumPic</strong>属性长度是65&#xff0c;而hash-max-ziplist-value默认值是64&#xff0c;<strong>Redis采用hashtable编码方式&#xff0c;反而消耗了大量内存。调整配置后hash类型内部编码方式变为ziplist&#xff0c;相比字符串更省内存且支持属性的部分操作</strong>。下一节将具体介绍ziplist编码优化细节。</p>
+<h3><a rel="noopener noreferrer" id="_123"></a>编码优化</h3>
+<p>Redis对外提供了string,list,hash,set,zet等类型&#xff0c;但是Redis内部针对不同类型存在编码的概念&#xff0c;所谓编码就是具体使用哪种底层数据结构来实现。编码不同将直接影响数据的内存占用和读写效率。使用object encoding {key}命令获取编码类型。如下:</p>
+<pre><code class="prism language-java">redis<span class="token operator">&gt;</span> set str<span class="token operator">:</span><span class="token number">1</span> hello
+OK
+redis<span class="token operator">&gt;</span> object encoding str<span class="token operator">:</span><span class="token number">1</span>
+<span class="token string">&#34;embstr&#34;</span> <span class="token comment">// embstr编码字符串</span>
+redis<span class="token operator">&gt;</span> lpush list<span class="token operator">:</span><span class="token number">1</span> <span class="token number">1</span> <span class="token number">2</span> <span class="token number">3</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+redis<span class="token operator">&gt;</span> object encoding list<span class="token operator">:</span><span class="token number">1</span>
+<span class="token string">&#34;ziplist&#34;</span> <span class="token comment">// ziplist编码列表</span>
+</code></pre>
+<p>Redis针对每种数据类型(type)可以采用至少两种编码方式来实现&#xff0c;下表表示type和encoding的对应关系<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-11-f706fc782b.png" loading="lazy"><br /> 了解编码和类型对应关系之后&#xff0c;我们不禁疑惑Redis为什么需要对一种数据结构实现多种编码方式&#xff1f;</p>
+<p>主要原因是Redis作者想通过不同编码实现效率和空间的平衡。比如当我们的存储只有10个元素的列表&#xff0c;当使用双向链表数据结构时&#xff0c;必然需要维护大量的内部字段如每个元素需要:前置指针&#xff0c;后置指针&#xff0c;数据指针等&#xff0c;造成空间浪费&#xff0c;<strong>如果采用连续内存结构的压缩列表(ziplist)&#xff0c;将会节省大量内存&#xff0c;而由于数据长度较小&#xff0c;存取操作时间复杂度即使为O(n2)性能也可满足需求</strong></p>
+<h4><a rel="noopener noreferrer" id="_142"></a>控制编码类型</h4>
+<p>编码类型转换<strong>在Redis写入数据时自动完成&#xff0c;这个转换过程是不可逆的</strong>&#xff0c;转换规则只能从小内存编码向大内存编码转换。例如&#xff1a;</p>
+<pre><code class="prism language-java">redis<span class="token operator">&gt;</span> lpush list<span class="token operator">:</span><span class="token number">1</span> a b c d
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">4</span> <span class="token comment">//存储4个元素</span>
+redis<span class="token operator">&gt;</span> object encoding list<span class="token operator">:</span><span class="token number">1</span>
+<span class="token string">&#34;ziplist&#34;</span> <span class="token comment">//采用ziplist压缩列表编码</span>
+redis<span class="token operator">&gt;</span> config set list<span class="token operator">-</span>max<span class="token operator">-</span>ziplist<span class="token operator">-</span>entries <span class="token number">4</span>
+OK <span class="token comment">//设置列表类型ziplist编码最大允许4个元素</span>
+redis<span class="token operator">&gt;</span> lpush list<span class="token operator">:</span><span class="token number">1</span> e
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">5</span> <span class="token comment">//写入第5个元素e</span>
+redis<span class="token operator">&gt;</span> object encoding list<span class="token operator">:</span><span class="token number">1</span>
+<span class="token string">&#34;linkedlist&#34;</span> <span class="token comment">//编码类型转换为链表</span>
+redis<span class="token operator">&gt;</span> rpop list<span class="token operator">:</span><span class="token number">1</span>
+<span class="token string">&#34;a&#34;</span> <span class="token comment">//弹出元素a</span>
+redis<span class="token operator">&gt;</span> llen list<span class="token operator">:</span><span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">4</span> <span class="token comment">// 列表此时有4个元素</span>
+redis<span class="token operator">&gt;</span> object encoding list<span class="token operator">:</span><span class="token number">1</span>
+<span class="token string">&#34;linkedlist&#34;</span> <span class="token comment">//编码类型依然为链表&#xff0c;未做编码回退</span>
+</code></pre>
+<p>以上命令体现了list类型编码的转换过程&#xff0c;其中Redis之所以不支持编码回退&#xff0c;主要是数据增删频繁时&#xff0c;数据向压缩编码转换非常消耗CPU&#xff0c;得不偿失。以上示例用到了list-max-ziplist-entries参数&#xff0c;这个参数用来决定列表长度在多少范围内使用ziplist编码。当然还有其它参数控制各种数据类型的编码&#xff0c;如下表所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-12-012e6f4fe0.png" loading="lazy"><br /> 掌握编码转换机制&#xff0c;对我们通过编码来优化内存使用非常有帮助。下面以hash类型为例&#xff0c;介绍编码转换的运行流程&#xff0c;如下图所示。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-13-a885da2609.png" loading="lazy"><br /> 理解编码转换流程和相关配置之后&#xff0c;可以使用config set命令设置编码相关参数来满足使用压缩编码的条件。对于已经采用非压缩编码类型的数据如hashtable,linkedlist等&#xff0c;设置参数后即使数据满足压缩编码条件&#xff0c;Redis也不会做转换&#xff0c;需要重启Redis重新加载数据才能完成转换</p>
+<h4><a rel="noopener noreferrer" id="ziplist_169"></a>ziplist编码</h4>
+<p>ziplist编码主要目的是为了节约内存&#xff0c;<strong>因此所有数据都是采用线性连续的内存结构</strong>。ziplist编码是应用范围最广的一种&#xff0c;可以分别作为hash、list、zset类型的底层数据结构实现。首先从ziplist编码结构开始分析&#xff0c;它的内部结构类似这样: &lt;….&gt; 。一个ziplist可以包含多个entry(元素)&#xff0c;每个entry保存具体的数据(整数或者字节数组)&#xff0c;内部结构如下图所示。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-14-1e7b2f8172.png" loading="lazy"><br /> ziplist结构字段含义&#xff1a;</p>
+<ul><li> <p><strong>zlbytes</strong>:记录整个压缩列表所占字节长度&#xff0c;方便重新调整ziplist空间。类型是int-32&#xff0c;长度为4字节</p> </li><li> <p><strong>zltail</strong>:记录距离尾节点的偏移量&#xff0c;方便尾节点弹出操作。类型是int-32&#xff0c;长度为4字节</p> </li><li> <p><strong>zlle</strong>:记录压缩链表节点数量&#xff0c;当长度超过216-2时需要遍历整个列表获取长度&#xff0c;一般很少见。类型是int-16&#xff0c;长度为2字节</p> </li><li> <p><strong>entry</strong>:记录具体的节点&#xff0c;长度根据实际存储的数据而定。</p>
+  <ul><li><strong>prev_entry_bytes_length</strong>:记录前一个节点所占空间&#xff0c;用于快速定位上一个节点&#xff0c;可实现列表反向迭代</li><li><strong>encoding</strong>:标示当前节点编码和长度&#xff0c;前两位表示编码类型&#xff1a;字符串/整数&#xff0c;其余位表示数据长度</li><li><strong>contents</strong>:保存节点的值&#xff0c;针对实际数据长度做内存占用优化。</li></ul> </li><li> <p>zlend:记录列表结尾&#xff0c;占用一个字节。</p> </li></ul>
+<p>根据以上对ziplist字段说明&#xff0c;可以分析出该数据结构特点如下:</p>
+<ul><li>内部表现为<strong>数据紧凑排列的一块连续内存数组</strong>。</li><li>可以模拟双向链表结构&#xff0c;<strong>以O(1)时间复杂度入队和出队</strong>。</li><li><strong>新增删除操作涉及内存重新分配或释放&#xff0c;加大了操作的复杂性</strong>。</li><li><strong>读写操作涉及复杂的指针移动</strong>&#xff0c;最坏时间复杂度为O(n2)。</li><li><strong>适合存储小对象和长度有限的数据</strong>。</li></ul>
+<p>下面通过测试展示ziplist编码在不同类型中内存和速度的表现&#xff0c;如下表所示</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/110387844-15-b0e03c0692.png" loading="lazy"></p>
+<p>测试数据采用100W个36字节数据&#xff0c;划分为1000个键&#xff0c;每个类型长度统一为1000。从测试结果可以看出&#xff1a;</p>
+<ul><li>使用ziplist可以分别作为hash,list,zset数据类型实现。</li><li>使用ziplist编码类型可以大幅降低内存占用。</li><li>ziplist实现的数据类型相比原生结构&#xff0c;命令操作更加耗时&#xff0c;不同类型耗时排序:list &lt; hash &lt; zset。</li></ul>
+<p>ziplist压缩编码的性能表现跟值长度和元素个数密切相关&#xff0c;正因为如此Redis提供了{type}-max-ziplist-value和{type}-max-ziplist-entries相关参数来做控制ziplist编码转换。最后再次强调使用ziplist压缩编码的原则&#xff1a;<strong>追求空间和时间的平衡</strong>。</p>
+<p>这部分有<font color="red"><strong>一个地方有内存优化点</strong></font>&#xff1a;使用合适的编码配置来提高Redis的性能&#xff0c;<strong>例如通过配置让数据存取使用ziplist</strong></p>
+<ul><li>针对性能要求较高的场景使用ziplist&#xff0c;建议长度不要超过1000&#xff0c;每个元素大小控制在512字节以内。</li><li>命令平均耗时使用info Commandstats命令获取&#xff0c;包含每个命令调用次数&#xff0c;总耗时&#xff0c;平均耗时&#xff0c;单位微秒</li></ul>
+<p>当然ziplist是以时间来换取空间的。</p>
+<h4><a rel="noopener noreferrer" id="intset_210"></a>intset编码</h4>
+<p>intset编码是集合(set)类型编码的一种**&#xff0c;内部表现为存储有序&#xff0c;不重复的整数集**。当集合<strong>只包含整数且长度不超过set-max-intset-entries配置时被启用</strong>。执行以下命令查看intset表现</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> sadd set<span class="token operator">:</span>test <span class="token number">3</span> <span class="token number">4</span> <span class="token number">2</span> <span class="token number">6</span> <span class="token number">8</span> <span class="token number">9</span> <span class="token number">2</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">6</span> <span class="token comment">//乱序写入6个整数</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> object encoding set<span class="token operator">:</span>test
+<span class="token string">&#34;intset&#34;</span> <span class="token comment">//使用intset编码</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> smembers set<span class="token operator">:</span>test
+<span class="token string">&#34;2&#34;</span> <span class="token string">&#34;3&#34;</span> <span class="token string">&#34;4&#34;</span> <span class="token string">&#34;6&#34;</span> <span class="token string">&#34;8&#34;</span> <span class="token string">&#34;9&#34;</span> <span class="token comment">// 排序输出整数结合</span>
+redis<span class="token operator">&gt;</span> config set set<span class="token operator">-</span>max<span class="token operator">-</span>intset<span class="token operator">-</span>entries <span class="token number">6</span>
+OK <span class="token comment">//设置intset最大允许整数长度</span>
+redis<span class="token operator">&gt;</span> sadd set<span class="token operator">:</span>test <span class="token number">5</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span> <span class="token comment">//写入第7个整数 5</span>
+redis<span class="token operator">&gt;</span> object encoding set<span class="token operator">:</span>test
+<span class="token string">&#34;hashtable&#34;</span> <span class="token comment">// 编码变为hashtable</span>
+redis<span class="token operator">&gt;</span> smembers set<span class="token operator">:</span>test
+<span class="token string">&#34;8&#34;</span> <span class="token string">&#34;3&#34;</span> <span class="token string">&#34;5&#34;</span> <span class="token string">&#34;9&#34;</span> <span class="token string">&#34;4&#34;</span> <span class="token string">&#34;2&#34;</span> <span class="token string">&#34;6&#34;</span> <span class="token comment">//乱序输出</span>
+</code></pre>
+<p>以上命令可以看出intset对写入整数进行排序&#xff0c;通过O(log(n))时间复杂度实现查找和去重操作&#xff0c;intset编码结构如下图所示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-16-32a73496a4.png" loading="lazy"></p>
+<p>intset的字段结构含义&#xff1a;</p>
+<ul><li><strong>encoding</strong>: 整数表示类型&#xff0c;根据集合内最长整数值确定类型&#xff0c;整数类型划分三种:int-16&#xff0c;int-32&#xff0c;int-64。</li><li><strong>length</strong>:表示集合元素个数。</li><li><strong>contents</strong>:整数数组&#xff0c;按从小到大顺序保存。</li></ul>
+<p>intset保存的整数类型根据长度划分&#xff0c;当保存的整数超出当前类型时&#xff0c;将会触发自动升级操作且升级后不再做回退。升级操作将会导致重新申请内存空间&#xff0c;把原有数据按转换类型后拷贝到新数组。<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-17-896755caa4.png" loading="lazy"><br /> 根据以上测试结果发现intset表现非常好&#xff0c;<strong>同样的数据内存占用只有不到hashtable编码的十分之一</strong>。intset数据结构插入命令复杂度为O(n)&#xff0c;查询命令为O(log(n))&#xff0c;由于整数占用空间非常小&#xff0c;所以在集合长度可控的基础上&#xff0c;写入命令执行速度也会非常快&#xff0c;因此当使用整数集合时尽量使用intset编码。上表测试第三行把ziplist-hash类型也放入其中&#xff0c;主要因为intset编码必须存储整数&#xff0c;当集合内保存非整数数据时&#xff0c;无法使用intset实现内存优化。这时可以使用ziplist-hash类型对象模拟集合类型&#xff0c;hash的field当作集合中的元素&#xff0c;value设置为1字节占位符即可。使用ziplist编码的hash类型依然比使用hashtable编码的集合节省大量内存</p>
+<p>开发提示&#xff1a;<strong>使用intset编码的集合时&#xff0c;尽量保持整数范围一致&#xff0c;如都在int-16范围内。防止个别大整数触发集合升级操作&#xff0c;产生内存浪费</strong>。这部分有<font color="red"><strong>一个地方有内存优化点</strong></font>&#xff1a;使用合适的编码配置来提高Redis的性能&#xff0c;<strong>例如通过配置让数据存取使用inset</strong></p>
+<h3><a rel="noopener noreferrer" id="key_243"></a>控制key的数量</h3>
+<p>当使用Redis存储大量数据时&#xff0c;通常会存在大量键&#xff0c;过多的键同样会消耗大量内存。Redis本质是一个数据结构服务器&#xff0c;它为我们提供多种数据结构&#xff0c;如hash&#xff0c;list&#xff0c;set&#xff0c;zset 等结构。使用Redis时不要进入一个误区&#xff0c;大量使用get/set这样的API&#xff0c;把Redis当成Memcached使用。对于存储相同的数据内容利用Redis的数据结构降低外层键的数量&#xff0c;也可以节省大量内存。如下图所示&#xff0c;通过在客户端预估键规模&#xff0c;把大量键分组映射到多个hash结构中降低键的数量:<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-18-6db654ce37.png" loading="lazy"><br /> hash结构降低键数量分析&#xff1a;</p>
+<ul><li>根据键规模在客户端通过分组映射到一组hash对象中&#xff0c;如存在100万个键&#xff0c;可以映射到1000个hash中&#xff0c;每个hash保存1000个元素。</li><li><strong>hash的field可用于记录原始key字符串</strong>&#xff0c;方便哈希查找。</li><li><strong>hash的value保存原始值对象</strong>&#xff0c;确保不要超过hash-max-ziplist-value限制</li></ul>
+<p>相当于还是用二级结构来存储一级结构&#xff0c;只不过这个是存储key&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/110387844-19-f7892bc83e.png" loading="lazy"></p>
+<p>通过这个测试数据&#xff0c;可以说明&#xff1a;</p>
+<ul><li>同样的数据<strong>使用ziplist编码的hash类型存储比string类型节约内存</strong></li><li><strong>节省内存量随着value空间的减少&#xff0c;越来越明显</strong>。</li><li><strong>hash-ziplist类型比string类型写入耗时</strong>&#xff0c;但随着value空间的减少&#xff0c;耗时逐渐降低。</li></ul>
+<p>使用hash重构后节省内存量效果非常明显&#xff0c;特变对于存储小对象的场景&#xff0c;内存只有不到原来的1/5。下面分析这种内存优化技巧的关键点&#xff1a;</p>
+<ul><li>hash类型节省内存的原理是<strong>使用ziplist编码</strong>&#xff0c;如果使用hashtable编码方式反而会增加内存消耗。</li><li>ziplist<strong>长度需要控制在1000以内</strong>&#xff0c;否则由于存取操作时间复杂度在O(n)到O(n2)之间&#xff0c;长列表会导致CPU消耗严重&#xff0c;得不偿失。</li><li>ziplist适合存储的小对象&#xff0c;对于大对象不但内存优化效果不明显还会增加命令操作耗时。</li><li><strong>需要预估键的规模&#xff0c;从而确定每个hash结构需要存储的元素数量</strong>。</li><li><strong>根据hash长度和元素大小&#xff0c;调整hash-max-ziplist-entries和hash-max-ziplist-value参数&#xff0c;确保hash类型使用ziplist编码</strong>。</li></ul>
+<p>关于hash键和field键的设计&#xff1a;</p>
+<ul><li>当键离散度较高时&#xff0c;可以按字符串位截取&#xff0c;把后三位作为哈希的field&#xff0c;之前部分作为哈希的键。如&#xff1a;key&#61;1948480 哈希key&#61;group#️⃣1948&#xff0c;哈希field&#61;480。</li><li>当键离散度较低时&#xff0c;可以使用哈希算法打散键&#xff0c;如:使用crc32(key)&amp;10000函数把所有的键映射到“0-9999”整数范围内&#xff0c;哈希field存储键的原始值。</li><li>尽量减少hash键和field的长度&#xff0c;如使用部分键内容。</li></ul>
+<p>使用hash结构控制键的规模虽然可以大幅降低内存&#xff0c;但同样会带来问题&#xff0c;需要提前做好规避处理。如下:</p>
+<ul><li>客户端需要预估键的规模并设计hash分组规则&#xff0c;<strong>加重客户端开发成本</strong>。</li><li>hash重构后<strong>所有的键无法再使用超时(expire)和LRU淘汰机制自动删除</strong>&#xff0c;需要手动维护删除。</li><li>对于大对象&#xff0c;如1KB以上的对象。使用hash-ziplist结构控制键数量。</li></ul>
+<p>不过瑕不掩瑜&#xff0c;对于大量小对象的存储场景&#xff0c;非常适合使用ziplist编码的hash类型控制键的规模来降低内存。开发提示&#xff1a;<strong>使用ziplist&#43;hash优化keys后&#xff0c;如果想使用超时删除功能&#xff0c;开发人员可以存储每个对象写入的时间&#xff0c;再通过定时任务使用hscan命令扫描数据&#xff0c;找出hash内超时的数据项删除即可</strong>。</p>

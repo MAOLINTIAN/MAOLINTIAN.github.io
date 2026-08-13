@@ -1,0 +1,220 @@
+<p>本篇为三篇的最后一篇&#xff0c;来详细介绍C#里类似java里代理的功能的委托&#xff0c;也就是不需要继承关系&#xff0c;不再是oop&#xff0c;而是一种aop的模式。相对于java&#xff0c;C#的最大优势可能就是委托了&#xff0c;实现起来非常方便。<br />
+#委托<br />
+##定义<br />
+C# 中的委托&#xff08;Delegate&#xff09;类似于 C 或 C&#43;&#43; 中函数的指针。委托&#xff08;Delegate&#xff09; 是<strong>存有对某个方法的引用的一种引用类型变量</strong>。引用可在运行时被改变。委托&#xff08;Delegate&#xff09;<strong>特别用于实现事件和回调方法</strong>。所有的委托&#xff08;Delegate&#xff09;都派生自 System.Delegate 类。<br />
+##规范<br />
+###声明委托<br />
+委托声明决定了可由该委托引用的方法。委托可指向一个与其具有相同标签的方法。</p>
+<pre><code>delegate &lt;return type&gt; &lt;delegate-name&gt; &lt;parameter list&gt;
+</code></pre>
+<p><strong>注意&#xff1a;返回值类型和参数列表一定要和该委托引用的方法一致&#xff01;</strong></p>
+<p>###实例化委托<br />
+一旦声明了委托类型&#xff0c;委托对象必须使用 new 关键字来创建&#xff0c;且与一个特定的方法有关。当创建委托时&#xff0c;传递到 new 语句的参数就像方法调用一样书写&#xff0c;但是<strong>不带有参数</strong>。例如&#xff1a;</p>
+<pre><code>public delegate void printString(string s);
+...
+printString ps1 &#61; new printString(WriteToScreen);
+printString ps2 &#61; new printString(WriteToFile);
+</code></pre>
+<p>##实现</p>
+<pre><code>using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Delegate
+{
+
+
+    public class MrTian
+    {
+        //我
+        public static void readcode(int a )
+        {
+            Console.WriteLine(&#34;好的超哥,我去看代码&#43;2a:{0}&#34;,2*a);
+        }
+
+        public static void readbook(int b)
+        {
+            Console.WriteLine(&#34;好的超哥,看完代码我去看书&#43;5a:{0}&#34;,5 * b);
+        }
+    }
+
+    //超哥
+    class MrChao
+    {
+        //声明一个委托&#xff0c;其实就是个“命令”
+        public delegate void readCodeandBook(int a);    //类似于java里的代理&#xff0c;将一件或多件事儿交给别人做
+
+        public static void Main(string[] args)
+        {
+            //这里就是具体阐述这个命令是干什么的
+            int a &#61; 10;  //要传入的参数
+
+            readCodeandBook rcb &#61; new readCodeandBook(MrTian.readcode);
+            rcb &#43;&#61; MrTian.readbook;  //委托的多播
+            //这时候委托被附上了具体的方法
+            rcb(a);
+            Console.ReadKey();
+        }
+    }
+}
+</code></pre>
+<p>#匿名方法<br />
+##定义<br />
+<strong>委托是用于引用与其具有相同标签的方法</strong>。可以使用委托对象调用可由委托引用的方法。<br />
+匿名方法&#xff08;Anonymous methods&#xff09; 提供了一种传递代码块作为委托参数的技术。<strong>匿名方法是没有名称只有主体的方法</strong>。<strong>在匿名方法中不需要指定返回类型</strong>&#xff0c;它是从方法主体内的 return 语句推断的。<br />
+##规范</p>
+<pre><code>delegate void NumberChanger(int n);
+...
+NumberChanger nc &#61; delegate(int x)
+{
+    Console.WriteLine(&#34;Anonymous Method: {0}&#34;, x);
+};
+</code></pre>
+<p>##实现</p>
+<pre><code>using System;
+
+delegate void NumberChanger(int n);
+namespace DelegateAppl
+{
+    class TestDelegate
+    {
+        static int num &#61; 10;
+        public static void AddNum(int p)
+        {
+            num &#43;&#61; p;
+            Console.WriteLine(&#34;Named Method: {0}&#34;, num);
+        }
+
+        public static void MultNum(int q)
+        {
+            num *&#61; q;
+            Console.WriteLine(&#34;Named Method: {0}&#34;, num);
+        }
+        public static int getNum()
+        {
+            return num;
+        }
+
+        static void Main(string[] args)
+        {
+            // 使用匿名方法创建委托实例
+            NumberChanger nc &#61; delegate(int x)
+            {
+               Console.WriteLine(&#34;Anonymous Method: {0}&#34;, x);
+            };
+
+            // 使用匿名方法调用委托
+            nc(10);
+
+            // 使用命名方法实例化委托
+            nc &#61;  new NumberChanger(AddNum);
+
+            // 使用命名方法调用委托
+            nc(5);
+
+            // 使用另一个命名方法实例化委托
+            nc &#61;  new NumberChanger(MultNum);
+
+            // 使用命名方法调用委托
+            nc(2);
+            Console.ReadKey();
+        }
+    }
+}
+</code></pre>
+<p>#事件</p>
+<p>##定义<br />
+事件&#xff08;Event&#xff09; 基本上说是一个用户操作&#xff0c;如按键、点击、鼠标移动等等&#xff0c;或者是一些出现&#xff0c;如系统生成的通知。<br />
+##委托与事件<br />
+###发布-订阅模型</p>
+<ul><li>
+<p>发布器&#xff08;publisher&#xff09; 类&#xff1a;事件在类中声明且生成&#xff0c;且通过使用同一个类或其他类中的委托与事件处理程序关联。包含事件的类用于发布事件。**发布器&#xff08;publisher&#xff09; 是一个包含事件和委托定义的对象。**事件和委托之间的联系也定义在这个对象中。发布器&#xff08;publisher&#xff09;类的对象调用这个事件&#xff0c;并通知其他的对象。</p>
+</li><li>
+<p>订阅器&#xff08;subscriber&#xff09; 类&#xff1a;其他接受该事件的类。</p>
+</li></ul>
+<p>事件使用 发布-订阅&#xff08;publisher-subscriber&#xff09; 模型。<strong>订阅器&#xff08;subscriber&#xff09; 是一个接受事件并提供事件处理程序的对象。在发布器&#xff08;publisher&#xff09;类中的委托调用订阅器&#xff08;subscriber&#xff09;类中的方法&#xff08;事件处理程序&#xff09;。</strong><br />
+##规范<br />
+###声明事件<br />
+在类的内部声明事件&#xff0c;首先必须<strong>声明该事件的委托类型</strong>。例如&#xff1a;</p>
+<pre><code> public delegate void readCodeandBook(int a);
+</code></pre>
+<p>然后&#xff0c;<strong>声明事件本身&#xff0c;使用 event 关键字</strong>&#xff1a;</p>
+<pre><code>// 基于上面的委托定义事件
+public event readCodeandBook ChaosOrder;
+</code></pre>
+<p>上面的代码定义了一个名为 readCodeandBook的委托和一个名为 ChaosOrder的事件&#xff0c;该事件在生成的时候会调用委托。<br />
+##实现</p>
+<pre><code>using System;
+namespace SimpleEvent
+{
+    using System;
+    /***********发布器类***********/
+    public class EventTest
+    {
+        private int value &#61; 10;
+
+        public delegate void readCodeandBook(int a);   //需要委托的方法
+
+
+        public event readCodeandBook ChaosOrder;
+        protected virtual void Ordersent()    //事件触发函数&#xff0c;核心函数
+        {
+            if (ChaosOrder !&#61; null)
+            {
+                ChaosOrder(value); /* 事件被触发 */
+            }
+            else {
+                Console.WriteLine(&#34;event not fire&#34;);
+                Console.ReadKey(); /* 回车继续 */
+            }
+        }
+
+
+        public EventTest()
+        {
+            int n &#61; 5;
+            SetValue(n);
+        }
+
+
+        public void SetValue(int n)
+        {
+            if (value !&#61; n)
+            {
+                value &#61; n;
+                Ordersent();
+            }
+        }
+    }
+
+
+    /***********订阅器类***********/
+
+    public class subscribEvent
+    {
+        public void printf(int a)
+        {
+            Console.WriteLine(&#34;event fire&#43;a:{0}&#34;,a);
+            Console.ReadKey(); /* 回车继续 */
+        }
+    }
+
+    /***********触发***********/
+    public class MainClass
+    {
+        public static void Main()
+        {
+            EventTest e &#61; new EventTest(); /* 实例化发布器类&#xff0c;第一次没有触发 */
+            subscribEvent v &#61; new subscribEvent(); /* 实例化订阅器类 */
+            EventTest.readCodeandBook del &#61; new EventTest.readCodeandBook(v.printf); //实例化对应的委托
+            e.ChaosOrder &#43;&#61; del; /* 把委托的方法关联到事件注册的地方 */
+            e.SetValue(7);  //设置值的时候事件被触发
+           //   e.SetValue(11);
+        }
+    }
+}
+</code></pre>
+<p><img alt="这里写图片描述" src="./posts/assets/78548921-ext-c7cab2b9fb70.png" loading="lazy"></p>
+<p>事件和委托差不多&#xff0c;事件通过委托实现&#xff0c;事件可以包含多个委托。</p>

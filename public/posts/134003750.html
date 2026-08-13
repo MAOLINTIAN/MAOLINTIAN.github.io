@@ -1,0 +1,277 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【动态规划】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。</p>
+<h2><a rel="noopener noreferrer" id="MID_2"></a>连续子数组的最大和【MID】</h2>
+<p>来从动态规划最简单的题开始训练</p>
+<h3><a rel="noopener noreferrer" id="_4"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/134003750-01-47af9c0bcd.png" loading="lazy"><br /> 题干中可以提炼的关键信息&#xff1a;<strong>连续的子数组&#xff0c;整数有正有负&#xff0c;求连续子数组的最大和</strong>&#xff0c;题目要我们找出和最大的连续子数组的值是多少&#xff0c;「连续」是关键字&#xff0c;连续很重要&#xff0c;不是子序列。题目只要求返回结果&#xff0c;<strong>不要求得到最大的连续子数组是哪一个。这样的问题通常可以使用「动态规划」解决</strong></p>
+<h3><a rel="noopener noreferrer" id="_9"></a>解题思路</h3>
+<p>按照动态规划的思路进行状态设计和状态转移方程编写</p>
+<h4><a rel="noopener noreferrer" id="1__11"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p><font color="red"><strong>dp[i]&#xff1a;表示以 nums[i] 结尾的连续子数组的最大和</strong></font>。说明&#xff1a;「结尾」和「连续」是关键字。</p>
+<h4><a rel="noopener noreferrer" id="2__13"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p>根据状态的定义&#xff0c;由于 <code>nums[i]</code> 一定会被选取&#xff0c;并且以 <code>nums[i]</code> 结尾的连续子数组与以 <code>nums[i - 1]</code> 结尾的连续子数组只相差一个元素 <code>nums[i]</code> 。假设数组 nums 的值全都严格大于 0&#xff0c;那么一定有 <code>dp[i] &#61; dp[i - 1] &#43; nums[i]</code>。可是 dp[i - 1] 有可能是负数&#xff0c;于是分类讨论&#xff1a;</p>
+<ul><li>如果 <code>dp[i - 1] &gt; 0</code>&#xff0c;那么可以把 nums[i] 直接接在 dp[i - 1] 表示的那个数组的后面&#xff0c;得到和更大的连续子数组&#xff1b;</li><li>如果 <code>dp[i - 1] &lt;&#61; 0</code>&#xff0c;那么 nums[i] 加上前面的数 dp[i - 1] 以后值不会变大。于是 dp[i] 「另起炉灶」&#xff0c;此时单独的一个 nums[i] 的值&#xff0c;就是 dp[i]。</li></ul>
+<p>以上两种情况的最大值就是 dp[i] 的值&#xff0c;写出如下状态转移方程&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/134003750-02-7622407ed8.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="3__20"></a>3 初始化状态</h4>
+<p><code>dp[0]</code> 根据定义&#xff0c;只有 1 个数&#xff0c;一定以 nums[0] 结尾&#xff0c;因此 <code>dp[0] &#61; nums[0]</code></p>
+<h4><a rel="noopener noreferrer" id="4__22"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__24"></a>5 找到最终解</h4>
+<p>这里的dp[i]只是以i为结尾的连续子数组的最大和&#xff0c;并不是题目中的问题&#xff0c;数组的连续子数组最大和&#xff0c;所以最终解并不是子问题的解&#xff0c;需要用一个MAX值承载&#xff0c;通过与dp[i]比较更新最终解</p>
+<h3><a rel="noopener noreferrer" id="_27"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param array int整型一维数组
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token class-name">FindGreatestSumOfSubArray</span> <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> array<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义dp数组&#xff0c;初始化状态,初始化最终解</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>array<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> array<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> greatSum <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 定义状态转移方程</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> array<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 状态转移方程&#xff0c;求解当前的dp[i]</span>
+            dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0</span> <span class="token operator">?</span> array<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">:</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> array<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token comment">// 更新最大值</span>
+            greatSum <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>greatSum<span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> greatSum<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_72"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历了一遍数组&#xff0c;所以时间复杂度为O&#xff08;N&#xff09;<br /> 空间复杂度&#xff1a;定义了动规数组&#xff0c;空间复杂度为O&#xff08;N&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="MID_76"></a>乘积最大子数组【MID】</h2>
+<p>处理一个合连续子数组的最大和类似的题目&#xff0c;乘积最大的子数组<br /> <img alt="在这里插入图片描述" src="./posts/assets/134003750-03-247a320d5d.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_80"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/134003750-04-da630c7037.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_83"></a>解题思路</h3>
+<p><a href="https://leetcode.cn/problems/maximum-product-subarray/solutions/251440/dong-tai-gui-hua-li-jie-wu-hou-xiao-xing-by-liweiw/" rel="nofollow"><strong>原题解地址</strong></a>&#xff0c;数组的动态规划问题、子序列、连续子序列的一个常见的状态定义是&#xff1a;</p>
+<blockquote>
+ <p><strong>以下标 i 结尾的连续子序列的乘积的最大值。</strong></p>
+</blockquote>
+<p>最后把整个 dp 数组看一遍求最大值即可。因此状态转移方程可能是&#xff1a;</p>
+<pre><code class="prism language-java">dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<p>说明&#xff1a;牢记状态的定义&#xff0c;一定以下标 i 结尾&#xff0c;即&#xff1a;乘积数组中 <code>nums[i]</code> 必须被选取&#xff0c;但是<code>nums[i]</code>可能是正数也可能是负数</p>
+<ul><li>如果<strong>nums[i]</strong> 是负数&#xff0c;要想获得最大乘积&#xff0c;<strong>则dp[i-1]越小则dp[i]越大</strong>&#xff0c;于是我们可能就需要记录一下**dp[i-1]**的那个最小数。</li><li>如果<strong>nums[i]</strong> 是正数&#xff0c;则取上一个状态的最大值*</li></ul>
+<p>所以要维护两个动态规划数组</p>
+<h4><a rel="noopener noreferrer" id="1__101"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p><font color="red"><strong>maxDp[i]&#xff1a;表示以 nums[i] 结尾的连续子数组的最大乘积</strong></font>。说明&#xff1a;「结尾」和「连续」是关键字。<br /> <font color="red"><strong>minDp[i]&#xff1a; 表示以 nums[i] 结尾的连续子数组的最小乘积</strong></font>。说明&#xff1a;「结尾」和「连续」是关键字。</p>
+<h4><a rel="noopener noreferrer" id="2__104"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<pre><code class="prism language-java"> <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&gt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token comment">// 如果当前值为正数&#xff0c;则最大值为 Math.max(nums[i], maxDp[i - 1] * nums[i]),因为maxDp[i-1]可能为负数&#xff0c;这样不如舍弃重新开始</span>
+       maxDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> maxDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment">// 同时需要更新最小值&#xff0c;nums[i]为正值&#xff0c;所以就用最小乘积&#xff0c;minDp[i - 1] * nums[i]更小</span>
+      minDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> minDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 如果当前值为负数&#xff0c;则最大值为Math.max(nums[i], minDp[i - 1] * nums[i])&#xff0c;minDp[i - 1]可能为负数&#xff0c;这样不如使用minDp[i - 1] * nums[i],</span>
+    maxDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> minDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 同时需要更新最小值&#xff0c;nums[i]为负值&#xff0c;所以就用最大乘积&#xff0c;maxDp[i - 1] * nums[i]更小</span>
+    minDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> maxDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__121"></a>3 初始化状态</h4>
+<pre><code class="prism language-java"><span class="token comment">// base case 初始状态为数组的第一个元素</span>
+maxDp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+minDp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> ans <span class="token operator">&#61;</span>  nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="4__130"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__132"></a>5 找到最终解</h4>
+<p>最终解采用实时更新的方式</p>
+<pre><code class="prism language-java"><span class="token comment">// 更新整体最大值</span>
+ans <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>ans<span class="token punctuation">,</span> maxDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_140"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param number int整型
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">maxProduct</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参合法性判断</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> nums<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义两个动态规划数组&#xff0c;分别记录以i为结尾的最大乘积子数组,并维护最大乘积值</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> maxDp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> minDp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 base case 初始状态为数组的第一个元素</span>
+        maxDp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        minDp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> ans <span class="token operator">&#61;</span>  nums<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 4 状态转移方程</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&gt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 如果当前值为正数&#xff0c;则最大值为 Math.max(nums[i], maxDp[i - 1] * nums[i]),因为maxDp[i-1]可能为负数&#xff0c;这样不如舍弃重新开始</span>
+                maxDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> maxDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 同时需要更新最小值&#xff0c;nums[i]为正值&#xff0c;所以就用最小乘积&#xff0c;minDp[i - 1] * nums[i]更小</span>
+                minDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> minDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 如果当前值为负数&#xff0c;则最大值为Math.max(nums[i], minDp[i - 1] * nums[i])&#xff0c;minDp[i - 1]可能为负数&#xff0c;这样不如使用minDp[i - 1] * nums[i],</span>
+                maxDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> minDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 同时需要更新最小值&#xff0c;nums[i]为负值&#xff0c;所以就用最大乘积&#xff0c;maxDp[i - 1] * nums[i]更小</span>
+                minDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> maxDp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 更新整体最大值</span>
+            ans <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>ans<span class="token punctuation">,</span> maxDp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> ans<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_204"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历了一遍数组&#xff0c;所以时间复杂度为O&#xff08;N&#xff09;<br /> 空间复杂度&#xff1a;定义了动规数组&#xff0c;空间复杂度为O&#xff08;N&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="MID_207"></a>最长递增子序列【MID】</h2>
+<p>终于又来到一道看了很久的高频题目这里</p>
+<h3><a rel="noopener noreferrer" id="_209"></a>题干</h3>
+<p>注意「子序列」和「子串」这两个名词的区别&#xff0c;<strong>子串一定是连续的&#xff0c;而子序列不一定是连续的</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/134003750-05-cbb4eaf1df.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_212"></a>解题思路</h3>
+<p>按照动态规划的思路进行状态设计和状态转移方程编写&#xff0c;这里用数学归纳法进行状态转移公式的推导。</p>
+<p><strong>数学归纳法</strong>&#xff1a;比如我们想证明一个数学结论&#xff0c;那么我们<strong>先假设这个结论在 k &lt; n 时成立&#xff0c;然后根据这个假设&#xff0c;想办法推导证明出 k &#61; n 的时候此结论也成立</strong>。如果能够证明出来&#xff0c;那么就说明这个结论对于 k 等于任何数都成立</p>
+<p>我们设计动态规划算法&#xff0c;不是需要一个 dp 数组吗&#xff1f;我们可以假设 <code>dp[0...i-1]</code> 都已经被算出来了&#xff0c;然后问自己&#xff1a;怎么通过这些结果算出 <code>dp[i]</code></p>
+<h4><a rel="noopener noreferrer" id="1__218"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p>我们的定义是这样的&#xff1a;<code>dp[i]</code> 表示以 <code>nums[i]</code> 这个数结尾的最长递增子序列的长度&#xff0c;这个定义中 nums[i] 必须被选取&#xff0c;且必须是这个子序列的最后一个元素&#xff1b;</p>
+<h4><a rel="noopener noreferrer" id="2__220"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p>算法演进过程中每个 dp[i] 的结果是我们肉眼看出来的&#xff0c;我们应该怎么设计算法逻辑来正确计算每个 dp[i] 呢&#xff1f;这就是动态规划的重头戏&#xff0c;如何设计算法逻辑进行状态转移&#xff0c;才能正确运行呢&#xff1f;这里需要使用数学归纳的思想&#xff1a;</p>
+<p><strong>假设我们已经知道了 dp[0…4] 的所有结果&#xff0c;我们如何通过这些已知结果推出 dp[5] 呢</strong></p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/134003750-06-bf276b333b.png" loading="lazy"><br /> 根据刚才我们对 dp 数组的定义&#xff0c;现在想求 dp[5] 的值&#xff0c;也就是想求<strong>以 nums[5] 为结尾的最长递增子序列</strong>。</p>
+<p><code>nums[5] &#61; 3</code>&#xff0c;<strong>既然是递增子序列&#xff0c;我们只要找到前面那些结尾比 3 小的子序列&#xff0c;然后把 3 接到这些子序列末尾&#xff0c;就可以形成一个新的递增子序列&#xff0c;而且这个新的子序列长度加一</strong></p>
+<ul><li><strong>nums[5] 前面有哪些元素小于 nums[5]</strong>&#xff1f;这个好算&#xff0c;用 for 循环比较一波就能把这些元素找出来。</li><li>以这些元素为结尾的最长递增子序列的长度是多少&#xff1f;回顾一下我们对 dp 数组的定义&#xff0c;它记录的正是<strong>以每个元素为末尾的最长递增子序列的长度</strong></li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/134003750-07-a7bc12aa26.png" loading="lazy"><br /> 以我们举的例子来说&#xff0c;<code>nums[0]</code> 和 <code>nums[4]</code> 都是小于 <code>nums[5]</code> 的&#xff0c;然后对比 dp[0] 和 dp[4] 的值&#xff0c;我们让 <code>nums[5]</code> 和更长的递增子序列结合&#xff0c;得出 <code>dp[5] &#61; 3</code></p>
+<pre><code class="prism language-java"><span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> i<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&gt;</span> nums<span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__244"></a>3 初始化状态</h4>
+<p>根据这个定义&#xff0c;我们就可以推出 base case&#xff1a;<strong>dp[i] 初始值为 1&#xff0c;因为以 nums[i] 结尾的最长递增子序列起码要包含它自己</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/134003750-08-c0927671e8.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="4__249"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__251"></a>5 找到最终解</h4>
+<p><strong>根据这个定义&#xff0c;我们的最终结果&#xff08;子序列的最大长度&#xff09;应该是 dp 数组中的最大值</strong></p>
+<pre><code class="prism language-java"><span class="token keyword">int</span> res <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> dp<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    res <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>res<span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">return</span> res<span class="token punctuation">;</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_263"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 最长上升子序列</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">lengthOfLIS</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参校验判断</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">.</span>length <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义DP数组&#xff1a;dp[i]表示以nums[i]为结尾的上升子序列的最大长度</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 base case, 所有元素都至少包含自己&#xff0c;且dp[0]&#61;1 因为只有一个元素,二者合并</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">fill</span><span class="token punctuation">(</span>dp<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 4 状态转移&#xff0c;填充状态转移表</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// dp[i]为i之前的小于nums[i]的所有dp[i]的最大值组成</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> i<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&lt;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 5 最终解为dp数组的最大值</span>
+        <span class="token keyword">int</span> result <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> dp<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>result<span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>当然最值的更新也可以在双重循环中同步进行</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 最长上升子序列</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">lengthOfLIS</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参校验判断</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">.</span>length <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义DP数组&#xff1a;dp[i]表示以nums[i]为结尾的上升子序列的最大长度</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 base case, 所有元素都至少包含自己&#xff0c;且dp[0]&#61;1 因为只有一个元素,二者合并</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">fill</span><span class="token punctuation">(</span>dp<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 4 状态转移&#xff0c;填充状态转移表</span>
+        <span class="token keyword">int</span> result <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// dp[i]为i之前的小于nums[i]的所有dp[i]的最大值组成</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> i<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&lt;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            result <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>result<span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_350"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;<strong>O(N^2)</strong>&#xff0c;这里 N 是数组的长度&#xff0c;我们写了两个 for 循环&#xff0c;每个 for 循环的时间复杂度都是线性的&#xff1b;</p>
+<p>空间复杂度&#xff1a;<strong>O(N)</strong>&#xff0c;要使用和输入数组长度相等的状态数组&#xff0c;因此空间复杂度是 O(N)。</p>

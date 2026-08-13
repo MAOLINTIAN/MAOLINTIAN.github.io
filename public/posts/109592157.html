@@ -1,0 +1,415 @@
+<p>上一篇blog<a href="https://tianmaolin.blog.csdn.net/article/details/109591847" rel="nofollow">【Redis从入门到放弃系列 十五】Redis集群之Cluster模式及集群搭建</a>可谓呕心沥血&#xff0c;一周的零碎时间学习加上周末4h的写&#xff0c;本篇聊些老八股&#xff0c;关于企业级的一些Redis缓存解决方案&#xff0c;包括&#xff1a;<strong>缓存预热、缓存雪崩、缓存击穿、缓存穿透&#xff0c;以及一些简单的性能监测指标</strong>。依据政策流程以及可能会在什么分支上发生什么灾难&#xff0c;我构建了下列的流程图&#xff0c;正确请求是先从缓存拿数据&#xff0c;拿不到再从数据库里拿。<br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-01-a1c8d4d0b1.png" loading="lazy"></p>
+<p>缓存预热、缓存雪崩、缓存击穿主要原因为频繁访问数据库更新缓存&#xff0c;造成数据库压力过大&#xff0c;而穿透则是因为数据库也没有数据&#xff0c;不停的进行穿透请求&#xff0c;造成Redis服务器和数据库压力均很大。心里有个数后可以详细的看看各种情况及处理手段。</p>
+<h3><a rel="noopener noreferrer" id="_6"></a>缓存预热</h3>
+<p>新的缓存系统没有任何缓存数据&#xff0c;在缓存重建数据的过程中&#xff0c;系统性能和数据库负载都不太好&#xff0c;所以最好是在系统上线之前就把要缓存的热点数据加载到缓存中&#xff0c;这种缓存预加载手段就是<strong>缓存预热</strong>。如果不预热会有如下问题产生&#xff1a;<font color="red"><strong>Redis服务器启动后迅速宕机、数据库和应用服务器也可能会宕机</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_9"></a>现象和问题原因</h4>
+<p>排查Redis服务器发现如下现象&#xff1a;<strong>请求数据量较高</strong>&#xff1b;<strong>主从之间数据吞吐量达</strong>&#xff1b;<strong>数据同步操作频度比较高&#xff0c;数据库读取频度比较高</strong>。主要原因为重启时Redis的缓存中没有数据。</p>
+<h4><a rel="noopener noreferrer" id="_12"></a>解决方案</h4>
+<p>因为主要问题是缓存没有预先加载&#xff0c;导致重启时扛不住这么大的访问压力&#xff0c;所以主要解决问题思路就是预加载数据&#xff0c;但是预加载也不能加载全部&#xff0c;需要有策略的预加载数据&#xff1a;</p>
+<ul><li><strong>要预加载数据</strong>&#xff0c;提前给redis中嵌入部分数据&#xff0c;再提供服务。但不可能将所有数据都写入redis&#xff0c;因为数据量太大了&#xff0c;耗费的时间太长了&#xff0c;第而且redis根本就容纳不下所有的数据</li><li><strong>要有依据的加载</strong>&#xff0c;日常统计高热度访问数据&#xff1b;依据当天的具体访问情况&#xff0c;试试统计出频率较高的热数据</li><li><strong>要加快高热数据的加载速率</strong>&#xff0c;然后将访问频率较高的热数据写入到redis&#xff0c;热数据比较多&#xff0c;需要多个服务并行的读取数据去写&#xff0c;并行的分布式的缓存预热</li></ul>
+<p>处理完成后后将嵌入的热数据的redis对外提供服务&#xff0c;这样就不至于冷启动&#xff0c;直接让数据库奔溃了。当然其中最重要的一点就是<strong>如何统计热数据</strong>&#xff0c;按照如下执行顺序去统计</p>
+<ol><li><strong>nginx&#43;lua将访问量上报到kafka中</strong>&#xff0c;要统计出来当前最新的实时的热数据是哪些&#xff0c;我们就得访问的请求对应的流量&#xff0c;日志&#xff0c;实时上报到kafka中</li><li><strong>storm从kafka中消费数据</strong>&#xff0c;实时统计出每个商品的访问次数&#xff0c;访问次数基于<strong>LRU</strong>内存数据结构的存储方案&#xff0c;优先用内存中的一个<strong>LRUMap队列</strong>去存放&#xff0c;性能高&#xff0c;而且没有外部依赖&#xff0c;apache commons collections有开源的实现&#xff0c;设定好map的最大大小&#xff0c;就会自动根据LRU算法去剔除多余的数据&#xff0c;保证内存使用限制&#xff0c;即使有部分数据被干掉了&#xff0c;下次来重新开始计数即可&#xff0c;如果被LRU算法淘汰说明不是热数据</li><li>每个storm task启动的时候&#xff0c;基于zk分布式锁&#xff0c;将自己的id写入zk的一个节点中</li><li>每个<strong>storm task负责完成自己这里的热数据的统计</strong>&#xff0c;比如每次计数过后&#xff0c;维护一个前1000个key的list&#xff0c;每次计算完都更新这个list</li><li><strong>开启一个守护线程&#xff0c;每隔一段时间&#xff0c;比如一分钟&#xff0c;将排名前1000的热数据list同步到zk中</strong></li></ol>
+<p>确定好日常统计的热数据后。在启动前进行加载&#xff0c;启动时</p>
+<ol><li>使用脚本程序固定触发数据预热的过程</li><li>条件允许&#xff0c;可以使用CDN进行加速</li></ol>
+<p>以上就是缓存预热完整的一个解决方案。可以想象&#xff0c;如果没有预热&#xff0c;大量的请求穿透Redis服务器进入数据库&#xff0c;不但数据库扛不住&#xff0c;接下来给Redis更新缓存数据&#xff0c;Redis服务也扛不住啊。</p>
+<h3><a rel="noopener noreferrer" id="_34"></a>缓存雪崩</h3>
+<p>缓存雪崩是指<strong>缓存中短期内有大批量的key集中过期</strong>&#xff0c;而查询数据量巨大&#xff0c;导致短期内<font color="red"><strong>应用服务器、数据库、Redis服务器和集群</strong>扛不住压力集中宕机</font>。</p>
+<h4><a rel="noopener noreferrer" id="_36"></a>现象和问题原因</h4>
+<p>为了便于理解&#xff0c;我将<strong>雪崩</strong>时的现象和背后的原因做了一个对应关系的展示&#xff1a;<br /> <img alt="### 现象" src="./posts/assets/109592157-02-3dd0ef13ba.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_39"></a>解决方案</h4>
+<p>其实主要问题就是<strong>短时间内key的集中化过期</strong>&#xff0c;我们让这些key不集中过期其实就是解决这个问题的关键。</p>
+<ul><li><strong>调整删除策略</strong>&#xff0c;LRU和LFU的删除策略&#xff0c;按照命中次数去进行删除&#xff0c;<strong>保留高热数据key</strong></li><li><strong>稀释数据有效期</strong>&#xff0c;对不同的业务数据进行统计和分类错峰过期&#xff0c;错峰使用随机时间实现&#xff0c;稀释key的集中到期数量</li><li><strong>超热数据使用永久的key</strong></li><li><strong>定期维护</strong>&#xff0c;对即将过期的热点数据进行延时策略&#xff0c;延长过期时间</li><li><strong>加锁</strong>&#xff0c;缓存失效后&#xff0c;通过加锁或者队列来<strong>控制读数据库写缓存</strong>的线程数量。</li></ul>
+<p>加锁排队只是为了减轻数据库的压力&#xff0c;并没有提高系统吞吐量。假设在高并发下&#xff0c;缓存重建期间key是锁着的&#xff0c;这时过来1000个请求999个都在阻塞的。同样会导致用户等待超时&#xff0c;加锁排队有可能还要解决分布式锁的问题&#xff1b;线程还会被阻塞&#xff0c;用户体验很差&#xff01;因此&#xff0c;在真正的高并发场景下很少使用&#xff01;加锁的伪代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//伪代码</span>
+<span class="token keyword">public</span> object <span class="token function">GetProductListNew</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> cacheTime <span class="token operator">&#61;</span> <span class="token number">30</span><span class="token punctuation">;</span>
+    String cacheKey <span class="token operator">&#61;</span> <span class="token string">&#34;product_list&#34;</span><span class="token punctuation">;</span>
+    String lockKey <span class="token operator">&#61;</span> cacheKey<span class="token punctuation">;</span>
+
+    String cacheValue <span class="token operator">&#61;</span> CacheHelper<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>cacheKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>cacheValue <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> cacheValue<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">synchronized</span><span class="token punctuation">(</span>lockKey<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            cacheValue <span class="token operator">&#61;</span> CacheHelper<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>cacheKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>cacheValue <span class="token operator">!&#61;</span> null<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> cacheValue<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+              <span class="token comment">//这里一般是sql查询数据</span>
+                cacheValue <span class="token operator">&#61;</span> <span class="token function">GetProductListFromDB</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                CacheHelper<span class="token punctuation">.</span><span class="token function">Add</span><span class="token punctuation">(</span>cacheKey<span class="token punctuation">,</span> cacheValue<span class="token punctuation">,</span> cacheTime<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> cacheValue<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_76"></a>缓存击穿</h3>
+<p>缓存击穿&#xff0c;是指<strong>一个key非常热点&#xff0c;在不停的扛着大并发&#xff0c;大并发集中对这一个点进行访问&#xff0c;当这个key在失效的瞬间&#xff0c;持续的大并发就穿破缓存&#xff0c;直接请求数据库</strong>&#xff0c;就像在一个屏障上凿开了一个洞。导致短期内<font color="red"><strong>数据库扛不住压力集中宕机</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_79"></a>现象和问题原因</h4>
+<p>为了便于理解&#xff0c;我将<strong>击穿</strong>时的现象和背后的原因做了一个对应关系的展示&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-03-4976df9523.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_83"></a>解决方案</h4>
+<p>其实主要问题就是<strong>单个超热key的高并发访问</strong>&#xff0c;我们让超热key不过期其实就是解决这个问题的关键。</p>
+<ul><li><strong>预先设定超热Key</strong>&#xff0c;对此类Key设置长期Key并追加延时策略【后台开启定时任务刷新有效期】</li><li><strong>临时设置永久Key</strong>&#xff0c;访问业务量短期内激增的时候&#xff0c;临时设置为永久Key保证不过期</li><li><strong>加分布式锁</strong>&#xff0c;防止被击穿&#xff0c;其实就是降低对数据库的访问压力&#xff0c;但整体依然是阻塞的。</li></ul>
+<p>简单地来说&#xff0c;加分布式锁就是在缓存失效的时候&#xff08;判断拿出来的值为空&#xff09;&#xff0c;不是立即去load db&#xff0c;而是在获取到锁后再进行操作。</p>
+<h3><a rel="noopener noreferrer" id="_91"></a>缓存穿透</h3>
+<p>缓存穿透是指<strong>查询一个一定不存在的数据</strong>&#xff0c;由于缓存是不命中时被动写的&#xff0c;并且出于容错考虑&#xff0c;如果从存储层查不到数据则不写入缓存&#xff0c;这将导致这个不存在的数据每次请求都要到存储层去查询&#xff0c;失去了缓存的意义。在流量大时&#xff0c;数据库的压力骤增。 导致短期内<font color="red"><strong>数据库扛不住压力宕机</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_93"></a>现象和问题原因</h4>
+<p>为了便于理解&#xff0c;我将<strong>穿透</strong>时的现象和背后的原因做了一个对应关系的展示&#xff1a;<img alt="在这里插入图片描述" src="./posts/assets/109592157-04-fd8383760c.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_95"></a>解决方案</h4>
+<p>其实主要问题就是<strong>大量请求对数据库击穿</strong>&#xff0c;我们让请求到不了数据库就行了&#xff1a;</p>
+<ul><li><strong>缓存null</strong>&#xff0c;如果一个查询返回的数据为空&#xff08;无论是数据不存在&#xff0c;还是系统故障&#xff09;&#xff0c;我们仍然把这个空结果进行缓存&#xff0c;但它的过期时间会很短&#xff0c;最长不超过五分钟。问题是&#xff1a;<strong>空值做了缓存&#xff0c;意味着缓存层中存了更多的键&#xff0c;需要更多的内存空间 ( 如果是攻击&#xff0c;问题更严重 )</strong>&#xff0c;比较有效的方法是针对这类数据设置一个较短的过期时间&#xff08;最长不超过五分钟&#xff09;&#xff0c;让其自动剔除。还有就是<strong>缓存层和存储层的数据会有一段时间窗口的不一致</strong>&#xff0c;可能会对业务有一定影响。例如过期时间设置为 5分钟&#xff0c;如果此时存储层添加了这个数据&#xff0c;那此段时间就会出现缓存层和存储层数据的不一致&#xff0c;此时可以利用消息系统或者其他方式清除掉缓存层中的空对象</li><li><strong>白名单策略</strong>&#xff0c;提前预热所有可能查询的参数以hash形式存储&#xff0c;在控制层先进行校验&#xff0c;不符合则丢弃。还有最常见的则是采用布隆过滤器&#xff0c;将所有可能存在的数据哈希到一个足够大的bitmap中&#xff0c;一个一定不存在的数据会被这个bitmap拦截掉&#xff0c;从而避免了对底层存储系统的查询压力</li><li><strong>实时监控</strong>&#xff0c;实时监控redis命中率中null的占比&#xff0c;平时监测一个数量&#xff0c;如果超过多少倍就认定有攻击&#xff0c;增加黑名单策略</li><li><strong>key加密</strong>&#xff0c;防止黑客知道哪些key不存在&#xff0c;让key加密。</li></ul>
+<p>以上就是整个缓存穿透的一个解决方案</p>
+<h3><a rel="noopener noreferrer" id="_104"></a>性能指标监控</h3>
+<p>分为性能指标、内存指标、基本活动指标、持久性指标和错误指标几类。</p>
+<h4><a rel="noopener noreferrer" id="_106"></a>性能指标</h4>
+<blockquote>
+ <p>性能指标</p>
+</blockquote>
+<p>主要检测的是当前Redis服务器的<strong>性能使用状态</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-05-5b090c994f.png" loading="lazy"><br /> <strong>单个请求响应时间越快越好</strong>&#xff1b;<strong>平均每秒处理请求数越多越好</strong>&#xff1b;<strong>缓存命中率低&#xff0c;数据库请求压力会大</strong>&#xff1b;</p>
+<blockquote>
+ <p>内存指标</p>
+</blockquote>
+<p>主要检测的是当前Redis服务器的<strong>内存使用状态</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-06-0f2068f725.png" loading="lazy"><br /> <strong>已使用内存适量最好&#xff0c;不宜过多&#xff0c;过多扛不住&#xff1b;内存碎片率越低说明利用的越好&#xff1b;由于最大内存限制丢弃的key越少越好&#xff1b;阻塞越少越好</strong></p>
+<blockquote>
+ <p>基本活动指标</p>
+</blockquote>
+<p>主要检测的是当前Redis服务器的<strong>连接状态</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-07-429b7b2b82.png" loading="lazy"><br /> <strong>客户端连接数不宜过高&#xff1b;slave数量应当适量&#xff1b;最后一次主从交互后的秒数标识数据同步程度&#xff1b;Redis中key的总数如果降低&#xff0c;数据库压力可能会大。</strong></p>
+<blockquote>
+ <p>持久性指标</p>
+</blockquote>
+<p>主要检测的是当前Redis服务器的<strong>灾备状态</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-08-6e48362d3d.png" loading="lazy"><br /> <strong>最后一次持久化到磁盘时间戳越大越好&#xff1b;最后一次持久化以后Redis更改数越少越好</strong>。这样灾备时丢的数据少。</p>
+<blockquote>
+ <p>错误指标</p>
+</blockquote>
+<p>主要检测的是当前Redis服务器的<strong>错误状态</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-09-534f7ba98a.png" loading="lazy"><br /> <strong>被拒绝的连接数过多就需要考虑调整配置&#xff1b;key失败命中次数越少越好&#xff1b;主从断开持续时间越短越好</strong></p>
+<h4><a rel="noopener noreferrer" id="_136"></a>性能指标指令</h4>
+<p>压测指令&#xff0c;直接在server服务器进行测试&#xff0c;监测Redis集群能扛住的访问压力&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/109592157-10-d7fa8ed400.png" loading="lazy"><br /> 可以看到Redis对各种命令进行了压测。</p>
+<pre><code class="prism language-java"><span class="token punctuation">[</span>root<span class="token annotation punctuation">&#64;192</span> redis<span class="token operator">-</span><span class="token number">6.0</span><span class="token number">.8</span><span class="token punctuation">]</span># redis<span class="token operator">-</span>benchmark <span class="token operator">-</span>h <span class="token number">192.168</span><span class="token number">.5</span><span class="token number">.101</span>
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> PING_INLINE <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.85</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">0.01</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.1</span> milliseconds
+<span class="token number">48.89</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.2</span> milliseconds
+<span class="token number">86.78</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.3</span> milliseconds
+<span class="token number">94.35</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.4</span> milliseconds
+<span class="token number">97.30</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.5</span> milliseconds
+<span class="token number">98.63</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.6</span> milliseconds
+<span class="token number">99.26</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.7</span> milliseconds
+<span class="token number">99.58</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.8</span> milliseconds
+<span class="token number">99.75</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.9</span> milliseconds
+<span class="token number">99.86</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.0</span> milliseconds
+<span class="token number">99.94</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.1</span> milliseconds
+<span class="token number">99.98</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.2</span> milliseconds
+<span class="token number">99.99</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.3</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.4</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.4</span> milliseconds
+<span class="token number">117647.05</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> PING_BULK <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.85</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">0.02</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.1</span> milliseconds
+<span class="token number">47.76</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.2</span> milliseconds
+<span class="token number">84.99</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.3</span> milliseconds
+<span class="token number">93.23</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.4</span> milliseconds
+<span class="token number">96.76</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.5</span> milliseconds
+<span class="token number">98.54</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.6</span> milliseconds
+<span class="token number">99.12</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.7</span> milliseconds
+<span class="token number">99.47</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.8</span> milliseconds
+<span class="token number">99.69</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.9</span> milliseconds
+<span class="token number">99.84</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.0</span> milliseconds
+<span class="token number">99.93</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.1</span> milliseconds
+<span class="token number">99.97</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.2</span> milliseconds
+<span class="token number">99.99</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.3</span> milliseconds
+<span class="token number">99.99</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.4</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.5</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.6</span> milliseconds
+<span class="token number">117508.81</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> SET <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.84</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">0.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.1</span> milliseconds
+<span class="token number">53.79</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.2</span> milliseconds
+<span class="token number">87.07</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.3</span> milliseconds
+<span class="token number">94.75</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.4</span> milliseconds
+<span class="token number">97.48</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.5</span> milliseconds
+<span class="token number">98.93</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.6</span> milliseconds
+<span class="token number">99.44</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.7</span> milliseconds
+<span class="token number">99.68</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.8</span> milliseconds
+<span class="token number">99.81</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.9</span> milliseconds
+<span class="token number">99.88</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.0</span> milliseconds
+<span class="token number">99.91</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.1</span> milliseconds
+<span class="token number">99.93</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.2</span> milliseconds
+<span class="token number">99.96</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.3</span> milliseconds
+<span class="token number">99.97</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.4</span> milliseconds
+<span class="token number">99.98</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.5</span> milliseconds
+<span class="token number">99.99</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.6</span> milliseconds
+<span class="token number">99.99</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.7</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.8</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.9</span> milliseconds
+<span class="token number">118764.84</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> GET <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.90</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">0.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.1</span> milliseconds
+<span class="token number">45.58</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.2</span> milliseconds
+<span class="token number">78.84</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.3</span> milliseconds
+<span class="token number">88.70</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.4</span> milliseconds
+<span class="token number">93.91</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.5</span> milliseconds
+<span class="token number">97.42</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.6</span> milliseconds
+<span class="token number">98.88</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.7</span> milliseconds
+<span class="token number">99.44</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.8</span> milliseconds
+<span class="token number">99.68</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">0.9</span> milliseconds
+<span class="token number">99.81</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.0</span> milliseconds
+<span class="token number">99.86</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.1</span> milliseconds
+<span class="token number">99.90</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.2</span> milliseconds
+<span class="token number">99.90</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.5</span> milliseconds
+<span class="token number">99.91</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.6</span> milliseconds
+<span class="token number">99.93</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.7</span> milliseconds
+<span class="token number">99.93</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.8</span> milliseconds
+<span class="token number">99.95</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1.9</span> milliseconds
+<span class="token number">99.96</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">2</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">2</span> milliseconds
+<span class="token number">110741.97</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> INCR <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.82</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.96</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">121802.68</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LPUSH <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.83</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.95</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">120048.02</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> RPUSH <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.86</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.86</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">116414.43</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LPOP <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.86</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.86</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">116279.07</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> RPOP <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.83</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.96</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">120772.95</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> SADD <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.85</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.85</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">117370.89</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> HSET <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.85</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.92</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">117785.63</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> SPOP <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.84</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.88</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">118483.41</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> ZADD <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.83</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.92</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">120048.02</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> ZPOPMIN <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.86</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.84</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">116959.06</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LPUSH <span class="token punctuation">(</span>needed to benchmark LRANGE<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.85</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.94</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">117096.02</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LRANGE_100 <span class="token punctuation">(</span>first <span class="token number">100</span> elements<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.86</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.78</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">116414.43</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LRANGE_300 <span class="token punctuation">(</span>first <span class="token number">300</span> elements<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.84</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.82</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">118623.96</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LRANGE_500 <span class="token punctuation">(</span>first <span class="token number">450</span> elements<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.82</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.96</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">121802.68</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> LRANGE_600 <span class="token punctuation">(</span>first <span class="token number">600</span> elements<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.84</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.90</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">118483.41</span> requests per second
+
+<span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span> MSET <span class="token punctuation">(</span><span class="token number">10</span> keys<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span><span class="token operator">&#61;&#61;</span>
+  <span class="token number">100000</span> requests completed in <span class="token number">0.85</span> seconds
+  <span class="token number">50</span> parallel clients
+  <span class="token number">3</span> bytes payload
+  keep alive<span class="token operator">:</span> <span class="token number">1</span>
+  host configuration <span class="token string">&#34;save&#34;</span><span class="token operator">:</span> <span class="token number">10</span> <span class="token number">2</span>
+  host configuration <span class="token string">&#34;appendonly&#34;</span><span class="token operator">:</span> yes
+  multi<span class="token operator">-</span>thread<span class="token operator">:</span> no
+
+<span class="token number">99.90</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">100.00</span><span class="token operator">%</span> <span class="token operator">&lt;&#61;</span> <span class="token number">1</span> milliseconds
+<span class="token number">117924.53</span> requests per second
+<span class="token punctuation">[</span>root<span class="token annotation punctuation">&#64;192</span> redis<span class="token operator">-</span><span class="token number">6.0</span><span class="token number">.8</span><span class="token punctuation">]</span>#
+</code></pre>
+<p>可以看到性能还是很高的。多数命令都在2ms内执行完成了。第二个命令就是monitor&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-11-fae2c8945b.png" loading="lazy"><br /> 第三个命令就是慢查询&#xff0c;可以通过这种方式进行查询较慢的统计&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/109592157-12-5d1af8bf87.png" loading="lazy"></p>
+<p>今天聊到的所有问题的通用解决方案从长期来看分为以下几个手段&#xff0c;结合各个问题和性能指标配合食用&#xff1a;</p>
+<ul><li><strong>让数据获取不再那么频繁</strong>&#xff0c;更多的页面静态化处理。</li><li><strong>给缓存加个缓存</strong>&#xff0c;构建多级缓存架构&#xff0c;Nginx缓存&#43;Redis缓存&#43;ehcache缓存</li><li><strong>让数据库更快</strong>&#xff0c;对数据库进行严重耗时的性能排查和优化&#xff0c;对数据库的瓶颈进行排查</li><li><strong>灾难预警机制</strong>&#xff0c;监控Redis服务器性能指标&#xff1a;CPU占用率、CPU使用率、内存容量、查询平均响应时间</li><li><strong>限流、降级</strong>&#xff0c;业务高峰期对非核心数据的访问进行限流&#xff0c;降低访问压力&#xff0c;牺牲一部分用户体验</li></ul>
+<p>这个解决方案其实适用于今天所有的缓存相关的问题&#xff0c;从入口到最终落地点整体进行把控&#xff0c;再结合各个具体问题的实践处理手段&#xff0c;达到一个稳定的防御机制。还有一个概念是<strong>缓存热备</strong>&#xff0c;缓存热备即当一台缓存服务器不可用时能实时切换到备用缓存服务器&#xff0c;不影响缓存使用。集群模式下&#xff0c;每个主节点都会有一个或多个从节点来当备用&#xff0c;一旦主节点挂点&#xff0c;从节点立即充当主节点使用&#xff0c;所以天然支持&#xff0c;这里不做讨论了</p>

@@ -1,0 +1,44 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>输入一个链表&#xff0c;从尾到头打印链表每个节点的值。</p>
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>使用递归的方式&#xff0c;先向后走再添加值</p>
+
+<h3 id="代码实现">代码实现</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> 链表;
+
+<span class="hljs-keyword">import</span> java.util.ArrayList;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:PrintListFromTailToHead
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月22日 上午11:55:05
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PrintListFromTailToHead</span> {<!-- --></span>
+    ArrayList&lt;Integer&gt; list &#61; <span class="hljs-keyword">new</span> ArrayList&lt;Integer&gt;();
+    <span class="hljs-keyword">public</span> ArrayList&lt;Integer&gt; <span class="hljs-title">printListFromTailToHead</span>(ListNode listNode) {
+        <span class="hljs-keyword">if</span>(listNode&#61;&#61;<span class="hljs-keyword">null</span>){
+            <span class="hljs-keyword">return</span> list;
+        }
+        list &#61; printListFromTailToHead(listNode.next);
+        list.add(listNode.val);
+        <span class="hljs-keyword">return</span> list;
+
+
+    }
+}
+</code></pre>

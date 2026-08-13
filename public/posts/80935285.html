@@ -1,0 +1,20 @@
+<p>这篇博文是因为最近在使用git merge合并其他小伙伴的分支的时候爆出了这个问题&#xff0c;<code>Swap file .MERGE_MSG.swp already exists</code>有点儿看不懂&#xff0c;于是从网上搜了下&#xff0c;从一个妹子那里搞来了解决方案</p>
+<blockquote>
+ <p>妹子原文出处&#xff1a; <a rel="noopener noreferrer" href="https://blog.csdn.net/qq_32452623/article/details/78395832#comments">https://blog.csdn.net/qq_32452623/article/details/78395832#comments</a></p>
+</blockquote>
+<h4 id="问题展示">问题展示</h4>
+<p>合并后&#xff0c;执行 git pull 或者 push 或者 merge 命令操作的时候&#xff0c;都会出现了以下错误提示页面&#xff0c;表示懵到天际 <br /> <img title="" alt="这里写图片描述" src="./posts/assets/80935285-01-0c4d69ce24.png" loading="lazy"></p>
+<h4 id="问题解读">问题解读</h4>
+<h5 id="问题原因">问题原因&#xff1a;</h5>
+<p>问题出现的原因很好发现&#xff0c;<strong>当打开 git/MERGE_MSG 文件的时候&#xff0c;发现有 git/MERGE_MSG.swp 文件的存在&#xff0c;并且从时间上来看&#xff0c; MERGE_MSG 比 MERGE_MSG.swp 要更新</strong>。造成这种情况的原因有以下两种可能</p>
+<ol><li><strong>另外一个应用正在打开此文件</strong>。这种情况&#xff0c;要小心修改&#xff0c;防止出现同一个文件&#xff0c;两种修改版本的出现。完了之后可以选择退出或者更加小心的继续 。</li><li><strong>编辑该文件的时候&#xff0c;该文件不正常关闭了</strong>。这种情况&#xff0c;如果需要&#xff0c;可以选择 “:recover” or “vim -r project-path/.git/MERGE_MSG” 命令来恢复文件关闭前的修改。 <br /> 上述两种情况确认完毕后&#xff0c;<strong>删除 MERGE_MSG.swp 文件</strong>&#xff0c;就可以避免该错误提示。</li></ol>
+<h5 id="关于-mergemsgswp-文件的说明">关于 MERGE_MSG.swp 文件的说明&#xff1a;</h5>
+<p>.swp 文件和 git 无关&#xff0c;在使用 VIM 开始编辑某文件时&#xff0c;都会产生该文件对应的 .swp 文件&#xff1a;</p>
+<ul><li>正常的退出&#xff0c;VIM 会自动删除此类型文件&#xff0c;</li><li><strong>非正常退出情况下&#xff0c; VIM 不会删除 &#xff0c;.swp 文件会作为文件编辑状态的内容备份。</strong></li></ul>
+<p>其实多次打开多次不正常关闭&#xff0c;会一直产生 .sw* 文件 <br /> <img title="" alt="这里写图片描述" src="./posts/assets/80935285-02-2e8397bef3.png" loading="lazy"></p>
+<h4 id="问题解决">问题解决</h4>
+<p><strong>第一步&#xff1a;回到合并前状态</strong></p>
+<pre class="prettyprint"><code class=" hljs livecodeserver"> git <span class="hljs-built_in">merge</span> -abort <span class="hljs-comment"> // 中止合并</span>
+ rm .git/.MERGE_MSG.sw*<span class="hljs-comment"> //删除 vim 非正常关闭产生的文件</span></code></pre>
+<p><strong>第二步&#xff1a;重新合并</strong> </p>
+<p><strong>合并提交信息页面&#xff0c;使用 :wq! 或者 :q! 正常退出 VIM</strong> &#xff0c;就能正常合并啦。 <br /> PS&#xff1a; 如果 .git/MERGE_* 文件中 只有 MERGE_MSG 文件的话&#xff0c;不用执行 git merge -abort ,直接删除 .MERGE_MSG.sw* 文件就好。 <br /> <font color="red">其实就是两个分支在合并的时候合并文件非正常退出&#xff0c;或者合并文件正在被另一个程序修改&#xff08;换句话说就是别人也在执行两个分支合并这件事&#xff09;&#xff0c;<strong>我觉得最佳方案是&#xff0c;先终止合并&#xff0c;删除 vim 非正常关闭产生的文件&#xff0c;询问团队内是否有人在执行合并&#xff0c;如果没人&#xff0c;此时再重新执行合并。</strong></font></p>

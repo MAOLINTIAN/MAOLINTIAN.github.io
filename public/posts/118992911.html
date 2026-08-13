@@ -1,0 +1,325 @@
+<p>什么是会话&#xff0c;会话就是<strong>从打开浏览器进行一系列操作再到关闭浏览器的全过程</strong>。什么是会话追踪技术&#xff0c;就是在一次会话中记录用户的状态&#xff0c;我们知道HTTP协议是无状态的&#xff0c;服务器端接收客户端的请求&#xff0c;生成HTTP响应回发&#xff0c;服务器端关闭连接&#xff0c;当发生一次请求和响应结束后服务器并不能记录信息。</p>
+<p>在Web1.0问题这样并没有什么问题&#xff0c;因为大家只是浏览网页而已&#xff0c;但是到了Web2.0时代&#xff0c;也就是交互互联网时代到来后&#xff0c;无状态的HTTP就行不通了&#xff0c;于是就需要会话追踪技术来追踪请求&#xff0c;比如随着网上购物的兴起&#xff0c;需要记录用户的购物车记录&#xff08;<a href="https://zhuanlan.zhihu.com/p/95751026" rel="nofollow"><strong>购物车的数据存储</strong></a>&#xff09;&#xff0c;就需要有一个机制记录每个连接的关系&#xff0c;这样我们就知道加入购物车的商品到底属于谁&#xff1f;</p>
+<p>有需求才会产生新技术&#xff0c;首先来了解下会话追踪技术的发展历史&#xff0c;这样我们才知道我们的技术是怎样一步一步被需求驱动到现在的&#xff08;需要特别说明的是&#xff0c;Session&#xff0c;Cookie以及Token我们都默认是浏览器客户端对单个网站应用请求中的行为&#xff0c;而一个站点在一个浏览器中通常只允许一个用户登录&#xff0c;否则后登录的总会覆盖前面先登录的&#xff0c;所以我们可以认为下边的阐述范围是&#xff1a;一个用户对一个网站的请求行为&#xff09;&#xff1a;</p>
+<h2><a rel="noopener noreferrer" id="Cookie_6"></a>Cookie机制</h2>
+<p>Cookie 是在 HTTP 协议下&#xff0c;维护客户工作站上信息的一种方式。Cookie 是由 Web 服务器保存在用户浏览器上的小文本数据文件&#xff0c;它可以包含有关用户的信息。<strong>cookie是不可跨域的&#xff0c;每个cookie都会绑定一个单一的域名&#xff0c;并只能在指定的域名下使用</strong>&#xff0c;cookie的作用方式如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-01-5532e702f2.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Cookie_9"></a>Cookie解决购物车问题</h3>
+<p>以当前的购物车问题为例&#xff0c;每次浏览器请求后 server 都会将本次商品 id 存储在 Cookie 中返回给客户端&#xff0c;客户端会将 Cookie 保存在本地&#xff0c;下一次再将上次保存在本地的 Cookie 传给 server 就行了。这样每个 Cookie 都保存着用户的商品 id&#xff0c;购买记录也就不会丢失了<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-02-b0a29e9168.png" loading="lazy"><br /> 我们在第一次请求的时候除了默认添加的session&#xff0c;还没有任何其它cookie信息&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-03-55d1713064.png" loading="lazy"><br /> 接下来我们模拟了一个购物行为&#xff0c;在如下Servlet中设置了cookie&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>MyFirstJavaWeb<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;helloServlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/hello-servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{<!-- --></span>
+
+            Cookie cookie <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Cookie</span><span class="token punctuation">(</span><span class="token string">&#34;cart&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;cat,dog&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>     <span class="token comment">//获取cookie的名字和值&#xff0c;都是string类型</span>
+            cookie<span class="token punctuation">.</span><span class="token function">setMaxAge</span><span class="token punctuation">(</span><span class="token number">10000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>      <span class="token comment">//设置最大存活时间&#xff08;在客户端存活&#xff09;&#xff0c;单位是秒&#xff0c;正值表示存活时长&#xff08;浏览器关闭也没有影响&#xff09;&#xff0c;负值表示浏览器不关就一直存活</span>
+            response<span class="token punctuation">.</span><span class="token function">addCookie</span><span class="token punctuation">(</span>cookie<span class="token punctuation">)</span><span class="token punctuation">;</span>    <span class="token comment">//通过响应把cookie返回给客户端</span>
+            Cookie<span class="token punctuation">[</span><span class="token punctuation">]</span> cook <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getCookies</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">//通过请求把客户端的cookie返回到服务器</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>null <span class="token operator">&#61;&#61;</span> cook<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            PrintWriter out <span class="token operator">&#61;</span>response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span>Cookie c <span class="token operator">:</span> cook<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>c<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>c<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这样当我们首次请求该购物页面的时候&#xff0c;请求头中还没有cookie&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-04-c947fb096b.png" loading="lazy"><br /> 但是实际的应用程序中我们确看到cookie已经被设置上了&#xff0c;并作为响应cookie返回了&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-05-61e0323bc2.png" loading="lazy"><br /> 此时我们再次访问该站点或该网站的其它任意站点都会打印出cookie信息&#xff0c;而且可以在请求头中看到该cookie信息&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-06-4fc905f4e1.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Cookie_55"></a>Cookie基本概念</h3>
+<p>HTTP 协议中的 Cookie 包括 Web Cookie 和浏览器 Cookie&#xff0c;它是服务器发送到 Web 浏览器的一小块数据。<strong>服务器发送到浏览器的 Cookie&#xff0c;浏览器会进行存储&#xff0c;并与下一个请求一起发送到服务器</strong>。通常&#xff0c;它用于判断两个请求是否来自于同一个浏览器&#xff0c;例如用户保持登录状态。Cookie 主要用于下面三个目的</p>
+<ul><li><strong>会话管理</strong>&#xff0c;登陆、购物车、游戏得分或者服务器应该记住的其他内容</li><li><strong>个性化</strong>&#xff0c;用户偏好、主题或者其他设置</li><li><strong>追踪</strong>&#xff0c;记录和分析用户行为</li></ul>
+<p>Cookie 曾经用于一般的客户端存储&#xff0c;也是在客户端上存储数据的唯一方法&#xff0c;Cookie 随每个请求一起发送&#xff0c;因此它们可能会降低性能&#xff08;尤其是对于移动数据连接而言&#xff09;&#xff0c;查看Cookie很简单&#xff0c;以Edge浏览器为例&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-07-88ae42ecdc.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="Cookie_63"></a>Cookie的分类</h4>
+<p>有两种类型的 Cookies&#xff0c;一种是 Session Cookies&#xff0c;一种是 Persistent Cookies&#xff0c;如果 Cookie 不包含到期日期&#xff0c;则将其视为会话 Cookie。会话 Cookie 存储在内存中&#xff0c;永远不会写入磁盘&#xff0c;当浏览器关闭时&#xff0c;此后 Cookie 将永久丢失。如果 Cookie 包含有效期 &#xff0c;则将其视为持久性 Cookie。在到期指定的日期&#xff0c;Cookie 将从磁盘中删除。</p>
+<ul><li><strong>会话 Cookies</strong>&#xff0c;会话 Cookie 有个特征&#xff0c;客户端关闭时 Cookie 会删除&#xff0c;因为它没有指定Expires 或 Max-Age指令。但是&#xff0c;Web 浏览器可能会使用会话还原&#xff0c;这会使大多数会话 Cookie 保持永久状态&#xff0c;就像从未关闭过浏览器一样。</li><li><strong>永久性 Cookies</strong>&#xff0c;永久性 Cookie 不会在客户端关闭时过期&#xff0c;而是在特定日期&#xff08;Expires&#xff09;或特定时间长度&#xff08;Max-Age&#xff09;外过期。例如</li></ul>
+<pre><code class="prism language-java">Set<span class="token operator">-</span>Cookie<span class="token operator">:</span> id<span class="token operator">&#61;</span>a3fWa<span class="token punctuation">;</span> Expires<span class="token operator">&#61;</span>Wed<span class="token punctuation">,</span> <span class="token number">21</span> Oct <span class="token number">2050</span> <span class="token number">07</span><span class="token operator">:</span><span class="token number">28</span><span class="token operator">:</span><span class="token number">00</span> GMT<span class="token punctuation">;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="Cookie_71"></a>Cookie的常用方法</h4>
+<p>Cookie的源码如下&#xff0c;包含一些Cookie的常用方法&#xff0c;例如设置过期时间&#xff0c;域名&#xff0c;安全策略等&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//</span>
+<span class="token comment">// Source code recreated from a .class file by IntelliJ IDEA</span>
+<span class="token comment">// (powered by FernFlower decompiler)</span>
+<span class="token comment">//</span>
+
+<span class="token keyword">package</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>Serializable<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>text<span class="token punctuation">.</span>MessageFormat<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>Locale<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>ResourceBundle<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Cookie</span> <span class="token keyword">implements</span> <span class="token class-name">Cloneable</span><span class="token punctuation">,</span> Serializable <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">long</span> serialVersionUID <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">6454587001725327448</span>L<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String TSPECIALS<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String LSTRING_FILE <span class="token operator">&#61;</span> <span class="token string">&#34;javax.servlet.http.LocalStrings&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> ResourceBundle lStrings <span class="token operator">&#61;</span> ResourceBundle<span class="token punctuation">.</span><span class="token function">getBundle</span><span class="token punctuation">(</span><span class="token string">&#34;javax.servlet.http.LocalStrings&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> String name<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> String value<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> String comment<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> String domain<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> maxAge <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> String path<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> secure<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> version <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> isHttpOnly <span class="token operator">&#61;</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token function">Cookie</span><span class="token punctuation">(</span>String name<span class="token punctuation">,</span> String value<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>name <span class="token operator">!&#61;</span> null <span class="token operator">&amp;&amp;</span> name<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">isToken</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Comment&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Discard&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Domain&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Expires&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Max-Age&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Path&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Secure&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">&#34;Version&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>name<span class="token punctuation">.</span><span class="token function">startsWith</span><span class="token punctuation">(</span><span class="token string">&#34;$&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+                <span class="token keyword">this</span><span class="token punctuation">.</span>value <span class="token operator">&#61;</span> value<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                String errMsg <span class="token operator">&#61;</span> lStrings<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">&#34;err.cookie_name_is_token&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                Object<span class="token punctuation">[</span><span class="token punctuation">]</span> errArgs <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{<!-- --></span>name<span class="token punctuation">}</span><span class="token punctuation">;</span>
+                errMsg <span class="token operator">&#61;</span> MessageFormat<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span>errMsg<span class="token punctuation">,</span> errArgs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span>errMsg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span>lStrings<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">&#34;err.cookie_name_blank&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setComment</span><span class="token punctuation">(</span>String purpose<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>comment <span class="token operator">&#61;</span> purpose<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> String <span class="token function">getComment</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>comment<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setDomain</span><span class="token punctuation">(</span>String domain<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>domain <span class="token operator">&#61;</span> domain<span class="token punctuation">.</span><span class="token function">toLowerCase</span><span class="token punctuation">(</span>Locale<span class="token punctuation">.</span>ENGLISH<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> String <span class="token function">getDomain</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>domain<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setMaxAge</span><span class="token punctuation">(</span><span class="token keyword">int</span> expiry<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>maxAge <span class="token operator">&#61;</span> expiry<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">getMaxAge</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>maxAge<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setPath</span><span class="token punctuation">(</span>String uri<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>path <span class="token operator">&#61;</span> uri<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> String <span class="token function">getPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>path<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setSecure</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> flag<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>secure <span class="token operator">&#61;</span> flag<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">getSecure</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>secure<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> String <span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setValue</span><span class="token punctuation">(</span>String newValue<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>value <span class="token operator">&#61;</span> newValue<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> String <span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>value<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">getVersion</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>version<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setVersion</span><span class="token punctuation">(</span><span class="token keyword">int</span> v<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>version <span class="token operator">&#61;</span> v<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> <span class="token function">isToken</span><span class="token punctuation">(</span>String value<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> len <span class="token operator">&#61;</span> value<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> len<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">char</span> c <span class="token operator">&#61;</span> value<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">&lt;</span> <span class="token string">&#39; &#39;</span> <span class="token operator">||</span> c <span class="token operator">&gt;&#61;</span> <span class="token number">127</span> <span class="token operator">||</span> TSPECIALS<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span> <span class="token operator">!&#61;</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> Object <span class="token function">clone</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">clone</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">CloneNotSupportedException</span> var2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span>var2<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setHttpOnly</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> isHttpOnly<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>isHttpOnly <span class="token operator">&#61;</span> isHttpOnly<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">isHttpOnly</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>isHttpOnly<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>Boolean<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span><span class="token function">getProperty</span><span class="token punctuation">(</span><span class="token string">&#34;org.glassfish.web.rfc2109_cookie_names_enforced&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;true&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            TSPECIALS <span class="token operator">&#61;</span> <span class="token string">&#34;/()&lt;&gt;&#64;,;:\\\&#34;[]?&#61;{} \t&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            TSPECIALS <span class="token operator">&#61;</span> <span class="token string">&#34;,; &#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Cookie_219"></a>Cookie的缺点</h3>
+<p>Cookie有如下的问题&#xff0c;导致一般我们不用Cookie的这种解决方案去追踪重要信息&#xff1a;</p>
+<ul><li>每个 cookie的容量有限&#xff0c;为了保证COOKIE不占用太多的磁盘空间&#xff0c;每个COOKIE大小一般不超过4KB</li><li>因为cookie由浏览器存储在本地目录&#xff0c;所以不方便记录敏感信息&#xff0c;如密码等</li><li>cookie不支持跨域访问</li><li>cookie不支持手机端方案</li></ul>
+<p>所以我们要想追踪用户的会话&#xff0c;还需要进行方案改进。</p>
+<h2><a rel="noopener noreferrer" id="Session_228"></a>Session机制</h2>
+<p>客户端请求服务端&#xff0c;服务端会为这次请求开辟一块内存空间&#xff0c;这个对象便是 Session 对象&#xff0c;存储结构为 <code>ConcurrentHashMap</code>。Session 弥补了 HTTP 无状态特性&#xff0c;服务器可以利用 Session 存储<strong>客户端在同一个会话期间的一些操作记录</strong>。</p>
+<h3><a rel="noopener noreferrer" id="Session_231"></a>Session解决购物车问题</h3>
+<p>回到上边的那个例子&#xff0c;随着购物车内的商品越来越多&#xff0c;每次请求的 cookie 也越来越大&#xff0c;这对每个请求来说是一个很大的负担。对于浏览器来说每次请求只是想将其中一个商品加入购物车&#xff0c;但是cookie却将历史记录也保留了&#xff0c;这是个很大的问题。仔细考虑下&#xff0c;由于用户的购物车信息都会保存在 Server 中&#xff0c;所以在 Cookie 里只要保存能识别用户身份的信息&#xff0c;知道是谁发起了加入购物车操作即可。这样每次请求后只要在 Cookie 里带上用户的身份信息&#xff0c;请求体里也只要带上本次加入购物车的商品 id&#xff0c;大大减少了 cookie 的体积大小。</p>
+<p>我们把这种<strong>能识别哪个请求由哪个用户发起的机制称为 Session(会话机制)&#xff0c;生成的能识别用户身份信息的字符串称为 sessionId</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-08-09ffc4e32e.png" loading="lazy"><br /> 它的工作机制如下&#xff1a;</p>
+<ol><li>首先用户登录&#xff0c;server 会为用户生成一个 session&#xff0c;为其分配唯一的 sessionId&#xff0c;这个 sessionId 是与某个用户绑定的。也就是说根据此 sessionid(假设为 abc) 可以查询到它到底是哪个用户&#xff0c;然后将此 sessionid 通过 cookie 传给浏览器。</li><li>之后浏览器的每次添加购物车请求中只要在 cookie 里带上 sessionId&#61;abc 这一个键值对即可&#xff0c;server 根据 sessionId 找到它对应的用户后&#xff0c;把传过来的商品 id 保存到 server 中对应用户的购物车即可。</li><li>用户登出注销该session&#xff0c;当别的用户登录时又给新用户生成新的session和sessionid。</li></ol>
+<p>可以看到通过这种方式再也不需要在 cookie 里传所有的购物车的商品 id 了&#xff0c;大大减轻了请求的负担&#xff0c;另外通过上文不难观察出 cookie 是存储在 client 的&#xff0c;而 session 保存在 server&#xff0c;sessionId 需要借助 cookie 的传递才有意义。首先第一次请求该站点时生成Jsessionid&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-09-0d23db9964.png" loading="lazy"><br /> 然后我们在代码里跟踪该客户端的请求&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>MyFirstJavaWeb<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;helloServlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/hello-servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{<!-- --></span>
+
+        HttpSession session <span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>session<span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String currentCartItem<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;cartItem&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;cart&#34;</span><span class="token punctuation">,</span> session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;cart&#34;</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;,&#34;</span><span class="token operator">&#43;</span>currentCartItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;cart&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>请求该站点并向购物车中添加商品时&#xff0c;只需要每次请求时带着当前商品id并且cookie中包含session id即可&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-10-d8b18ca026.png" loading="lazy"><br /> 这样我们不必每次请求时带着客户端的信息和全部购物车信息了&#xff0c;只需要带着sessionid即可&#xff0c;当前站点应用程序会通过sessionid自动匹配当前会话对应的session&#xff0c;然后进行数据的存取。这里我们默认一个浏览器客户端对应一个本站点的用户&#xff0c;如果想具体识别某个用户&#xff0c;也可以在登录后把该用户存储到session中即可&#xff0c;登出时销毁session即可。同时我们可以看到从另一个浏览器客户端进入请求时由于sessionid不一致&#xff0c;添加的购物信息也是该浏览器客户端独有的&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-11-a1112d1ba1.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="Session_279"></a>Session基本概念</h3>
+<p>服务器第一次接收到请求时&#xff0c;开辟了一块 Session 空间&#xff08;创建了Session对象&#xff09;&#xff0c;同时生成一个 sessionId &#xff0c;并通过响应头的 <code>Set-Cookie&#xff1a;JSESSIONID&#61;XXXXXXX</code> 命令&#xff0c;向客户端发送要求设置 Cookie 的响应&#xff1b; 客户端收到响应后&#xff0c;在本机客户端设置了一个 <code>JSESSIONID&#61;XXXXXXX</code> 的 Cookie 信息&#xff0c;该 Cookie 的过期时间为浏览器会话结束</p>
+<p>接下来客户端每次向同一个网站发送请求时&#xff0c;请求头都会带上该 Cookie信息&#xff08;包含 sessionId &#xff09;&#xff0c; 然后&#xff0c;服务器通过读取请求头中的 Cookie 信息&#xff0c;获取名称为 JSESSIONID 的值&#xff0c;得到此次请求的 sessionId。</p>
+<h4><a rel="noopener noreferrer" id="Session_283"></a>Session生命周期</h4>
+<p>Session存储在服务器端&#xff0c;一般放置在服务器的内存中&#xff08;为了高速存取&#xff09;&#xff0c;Session在用户访问第一次访问服务器时创建&#xff0c;需要注意<strong>只有访问JSP、Servlet等程序时才会创建Session</strong>&#xff0c;只访问HTML、IMAGE等静态资源并不会创建Session&#xff0c;可调用<code>request.getSession(true)强制生成Session</code>。Session什么时候失效&#xff1f;</p>
+<ol><li>服务器会把长时间没有活动的Session从服务器内存中清除&#xff0c;此时Session便失效。Tomcat中Session的默认失效时间为30分钟。</li><li>调用Session的invalidate方法。</li></ol>
+<p>Session对浏览器的要求&#xff1a;虽然Session保存在服务器&#xff0c;对客户端是透明的&#xff0c;它的正常运行仍然需要客户端浏览器的支持。这是因为Session需要使用Cookie作为识别标志。HTTP协议是无状态的&#xff0c;Session不能依据HTTP连接来判断是否为同一客户&#xff0c;因此服务器向客户端浏览器发送一个名为JSESSIONID的Cookie&#xff0c;它的值为该Session的id&#xff08;也就是HttpSession.getId()的返回值&#xff09;。<strong>Session依据该Cookie中的JSESSIONID来识别是否为同一用户</strong>。<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-12-74fc3a0b56.png" loading="lazy"><br /> 该Cookie为服务器自动生成的&#xff0c;它的maxAge属性一般为-1&#xff0c;表示仅当前浏览器内有效&#xff0c;并且各浏览器窗口间不共享&#xff0c;关闭浏览器就会失效。</p>
+<p>为什么session只能显示在一个浏览器&#xff0c;根源就在cookie&#xff0c;关闭浏览器的时候&#xff0c;会话cookie被关闭&#xff0c;sessionid被丢失&#xff0c;再次访问的时候由于找不到sessionid只能创建新的sessionid&#xff0c;<strong>因此同一机器的两个浏览器窗口访问服务器时&#xff0c;会生成两个不同的Session。但是由浏览器窗口内的链接、脚本等打开的新窗口除外。这类子窗口&#xff08;在链接上右击&#xff0c;在弹出的快捷菜单中选择在新窗口中打&#34;时&#xff0c;子窗口便可以访问父窗口的Session&#xff09;会共享父窗口的Cookie&#xff0c;因此会共享一个Session</strong>&#xff0c;以下是一个子窗口的示例&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-13-fc3c764c3d.png" loading="lazy"><br /> 所以说Session并没有被销毁&#xff0c;只是我们打开另一个浏览器使用的是一个新的session&#xff0c;我们用新的session而不用旧的&#xff0c;相当于抛弃了它&#xff0c;实际上它还默默的在服务器端活30分钟。相反request和response每次请求后确确实实被销毁了。</p>
+<h4><a rel="noopener noreferrer" id="Session_298"></a>Session常用方法</h4>
+<p>HttpServletRequest 接口中提供了两个方法来创建 HttpSession 实例&#xff0c;并进行一些简单的操作&#xff0c;通过看Session的源码可以看出&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">HttpSession</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">long</span> <span class="token function">getCreationTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    String <span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">long</span> <span class="token function">getLastAccessedTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    ServletContext <span class="token function">getServletContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">void</span> <span class="token function">setMaxInactiveInterval</span><span class="token punctuation">(</span><span class="token keyword">int</span> var1<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//设置 Session 的有效时间</span>
+
+    <span class="token keyword">int</span> <span class="token function">getMaxInactiveInterval</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/** &#64;deprecated */</span>
+    <span class="token annotation punctuation">&#64;Deprecated</span>
+    HttpSessionContext <span class="token function">getSessionContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    Object <span class="token function">getAttribute</span><span class="token punctuation">(</span>String var1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/** &#64;deprecated */</span>
+    <span class="token annotation punctuation">&#64;Deprecated</span>
+    Object <span class="token function">getValue</span><span class="token punctuation">(</span>String var1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    Enumeration<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> <span class="token function">getAttributeNames</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/** &#64;deprecated */</span>
+    <span class="token annotation punctuation">&#64;Deprecated</span>
+    String<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">getValueNames</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">void</span> <span class="token function">setAttribute</span><span class="token punctuation">(</span>String var1<span class="token punctuation">,</span> Object var2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/** &#64;deprecated */</span>
+    <span class="token annotation punctuation">&#64;Deprecated</span>
+    <span class="token keyword">void</span> <span class="token function">putValue</span><span class="token punctuation">(</span>String var1<span class="token punctuation">,</span> Object var2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">void</span> <span class="token function">removeAttribute</span><span class="token punctuation">(</span>String var1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/** &#64;deprecated */</span>
+    <span class="token annotation punctuation">&#64;Deprecated</span>
+    <span class="token keyword">void</span> <span class="token function">removeValue</span><span class="token punctuation">(</span>String var1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">void</span> <span class="token function">invalidate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">boolean</span> <span class="token function">isNew</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Session_349"></a>Session的缺点</h3>
+<p>虽然Session很好的避免了Cookie的通信复杂度&#xff0c;但是对于像京东天猫这样服务器就需要记录上亿个session id&#xff0c;这对服务器来说显然不友好&#xff0c;因为线上为了应对大量请求&#xff0c;我们一定是使用服务器集群去分散处理请求的&#xff0c;那么如果用户UA第一次请求了服务器F1&#xff0c;生成了session id&#xff0c;下次请求被路由到了服务器F2&#xff0c;而F2上没有UA的。</p>
+<ol><li>这个时候服务器说&#xff0c;那我这样吧&#xff0c;我把用户请求的服务器记录下来&#xff0c;粘住特定的session id请求到特定的服务器上&#xff0c;<strong>这就是session 粘连策略</strong></li></ol>
+<p>这样也有风险&#xff0c;万一特定的这个服务器挂了&#xff0c;这个服务器上记录的session就都丢失了&#xff0c;某些特定用户就永远登录不上了</p>
+<ol start="2"><li>这个时候服务器说&#xff0c;那这样吧&#xff0c;只要有session产生就复制到各个服务器上&#xff0c;这样就有保障了&#xff0c;<strong>这就是session的复制策略</strong></li></ol>
+<p>但是这样复制来复制去太麻烦&#xff0c;太耗费性能了&#xff0c;如果有一个统一的机器负责管理session就好了&#xff0c;而且这个统一的机器最好是个集群&#xff0c;这样防止单点挂掉的风险。</p>
+<ol start="3"><li>这样就引入了中间件集群这种方式去解决问题&#xff0c;例如引入Redis集群去处理&#xff0c;<strong>这就是session 共享策略</strong>。</li></ol>
+<p>但是这样仍然将session置于一个不确定不稳定的状态&#xff0c;因为第三方的集群也可能有宕机的危险</p>
+<h2><a rel="noopener noreferrer" id="Token_364"></a>Token机制</h2>
+<p>那么如果服务端不对session进行记录&#xff0c;只是验证会话有效性呢&#xff1f;也就是客户端第一次请求后服务端依据用户数据计算出一个token签名然后返回给客户端&#xff0c;客户端第二次请求的时候把数据和token签名一起发来&#xff0c;服务端再用相同算法对数据进行签名&#xff0c;得出的token签名一致即认证通过。<strong>这就是token的概念</strong>。</p>
+<h3><a rel="noopener noreferrer" id="Token_367"></a>Token解决购物车问题</h3>
+<p>继续延续上文的购物车问题&#xff0c;有了token之后可以不必考虑session的存储问题&#xff0c;分布式集群问题&#xff0c;按照如下图的流程&#xff0c;我们在<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-14-6c2eee3e95.png" loading="lazy"><br /> 从上图中可以看出&#xff0c;服务端不存储任何内容&#xff0c;token 只存储在浏览器中&#xff0c;服务端却没有存储&#xff0c;<strong>server 会有一套校验机制&#xff0c;校验这个 token 是否合法</strong>。那么token既然没有存储到服务端&#xff0c;不像 session 那样根据 sessionId 找到 userid&#xff0c;怎么定位请求的用户呢&#xff1f; 其实token 本身携带 uid 信息。</p>
+<p>当然其实我们可以看的出&#xff0c;Token并没有在服务端存储数据&#xff0c;那么怎么记录购物车信息呢&#xff0c;其实Token是一种轻量级的用户认证方案&#xff0c;只能认证当前用户登录的有效性&#xff0c;而并不能追踪用户行为&#xff0c;所以可以说Token在用户验证领域很专业&#xff0c;但是用途比较单一&#xff0c;如果要解决这里的购物车问题&#xff0c;还需要token结合一些数据存储技术&#xff0c;例如数据库或者redis&#xff0c;token负责验证当前用户&#xff0c;数据库或者redis负责进行购物车存取操作。</p>
+<h3><a rel="noopener noreferrer" id="Token_374"></a>Token的基本概念</h3>
+<p>token 验证是无状态的&#xff0c;服务器不记录哪些用户登录了或者哪些 JWT 被发布了&#xff0c;而是每个请求都带上了服务器需要验证的 token&#xff0c;token 放在了 Authorization header 中&#xff0c;形式是 <code>Bearer { JWT }</code>&#xff0c;但是也可以在 <code>post body</code> 里发送&#xff0c;甚至作为 <code>query parameter</code>。JWT的结构如下;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118992911-15-1a12c571a7.png" loading="lazy"><br /> 可以看到 token 主要由三部分组成&#xff1a;</p>
+<ul><li>header&#xff1a;指定了签名算法。</li><li>payload&#xff1a;可以指定用户 id&#xff0c;过期时间等非敏感数据。</li><li>Signature&#xff1a;签名&#xff0c;server 根据 header 知道它该用哪种签名算法&#xff0c;再用密钥根据此签名算法对 head&#43;payload 生成签名&#xff0c;这样一个 token 就生成了。</li></ul>
+<p>当 server 收到浏览器传过来的 token 时&#xff0c;它会首先取出 token 中的 header&#43;payload&#xff0c;根据密钥生成签名&#xff0c;然后再与 token 中的签名比对&#xff0c;如果成功则说明签名是合法的&#xff0c;即 token 是合法的。而且你会发现 payload 中存有我们的 userId&#xff0c;所以拿到 token 后直接在 payload 中就可获取 userid&#xff0c;避免了像 session 那样要从 redis 去取的开销。</p>
+<p>整体的验证流程如下&#xff1a;</p>
+<ol><li>用户输入登录信息</li><li>服务器判断登录信息正确&#xff0c;返回一个 token</li><li>token 存储在客户端&#xff0c;大多数通常在 local storage&#xff0c;但是也可以存储在 session storage 或者 cookie 中。</li><li>接着发起请求的时候将 token 放进 Authorization header&#xff0c;或者同样可以通过上面的方式。</li><li>服务器端解码 JWT 然后验证 token&#xff0c;如果 token 有效&#xff0c;则处理该请求。</li><li>一旦用户登出&#xff0c;token 在客户端被销毁&#xff0c;不需要经过服务器端。</li></ol>
+<p>可以看的出&#xff0c;token就是一个令牌的概念。</p>
+<h3><a rel="noopener noreferrer" id="Token_394"></a>Token的缺点</h3>
+<p>既然 token 这么好&#xff0c;那为什么我们依然大多数使用场景还是Session&#xff1f;token也有它自身的缺点&#xff1a;</p>
+<ol><li><strong>token 太长了</strong>&#xff0c;token 是 header&#xff0c;payload 编码后的样式&#xff0c;所以一般要比 sessionId 长很多&#xff0c;很有可能超出 cookie 的大小限制(cookie 一般有大小限制的&#xff0c;如 4kb)。如果你在 token 中存储的信息越长&#xff0c;那么 token 本身也会越长&#xff0c;这样的话由于你每次请求都会带上 token&#xff0c;对请求来是个不小的负担。</li><li><strong>token不太安全</strong>&#xff0c;我们说 token 是存在浏览器的&#xff0c;既然它太长放在 cookie 里可能导致 cookie 超限&#xff0c;那就只好放在 local storage 里。这样会造成安全隐患&#xff0c;因为 local storage 这类的本地存储是可以被 JS 直接读取的。</li></ol>
+<p>所以 token 更适合一次性的命令认证&#xff0c;设置一个比较短的有效期</p>
+<h2><a rel="noopener noreferrer" id="_403"></a>应用场景的划分</h2>
+<p>详细的比较下Session、Cookie以及Token的区别和应用场景。</p>
+<h3><a rel="noopener noreferrer" id="SessionCookie_405"></a>Session和Cookie的使用场景区别</h3>
+<p>Cookie 和 Session都是⽤来跟踪浏览器⽤户身份的会话⽅式&#xff0c;但是两者的应⽤场景不太⼀样。</p>
+<ul><li>Cookie <strong>⼀般⽤来保存⽤户信息</strong>&#xff0c;通过这种方式不需要用户反复去输入用户信息去登录
+  <ul><li>我们在 Cookie 中保存已经登录过得⽤户信息&#xff0c;下次访问⽹站的时候⻚⾯可以⾃动帮你登录的⼀些基本信息给填了&#xff1b;</li><li>⼀般的⽹站都会有保持登录也就是说下次你再访问⽹站的时候就不需要重新登录了&#xff0c;这是因为<strong>⽤户登录的时候我们可以存放了⼀个 Token 在 Cookie中</strong>&#xff0c;下次登录的时候只需要根据 Token 值来查找⽤户即可(为了安全考虑&#xff0c;重新登录⼀般要将 Token重写)&#xff1b;</li><li>登录⼀次⽹站后<strong>访问⽹站其他⻚⾯不需要重新登录</strong>。</li></ul> </li><li>Session 的主要作⽤就是<strong>通过服务端记录⽤户的状态</strong>。 典型的场景是购物⻋&#xff0c;当你要添加商品到购物⻋的时候&#xff0c;系统不知道是哪个⽤户操作的&#xff0c;因为 HTTP 协议是⽆状态的。服务端给特定的⽤户创建特定的 Session 之后就可以标识这个⽤户并且跟踪这个⽤户了。</li><li><strong>Cookie 数据保存在客户端(浏览器端)&#xff0c;Session 数据保存在服务器端</strong>。Cookie 存储在客户端中&#xff0c;⽽Session存储在服务器上&#xff0c;相对来说 Session 安全性更⾼。如果要在Cookie 中存储⼀些敏感信息&#xff0c;不要直接写⼊ Cookie 中&#xff0c;最好能将 Cookie 信息加密然后使⽤到的时候再去服务器端解密</li></ul>
+<p>可以通俗的这么理解&#xff0c;Cookie在客户端保存用户信息&#xff0c;知道用户干了什么事儿&#xff0c;Session则在服务端给用户创建了相应的数据存档&#xff0c;下次只要对应用户登录就能读档&#xff0c;那么要想找到用户正确的访问内容需要二位配合了。</p>
+<h3><a rel="noopener noreferrer" id="JWT__SessionCookies__415"></a>JWT 和 Session&#43;Cookies 基于身份验证的区别</h3>
+<p>JWT 和 Session Cookies 都提供安全的用户身份验证&#xff0c;但是它们有以下几点不同</p>
+<ul><li><strong>密码签名</strong>&#xff0c;JWT 具有加密签名&#xff0c;而 Session Cookies 则没有。</li><li><strong>连接状态</strong>&#xff1a;JWT 是无状态的&#xff0c;因为声明被存储在客户端&#xff0c;而不是服务端内存中。身份验证可以在本地进行&#xff0c;而不是在请求必须通过服务器数据库或类似位置中进行。 这意味着可以对用户进行多次身份验证&#xff0c;而无需与站点或应用程序的数据库进行通信&#xff0c;也无需在此过程中消耗大量资源。</li><li><strong>可扩展性</strong>&#xff0c;Session Cookies 是存储在服务器内存中&#xff0c;这就意味着如果网站或者应用很大的情况下会耗费大量的资源。由于 JWT 是无状态的&#xff0c;在许多情况下&#xff0c;它们可以节省服务器资源。因此 JWT 要比 Session Cookies 具有更强的可扩展性。</li><li><strong>是否可跨域</strong>&#xff0c;JWT 支持跨域认证&#xff0c;Session Cookies 只能用在单个节点的域或者它的子域中有效。如果它们尝试通过第三个节点访问&#xff0c;就会被禁止。如果你希望自己的网站和其他站点建立安全连接时&#xff0c;这是一个问题。使用 JWT 可以解决这个问题&#xff0c;使用 JWT 能够通过多个节点进行用户认证&#xff0c;也就是我们常说的跨域认证。</li></ul>
+<p>需要说明的是&#xff0c;JWT仅仅是一种用户身份认证的解决方案&#xff0c;如果我们进行购物车的设置&#xff0c;JWT搞不定。</p>
+<h2><a rel="noopener noreferrer" id="_425"></a>总结一下</h2>
+<p>这篇Blog参照了很多内容&#xff0c;共写了两天&#xff0c;有很多地方也很纠结没有想通&#xff0c;现在进行一下思路整理吧&#xff1a;</p>
+<ul><li>cookie就是由服务端生成返回给客户端的&#xff0c;并且在第一次生成时默认给放置了一个Jsession id</li><li>浏览器请求服务端时&#xff0c;通过Jsessionid找到对应的session&#xff0c;然后进行对应存取操作&#xff0c;这个查找过程是tomcat帮我们做的&#xff0c;我们在代码里不需要关心&#xff0c;也就是说我们不用调用什么通过sessionid获取session对象之类的方法。</li><li>一个客户端浏览器对应一个目标站点【localhost】只产生一个session、一个cookie&#xff0c;我们追踪用户会话&#xff0c;前提也是在这个范围内讨论的&#xff0c;如何跨域生效、如何跨浏览器记忆之类的问题不在讨论范围内&#xff0c;我们只专注于当前客户端浏览器对于当前目标站点是如何进行会话追踪的</li><li>JSP中的内置对象session就是和Servle中的这个HttpSession生成的&#xff0c;所以之前我们讨论JSP的作用域时其实也大概提了下&#xff0c;只是当时还不知道为什么session的作用域是一个浏览器&#xff0c;并且为什么能跨请求&#xff0c;现在我们知道了&#xff0c;是因为整个浏览器请求目标站点范围内&#xff0c;用的sessionid是同一个&#xff0c;如果cookie一直存在&#xff0c;那么HttpSession就还是那一个&#xff0c;所以作用范围才是这么大。而request只不过是doGet的一个局部变量&#xff0c;当然会请求一次后作用域失效。</li><li>对于用户身份验证这种场景&#xff0c;最好用token&#xff0c;因为session操作起来太复杂&#xff0c;没必要为了验证用户身份搭建一套redis&#xff0c;而如果有其它诉求&#xff0c;例如追踪用户的一些信息&#xff0c;还是要使用cookie&#43;session&#xff0c;因为token不在服务端存储数据。</li><li>cookie&#43;session这种组合用途也要细分&#xff0c;cookie由于存储在客户端本地&#xff0c;所以最好不要放一些敏感信息&#xff0c;而cookie由于存放在客户端本地&#xff0c;所以可以存放很长时间&#xff0c;所以cookie适合防止要求长期存储但不敏感的数据&#xff0c;而session由于运行在服务器内存中或者redis集群中&#xff0c;而且通常有个过期时间&#xff0c;所以适合存放一些短期但重要的数据</li><li>当禁用cookie时&#xff0c;需要URL重写技术对Session进行跟踪&#xff0c;这里不做更多讨论</li><li>隐藏表单域提交也属于一种会话追踪技术&#xff0c;这里也不做更多的讨论</li></ul>
+<p>本篇Blog提到的购物车的例子&#xff0c;由于购物车的信息在各大电商网站比较重要&#xff0c;所以一般会落库并进行数据分析&#xff0c;所以不一定是存储在session或者cookie中&#xff0c;这里只是举个例子&#xff0c;具体以业务场景为准。</p>

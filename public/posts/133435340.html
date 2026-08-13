@@ -1,0 +1,74 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【贪心算法】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/133435340-01-262d9ff5ff.png" loading="lazy"></p>
+<p>名曲目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="IIMID_7"></a>买卖股票的最佳时机II【MID】</h2>
+<p>难度升级&#xff0c;股票可以反复买卖&#xff0c;不是只买卖一次&#xff0c;还是求最大收益</p>
+<h3><a rel="noopener noreferrer" id="_9"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133435340-02-5dfad8fe19.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_14"></a>解题思路</h3>
+<p>整体使用贪心算法实现&#xff1a;</p>
+<ul><li>对于<strong>单独交易日</strong>&#xff1a; 设今天价格 p1 、明天价格 p2 &#xff0c;则今天买入、明天卖出可赚取金额 p2−p1&#xff08;负值代表亏损&#xff09;。</li><li><strong>对于连续上涨交易日</strong>&#xff1a; 设此上涨交易日股票价格分别为 p1,p2,…,pn&#xff0c;则第一天买最后一天卖收益最大&#xff0c;即 pn−p1 &#xff1b;等价于每天都买卖&#xff0c;即 pn−p1&#61;(p2−p1)&#43;(p3−p2)&#43;…&#43;(pn−pn−1)p_n - p_1&#61;(p_2 - p_1)&#43;(p_3 - p_2)&#43;…&#43;(p_n - p_{n-1})</li><li>对于<strong>连续下降交易日</strong>&#xff1a; 则不买卖收益最大&#xff0c;即不会亏钱。</li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133435340-03-9fca16be3f.png" loading="lazy"><br /> 遍历整个股票交易日价格列表 price&#xff0c;并执行贪心策略&#xff1a;所有上涨交易日都买卖&#xff08;赚到所有利润&#xff09;&#xff0c;所有下降交易日都不买卖&#xff08;永不亏钱&#xff09;</p>
+<ol><li>设 tmp 为第 i-1 日买入与第 i 日卖出赚取的利润&#xff0c;即 tmp &#61; prices[i] - prices[i - 1] &#xff1b;</li><li>当该天利润为正 tmp &gt; 0&#xff0c;则将利润加入总利润 profit&#xff1b;当利润为 0 或为负&#xff0c;则直接跳过&#xff1b;</li><li>遍历完成后&#xff0c;返回总利润 profit</li></ol>
+<h3><a rel="noopener noreferrer" id="_29"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>贪心算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     * 计算最大收益
+     * &#64;param prices int整型一维数组 股票每一天的价格
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> maxProfit <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> prices<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义总利润</span>
+        <span class="token keyword">int</span> maxProfit <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> prices<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2 获取当天利润</span>
+            <span class="token keyword">int</span> curProfit <span class="token operator">&#61;</span> prices<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">-</span> prices<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token comment">// 3 只有当天利润为正值才计入总利润</span>
+            maxProfit <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>curProfit<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> maxProfit<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> maxProfit<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_70"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;遍历了一遍数组&#xff0c;所以时间复杂度为O&#xff08;N&#xff09;<br /> 空间复杂度&#xff1a;没有借助额外空间&#xff0c;空间复杂度为O&#xff08;1&#xff09;</p>
+<h2><a rel="noopener noreferrer" id="_73"></a>拓展知识&#xff1a;动态规划与贪心算法</h2>
+<h3><a rel="noopener noreferrer" id="_74"></a>动态规划</h3>
+<p>动态规划&#xff08;Dynamic Programming&#xff0c;简称DP&#xff09;是一种解决复杂问题的算法设计技术&#xff0c;常用于优化问题和组合问题的求解。它通过<strong>将原问题分解成子问题&#xff0c;并保存子问题的解&#xff0c;以避免重复计算&#xff0c;从而提高算法的效率</strong>。动态规划通常用于解决具有<strong>重叠子问题和最优子结构性质</strong>的问题。</p>
+<p>动态规划的基本思想可以总结为以下几个步骤&#xff1a;</p>
+<ol><li> <p><strong>定义问题的状态</strong>&#xff1a;首先要明确定义问题的状态&#xff0c;这些状态可以用来描述问题的各种情况。</p> </li><li> <p><strong>找到状态转移方程</strong>&#xff1a;状态转移方程描述了问题之间的联系&#xff0c;即如何从一个状态转移到另一个状态。这通常涉及到问题的递归关系&#xff0c;通过这个关系可以从较小规模的子问题得到更大规模的问题的解。</p> </li><li> <p><strong>初始化状态</strong>&#xff1a;确定初始状态的值&#xff0c;这通常是问题规模最小的情况下的解。</p> </li><li> <p><strong>自底向上或自顶向下求解</strong>&#xff1a;动态规划可以采用自底向上&#xff08;Bottom-Up&#xff09;或自顶向下&#xff08;Top-Down&#xff09;的方式求解问题。自底向上是从最小的状态开始逐步计算&#xff0c;直到得到最终问题的解&#xff1b;自顶向下是从最终问题开始&#xff0c;递归地计算子问题的解&#xff0c;直到达到最小状态。</p> </li><li> <p><strong>根据问题的要求&#xff0c;从状态中找到最终解</strong>。</p> </li></ol>
+<p>动态规划常见的应用领域包括&#xff1a;</p>
+<ol><li> <p><strong>最长公共子序列问题</strong>&#xff1a;在两个序列中找到一个最长的共同子序列&#xff0c;用于比较字符串相似性。</p> </li><li> <p><strong>背包问题</strong>&#xff1a;在给定一定容量的背包和一组物品的情况下&#xff0c;选择一些物品放入背包&#xff0c;使得物品的总价值最大或总重量不超过背包容量。</p> </li><li> <p><strong>最短路径问题</strong>&#xff1a;求解图中两点之间的最短路径&#xff0c;如Dijkstra算法和Floyd-Warshall算法。</p> </li><li> <p><strong>硬币找零问题</strong>&#xff1a;给定一组硬币面额和一个目标金额&#xff0c;找到使用最少数量的硬币组合成目标金额。</p> </li><li> <p><strong>斐波那契数列问题</strong>&#xff1a;求解斐波那契数列的第n个数&#xff0c;通过动态规划可以避免重复计算。</p> </li></ol>
+<p>动态规划是一种强大的问题求解方法&#xff0c;但它并不适用于所有类型的问题。在使用动态规划时&#xff0c;需要仔细分析问题的性质&#xff0c;确保问题具有重叠子问题和最优子结构性质&#xff0c;以确保动态规划算法能够有效地解决问题。</p>
+<h3><a rel="noopener noreferrer" id="_102"></a>贪心算法</h3>
+<p>贪心算法&#xff08;Greedy Algorithm&#xff09;是一种常用的问题求解策略&#xff0c;通常用于解决最优化问题&#xff0c;如最短路径、最小生成树、背包问题等。贪心算法的基本思想是每一步都选择当前状态下的最优解&#xff0c;而不考虑全局的最优解&#xff0c;希望通过局部最优的选择最终达到全局最优。贪心算法通常是一种高效的方法&#xff0c;但并不是所有问题都适合使用贪心算法&#xff0c;因为有些问题的最优解不一定可以通过贪心选择得到。</p>
+<p>贪心算法的一般步骤如下&#xff1a;</p>
+<ol><li> <p><strong>定义问题的优化目标&#xff0c;明确问题的约束条件</strong>。</p> </li><li> <p><strong>从问题的初始状态开始&#xff0c;通过一系列选择&#xff0c;每次选择局部最优解&#xff0c;更新当前状态</strong>。</p> </li><li> <p>检查是否满足问题的约束条件和终止条件。如果不满足&#xff0c;则回到第2步继续选择&#xff1b;如果满足&#xff0c;则算法结束。</p> </li><li> <p>对于某些问题&#xff0c;需要证明贪心选择的局部最优解确实能够导致全局最优解&#xff0c;这需要数学证明或者举出反例。</p> </li></ol>
+<p>以下是一些常见的问题&#xff0c;可以使用贪心算法解决&#xff1a;</p>
+<ol><li> <p>最小生成树问题&#xff1a;如Kruskal算法和Prim算法用于寻找无向图中的最小生成树。</p> </li><li> <p>最短路径问题&#xff1a;如Dijkstra算法用于寻找图中两点之间的最短路径。</p> </li><li> <p>背包问题&#xff1a;如<strong>分数背包问题</strong>和<strong>0/1背包问题</strong>&#xff0c;可以使用贪心算法进行求解。</p> </li><li> <p>活动选择问题&#xff1a;如贪心选择<strong>活动安排最多的问题</strong>&#xff0c;可以使用贪心算法求解。</p> </li></ol>
+<p>需要注意的是&#xff0c;并非所有问题都适合使用贪心算法&#xff0c;因为有些问题的最优解可能需要全局搜索或者动态规划等其他算法。因此&#xff0c;在应用贪心算法之前&#xff0c;需要仔细分析问题的特点和性质&#xff0c;以确定贪心算法是否合适。</p>
+<h3><a rel="noopener noreferrer" id="_126"></a>动态规划与贪心算法区别</h3>
+<p>动态规划&#xff08;Dynamic Programming&#xff09;和贪心算法&#xff08;Greedy Algorithm&#xff09;都是常见的问题求解策略&#xff0c;但它们在问题求解时有很大的区别&#xff0c;适用于不同类型的问题和场景。</p>
+<p><strong>区别&#xff1a;</strong></p>
+<ol><li> <p><strong>最优子结构性质&#xff1a;</strong></p>
+  <ul><li>动态规划&#xff1a;动态规划问题通常具有最优子结构性质&#xff0c;即全局最优解可以通过子问题的最优解来构造。动态规划通常涉及到将问题划分为重叠的子问题&#xff0c;然后利用这些子问题的解来构建全局最优解。</li><li>贪心算法&#xff1a;贪心算法通常涉及到每一步选择当前状态下的最优解&#xff0c;但不一定具有最优子结构性质。贪心算法通常是通过一系列局部最优选择来达到全局最优&#xff0c;但不能保证一定能够得到全局最优解。</li></ul> </li><li> <p><strong>选择的灵活性&#xff1a;</strong></p>
+  <ul><li>动态规划&#xff1a;在动态规划中&#xff0c;可以在每个子问题中考虑多种选择&#xff0c;并计算每种选择的代价或价值&#xff0c;然后选择最优的。通常需要一个状态转移方程来描述问题的子结构和递归关系。</li><li>贪心算法&#xff1a;贪心算法在每一步都选择当前状态下的最优解&#xff0c;不考虑其他选择的影响。它通常适用于问题具有&#34;贪心选择性质&#34;的情况&#xff0c;即通过局部最优选择能够得到全局最优解。</li></ul> </li></ol>
+<p><strong>问题解决场景&#xff1a;</strong></p>
+<ol><li> <p><strong>动态规划适用场景&#xff1a;</strong></p>
+  <ul><li>当问题的最优解可以通过子问题的最优解来构造时&#xff0c;通常使用动态规划。典型问题包括&#xff1a;
+    <ul><li>最短路径问题&#xff08;如Dijkstra算法&#xff09;</li><li>最长公共子序列问题</li><li>背包问题&#xff08;如0/1背包问题&#xff09;</li><li>编辑距离问题</li></ul> </li><li>需要存储和重用子问题的解&#xff0c;通常使用表格或数组来实现。</li></ul> </li><li> <p><strong>贪心算法适用场景&#xff1a;</strong></p>
+  <ul><li>当问题具有贪心选择性质&#xff0c;即通过每一步的局部最优选择能够达到全局最优时&#xff0c;可以使用贪心算法。典型问题包括&#xff1a;
+    <ul><li>最小生成树问题&#xff08;如Prim算法和Kruskal算法&#xff09;</li><li>哈夫曼编码问题</li><li>活动选择问题</li><li>货币找零问题</li></ul> </li><li>贪心算法通常更简单和高效&#xff0c;但不能解决所有问题&#xff0c;因为它没有全局的视野。</li></ul> </li></ol>
+<p>总之&#xff0c;动态规划和贪心算法是两种不同的问题求解策略&#xff0c;根据问题的特性和要求选择合适的算法非常重要。有些问题可以同时使用这两种策略的思想&#xff0c;即使用贪心算法的局部最优性来设计动态规划的状态转移方程。</p>

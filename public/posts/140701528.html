@@ -1,0 +1,36 @@
+<p><img alt="在这里插入图片描述" src="./posts/assets/140701528-01-3e3b374494.png" loading="lazy"></p>
+<pre><code class="prism language-java">
+<span class="token comment">//leetcode submit region begin(Prohibit modification and deletion)</span>
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">singleNonDuplicate</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">int</span> left <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> right <span class="token operator">&#61;</span> nums<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token comment">// 常规情况&#xff0c;重复元素偶数位第一次出现&#xff0c;奇数位第二次出现&#xff0c;如果相反&#xff0c;说明前置被重复元素插入打乱顺序了</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>left <span class="token operator">&lt;</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> mid <span class="token operator">&#61;</span> left <span class="token operator">&#43;</span> <span class="token punctuation">(</span>right <span class="token operator">-</span> left<span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">;</span>
+            <span class="token comment">// 下标是偶数&#xff0c;如果未</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>mid <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>mid<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> nums<span class="token punctuation">[</span>mid <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 目标值在右侧</span>
+                    left <span class="token operator">&#61;</span> mid <span class="token operator">&#43;</span> <span class="token number">2</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 无法进一步判断&#xff0c;mid自身有可能就是目标值</span>
+                    right <span class="token operator">&#61;</span> mid<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>nums<span class="token punctuation">[</span>mid<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> nums<span class="token punctuation">[</span>mid <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 目标值在右侧</span>
+                    left <span class="token operator">&#61;</span> mid <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 无法进一步判断&#xff0c;mid自身有可能就是目标值</span>
+                    right <span class="token operator">&#61;</span> mid<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> nums<span class="token punctuation">[</span>left<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">//leetcode submit region end(Prohibit modification and deletion)</span>
+
+</code></pre>

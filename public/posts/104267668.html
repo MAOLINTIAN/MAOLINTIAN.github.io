@@ -1,0 +1,22 @@
+<p>这个事儿的背景吧就是因为加锁查询速度太慢&#xff0c;于是让咱优化&#xff0c;至少先通过使用with(nolock)来解决查询慢的问题&#xff0c;这么个事儿说来也简单对伐&#xff0c;但是影响范围特别大&#xff0c;因为要优化的<strong>这个存储过程是个动态存储过程</strong>&#xff0c;有70多个操作行为DAO调用到了这个存储过程&#xff0c;可谓牵一发而动全身。</p>
+<h4><a rel="noopener noreferrer" id="_1"></a>报错了&#xff01;</h4>
+<p>一开始自信满满&#xff0c;参照了一篇文章了解了解with(nolock)咋玩儿</p>
+<blockquote>
+<p>SQL Server 中WITH (NOLOCK)浅析  https://www.cnblogs.com/kerrycode/p/3946268.html</p>
+</blockquote>
+<p>想着就直接在存储过程最后拼一个with(nolock)呗&#xff0c;类似这样&#xff1a;</p>
+<pre><code class="prism language-csharp">SELECT <span class="token operator">*</span> <span class="token class-name">FROM</span> <span class="token class-name">TML</span> <span class="token keyword">where</span> Name<span class="token operator">&#61;</span><span class="token string">&#39;maolintian&#39;</span> and age<span class="token operator">&#61;</span><span class="token number">29</span> <span class="token function">with</span><span class="token punctuation">(</span>nolock<span class="token punctuation">)</span>
+</code></pre>
+<p>结果一下报了一个大错&#xff0c;直接影响了平台的功能&#xff0c;大家的标准功能都不好使了。</p>
+<pre><code class="prism language-csharp">消息 <span class="token number">319</span>&#xff0c;级别 <span class="token number">15</span>&#xff0c;状态 <span class="token number">1</span>&#xff0c;第 <span class="token number">1</span> 行
+关键字 <span class="token string">&#39;with&#39;</span> 附近有语法错误。如果此语句是公用表表达式、
+xmlnamespaces 子句或者更改跟踪上下文子句&#xff0c;那么前一个语句必须以分号结尾。
+</code></pre>
+<p>于是使用如下方法来处理。</p>
+<h4><a rel="noopener noreferrer" id="_20"></a>如何处理</h4>
+<p>怎么排查呢&#xff1f;在杰哥大佬的帮助下使用print先把sql打出来看看&#xff1a;<code>print &#64;strSQL</code>&#xff0c;使用完该语句打印出来后又查了下问题&#xff1a;</p>
+<ol><li>首先重新新建一个存储过程&#xff0c;起个别名&#xff0c;在里边加入<code>print &#64;strSQL</code>来打印&#xff0c;防止被影响了。</li><li>然后让杰哥看了下原来是with(nolock)后置了。</li><li>排查好问题后&#xff0c;最后删除新建的这个存储过程。</li></ol>
+<p>调整后存储过程应该为&#xff1a;</p>
+<pre><code class="prism language-csharp">SELECT <span class="token operator">*</span> <span class="token class-name">FROM</span> <span class="token class-name">TML</span>  <span class="token function">with</span><span class="token punctuation">(</span>nolock<span class="token punctuation">)</span>  <span class="token keyword">where</span> Name<span class="token operator">&#61;</span><span class="token string">&#39;maolintian&#39;</span> and age<span class="token operator">&#61;</span><span class="token number">29</span>
+</code></pre>
+<p>这样就解决了。</p>

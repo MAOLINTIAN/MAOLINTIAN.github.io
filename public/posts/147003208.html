@@ -1,0 +1,187 @@
+<p>最近在使用的平台上写脚本的语言是Groovy&#xff0c;所以也学习一下&#xff0c;作为 Java 开发者&#xff0c;Groovy 对我们来说会非常友好&#xff0c;而且它的语法更简洁且支持动态类型&#xff0c;所以其实了解下Java和Groovy的差异点就可以快速上手了&#xff0c;以下是 <strong>Groovy 与 Java 不同的常用语法</strong>和<strong>核心差异点</strong>&#xff0c;</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="1___4"></a>1  明显的语法差异</h3>
+<h4><a rel="noopener noreferrer" id="1__5"></a>1. <strong>变量声明&#xff08;动态类型&#xff09;</strong></h4>
+<ul><li>Groovy 支持动态类型&#xff0c;用 <code>def</code> 声明变量&#xff08;类型自动推断&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> name <span class="token operator">&#61;</span> <span class="token string">&#34;Groovy&#34;</span>  <span class="token comment">// 自动推断为 String</span>
+<span class="token keyword">def</span> num <span class="token operator">&#61;</span> <span class="token number">42</span>         <span class="token comment">// 自动推断为 Integer</span>
+</code></pre>
+</li><li>也可以显式声明类型&#xff08;类似 Java&#xff09;&#xff1a;<pre><code class="prism language-groovy">String name <span class="token operator">&#61;</span> <span class="token string">&#34;Groovy&#34;</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="2__16"></a>2. <strong>分号可选</strong></h4>
+<ul><li>分号 <code>;</code> 在 Groovy 中是可选的&#xff08;除非一行写多条语句&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;Hello, Groovy&#34;</span><span class="token punctuation">)</span>  <span class="token comment">// 不需要分号</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="3__22"></a>3. <strong>方法调用括号可选</strong></h4>
+<ul><li>当方法参数明确时&#xff0c;括号 <code>()</code> 可以省略&#xff1a;<pre><code class="prism language-groovy">println <span class="token string">&#34;Hello, Groovy&#34;</span>  <span class="token comment">// 等同于 println(&#34;Hello, Groovy&#34;)</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="4__vs__28"></a>4. <strong>字符串&#xff1a;单引号 vs 双引号</strong></h4>
+<ul><li><strong>单引号</strong>&#xff1a;普通字符串&#xff08;类似 Java 的 <code>String</code>&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> s1 <span class="token operator">&#61;</span> <span class="token string">&#39;Hello&#39;</span>
+</code></pre>
+</li><li><strong>双引号</strong>&#xff1a;支持插值&#xff08;GString&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> name <span class="token operator">&#61;</span> <span class="token string">&#34;Groovy&#34;</span>
+<span class="token keyword">def</span> s2 <span class="token operator">&#61;</span> <span class="token string">&#34;Hello, $name!&#34;</span>  <span class="token comment">// 输出 &#34;Hello, Groovy!&#34;</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="5__39"></a>5. <strong>集合的简化语法</strong></h4>
+<ul><li><strong>List</strong>&#xff08;默认实现是 <code>ArrayList</code>&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span>         <span class="token comment">// 创建 List</span>
+list <span class="token operator">&lt;&lt;</span> <span class="token number">4</span>                    <span class="token comment">// 添加元素</span>
+println list<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>              <span class="token comment">// 访问元素</span>
+</code></pre>
+</li><li><strong>Map</strong>&#xff08;默认实现是 <code>LinkedHashMap</code>&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> map <span class="token operator">&#61;</span> <span class="token punctuation">[</span>name<span class="token punctuation">:</span> <span class="token string">&#34;Groovy&#34;</span><span class="token punctuation">,</span> age<span class="token punctuation">:</span> <span class="token number">20</span><span class="token punctuation">]</span>  <span class="token comment">// 键默认是字符串&#xff0c;无需引号</span>
+println map<span class="token punctuation">.</span>name                     <span class="token comment">// 访问键值&#xff08;类似属性&#xff09;</span>
+</code></pre>
+</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="2__54"></a>2 核心概念差异</h3>
+<h4><a rel="noopener noreferrer" id="1_Closure_55"></a>1. <strong>闭包&#xff08;Closure&#xff09;</strong></h4>
+<ul><li>Groovy 的闭包类似 Java 的 Lambda&#xff0c;但更强大&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> closure <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> a<span class="token punctuation">,</span> b <span class="token operator">-&gt;</span> a <span class="token operator">&#43;</span> b <span class="token punctuation">}</span>
+println <span class="token function">closure</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>  <span class="token comment">// 输出 3</span>
+</code></pre>
+</li><li><strong>隐式参数 <code>it</code></strong>&#xff08;当闭包只有一个参数时&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> greet <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token string">&#34;Hello, $it!&#34;</span> <span class="token punctuation">}</span>
+println <span class="token function">greet</span><span class="token punctuation">(</span><span class="token string">&#34;Groovy&#34;</span><span class="token punctuation">)</span>  <span class="token comment">// 输出 &#34;Hello, Groovy!&#34;</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="2__67"></a>2. <strong>安全导航操作符&#xff08;?.&#xff09;</strong></h4>
+<ul><li>避免空指针异常&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> user <span class="token operator">&#61;</span> null
+println user<span class="token operator">?.</span>name  <span class="token comment">// 输出 null&#xff0c;而不是抛异常</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="3__74"></a>3. <strong>运算符重载</strong></h4>
+<ul><li>Groovy 允许运算符重载&#xff08;例如 <code>&#43;</code> 可自定义&#xff09;&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">class</span> <span class="token class-name">Box</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> value
+    Box <span class="token function">plus</span><span class="token punctuation">(</span>Box other<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">new</span> <span class="token class-name">Box</span><span class="token punctuation">(</span>value<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>value <span class="token operator">&#43;</span> other<span class="token punctuation">.</span>value<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">def</span> b1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Box</span><span class="token punctuation">(</span>value<span class="token punctuation">:</span> <span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token keyword">def</span> b2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Box</span><span class="token punctuation">(</span>value<span class="token punctuation">:</span> <span class="token number">2</span><span class="token punctuation">)</span>
+println <span class="token punctuation">(</span>b1 <span class="token operator">&#43;</span> b2<span class="token punctuation">)</span><span class="token punctuation">.</span>value  <span class="token comment">// 输出 3</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="4_Groovy_Truth_86"></a>4. <strong>Groovy Truth&#xff08;真值判断&#xff09;</strong></h4>
+<ul><li>Groovy 中以下情况为 <code>false</code>&#xff1a;
+<ul><li>空集合/字符串/Map</li><li><code>null</code></li><li>数值 0</li><li><code>false</code></li></ul>
+</li><li>示例&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> println <span class="token string">&#34;不执行&#34;</span> <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span> println <span class="token string">&#34;空列表为 false&#34;</span> <span class="token punctuation">}</span>
+</code></pre>
+</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="3__99"></a>3 常用功能增强</h3>
+<h4><a rel="noopener noreferrer" id="1__100"></a>1. <strong>集合操作</strong></h4>
+<ul><li>强大的链式操作&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> numbers <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span>
+<span class="token keyword">def</span> doubled <span class="token operator">&#61;</span> numbers<span class="token punctuation">.</span>collect <span class="token punctuation">{<!-- --></span> it <span class="token operator">*</span> <span class="token number">2</span> <span class="token punctuation">}</span>       <span class="token comment">// [2, 4, 6, 8]</span>
+<span class="token keyword">def</span> even <span class="token operator">&#61;</span> numbers<span class="token punctuation">.</span>findAll <span class="token punctuation">{<!-- --></span> it <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token punctuation">}</span>     <span class="token comment">// [2, 4]</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="2_Elvis__108"></a>2. <strong>Elvis 操作符&#xff08;?:&#xff09;</strong></h4>
+<ul><li>简化三元表达式&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> name <span class="token operator">&#61;</span> user<span class="token punctuation">.</span>name <span class="token operator">?:</span> <span class="token string">&#34;Unknown&#34;</span>  <span class="token comment">// 如果 user.name 为 null&#xff0c;返回 &#34;Unknown&#34;</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="3_Switch__114"></a>3. <strong>Switch 支持更多类型</strong></h4>
+<ul><li>可以匹配列表、范围、类型等&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> x <span class="token operator">&#61;</span> <span class="token number">5</span>
+<span class="token keyword">switch</span> <span class="token punctuation">(</span>x<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">case</span> <span class="token number">1</span><span class="token operator">..</span><span class="token number">10</span><span class="token punctuation">:</span> println <span class="token string">&#34;在1到10之间&#34;</span><span class="token punctuation">;</span> <span class="token keyword">break</span>
+    <span class="token keyword">case</span> <span class="token punctuation">[</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">]</span><span class="token punctuation">:</span> println <span class="token string">&#34;是11或12&#34;</span><span class="token punctuation">;</span> <span class="token keyword">break</span>
+    <span class="token keyword">case</span> String<span class="token punctuation">:</span> println <span class="token string">&#34;是字符串&#34;</span><span class="token punctuation">;</span> <span class="token keyword">break</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="4__127"></a>4 常用的集合操作</h3>
+<p>Groovy提供了丰富的集合操作&#xff0c;以下是一些常用的集合操作及其示例&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="1_each__130"></a>1. <code>each</code> 方法</h4>
+<p><code>each</code> 方法用于遍历集合中的每个元素&#xff0c;并对每个元素执行指定的操作。</p>
+<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">]</span>
+
+list<span class="token punctuation">.</span>each <span class="token punctuation">{<!-- --></span> element <span class="token operator">-&gt;</span>
+    println element
+<span class="token punctuation">}</span>
+</code></pre>
+<p>输出&#xff1a;</p>
+<pre><code>1
+2
+3
+4
+5
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2_collect__150"></a>2. <code>collect</code> 方法</h4>
+<p><code>collect</code> 方法用于对集合中的每个元素进行转换&#xff0c;并返回一个新的集合。</p>
+<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">]</span>
+
+<span class="token keyword">def</span> squaredList <span class="token operator">&#61;</span> list<span class="token punctuation">.</span>collect <span class="token punctuation">{<!-- --></span> element <span class="token operator">-&gt;</span>
+    element <span class="token operator">*</span> <span class="token number">2</span>
+<span class="token punctuation">}</span>
+
+println squaredList
+</code></pre>
+<p>输出&#xff1a;</p>
+<pre><code>[2, 4, 6, 8, 10]
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3_find__168"></a>3. <code>find</code> 方法</h4>
+<p><code>find</code> 方法用于查找集合中满足特定条件的第一个元素。</p>
+<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">]</span>
+
+<span class="token keyword">def</span> evenNumber <span class="token operator">&#61;</span> list<span class="token punctuation">.</span>find <span class="token punctuation">{<!-- --></span> element <span class="token operator">-&gt;</span>
+    element <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span>
+<span class="token punctuation">}</span>
+
+println evenNumber
+</code></pre>
+<p>输出&#xff1a;</p>
+<pre><code>2
+</code></pre>
+<h4><a rel="noopener noreferrer" id="4_findAll__186"></a>4. <code>findAll</code> 方法</h4>
+<p><code>findAll</code> 方法用于查找集合中所有满足特定条件的元素&#xff0c;并返回一个新的集合。</p>
+<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">]</span>
+
+<span class="token keyword">def</span> evenNumbers <span class="token operator">&#61;</span> list<span class="token punctuation">.</span>findAll <span class="token punctuation">{<!-- --></span> element <span class="token operator">-&gt;</span>
+    element <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span>
+<span class="token punctuation">}</span>
+
+println evenNumbers
+</code></pre>
+<p>输出&#xff1a;</p>
+<pre><code>[2, 4]
+</code></pre>
+<h4><a rel="noopener noreferrer" id="5_any__204"></a>5. <code>any</code> 方法</h4>
+<p><code>any</code> 方法用于检查集合中是否存在至少一个满足特定条件的元素。</p>
+<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">]</span>
+
+<span class="token keyword">def</span> hasEvenNumber <span class="token operator">&#61;</span> list<span class="token punctuation">.</span>any <span class="token punctuation">{<!-- --></span> element <span class="token operator">-&gt;</span>
+    element <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span>
+<span class="token punctuation">}</span>
+
+println hasEvenNumber
+</code></pre>
+<p>输出&#xff1a;</p>
+<pre><code>true
+</code></pre>
+<h4><a rel="noopener noreferrer" id="6_every__222"></a>6. <code>every</code> 方法</h4>
+<p><code>every</code> 方法用于检查集合中的所有元素是否都满足特定条件。</p>
+<pre><code class="prism language-groovy"><span class="token keyword">def</span> list <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">]</span>
+
+<span class="token keyword">def</span> allEvenNumbers <span class="token operator">&#61;</span> list<span class="token punctuation">.</span>every <span class="token punctuation">{<!-- --></span> element <span class="token operator">-&gt;</span>
+    element <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span>
+<span class="token punctuation">}</span>
+
+println allEvenNumbers
+</code></pre>
+<p>输出&#xff1a;</p>
+<pre><code>true
+</code></pre>
+<h3><a rel="noopener noreferrer" id="5_Java__242"></a>5 Java 开发者易错点</h3>
+<h4><a rel="noopener noreferrer" id="1___equals_243"></a>1. <strong><code>&#61;&#61;</code> 与 <code>equals()</code></strong></h4>
+<ul><li>Groovy 中 <code>&#61;&#61;</code> 相当于 <code>equals()</code>&#xff0c;如果要比较引用用 <code>is()</code>&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> s1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span><span class="token string">&#34;Groovy&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">def</span> s2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span><span class="token string">&#34;Groovy&#34;</span><span class="token punctuation">)</span>
+println s1 <span class="token operator">&#61;&#61;</span> s2   <span class="token comment">// true&#xff08;内容相等&#xff09;</span>
+println s1<span class="token punctuation">.</span><span class="token function">is</span><span class="token punctuation">(</span>s2<span class="token punctuation">)</span>  <span class="token comment">// false&#xff08;引用不同&#xff09;</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="2__252"></a>2. <strong>数组定义</strong></h4>
+<ul><li>Groovy 中定义数组需明确类型或使用 <code>as</code> 关键字&#xff1a;<pre><code class="prism language-groovy"><span class="token keyword">def</span> arr1 <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token keyword">as</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span>          <span class="token comment">// 正确</span>
+<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> arr2 <span class="token operator">&#61;</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span>                 <span class="token comment">// 正确</span>
+</code></pre>
+</li></ul>
+<h4><a rel="noopener noreferrer" id="3__259"></a>3. <strong>默认导入的包</strong></h4>
+<ul><li>Groovy 自动导入了常用包&#xff08;如 <code>java.util.*</code>, <code>groovy.util.*</code> 等&#xff09;&#xff0c;注意可能的命名冲突。</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="6_Groovy_264"></a>6 Groovy的优势</h3>
+<ol><li><strong>脚本化执行</strong>&#xff1a;Groovy 可以直接运行脚本&#xff0c;无需 <code>public static void main</code>。</li><li><strong>利用 Groovy Console</strong>&#xff1a;快速测试代码片段。</li><li><strong>逐步引入闭包和 DSL</strong>&#xff1a;Groovy 适合编写领域特定语言&#xff08;DSL&#xff09;。</li></ol>

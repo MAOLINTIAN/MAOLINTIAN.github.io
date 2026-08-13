@@ -1,0 +1,182 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是最长无重复子串或最长无重复子数组&#xff0c;这类题目出现频率还是很高的。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/132592085-01-01ef3c5c82.png" loading="lazy"><br />
+<img alt="在这里插入图片描述" src="./posts/assets/132592085-02-a5ba5f049d.png" loading="lazy"><br />
+<img alt="在这里插入图片描述" src="./posts/assets/132592085-03-ded7da71eb.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="MID_5"></a>最长无重复子串【MID】</h2>
+<p>先来看字符串数据结构的题目</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132592085-04-2f312501b1.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_11"></a>解题思路</h3>
+<p>整体目标就是获取最大的无重复滑动窗口</p>
+<ol><li>双指针标识数组或字符串的位置&#xff0c;右指针可以理解为放大窗口指针&#xff0c;左指针可以理解为缩小窗口指针</li><li>定义一个set用来存储元素位置对应的值</li><li>右指针先行&#xff0c;如果一直无重复就一直开拓窗口并更新max值&#xff0c;否则移动左指针缩小窗口&#xff0c;直到将重复值缩到窗口以外。</li></ol>
+<p>如下图所示&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/132592085-05-fb36aca1ef.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_20"></a>代码实现</h3>
+<blockquote>
+<p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>字符串</strong></font><br />
+<strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>哈希表</strong></font><br />
+<strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br />
+<strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针、滑动窗口</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">lengthOfLongestSubstring</span><span class="token punctuation">(</span><span class="token class-name">String</span> s<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+       <span class="token comment">// 1 判断入参是否为空列表</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义返回结果最大值和左右指针以及滑动窗口集合</span>
+        <span class="token keyword">int</span> max <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> left <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> right <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token class-name">Set</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Character</span><span class="token punctuation">&gt;</span></span> set <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashSet</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 滑动窗口移动并在无重复时计算最大值</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>left <span class="token operator">&lt;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> right <span class="token operator">&lt;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 1 无重复&#xff0c;右指针继续移动&#xff0c;重新计算最大值</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>set<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>right<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                set<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>right<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                max <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>max<span class="token punctuation">,</span> right <span class="token operator">-</span> left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2 有重复&#xff0c;左指针继续移动&#xff0c;直到将重复元素移出集合</span>
+                set<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>left<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> max<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_56"></a>复杂度分析</h3>
+<p><strong>时间复杂度为O&#xff08;N&#xff09;</strong>&#xff0c;因为遍历了字符串&#xff1b;<strong>空间复杂度为O&#xff08;N&#xff09;</strong>&#xff0c;借助了HashSet的存储空间</p>
+<h2><a rel="noopener noreferrer" id="MID_58"></a>最长回文子串【MID】</h2>
+<p>一道中心扩展思想解决的MID题目</p>
+<h3><a rel="noopener noreferrer" id="_60"></a>题干</h3>
+<p><img alt="直接粘题干和用例" src="./posts/assets/132592085-06-2a0b622d24.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_63"></a>解题思路</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132592085-07-f2e85c7a3b.png" loading="lazy"></p>
+<ol><li>每个字符都可以尝试作为中心点看&#xff0c;会出现两种情况&#xff1a;可能是类似 aba 的字符串&#xff0c;也可能是类似 abba 的情况</li><li>只需要分别计算出以一个和两个字符作为中心点的子串&#xff0c;取出较大的长度即可</li><li>从left到right开始向两边扩散、比较&#xff0c;如果相等则继续扩散比较&#xff1b;如果不相等则剪枝&#xff0c;不用再继续扩散比较</li><li>计算每次比较的回文子串长度&#xff0c;取最大</li></ol>
+<h3><a rel="noopener noreferrer" id="_72"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+<p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>字符串</strong></font><br />
+<strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br />
+<strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br />
+<strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针、中心扩散法</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param s string字符串
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">longestPalindrome</span><span class="token punctuation">(</span><span class="token class-name">String</span> s<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 边界条件判断</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> s<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 初始化参数&#xff0c;结果参数的第一位存储起始位置&#xff0c;第二位存储长度</span>
+        <span class="token keyword">int</span> maxLength <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 中心位置奇数情况下扩展结果</span>
+            <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> odd <span class="token operator">&#61;</span> <span class="token function">centerSpread</span><span class="token punctuation">(</span>s<span class="token punctuation">,</span> i<span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 中心位置偶数情况下扩展结果</span>
+            <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> even <span class="token operator">&#61;</span> <span class="token function">centerSpread</span><span class="token punctuation">(</span>s<span class="token punctuation">,</span> i<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 当前中心位置最大子串</span>
+            <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> curMax <span class="token operator">&#61;</span> odd<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&gt;</span> even<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">?</span> odd <span class="token operator">:</span> even<span class="token punctuation">;</span>
+            <span class="token comment">// 当前中心位置最大子串如果大于历史记录最大子串则暂存最大值及预期返回结果</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>curMax<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&gt;</span> maxLength<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                maxLength <span class="token operator">&#61;</span> curMax<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+                result <span class="token operator">&#61;</span> curMax<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 截取返回结果&#xff0c;本来如果起点是1&#xff0c;长度是2&#xff0c;那么结尾下标应该2&#xff08;1&#43;2-1&#xff09;&#xff0c;这里结尾为1&#43;2&#61;3&#xff0c;是因为3不会被计入&#xff0c;因为substring左闭右开区间&#xff0c;所以计算为&#xff08;1&#43;2-1&#43;1&#xff08;为开区间&#43;1&#xff09;&#61;1&#43;2&#61;3&#xff09;</span>
+        <span class="token keyword">return</span> s<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>result<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> result<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#43;</span> result<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 扩散的核心方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">centerSpread</span><span class="token punctuation">(</span><span class="token class-name">String</span> s<span class="token punctuation">,</span> <span class="token keyword">int</span> left<span class="token punctuation">,</span> <span class="token keyword">int</span> right<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 双指针在边界内&#xff0c;且满足扩散条件</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>left <span class="token operator">&gt;&#61;</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> right <span class="token operator">&lt;&#61;</span> s<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span>  <span class="token operator">&amp;&amp;</span>
+                s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>left<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> s<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>right<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            left<span class="token operator">--</span><span class="token punctuation">;</span>
+            right<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 回文子串为左右指针开区间内的部分&#xff1a;right-1-(left&#43;1)&#43;1&#61;right-left-1</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span>left <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> right <span class="token operator">-</span> left <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_133"></a>复杂度分析</h3>
+<p><strong>时间复杂度 O(N^2)</strong>&#xff1a;平均需要遍历每个结点作为中心点O(N)&#xff0c;还需要从中心点向左右扩散比较O(N)<br />
+<strong>空间复杂度 O(1)</strong>&#xff1a;只用到常量</p>
+<h2><a rel="noopener noreferrer" id="EASY_136"></a>最长公共前缀【EASY】</h2>
+<p>来道EASY题散散心</p>
+<h3><a rel="noopener noreferrer" id="_138"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132592085-08-059b876013.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_142"></a>解题思路</h3>
+<p>当字符串数组长度为 0 时则公共前缀为空&#xff0c;直接返回&#xff1b;令最长公共前缀 ans 的值为第一个字符串&#xff0c;进行初始化&#xff1b;<img alt="在这里插入图片描述" src="./posts/assets/132592085-09-40d0bb0725.png" loading="lazy"><br />
+遍历后面的字符串&#xff0c;依次将其与 ans 进行比较&#xff0c;两两找出公共前缀&#xff0c;最终结果即为最长公共前缀&#xff1b;如果查找过程中出现了 ans 为空的情况&#xff0c;则公共前缀不存在直接返回&#xff1b;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132592085-10-da3c0d7570.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_148"></a>代码实现</h3>
+<blockquote>
+<p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>字符串</strong></font><br />
+<strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br />
+<strong>算法</strong>&#xff1a;<font color="red"><strong>迭代</strong></font><br />
+<strong>技巧</strong>&#xff1a;<font color="red"><strong>指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param strs string字符串一维数组
+     * &#64;return string字符串
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> longestCommonPrefix <span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> strs<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参判断&#xff0c;如果数组列表为空&#xff0c;则返回空</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>strs<span class="token punctuation">.</span>length <span class="token operator">&lt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 初始化第一个字符串为最长公共前缀</span>
+        <span class="token class-name">String</span> commonPrefix <span class="token operator">&#61;</span> strs<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> strs<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 两两比较字符串&#xff0c;更新最长公共前缀</span>
+            commonPrefix <span class="token operator">&#61;</span> <span class="token function">twoStrLongestCommonPrefix</span><span class="token punctuation">(</span>commonPrefix<span class="token punctuation">,</span> strs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 如果最长公共前缀为&#34;&#34;,则停止比较&#xff0c;返回&#34;&#34;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>commonPrefix<span class="token operator">&#61;&#61;</span><span class="token string">&#34;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> commonPrefix<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 比较两个字符串的最长公共前缀</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">twoStrLongestCommonPrefix</span><span class="token punctuation">(</span><span class="token class-name">String</span> str1<span class="token punctuation">,</span> <span class="token class-name">String</span> str2<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 定义下标及下标最大移动范围</span>
+        <span class="token keyword">int</span> index <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> maxLength <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>str1<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> str2<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 2 下标移动两两比较字符串对应字符&#xff0c;只要在索引范围内且字符相同就继续移动</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>index <span class="token operator">&lt;</span> maxLength <span class="token operator">&amp;&amp;</span> str1<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> str2<span class="token punctuation">.</span><span class="token function">charAt</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            index<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 3 返回两个子串的最长公共前缀</span>
+        <span class="token keyword">return</span> str1<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> index<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_198"></a>复杂度分析</h3>
+<p><strong>时间复杂度&#xff1a;O(mn)</strong>&#xff0c;其中 m是字符串数组中的字符串的平均长度&#xff0c;n 是字符串的数量。最坏情况下&#xff0c;字符串数组中的每个字符串的每个字符都会被比较一次。</p>
+<p><strong>空间复杂度&#xff1a;O(1)</strong>。使用的额外空间复杂度为常数</p>

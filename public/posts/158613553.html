@@ -1,0 +1,276 @@
+<h2><a rel="noopener noreferrer" id="MySQL_EXPLAIN__1"></a>MySQL EXPLAIN 字段详解与优化指南</h2>
+<h3><a rel="noopener noreferrer" id="_3"></a>目录</h3>
+<ol>
+ <li><a rel="noopener noreferrer" href="#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E9%80%9F%E8%A7%88">实战案例速览</a></li>
+ <li><a rel="noopener noreferrer" href="#explain-%E5%AD%97%E6%AE%B5%E8%AF%A6%E8%A7%A3">EXPLAIN 字段详解</a></li>
+ <li><a rel="noopener noreferrer" href="#%E7%BB%BC%E5%90%88%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90">综合案例分析</a></li>
+ <li><a rel="noopener noreferrer" href="#%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B">索引优化实战案例</a></li>
+ <li><a rel="noopener noreferrer" href="#%E4%BC%98%E5%8C%96%E6%A3%80%E6%9F%A5%E6%B8%85%E5%8D%95">优化检查清单</a></li>
+ <li><a rel="noopener noreferrer" href="#%E5%BF%AB%E9%80%9F%E5%88%A4%E6%96%AD%E6%A8%A1%E6%9D%BF">快速判断模板</a></li>
+</ol>
+<hr>
+<h3><a rel="noopener noreferrer" id="_13"></a>实战案例速览</h3>
+<blockquote>
+ <p>本章节展示真实的慢查询优化案例，完整呈现优化前后的 EXPLAIN 对比。后续章节会详细解释每个字段的含义。</p>
+</blockquote>
+<hr>
+<h4><a rel="noopener noreferrer" id="_1COUNT____19"></a>案例 1：COUNT(*) 查询 - 驱动表全表扫描优化</h4>
+<h5><a rel="noopener noreferrer" id="_SQL_21"></a>完整 SQL</h5>
+<pre><code class="prism language-sql"><span class="token keyword">SELECT</span> <span class="token function">COUNT</span><span class="token punctuation">(</span><span class="token operator">*</span><span class="token punctuation">)</span>
+<span class="token keyword">FROM</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>store_dict<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>gid<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>store_dict<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>gid<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>store_with_coop<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>store_with_coop<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>coop_store_no<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>coop_store_no<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>link_store_no<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>link_store_no<span class="token punctuation">`</span></span>
+<span class="token keyword">WHERE</span>
+  <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+  <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+  <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>is_latest_version<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_EXPLAIN_34"></a>优化前 EXPLAIN（完整）</h5>
+<pre><code>+----+-------------+----------------------+--------+----------------------------------+-------------------------------+---------+------+-------+----------+-------------+
+| id | select_type | table                | type   | possible_keys                    | key                           | key_len | ref  | rows  | filtered | Extra       |
++----+-------------+----------------------+--------+----------------------------------+-------------------------------+---------+------+-------+----------+-------------+
+|  1 | SIMPLE      | store_dict           | index  | uniq_gid                         | uniq_gid                      | 130     | NULL | 50650 |   100.00 | Using index |
+|  1 | SIMPLE      | store_status_online  | ref    | idx_store_status_online_gid_index| idx_store_status_online_...   | 130     | ...  |     1 |    50.00 | Using where |
+|  1 | SIMPLE      | store_with_coop      | eq_ref | uniq_coop_store_no               | uniq_coop_store_no            | 514     | ...  |     1 |   100.00 | Using index |
+|  1 | SIMPLE      | store_ref            | ref    | idx_ref_status_latest_link       | idx_ref_status_latest_link    | 266     | ...  |     1 |   100.00 | Using index |
++----+-------------+----------------------+--------+----------------------------------+-------------------------------+---------+------+-------+----------+-------------+
+</code></pre>
+<p><strong>问题分析</strong>：</p>
+<ul>
+ <li>🔴 <strong>驱动表</strong>：<code>store_dict</code> 全表扫描 <strong>50,650 行</strong></li>
+ <li>🔴 <strong>type</strong>：index（索引全扫描，相当于全表扫描）</li>
+ <li>🟡 <strong>filtered</strong>：<code>store_status_online</code> 只有 50%（一半数据被 WHERE 过滤）</li>
+</ul>
+<h5><a rel="noopener noreferrer" id="_51"></a>优化方案</h5>
+<pre><code class="prism language-sql"><span class="token comment">-- 为 store_status_online 创建复合索引</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> store_status_online
+<span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> idx_status_id_all <span class="token punctuation">(</span>
+  <span class="token keyword">status</span><span class="token punctuation">,</span>           <span class="token comment">-- WHERE 条件</span>
+  id<span class="token punctuation">,</span>               <span class="token comment">-- ORDER BY（如果需要）</span>
+  link_store_no<span class="token punctuation">,</span>    <span class="token comment">-- JOIN 关联</span>
+  gid<span class="token punctuation">,</span>              <span class="token comment">-- JOIN 关联</span>
+  coop_store_no     <span class="token comment">-- JOIN 关联</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- 更新统计信息</span>
+<span class="token keyword">ANALYZE</span> <span class="token keyword">TABLE</span> store_status_online<span class="token punctuation">;</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_EXPLAIN_67"></a>优化后 EXPLAIN（完整）</h5>
+<pre><code>+----+-------------+----------------------+--------+----------------------------------+-------------------------------+---------+-------+------+----------+-------------+
+| id | select_type | table                | type   | possible_keys                    | key                           | key_len | ref   | rows | filtered | Extra       |
++----+-------------+----------------------+--------+----------------------------------+-------------------------------+---------+-------+------+----------+-------------+
+|  1 | SIMPLE      | store_status_online  | ref    | idx_status_id_all                | idx_status_id_all             | 1       | const | 1905 |   100.00 | Using index |
+|  1 | SIMPLE      | store_dict           | eq_ref | uniq_gid                         | uniq_gid                      | 130     | ...   |    1 |   100.00 | Using index |
+|  1 | SIMPLE      | store_with_coop      | eq_ref | uniq_coop_store_no               | uniq_coop_store_no            | 514     | ...   |    1 |   100.00 | Using index |
+|  1 | SIMPLE      | store_ref            | ref    | idx_ref_status_latest_link       | idx_ref_status_latest_link    | 266     | ...   |    1 |   100.00 | Using index |
++----+-------------+----------------------+--------+----------------------------------+-------------------------------+---------+-------+------+----------+-------------+
+</code></pre>
+<p><strong>优化效果</strong>：</p>
+<ul>
+ <li>✅ <strong>驱动表改变</strong>：<code>store_dict</code> → <code>store_status_online</code></li>
+ <li>✅ <strong>扫描行数</strong>：50,650 → 1,905（减少 <strong>96.2%</strong>）</li>
+ <li>✅ <strong>type</strong>：index → ref（使用索引定位）</li>
+ <li>✅ <strong>filtered</strong>：50% → 100%（完美过滤）</li>
+ <li>✅ <strong>Extra</strong>：Using index（覆盖索引，无需回表）</li>
+</ul>
+<h5><a rel="noopener noreferrer" id="_86"></a>对比表格</h5>
+<table>
+ <thead>
+  <tr>
+   <th>指标</th>
+   <th>优化前 ❌</th>
+   <th>优化后 ✅</th>
+   <th>改善</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><strong>驱动表</strong></td>
+   <td>store_dict</td>
+   <td>store_status_online</td>
+   <td>选择更小的表</td>
+  </tr>
+  <tr>
+   <td><strong>驱动表访问类型</strong></td>
+   <td>index（索引全扫）</td>
+   <td>ref（索引定位）</td>
+   <td>⭐⭐⭐</td>
+  </tr>
+  <tr>
+   <td><strong>驱动表扫描行数</strong></td>
+   <td>50,650</td>
+   <td>1,905</td>
+   <td>⬇️ 96.2%</td>
+  </tr>
+  <tr>
+   <td><strong>驱动表 filtered</strong></td>
+   <td>100%</td>
+   <td>100%</td>
+   <td>保持</td>
+  </tr>
+  <tr>
+   <td><strong>总扫描行数</strong></td>
+   <td>~50,650</td>
+   <td>~1,905</td>
+   <td>⬇️ 96.2%</td>
+  </tr>
+  <tr>
+   <td><strong>store_status_online filtered</strong></td>
+   <td>50%</td>
+   <td>100%</td>
+   <td>⬆️ 100%</td>
+  </tr>
+  <tr>
+   <td><strong>Extra（驱动表）</strong></td>
+   <td>Using index</td>
+   <td>Using index</td>
+   <td>保持覆盖索引</td>
+  </tr>
+  <tr>
+   <td><strong>预估性能提升</strong></td>
+   <td>-</td>
+   <td><strong>10-50 倍</strong></td>
+   <td>🚀</td>
+  </tr>
+ </tbody>
+</table>
+<hr>
+<h4><a rel="noopener noreferrer" id="_2__filtered__100"></a>案例 2：分页查询 - filtered 过滤率优化</h4>
+<h5><a rel="noopener noreferrer" id="_SQL_102"></a>完整 SQL</h5>
+<pre><code class="prism language-sql"><span class="token keyword">SELECT</span>
+  <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>link_store_no<span class="token punctuation">`</span></span><span class="token punctuation">,</span>
+  <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>com_tax_no<span class="token punctuation">`</span></span><span class="token punctuation">,</span>
+  <span class="token identifier"><span class="token punctuation">`</span>store_dict<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>city_code<span class="token punctuation">`</span></span><span class="token punctuation">,</span>
+  <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>store_status<span class="token punctuation">`</span></span>
+<span class="token keyword">FROM</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>store_dict<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>gid<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>store_dict<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>gid<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>store_with_coop<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>store_with_coop<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>coop_store_no<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>coop_store_no<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>link_store_no<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>link_store_no<span class="token punctuation">`</span></span>
+<span class="token keyword">WHERE</span>
+  <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+  <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+  <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>store_ref<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>is_latest_version<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token keyword">ORDER</span> <span class="token keyword">BY</span> <span class="token identifier"><span class="token punctuation">`</span>store_status_online<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>id<span class="token punctuation">`</span></span> <span class="token keyword">DESC</span>
+<span class="token keyword">LIMIT</span> <span class="token number">200</span> <span class="token keyword">OFFSET</span> <span class="token number">52000</span><span class="token punctuation">;</span>
+</code></pre>
+<h5><a rel="noopener noreferrer" id="_EXPLAIN_121"></a>优化前 EXPLAIN（完整）</h5>
+<pre><code>+----+-------------+----------------------+--------+------------------------------------------------------+-------------------------------+---------+------+------+----------+-------------+
+| id | select_type | table                | type   | possible_keys                                        | key                           | key_len | ref  | rows | filtered | Extra       |
++----+-------------+----------------------+--------+------------------------------------------------------+-------------------------------+---------+------+------+----------+-------------+
+|  1 | SIMPLE      | store_status_online  | index  | uniq_coop_store_no,idx_gid,idx_link_store_no,...     | PRIMARY                       | 8       | NULL | 3811 |    10.00 | Using where |
+|  1 | SIMPLE      | store_ref            | ref    | store_ref_link_store_no_index                        | store_ref_link_store_no_index | 258     | ...  |    1 |     2.86 | Using where |
+|  1 | SIMPLE      | store_dict           | eq_ref | uniq_gid                                             | uniq_gid                      | 130     | ...  |    1 |   100.00 |             |
+|  1 | SIMPLE      | store_with_coop      | eq_ref | uniq_coop_store_no                                   | uniq_coop_store_no            | 514     | ...  |    1 |   100.00 | Using index |
++----+-------------+----------------------+--------+------------------------------------------------------+-------------------------------+---------+------+------+----------+-------------+
+</code></pre>
+<p><strong>问题分析</strong>：</p>
+<ul>
+ <li>🟡 <strong>驱动表</strong>：<code>store_status_online</code> 使用 PRIMARY 索引（主键顺序扫描）</li>
+ <li>🔴 <strong>filtered</strong>：10%（90% 的数据被 WHERE 过滤掉）</li>
+ <li>🟡 <strong>type</strong>：index（索引全扫描）</li>
+ <li>⚠️ <strong>深分页</strong>：OFFSET 52000 需要扫描 52,200 行后丢弃前 52,000 行</li>
+</ul>
+<h5><a rel="noopener noreferrer" id="_EXPLAIN_idx_status_id_all_139"></a>优化后 EXPLAIN（完整，使用相同索引 idx_status_id_all）</h5>
+<pre><code>+----+-------------+----------------------+--------+------------------------------------------------------+-------------------------------+---------+-------+------+----------+-------------+
+| id | select_type | table                | type   | possible_keys                                        | key                           | key_len | ref   | rows | filtered | Extra       |
++----+-------------+----------------------+--------+------------------------------------------------------+-------------------------------+---------+-------+------+----------+-------------+
+|  1 | SIMPLE      | store_status_online  | ref    | uniq_coop_store_no,idx_status_id_all,...             | idx_status_id_all             | 1       | const | 1905 |   100.00 | Using index |
+|  1 | SIMPLE      | store_dict           | eq_ref | uniq_gid                                             | uniq_gid                      | 130     | ...   |    1 |   100.00 |             |
+|  1 | SIMPLE      | store_with_coop      | eq_ref | uniq_coop_store_no                                   | uniq_coop_store_no            | 514     | ...   |    1 |   100.00 | Using index |
+|  1 | SIMPLE      | store_ref            | ref    | store_ref_link_store_no_index,idx_ref_status_latest  | idx_ref_status_latest_link    | 266     | ...   |    1 |   100.00 |             |
++----+-------------+----------------------+--------+------------------------------------------------------+-------------------------------+---------+-------+------+----------+-------------+
+</code></pre>
+<p><strong>优化效果</strong>：</p>
+<ul>
+ <li>✅ <strong>type</strong>：index → ref（使用索引定位）</li>
+ <li>✅ <strong>key</strong>：PRIMARY → idx_status_id_all（使用新索引）</li>
+ <li>✅ <strong>rows</strong>：3,811 → 1,905（减少 50%）</li>
+ <li>✅ <strong>filtered</strong>：10% → 100%（⬆️ 10 倍）</li>
+ <li>✅ <strong>Extra</strong>：Using where → Using index（覆盖索引）</li>
+ <li>⚠️ <strong>深分页问题依然存在</strong>（需改代码用游标分页）</li>
+</ul>
+<h5><a rel="noopener noreferrer" id="_159"></a>对比表格</h5>
+<table>
+ <thead>
+  <tr>
+   <th>指标</th>
+   <th>优化前 ❌</th>
+   <th>优化后 ✅</th>
+   <th>改善</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td><strong>驱动表访问类型</strong></td>
+   <td>index（全扫）</td>
+   <td>ref（索引定位）</td>
+   <td>⭐⭐⭐</td>
+  </tr>
+  <tr>
+   <td><strong>使用的索引</strong></td>
+   <td>PRIMARY</td>
+   <td>idx_status_id_all</td>
+   <td>更优索引</td>
+  </tr>
+  <tr>
+   <td><strong>扫描行数</strong></td>
+   <td>3,811</td>
+   <td>1,905</td>
+   <td>⬇️ 50%</td>
+  </tr>
+  <tr>
+   <td><strong>filtered</strong></td>
+   <td>10%</td>
+   <td>100%</td>
+   <td>⬆️ 10 倍</td>
+  </tr>
+  <tr>
+   <td><strong>实际有效行数</strong></td>
+   <td>381</td>
+   <td>1,905</td>
+   <td>⬆️ 5 倍</td>
+  </tr>
+  <tr>
+   <td><strong>Extra</strong></td>
+   <td>Using where</td>
+   <td>Using index</td>
+   <td>覆盖索引</td>
+  </tr>
+  <tr>
+   <td><strong>深分页问题</strong></td>
+   <td>存在</td>
+   <td>依然存在</td>
+   <td>需改代码</td>
+  </tr>
+  <tr>
+   <td><strong>预估性能提升</strong></td>
+   <td>-</td>
+   <td><strong>2-5 倍</strong></td>
+   <td>🚀</td>
+  </tr>
+ </tbody>
+</table>
+<hr>
+<h4><a rel="noopener noreferrer" id="_3_JOIN___173"></a>案例 3：多表 JOIN - 加索引反而变慢（失败案例）</h4>
+<h5><a rel="noopener noreferrer" id="_SQL_175"></a>完整 SQL</h5>
+<pre><code class="prism language-sql"><span class="token keyword">SELECT</span>
+  <span class="token identifier"><span class="token punctuation">`</span>acn_view_franchiser<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token operator">*</span><span class="token punctuation">,</span>
+  <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token operator">*</span><span class="token punctuation">,</span>
+  <span class="token identifier"><span class="token punctuation">`</span>acn_view_brand_master<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token operator">*</span><span class="token punctuation">,</span>
+  <span class="token identifier"><span class="token punctuation">`</span>company_info<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token operator">*</span>
+<span class="token keyword">FROM</span> <span class="token identifier"><span class="token punctuation">`</span>acn_view_franchiser<span class="token punctuation">`</span></span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token punctuation">(</span>
+    <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>child_code<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>acn_view_franchiser<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>franchiser_no<span class="token punctuation">`</span></span>
+    <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>bind_relation_type<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">2</span>
+    <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>is_rel_dummy<span class="token punctuation">`</span></span> <span class="token operator">&lt;&gt;</span> <span class="token number">1</span>
+  <span class="token punctuation">)</span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>acn_view_brand_master<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token punctuation">(</span>
+    <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>parent_code<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>acn_view_brand_master<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>brand_master_no<span class="token punctuation">`</span></span>
+    <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>bind_relation_type<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">2</span>
+  <span class="token punctuation">)</span>
+  <span class="token keyword">JOIN</span> <span class="token identifier"><span class="token punctuation">`</span>company_info<span class="token punctuation">`</span></span> <span class="token keyword">ON</span> <span class="token identifier"><span class="token punctuation">`</span>acn_view_franchiser<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>com_tax_no<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token identifier"><span class="token punctuation">`</span>company_info<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>com_tax_no<span class="token punctuation">`</span></span>
+<span class="token keyword">WHERE</span>
+  <span class="token identifier"><span class="token punctuation">`</span>acn_view_franchiser<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+  <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>acn_view_brand_master<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> <span class="token number">1</span>
+  <span class="token operator">AND</span> <span class="token identifier"><span class="token punctuation">`</span>acn_entity_relation<span class="token punctuation">`</span></span><span class="token punctuation">.</span><span class="token identifier"><span class="token punctuation">`</span>status<span class="token punctuation">`</span></span> <span class="token operator">=</span> </code></pre>

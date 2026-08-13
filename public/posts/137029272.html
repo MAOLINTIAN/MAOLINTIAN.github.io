@@ -1,0 +1,32 @@
+<p>在线上部署Java应用时&#xff0c;可以通过Java虚拟机&#xff08;JVM&#xff09;的参数来控制内存的分配和管理。</p>
+<h3><a rel="noopener noreferrer" id="JVM_2"></a>常见的JVM配置参数</h3>
+<p>以下是一些常见的JVM内存参数&#xff1a;</p>
+<ol><li><strong>-Xms&#xff1a;</strong> 设置JVM的初始堆大小。<font color="red"> <strong>重点关注</strong></font></li><li><strong>-Xmx&#xff1a;</strong> 设置JVM的最大堆大小。<font color="red"> <strong>重点关注</strong></font></li><li><strong>-Xmn&#xff1a;</strong> 设置年轻代&#xff08;Young Generation&#xff09;的大小。<font color="red"> <strong>重点关注</strong></font></li><li><strong>-XX:NewRatio&#xff1a;</strong> 设置年轻代和老年代&#xff08;Old Generation&#xff09;的大小比例。</li><li><strong>-XX:SurvivorRatio&#xff1a;</strong> 设置Eden区与Survivor区的大小比例。</li><li><strong>-XX:PermSize&#xff1a;</strong> 设置永久代&#xff08;Permanent Generation&#xff09;的初始大小。</li><li><strong>-XX:MaxPermSize&#xff1a;</strong> 设置永久代的最大大小&#xff08;在Java 8及之后版本中已被移除&#xff0c;由元数据空间&#xff08;Metaspace&#xff09;替代&#xff09;。</li><li><strong>-XX:MetaspaceSize&#xff1a;</strong> 设置元数据空间的初始大小。<font color="red"> <strong>重点关注</strong></font></li><li><strong>-XX:MaxMetaspaceSize&#xff1a;</strong> 设置元数据空间的最大大小。<font color="red"> <strong>重点关注</strong></font></li><li><strong>-XX:InitialRAMPercentage&#xff1a;</strong> 设置JVM初始堆内存的占用百分比。</li><li><strong>-XX:MaxRAMPercentage&#xff1a;</strong> 设置JVM最大堆内存的占用百分比。</li></ol>
+<p>合理分配JVM内存参数取决于多个因素&#xff0c;包括应用程序的性能需求、可用的物理内存、以及预期的并发访问量等。</p>
+<h3><a rel="noopener noreferrer" id="_18"></a>一些常见的配置建议</h3>
+<p>以下是一些建议&#xff1a;</p>
+<ol><li>
+<p><strong>根据应用需求调整堆大小&#xff1a;</strong> 将 -Xms 和 -Xmx 参数设置为相同的值&#xff0c;以避免堆大小动态调整可能带来的性能开销。根据应用程序的内存需求&#xff0c;设置合适的堆大小&#xff0c;同时确保不会导致频繁的垃圾回收。</p>
+</li><li>
+<p><strong>调整年轻代和老年代的比例&#xff1a;</strong> 通过调整 -Xmn、-XX:NewRatio 和 -XX:SurvivorRatio 参数来优化垃圾回收性能。通常情况下&#xff0c;年轻代的大小应该足够大&#xff0c;以容纳大部分的对象&#xff0c;从而减少频繁的Full GC。</p>
+</li><li>
+<p><strong>监控和调整永久代或元数据空间大小&#xff1a;</strong> 如果应用程序依赖于大量的类加载或动态生成类&#xff0c;需要监控并根据需要调整永久代或元数据空间的大小。</p>
+</li><li>
+<p><strong>考虑使用容器和云平台的资源管理功能&#xff1a;</strong> 如果你的应用程序运行在容器环境或云平台上&#xff0c;可以考虑使用平台提供的资源管理功能&#xff0c;如Kubernetes的资源限制和请求&#xff0c;以确保JVM的内存分配不会超出容器的限制。</p>
+</li><li>
+<p><strong>基于监控数据进行优化&#xff1a;</strong> 定期监控应用程序的性能指标&#xff0c;包括内存使用、垃圾回收情况等&#xff0c;并根据监控数据进行内存参数的优化调整。</p>
+</li></ol>
+<p>综上所述&#xff0c;合理分配JVM内存参数需要根据具体的应用需求和运行环境进行综合考虑&#xff0c;并根据实际情况进行调整和优化。</p>
+<h3><a rel="noopener noreferrer" id="_34"></a>配置实践</h3>
+<p>Xmx即JVM的堆内存最大值&#xff0c;服务运行时还有MaxMetaspaceSize&#xff08;生产环境默认是512M&#xff0c;测试环境默认是256M&#xff09;堆外内存的占用、Linux的内核等系统内存的占用&#xff0c;所以Xmx一定要小于套餐内存限制的大小。<font color="red"> <strong>套餐为12G</strong></font></p>
+<ul><li>
+<p><code>-Xmx</code>&#xff1a;设置JVM最大可用堆内存。建议为套餐内存大小的<strong>70%-80%</strong>。<font color="red"><strong>9G左右</strong></font></p>
+</li><li>
+<p><code>-Xms</code>&#xff1a;设置JVM初始内存大小。建议Xms和Xmx一样大&#xff0c;绝不可以超过Xmx&#xff0c;否则启动报错。</p>
+</li><li>
+<p><code>-Xmn</code>&#xff1a;设置年轻代大小。<strong>通常建议为Xmx的1/4到1/3</strong>&#xff0c;尽量不要超过Xmx的1/2&#xff0c;否则老年代比例过小容易导致频繁Full GC。其大小设置后面会有详细说明【补充&#xff1a;传统化上不管套餐是4G还是8G&#xff0c;Xmn值都是1024M】。Xmn即年轻代的大小&#xff0c;如果垃圾回收器使用&#xff1a;<code>-XX:&#43;UseParallelGC</code>或者<code>-XX:&#43;UseConcMarkSweepGC</code>这两种垃圾回收器&#xff0c;Xmn参数才会生效&#xff0c;如果使用<code>-XX:&#43;UseG1GC</code>&#xff0c;Xmn不会生效&#xff0c;</p>
+<ul><li>Xmn尽量不超过Xmx的1/2&#xff0c;是因为老年代空间较小的话&#xff0c;年轻代长周期对象进入老年代以及大对象直接进入老年代&#xff0c;<strong>均可能频繁触发full GC&#xff0c;出现GC抖动的现象&#xff0c;会导致cpu使用率飙升&#xff0c;cpu使用受限&#xff0c;服务阻塞</strong>&#xff0c;健康检查存活检查不通过&#xff0c;Pod采取自救措施进行重启。</li><li>如果你的应用程序生成大量的短生命周期的对象&#xff0c;那么可以需要将-Xmn设置得大一些。如果你的应用程序生成的对象的生命周期较长&#xff0c;那么你可能需要将-Xmn设置得小一些</li></ul>
+</li><li>
+<p><code>-XX:MetaspaceSize</code>配置主要看代码中是否会有大量的类对象生成&#xff0c;比如是否大量使用非容器控制的CGLIB技术&#xff0c;使用后没有加缓存&#xff0c;也没有清理缓存</p>
+</li></ul>
+<p>基本配置如上&#xff0c;可能还会有调整</p>

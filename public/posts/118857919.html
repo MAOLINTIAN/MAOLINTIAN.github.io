@@ -1,0 +1,211 @@
+<p>从JSP的语法和内置对象的学习中我们了解到&#xff0c;其实JSP一直追求的就是简化代码&#xff0c;尽量发挥自己页面呈现的能力&#xff0c;JSP的设计初衷也是如此&#xff0c;所以在主键学习的过程中我们了解到为了这一目标JSP在进行不断的优化来减少自身页面的逻辑&#xff0c;本篇Blog提到的<strong>Java Bean就是为了简化在JSP中重复用到的一些业务对象和业务逻辑而创造的</strong></p>
+<h2><a rel="noopener noreferrer" id="Java_Bean_1"></a>Java Bean基本概念</h2>
+<p>JavaBean 是使用 Java 编写的组件&#xff0c;每一个 JavaBean 均实现一个特定的功能。JavaBean 通过对属性和方法的封装&#xff0c;成为具有独立功能、可重复使用并且可与其他控件通信的组件对象&#xff0c;具有以下优点</p>
+<ul><li><strong>重用性强</strong>&#xff0c;本身就是一个Java类&#xff0c;每次使用时被加载出一个对象&#xff0c;可以多次反复使用</li><li><strong>模块化</strong>&#xff0c;分离JSP模版元素L和Java代码&#xff1a;让开发某一模块的人员更加专注</li><li><strong>处理复杂逻辑</strong>&#xff0c;可以进行事务处理&#xff0c;让JSP专注于页面显示</li></ul>
+<p>到这为止我们还没有引入Servlet&#xff0c;所以目前能承载Java代码最好的容器就是Java Bean了。</p>
+<h3><a rel="noopener noreferrer" id="Java_Bean_8"></a>Java Bean的特征</h3>
+<p>JavaBean 是特殊的 Java 类&#xff0c;使用 Java 语言书写&#xff0c;并且遵守 JavaBean API 规范。接下来给出的是 JavaBean 与其它 Java 类相比而言独一无二的特征&#xff1a;</p>
+<ol><li>提供一个默认的无参构造函数。</li><li>需要被序列化并且实现了 Serializable 接口&#xff0c;这样在将对象存储为文件或网络中传递时将非常便利</li><li>可能包含一系列可读写属性&#xff0c;在 JavaBean 组件中要为所有标识特性的属性提供对应的 get() 方法和 set() 方法&#xff0c;以便为组件用户提供操作和控制组件的接口</li><li>可能包含一系列方法&#xff0c;在JavaBean组件中方法访问级别应该设置为Public</li></ol>
+<p>依据以上的定义其实我们发现有两种Java Bean&#xff0c;接下来看看Java Bean的分类。</p>
+<h3><a rel="noopener noreferrer" id="Java_Bean_17"></a>Java Bean的分类</h3>
+<p>除了我们上边提到的纯数据的Java Bean以外&#xff0c;其实Java Bean还可以提供一些简单的事务处理&#xff0c;所以我们一般可以把Java Bean分为两类&#xff0c;处理数据的和处理事务的&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_JavaBean_19"></a>封装数据的 JavaBean</h4>
+<p>封装数据的 JavaBean 通常就是表达一个完整的实体信息&#xff0c;适用于以下两种情况&#xff1a;</p>
+<ul><li>在方法中对一个**完整实体VO&#xff08;值对象&#xff09;**信息进行传递&#xff08;可以提高方法的可维护性与可扩展性&#xff09;</li><li>作为某些集合数据中的单个元素实体&#xff08;集合中存储的实体VO对象信息&#xff0c;代表集合中的单个数据项&#xff09;</li></ul>
+<p>下面给出一个Java Bean的示例&#xff0c;首先创建一个类Person&#xff0c;实现 Serializable 接口&#xff0c;设置几个属性&#xff1a;<br />
+<img src="./posts/assets/118857919-ext-4c20939fdc93.png" alt="在这里插入图片描述"><br />
+然后我们依据IDEA自带的工具生成属性的getter和setter。<br />
+<img src="./posts/assets/118857919-ext-0f11a43d9f61.png" alt="在这里插入图片描述"><br />
+这样我们的Java Bean就创建好了&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>javabean<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">Serializable</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * * &#64;Name Person
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/16
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Person</span> <span class="token keyword">implements</span> <span class="token class-name">Serializable</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token operator">&#61;</span><span class="token string">&#34;张三&#34;</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> age<span class="token operator">&#61;</span><span class="token number">20</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> sex<span class="token operator">&#61;</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setName</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">getAge</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> age<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setAge</span><span class="token punctuation">(</span><span class="token keyword">int</span> age<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>age <span class="token operator">&#61;</span> age<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getSex</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> sex<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setSex</span><span class="token punctuation">(</span><span class="token class-name">String</span> sex<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>sex <span class="token operator">&#61;</span> sex<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_JavaBean_79"></a>封装业务的 JavaBean</h4>
+<p>封装业务方法的 JavaBean 通常不需要 get()、set() 方法&#xff0c;只要根据业务需求定义相应的业务方法即可&#xff0c;比如针对数据操作的增删改查可以定义对应方法</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>javabean<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">List</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonService</span><span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 增加 Person</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token class-name">Person</span> people<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 通过 id 更新一个 Person</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">update</span><span class="token punctuation">(</span><span class="token class-name">Person</span> <span class="token class-name">Person</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 通过 id 删除一个 Person</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">del</span><span class="token punctuation">(</span><span class="token keyword">int</span> id<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 根据 id 得到一个 Person</span>
+    <span class="token keyword">public</span> <span class="token class-name">Person</span> <span class="token function">get</span><span class="token punctuation">(</span><span class="token keyword">int</span> id<span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// 得到所有的 Person</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Person</span><span class="token punctuation">&gt;</span></span> <span class="token function">getAll</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="Java_Bean_112"></a>使用Java Bean</h2>
+<p>使用Java Bean分为三个步骤&#xff0c;在JSP页面中我们需要声明引用Java Bean类&#xff0c;然后构造Java Bean对象&#xff0c;最后访问Java Bean对象的属性。以下是代码清单&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">16</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">11</span><span class="token operator">:</span><span class="token number">21</span> 上午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>导入javabean类<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.*&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+javabean默认设置<span class="token operator">:</span><span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>id表示被实例化的对象名字&#xff0c;<span class="token keyword">class</span>表示类这是javabea声明标签<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;personService&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.PersonService&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span> name就是对象名&#xff0c;property是属性的名字&#xff0c;该语句是属性获取<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;age&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;sex&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>name就是对象名&#xff0c;property是属性的名字&#xff0c;value表示要设置的值&#xff0c;该语句是属性设置语句<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>setProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;田茂林&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+javabean获取修改设置<span class="token operator">:</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span><span class="token class-name">PersonService</span>执行<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token class-name">PersonService</span>执行业务逻辑 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>personService<span class="token punctuation">.</span><span class="token function">del</span><span class="token punctuation">(</span><span class="token number">123</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>下边的等价脚本段<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+脚本段默认设置&#xff1a;<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token class-name">Person</span> p <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token punctuation">.</span><span class="token function">setAge</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">&#34;张三&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token punctuation">.</span><span class="token function">setSex</span><span class="token punctuation">(</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getAge</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getSex</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">PersonService</span> pS<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">PersonService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>pS<span class="token punctuation">.</span><span class="token function">del</span><span class="token punctuation">(</span><span class="token number">123</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>返回结果为&#xff1a;<br />
+<img src="./posts/assets/118857919-ext-daa0edecff96.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="Java_Bean_174"></a>导入Java Bean类</h3>
+<p>通过page指令实现&#xff0c;将Java Bean类导入到当前JSP内&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>导入javabean类<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.*&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Java_Bean_181"></a>构造Java Bean对象</h3>
+<p>有两种方式可以使用Java Bean&#xff0c;一种是通过<strong>动作标识</strong>&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>id表示被实例化的对象名字&#xff0c;<span class="token keyword">class</span>表示类这是javabea声明标签<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.Person&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>useBean id<span class="token operator">&#61;</span><span class="token string">&#34;personService&#34;</span> <span class="token keyword">class</span><span class="token operator">&#61;</span><span class="token string">&#34;com.example.MyFirstJavaWeb.javabean.PersonService&#34;</span> scope<span class="token operator">&#61;</span><span class="token string">&#34;request&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>useBean<span class="token operator">&gt;</span>
+</code></pre>
+<p>另一种是通过<strong>脚本代码</strong></p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token class-name">Person</span> p <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>通过动作标识构造的Java Bean对象有个好处就是方便的设定当前bean的存活周期&#xff0c;也就是scope属性&#xff0c;默认是当前page。<br />
+<img src="./posts/assets/118857919-ext-640924541773.png" alt="在这里插入图片描述"><br />
+同上一篇Blog讲到的一样&#xff0c;这表示了这个被创造出来的对象被放到了哪种作用域里&#xff0c;放到了对应的作用域就能存活对应的范围。</p>
+<h3><a rel="noopener noreferrer" id="Java_Bean_198"></a>使用Java Bean对象</h3>
+<p>和构造Java Bean对象一样&#xff0c;也有动作标识和脚本代码两种方式&#xff0c;动作标识方式如下&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span> name就是对象名&#xff0c;property是属性的名字&#xff0c;该语句是属性获取<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;age&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;sex&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>name就是对象名&#xff0c;property是属性的名字&#xff0c;value表示要设置的值&#xff0c;该语句是属性设置语句<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>setProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;田茂林&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+javabean获取修改设置<span class="token operator">:</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>getProperty property<span class="token operator">&#61;</span><span class="token string">&#34;name&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;person&#34;</span><span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span><span class="token class-name">PersonService</span>执行<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token class-name">PersonService</span>执行业务逻辑 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>personService<span class="token punctuation">.</span><span class="token function">del</span><span class="token punctuation">(</span><span class="token number">123</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>脚本标识的方式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token class-name">Person</span> p <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Person</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token punctuation">.</span><span class="token function">setAge</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">&#34;张三&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    p<span class="token punctuation">.</span><span class="token function">setSex</span><span class="token punctuation">(</span><span class="token string">&#34;女&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getAge</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getSex</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">PersonService</span> pS<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">PersonService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>pS<span class="token punctuation">.</span><span class="token function">del</span><span class="token punctuation">(</span><span class="token number">123</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>总体而言使用动作标识会让代码更简介轻快</p>
+<h2><a rel="noopener noreferrer" id="_240"></a>总结一下</h2>
+<p>JavaBean 是使用 Java 编写的组件&#xff0c;每一个 JavaBean 实现一个特定的功能&#xff0c;具有重用性强&#xff0c;易维护扩展等特点JavaBean一般需要实现序列化接口&#xff0c;提供无参构造方法&#xff0c;对功能进行getter、setter封装访问&#xff0c;在我看来</p>
+<ul><li><strong>JavaBean更多的使用就是一个Model&#xff0c;也即我们上文提到的数据Bean&#xff0c;为我们提供可重复展示的VO而已&#xff0c;说白了和我们在JSP的脚本段里new一个对象一样&#xff0c;也可以说成我们自定义创建的为JSP页面提供服务的类</strong></li><li>JavaBean较少使用业务Bean&#xff0c;虽说Java Bean也可以包含逻辑处理方法&#xff0c;但是其实这部分工作后续也会被拆分为两类&#xff0c;一类是负责的业务逻辑&#xff0c;一类是简单的事务处理&#xff0c;负责业务逻辑会交由Servlet实现&#xff0c;JavaBean的业务Bean会更专注于例如数据的增删改查这类单一的事务逻辑。</li></ul>
+<p>到这里MVC我们已经看到了MV&#xff0c;接下来会学习重磅&#xff0c;控制器C&#xff0c;也即Servlet。</p>

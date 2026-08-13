@@ -1,0 +1,167 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【合并区间】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/133847295-01-0c98a39322.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_4"></a>合并区间【MID】</h2>
+<p>一道一直想要解决的高频题&#xff0c;用到了排序</p>
+<h3><a rel="noopener noreferrer" id="_6"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133847295-02-0a6410048e.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_8"></a>解题思路</h3>
+<p><strong>如果我们按照区间的左端点排序&#xff0c;那么在排完序的列表中&#xff0c;可以合并的区间一定是连续的</strong>。如下图所示&#xff0c;标记为蓝色、黄色和绿色的区间分别可以合并成一个大区间&#xff0c;它们在排完序的列表中是连续的<br /> <img alt="在这里插入图片描述" src="./posts/assets/133847295-03-35880bf7ed.png" loading="lazy"><br /> 我们用数组 merged 存储最终的答案。</p>
+<ul><li>首先&#xff0c;我们将列表中的区间按照左端点升序排序。然后我们将第一个区间加入 merged 数组中&#xff0c;并按顺序依次考虑之后的每个区间&#xff1a;</li><li>如果当前区间的左端点在数组 merged 中最后一个区间的右端点之后&#xff0c;那么它们不会重合&#xff0c;我们可以直接将这个区间加入数组 merged 的末尾&#xff1b;</li><li>否则&#xff0c;它们重合&#xff0c;我们需要用当前区间的右端点更新数组 merged 中最后一个区间的右端点&#xff0c;将其置为二者的较大值。</li></ul>
+<p><strong>总体思路是左端点从小到大排列&#xff0c;每次比较只要比较新区间的左端点是否在已合并区间右端点之后就可以了&#xff0c;在之后则独立&#xff0c;在之前则重叠&#xff08;而且由于左端点升序&#xff0c;在之前也是在之前已合并区间的中间&#xff0c;极端情况是和已排序区间左端点重叠&#xff09;</strong></p>
+<h3><a rel="noopener noreferrer" id="_19"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>快速排序&#xff08;分治算法&#xff09;、二分查找</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>双指针</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * public class Interval {
+ *   int start;
+ *   int end;
+ *   public Interval(int start, int end) {
+ *     this.start &#61; start;
+ *     this.end &#61; end;
+ *   }
+ * }
+ */</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param intervals Interval类ArrayList
+     * &#64;return Interval类ArrayList
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Interval</span><span class="token punctuation">&gt;</span></span> merge <span class="token punctuation">(</span><span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Interval</span><span class="token punctuation">&gt;</span></span> intervals<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 先对集合进行排序</span>
+        intervals<span class="token punctuation">.</span><span class="token function">sort</span><span class="token punctuation">(</span><span class="token class-name">Comparator</span><span class="token punctuation">.</span><span class="token function">comparingInt</span><span class="token punctuation">(</span>interval <span class="token operator">-&gt;</span> interval<span class="token punctuation">.</span>start<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 遍历顺序数组进行合并</span>
+        <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Interval</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Interval</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Interval</span> interval <span class="token operator">:</span> intervals<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-1 获取当前区间左右端点和已合并区间右端点</span>
+            <span class="token keyword">int</span> leftPoint <span class="token operator">&#61;</span> interval<span class="token punctuation">.</span>start<span class="token punctuation">;</span>
+            <span class="token keyword">int</span> rightPoint <span class="token operator">&#61;</span> interval<span class="token punctuation">.</span>end<span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-2 如果结果区间为空或者当前区间左端点大于已合并区间右端点&#xff0c;则当前区间作为独立子区间加入集合</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">||</span> leftPoint <span class="token operator">&gt;</span> result<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>result<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span>end<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>interval<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-3 否则认为当前区间与已合并区间有重叠&#xff0c;只需更新合并区间右端点</span>
+                result<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>result<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span>end <span class="token operator">&#61;</span>  <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>result<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>result<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span>end<span class="token punctuation">,</span> rightPoint<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>leetcode数组入参的处理方法&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">merge</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> intervals<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 先对数组进行排序</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">sort</span><span class="token punctuation">(</span>intervals<span class="token punctuation">,</span> <span class="token class-name">Comparator</span><span class="token punctuation">.</span><span class="token function">comparingInt</span><span class="token punctuation">(</span>interval<span class="token operator">-&gt;</span>interval<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 遍历已排序数组&#xff0c;进行区间合并</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>intervals<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> idx <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> interval <span class="token operator">:</span> intervals<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-1 获取当前区间左右边界以及合并区间右边界</span>
+            <span class="token keyword">int</span> leftPoint <span class="token operator">&#61;</span> interval<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token keyword">int</span> rightPoint <span class="token operator">&#61;</span> interval<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-2 如果已合并区间为空&#xff0c;或当前区间左端点大于已合并区间右端点&#xff0c;则不重叠</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>idx <span class="token operator">&#61;&#61;</span> <span class="token operator">-</span><span class="token number">1</span> <span class="token operator">||</span> result<span class="token punctuation">[</span>idx<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&lt;</span> leftPoint<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                idx<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+                result<span class="token punctuation">[</span>idx<span class="token punctuation">]</span> <span class="token operator">&#61;</span> interval<span class="token punctuation">;</span>
+
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 2-3 反之则重叠&#xff0c;已两个区间较大值为新的右边界</span>
+                result<span class="token punctuation">[</span>idx<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>result<span class="token punctuation">[</span>idx<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> rightPoint<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">copyOf</span><span class="token punctuation">(</span>result<span class="token punctuation">,</span> idx <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_117"></a>复杂度分析</h3>
+<p>合并区间是一个常见的算法问题&#xff0c;通常用于合并具有重叠部分的区间&#xff0c;以简化问题或提供更清晰的表示。以下是关于合并区间问题的时间复杂度和空间复杂度的讨论&#xff1a;</p>
+<p>时间复杂度&#xff1a;<br /> 时间复杂度是衡量算法性能的关键指标&#xff0c;它表示算法在输入规模增加时所需的运行时间。对于合并区间问题&#xff0c;一种常见的解决方法是首先将区间按照起始值进行排序&#xff0c;然后遍历这些区间并合并它们。</p>
+<ol><li> <p>排序&#xff1a;对区间按照起始值进行排序通常需要 <strong>O(n*log(n))</strong> 的时间复杂度&#xff0c;其中 n 是区间的数量。</p> </li><li> <p>遍历和合并&#xff1a;一旦区间排序完成&#xff0c;遍历区间并合并重叠的部分通常需要线性时间&#xff0c;即 <strong>O(n)</strong>。</p> </li></ol>
+<p>因此&#xff0c;综合来看&#xff0c;合并区间的时间复杂度通常是 <strong>O(n*log(n)</strong>)&#xff0c;其中 n 是区间的数量。这是由排序操作的时间复杂度主导的。</p>
+<p>空间复杂度&#xff1a;<br /> 空间复杂度表示算法在执行过程中所需的额外内存空间。对于合并区间问题&#xff0c;空间复杂度通常取决于存储合并后的区间的数据结构。</p>
+<ol><li> <p>如果您在原始区间上就地修改&#xff0c;而不创建额外的数据结构&#xff0c;则空间复杂度是 O(1)&#xff0c;因为不需要额外的内存空间。</p> </li><li> <p>如果您创建一个新的数据结构来存储合并后的区间&#xff0c;空间复杂度将取决于这个数据结构的大小。通常情况下&#xff0c;合并后的区间数目会少于或等于初始区间数目&#xff0c;因此空间复杂度也是 <strong>O(n)</strong>。</p> </li></ol>
+<p>总结&#xff1a;合并区间问题的时间复杂度通常是 O(n*log(n))&#xff0c;空间复杂度可以是 O(1) 或 O(n)&#xff0c;具体取决于是否创建了新的数据结构来存储合并后的区间。</p>
+<h2><a rel="noopener noreferrer" id="MID_137"></a>最大数【MID】</h2>
+<p>一道一直想要解决的高频题&#xff0c;用到了排序https://leetcode.cn/problems/largest-number/description/</p>
+<h3><a rel="noopener noreferrer" id="_139"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133847295-04-6977286f5a.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_141"></a>解题思路</h3>
+<p>思路可以是自定义排序规则来实现</p>
+<h3><a rel="noopener noreferrer" id="_144"></a>代码实现</h3>
+<p>代码实现如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Arrays</span></span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Comparator</span></span><span class="token punctuation">;</span>
+
+<span class="token comment">//leetcode submit region begin(Prohibit modification and deletion)</span>
+<span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">largestNumber</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 先把所有数字处理为字符串</span>
+        <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> strs <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">[</span>nums<span class="token punctuation">.</span>length<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            strs<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 对字符串元素进行排序</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">sort</span><span class="token punctuation">(</span>strs<span class="token punctuation">,</span> <span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token punctuation">(</span>y <span class="token operator">&#43;</span> x<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span>x <span class="token operator">&#43;</span> y<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 如果第一位为0&#xff0c;则整个字符串为0&#xff0c;返回0</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>strs<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;0&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token string">&#34;0&#34;</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 4 如果第一个字符非0&#xff0c;则拼接结果返回</span>
+        <span class="token class-name">StringBuilder</span> stringBuilder <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> str <span class="token operator">:</span> strs<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            stringBuilder<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> stringBuilder<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment">//leetcode submit region end(Prohibit modification and deletion)</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_179"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;O(n k log n)&#xff0c;其中 n 是数组的长度&#xff0c;k 是字符串的平均长度。<br /> 空间复杂度&#xff1a;O(n k)&#xff0c;主要用于存储字符串数组和结果字符串。</p>
+<h2><a rel="noopener noreferrer" id="Arrays_182"></a>拓展知识&#xff1a;Arrays的用法</h2>
+<p>Arrays的一些用法拓展描述下</p>
+<h3><a rel="noopener noreferrer" id="ArrayscopyOfresult_x_184"></a><code>Arrays.copyOf(result, x)</code>描述了什么</h3>
+<p><code>Arrays.copyOf(result, x)</code> 是一个Java方法&#xff0c;它的含义是创建一个新数组&#xff0c;这个新数组的长度为 <code>x</code>&#xff0c;并且将原始数组 <code>result</code> 中的元素复制到新数组中。如果 <code>x</code> 小于原始数组的长度&#xff0c;那么新数组将截断&#xff0c;只包含原始数组中前 <code>x</code> 个元素。如果 <code>x</code> 大于原始数组的长度&#xff0c;新数组将在末尾用默认值填充&#xff0c;这个默认值取决于元素的数据类型&#xff0c;例如&#xff0c;数值类型默认是0&#xff0c;引用类型默认是<code>null</code>。</p>
+<p>这个方法允许你在不改变原始数组的情况下创建一个具有不同长度的新数组&#xff0c;非常方便&#xff0c;特别是在需要调整数组大小时。例如&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> result <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> x <span class="token operator">&#61;</span> <span class="token number">8</span><span class="token punctuation">;</span> <span class="token comment">// 新数组的长度</span>
+
+<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> newArray <span class="token operator">&#61;</span> <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">copyOf</span><span class="token punctuation">(</span>result<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 新数组现在将会是 {1, 2, 3, 4, 5, 0, 0, 0}&#xff0c;长度为 8</span>
+</code></pre>
+<p>在这个示例中&#xff0c;<code>Arrays.copyOf</code> 创建了一个长度为8的新数组&#xff0c;并将原始数组 <code>result</code> 中的元素复制到新数组中&#xff0c;多出的部分用0填充。</p>
+<h3><a rel="noopener noreferrer" id="Arrayssortintervals_ComparatorcomparingIntintervalinterval0__200"></a>Arrays.sort(intervals, Comparator.comparingInt(interval-&gt;interval[0])) 描述下这个语句做了什么</h3>
+<p>这个语句使用了 Java 中的 <code>Arrays.sort</code> 方法来对一个二维数组 <code>intervals</code> 进行排序。排序是基于二维数组中每个子数组的第一个元素&#xff08;<code>interval[0]</code>&#xff09;的值来进行的&#xff0c;也就是按照子数组的起始值进行排序。</p>
+<p>具体来说&#xff0c;这行代码的功能是&#xff1a;</p>
+<ol><li> <p><code>intervals</code> 是一个二维整数数组&#xff0c;通常用于表示区间&#xff08;例如&#xff0c;区间的起始和结束值&#xff09;。</p> </li><li> <p><code>Arrays.sort</code> 是 Java 中用于对数组进行排序的方法。</p> </li><li> <p><code>Comparator.comparingInt(interval -&gt; interval[0])</code> 是一个比较器&#xff0c;它告诉排序方法要按照每个子数组的第一个元素&#xff08;<code>interval[0]</code>&#xff09;的值进行升序排序。</p> </li></ol>
+<p>所以&#xff0c;这个语句将根据 <code>intervals</code> 中每个子数组的第一个元素&#xff08;起始值&#xff09;来对二维数组进行排序&#xff0c;从小到大排列。排序后&#xff0c;<code>intervals</code> 数组中的子数组将按照它们的起始值从小到大的顺序排列。</p>
+<p>这对于处理区间的问题非常有用&#xff0c;因为它可以将区间按照起始值进行排序&#xff0c;使得你可以更轻松地执行各种区间操作&#xff0c;比如合并重叠区间或查找包含某个点的区间等操作。</p>

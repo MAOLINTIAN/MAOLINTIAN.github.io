@@ -1,0 +1,24 @@
+<h3 id="debug和release分状态调试">Debug和Release分状态调试</h3>
+<pre class="prettyprint"><code class=" hljs cs"><span class="hljs-preprocessor">#<span class="hljs-keyword">if</span> &#xff01;DEBUG</span>
+     Console.WriteLine(<span class="hljs-string">&#34;Release:TML发布的时候最帅了&#34;</span>);
+<span class="hljs-preprocessor">#<span class="hljs-keyword">else</span></span>
+      Console.WriteLine(<span class="hljs-string">&#34;DEBUG:TML调试的时候最帅了&#34;</span>);
+<span class="hljs-preprocessor">#<span class="hljs-keyword">endif</span></span></code></pre>
+<p>如果运行模式是<strong>Release</strong>&#xff0c;也就是&#xff01;DEBUG则会输出<strong>“Release:TML发布的时候最帅了”</strong>。如果运行模式是<strong>Debug</strong>&#xff0c;则代码会输出<strong>“DEBUG:TML调试的时候最帅了”</strong>。 Debug和Release的设置和基本原理我在《深入理解CLR》中详细论述过&#xff1a;</p>
+<blockquote>
+ <p>传送门 <a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/80185199">https://blog.csdn.net/sinat_33087001/article/details/80185199</a></p>
+</blockquote>
+<p>那么什么时候用这种方式调试呢&#xff1f; <br /> <img title="" alt="这里写图片描述" src="./posts/assets/80620927-01-c00c94b6f5.png" loading="lazy"> <br /> 当出现这种情况&#xff0c;<strong>代码在线程里&#xff0c;这个时候打断点跳进去的时候不利于观察</strong>&#xff0c;这个时候可以设置在DEBUG状态下不执行线程&#xff0c;只执行线程内部代码&#xff0c;方便调试&#xff0c;在发布的时候(Release)加上线程部分的内容&#xff0c;不影响发版上线。</p>
+<h3 id="通过日志查看异常信息">通过日志查看异常信息</h3>
+<pre class="prettyprint"><code class=" hljs cs"><span class="hljs-keyword">try</span>{
+  <span class="hljs-keyword">foreach</span>(<span class="hljs-keyword">var</span> item1 <span class="hljs-keyword">in</span> listA){
+       <span class="hljs-keyword">foreach</span>(<span class="hljs-keyword">var</span> item2 <span class="hljs-keyword">in</span> listA){
+               item1&#61;&#61;item2;
+        }
+  }
+}
+<span class="hljs-keyword">catch</span> (Exception ex)
+{
+  logger.Error(<span class="hljs-string">&#34;元数据异步校验失败&#34;</span>, ex);
+}</code></pre>
+<p>上例中双层循环里报错了&#xff0c;可能两个list有5000多次加起来&#xff0c;一遍一遍的断点调试并没有效果&#xff0c;所以&#xff0c;这个时候打印日志和堆栈信息就很有必要了。</p>

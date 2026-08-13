@@ -1,0 +1,290 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【回溯算法】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133916084-01-15d6ec8e54.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_5"></a>子集【MID】</h2>
+<p><font color="red"><strong>元素无重不可复选</strong></font>。首先来看一个组合子集树<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-02-847dcc088f.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_8"></a>题干</h3>
+<p>基本的&#xff0c;不能包含重复的&#xff0c;不可复选的子集<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-03-b79766408a.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_11"></a>解题思路</h3>
+<p>组合问题和子集问题其实是等价的&#xff0c;<a href="https://labuladong.gitee.io/algo/di-san-zha-24031/bao-li-sou-96f79/hui-su-sua-56e11/" rel="nofollow"><strong>原解题思路</strong></a>&#xff0c;我们暂时不考虑如何用代码实现&#xff0c;先回忆一下我们的高中知识&#xff0c;如何手推所有子集&#xff1f;首先&#xff0c;生成元素个数为 0 的子集&#xff0c;即空集 []&#xff0c;为了方便表示&#xff0c;我称之为 S_0。然后&#xff0c;在 S_0 的基础上生成元素个数为 1 的所有子集&#xff0c;我称为 S_1<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-04-db085a92d5.png" loading="lazy"><br /> 接下来&#xff0c;我们可以在 S_1 的基础上推导出 S_2&#xff0c;即元素个数为 2 的所有子集<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-05-7578b9516c.png" loading="lazy"><br /> 为什么集合 [2] 只需要添加 3&#xff0c;而不添加前面的 1 呢&#xff1f;因为<strong>集合中的元素不用考虑顺序</strong>&#xff0c;[1,2,3] 中 2 后面只有 3&#xff0c;如果你添加了前面的 1&#xff0c;那么 [2,1] 会和之前已经生成的子集 [1,2] 重复&#xff0c;<font color="red"><strong>换句话说&#xff0c;我们通过保证元素之间的相对顺序不变来防止出现重复的子集</strong></font>,接着&#xff0c;我们可以通过 S_2 推出 S_3&#xff0c;实际上 S_3 中只有一个集合 [1,2,3]&#xff0c;它是通过 [1,2] 推出的。整个推导过程就是这样一棵树<img alt="在这里插入图片描述" src="./posts/assets/133916084-06-3c02c34a90.png" loading="lazy"><br /> 注意这棵树的特性&#xff1a;<font color="red"><strong>如果把根节点作为第 0 层&#xff0c;将每个节点和根节点之间树枝上的元素作为该节点的值&#xff0c;那么第 n 层的所有节点就是大小为 n 的所有子集</strong></font>。你比如大小为 2 的子集就是这一层节点的值<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-07-4a5e9a3645.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_22"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 最终结果集</span>
+    <span class="token keyword">private</span>  <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义路径存储集</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> <span class="token function">subsets</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 结果添加到结果集</span>
+        result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 遍历寻找结果集</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-1 执行选择</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-2 继续向下探索,这里的start为i&#43;1,标识下层路径从下一个元素选取</span>
+            <span class="token function">backtrack</span><span class="token punctuation">(</span> nums<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-3 撤销选择</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133916084-08-dd9bf7d53e.png" loading="lazy"><br /> 我们使用 start 参数控制树枝的生长避免产生重复的子集&#xff0c;用 track 记录根节点到每个节点的路径的值&#xff0c;同时在前序位置把每个节点的路径值收集起来&#xff0c;完成回溯树的遍历就收集了所有子集</p>
+<h3><a rel="noopener noreferrer" id="_72"></a>复杂度分析</h3>
+<p>这段代码是用于生成一个整数数组的所有子集的回溯算法。算法通过递归的方式生成子集&#xff0c;每次在递归中有两种选择&#xff1a;包含当前元素或不包含当前元素。以下是对代码的分析&#xff1a;</p>
+<ul><li> <p><code>subsets</code> 方法是公共的入口点&#xff0c;它接受一个整数数组 <code>nums</code> 作为输入&#xff0c;并返回一个包含所有子集的列表。</p> </li><li> <p>在 <code>subsets</code> 方法中&#xff0c;创建了一个空的 <code>path</code> 列表用于存储当前子集&#xff0c;然后调用 <code>backtrack</code> 方法来开始回溯过程。</p> </li><li> <p><code>backtrack</code> 方法是递归函数&#xff0c;用于生成子集。它采用以下步骤&#xff1a;</p>
+  <ol><li> <p>将当前 <code>path</code> 添加到最终结果集 <code>result</code> 中&#xff0c;将当前 <code>path</code> 中的元素加入结果集表示一个子集。</p> </li><li> <p>遍历 <code>nums</code> 数组&#xff0c;从 <code>start</code> 开始&#xff0c;对于每个元素&#xff0c;执行以下操作&#xff1a;</p>
+    <ul><li> <p>将当前元素添加到 <code>path</code> 中&#xff0c;表示选择当前元素。</p> </li><li> <p>递归调用 <code>backtrack</code> 方法&#xff0c;但这次的 <code>start</code> 从 <code>i &#43; 1</code> 开始&#xff0c;这样可以确保在同一个子集中不重复使用元素。</p> </li><li> <p>撤销选择&#xff0c;将刚刚添加的元素从 <code>path</code> 中移除&#xff0c;继续遍历下一个元素。</p> </li></ul> </li></ol> </li><li> <p>回溯算法会递归生成所有可能的子集&#xff0c;直到遍历完 <code>nums</code> 数组中的所有元素。</p> </li><li> <p>最终&#xff0c;<code>subsets</code> 方法返回包含所有子集的 <code>result</code> 列表。</p> </li></ul>
+<p><strong>时间复杂度</strong>&#xff1a;</p>
+<ul><li>时间复杂度主要取决于递归调用的次数。对于每个元素&#xff0c;有两种选择&#xff0c;包括或不包括&#xff0c;而每种状态都需要 O (n) 的构造时间&#xff0c;因此时间复杂度是 <code>O(2^n)</code>&#xff0c;其中 <code>n</code> 是输入数组 <code>nums</code> 的大小。</li></ul>
+<p><strong>空间复杂度</strong>&#xff1a;</p>
+<ul><li> <p>空间复杂度主要取决于递归调用的深度和存储中间结果的数据结构。递归的深度最多为 <code>n</code>&#xff0c;因此空间复杂度是 <code>O(n)</code>。</p> </li><li> <p>此外&#xff0c;<code>path</code> 列表的空间复杂度也需要考虑。在最坏的情况下&#xff0c;<code>path</code> 列表的长度可能等于 <code>n</code>&#xff0c;因为每个元素都可能被包括在一个子集中。因此&#xff0c;总的空间复杂度为 <code>O(n)</code>。</p> </li></ul>
+<p>总结&#xff1a;这段代码使用回溯算法生成了输入数组 <code>nums</code> 的所有子集&#xff0c;时间复杂度为 <code>O(2^n)</code>&#xff0c;空间复杂度为 <code>O(n)</code>。</p>
+<h2><a rel="noopener noreferrer" id="MID_106"></a>组合【MID】</h2>
+<p><font color="red"><strong>元素无重不可复选</strong></font>。给你输入一个数组 nums &#61; [1,2…,n] 和一个正整数 k&#xff0c;请你生成所有大小为 k 的子集。</p>
+<h3><a rel="noopener noreferrer" id="_108"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133916084-09-c12f13fb0f.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_112"></a>解题思路</h3>
+<p>还是以 nums &#61; [1,2,3] 为例&#xff0c;刚才让你求所有子集&#xff0c;就是把所有节点的值都收集起来&#xff1b;<strong>现在你只需要把第 2 层&#xff08;根节点视为第 0 层&#xff09;的节点收集起来&#xff0c;就是大小为 2 的所有组合</strong>&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-10-1fad051f75.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_116"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 最终结果集</span>
+    <span class="token keyword">private</span>  <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义路径存储集</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> <span class="token function">combine</span><span class="token punctuation">(</span><span class="token keyword">int</span> n<span class="token punctuation">,</span> <span class="token keyword">int</span> k<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">// 2 初始值进行回溯</span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>n<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span> <span class="token keyword">int</span> n<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">,</span> <span class="token keyword">int</span> k<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 结果添加到结果集</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> k<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 遍历寻找结果集</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> n<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-1 执行选择</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-2 继续向下探索,这里的start为i&#43;1,标识下层路径从下一个元素选取</span>
+            <span class="token function">backtrack</span><span class="token punctuation">(</span>n<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-3 撤销选择</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_170"></a>复杂度分析</h3>
+<p>时间复杂度和空间复杂度同上</p>
+<h2><a rel="noopener noreferrer" id="II_173"></a>子集II</h2>
+<p><font color="red"><strong>元素有重不可复选</strong></font>。 再简单补充下重复元素的情况<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-11-1f0a08f5ce.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_176"></a>解题思路</h3>
+<p>就以 nums &#61; [1,2,2] 为例&#xff0c;为了区别两个 2 是不同元素&#xff0c;后面我们写作 nums &#61; [1,2,2’]。按照之前的思路画出子集的树形结构&#xff0c;显然&#xff0c;两条值相同的相邻树枝会产生重复<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-12-3dd662124d.png" loading="lazy"><br /> 其结果为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token punctuation">[</span>
+    <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">2</span>&#39;<span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token char">&#39;],[2,2&#39;</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span>&#39;<span class="token punctuation">]</span>
+<span class="token punctuation">]</span>
+
+</code></pre>
+<p>你可以看到&#xff0c;[2] 和 [1,2] 这两个结果出现了重复&#xff0c;所以我们需要进行剪枝&#xff0c;如果一个节点有多条值相同的树枝相邻&#xff0c;则只遍历第一条&#xff0c;剩下的都剪掉&#xff0c;不要去遍历<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-13-ad68f6413b.png" loading="lazy"><br /> 体现在代码上&#xff0c;<strong>需要先进行排序&#xff0c;让相同的元素靠在一起</strong>&#xff0c;如果发现 <strong>nums[i] &#61;&#61; nums[i-1]</strong>&#xff0c;则跳过&#xff0c;和全排列II的思路一致</p>
+<h3><a rel="noopener noreferrer" id="_194"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 最终结果集</span>
+    <span class="token keyword">private</span>  <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义路径存储集</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> <span class="token function">subsetsWithDup</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">// 1 数组排序&#xff0c;相同值元素相邻</span>
+        <span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">sort</span><span class="token punctuation">(</span>nums<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//2 初始值进行回溯</span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span> nums<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 结果添加到结果集</span>
+        result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2 遍历寻找结果集</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 2-1 剪枝&#xff0c;前面出现过的元素不再遍历</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&gt;</span> start <span class="token operator">&amp;&amp;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> nums<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">continue</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 2-2 执行选择</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-3 继续向下探索,这里的start为i&#43;1,标识下层路径从下一个元素选取</span>
+            <span class="token function">backtrack</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 2-4 撤销选择</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_249"></a>复杂度分析</h3>
+<p>时间和空间复杂度同上</p>
+<h2><a rel="noopener noreferrer" id="_251"></a>组合总和</h2>
+<p><font color="red"><strong>元素无重可复选</strong></font>。这道题目也比较高频<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-14-1cd5a4eb20.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_254"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/133916084-15-78cfd38c9f.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_257"></a>解题思路</h3>
+<p>这道题说是组合问题&#xff0c;实际上也是子集问题&#xff1a;<strong>candidates 的哪些子集的和为 target</strong>&#xff0c;想解决这种类型的问题&#xff0c;也得回到回溯树上&#xff0c;我们不妨先思考思考&#xff0c;<strong>标准的子集/组合问题是如何保证不重复使用元素的</strong>&#xff1f;答案在于 backtrack 递归时输入的参数 start</p>
+<pre><code class="prism language-java"><span class="token comment">// 无重组合的回溯算法框架</span>
+<span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+        <span class="token comment">// 递归遍历下一层回溯树&#xff0c;注意参数</span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> i <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>这个 i 从 start 开始&#xff0c;那么下一层回溯树就是从 start &#43; 1 开始&#xff0c;从而保证 nums[start] 这个元素不会被重复使用&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-16-91b9706080.png" loading="lazy"><br /> 那么反过来&#xff0c;如果我想让每个元素被重复使用&#xff0c;我只要把 i &#43; 1 改成 i 即可</p>
+<pre><code class="prism language-java"><span class="token comment">// 可重组合的回溯算法框架</span>
+<span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// ...</span>
+        <span class="token comment">// 递归遍历下一层回溯树&#xff0c;注意参数</span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>这相当于给之前的回溯树添加了一条树枝&#xff0c;在遍历这棵树的过程中&#xff0c;一个元素可以被无限次使用<br /> <img alt="在这里插入图片描述" src="./posts/assets/133916084-17-1672cc32db.png" loading="lazy"><br /> 当然&#xff0c;这样这棵回溯树会永远生长下去&#xff0c;<strong>所以我们的递归函数需要设置合适的 base case 以结束算法&#xff0c;即路径和大于 target 时就没必要再遍历下去了</strong></p>
+<h3><a rel="noopener noreferrer" id="_292"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>回溯算法</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 最终结果集</span>
+    <span class="token keyword">private</span>  <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义路径存储集</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> path <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 定义随路径存储变化的总和</span>
+    <span class="token keyword">int</span> pathSum <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param n int整型 the n
+     * &#64;return int整型
+     */</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">List</span><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> <span class="token function">combinationSum</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> candidates<span class="token punctuation">,</span> <span class="token keyword">int</span> target<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>candidates<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token function">backtrack</span><span class="token punctuation">(</span> candidates<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> target<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">backtrack</span><span class="token punctuation">(</span> <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span> <span class="token keyword">int</span> start<span class="token punctuation">,</span> <span class="token keyword">int</span> target<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 等于目标和结果添加到结果集</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pathSum <span class="token operator">&#61;&#61;</span> target<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">LinkedList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 超过目标和返回</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>pathSum <span class="token operator">&gt;</span> target<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 遍历寻找结果集</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> start<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 3-1 执行选择</span>
+            path<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            pathSum <span class="token operator">&#43;&#61;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 3-2 继续向下探索,这里的start为i表示元素可以重复被使用</span>
+            <span class="token function">backtrack</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> i<span class="token punctuation">,</span> target<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 3-3 撤销选择</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            pathSum <span class="token operator">-&#61;</span> nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_357"></a>复杂度分析</h3>
+<p>时间和空间复杂度同上</p>
+<h2><a rel="noopener noreferrer" id="_359"></a>拓展知识&#xff1a;组合子集问题</h2>
+<p>无论是排列、组合还是子集问题&#xff0c;简单说无非就是让你从序列 nums 中以给定规则取若干元素&#xff0c;主要有以下几种变体&#xff1a;</p>
+<ul><li>形式一、<strong>元素无重不可复选&#xff0c;即 nums 中的元素都是唯一的&#xff0c;每个元素最多只能被使用一次</strong>&#xff0c;这也是最基本的形式。以组合为例&#xff0c;如果输入 nums &#61; [2,3,6,7]&#xff0c;和为 7 的组合应该只有 [7]。<font color="red"><strong>全排列、子集、组合</strong></font></li><li>形式二、<strong>元素可重不可复选&#xff0c;即 nums 中的元素可以存在重复&#xff0c;每个元素最多只能被使用一次</strong>。以组合为例&#xff0c;如果输入 nums &#61; [2,5,2,1,2]&#xff0c;和为 7 的组合应该有两种 [2,2,2,1] 和 [5,2]。<font color="red"><strong>全排列II、子集II</strong></font></li><li>形式三、<strong>元素无重可复选&#xff0c;即 nums 中的元素都是唯一的&#xff0c;每个元素可以被使用若干次</strong>。以组合为例&#xff0c;如果输入 nums &#61; [2,3,6,7]&#xff0c;和为 7 的组合应该有两种 [2,2,3] 和 [7]。<font color="red"><strong>组合总和</strong></font></li></ul>
+<p>当然&#xff0c;也可以说有第四种形式&#xff0c;即元素可重可复选。但既然元素可复选&#xff0c;那又何必存在重复元素呢&#xff1f;元素去重之后就等同于形式三&#xff0c;所以这种情况不用考虑。上面用组合问题举的例子&#xff0c;但排列、组合、子集问题都可以有这三种基本形式&#xff0c;所以共有 9 种变化</p>

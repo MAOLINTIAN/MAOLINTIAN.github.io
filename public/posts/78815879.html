@@ -1,0 +1,254 @@
+<p>通过项目获取的新技能&#xff0c;之后写xml配置应该没什么问题&#xff0c;当然xml文件的使用形式多种多样&#xff0c;之后在持续更新。</p>
+<h2 id="配置文件编写实践">配置文件编写实践</h2>
+<p>配置文件一般用xml来写&#xff0c;具体关于xml文件的特性见以下这篇引用的博客&#xff0c;很详细了。</p>
+<blockquote>
+ <p>xml文件的使用<a rel="noopener noreferrer" href="http://blog.csdn.net/wuya_meiya/article/details/50989600">http://blog.csdn.net/wuya_meiya/article/details/50989600</a></p>
+</blockquote>
+<p>这里我想说一下我学到的设计</p>
+<h3 id="xml文件编写">xml文件编写</h3>
+<pre class="prettyprint"><code class=" hljs handlebars"><span class="xml"><span class="hljs-pi">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;utf-8&#34; ?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">CheckMetaDataConfig</span> <span class="hljs-attribute">majorVersion</span>&#61;<span class="hljs-value">&#34;1&#34;</span> <span class="hljs-attribute">minorVersion</span>&#61;<span class="hljs-value">&#34;208&#34;</span>
+    //根节点
+&lt;<span class="hljs-attribute">DataBases</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">DataBase</span> <span class="hljs-attribute">Name</span>&#61;<span class="hljs-value">&#34;User&#34;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">TableConfigs</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-title">TableConfig</span> <span class="hljs-attribute">Name</span>&#61;<span class="hljs-value">&#34;dbo.userconfig&#34;</span>  <span class="hljs-attribute">ConditionCode</span>&#61;<span class="hljs-value">&#34;ID,Lable,Name&#34;</span>&gt;</span>
+  //ConditonCode为配置的组合特征&#xff0c;之后需要取出来切割并调用
+        <span class="hljs-tag">&lt;<span class="hljs-title">Fields</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-title">Field</span> <span class="hljs-attribute">Name</span>&#61;<span class="hljs-value">&#34;ID&#34;</span>  <span class="hljs-attribute">Method</span>&#61;<span class="hljs-value">&#34;Mapping&#34;</span> <span class="hljs-attribute">Field</span>&gt;</span>
+   //method为我们的比较规则
+          <span class="hljs-tag">&lt;<span class="hljs-title">Field</span> <span class="hljs-attribute">Name</span>&#61;<span class="hljs-value">&#34;Lable&#34;</span>  <span class="hljs-attribute">Method</span>&#61;<span class="hljs-value">&#34;Equal&#34;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-title">Field</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-title">Field</span> <span class="hljs-attribute">Name</span>&#61;<span class="hljs-value">&#34;Name&#34;</span>  <span class="hljs-attribute">Method</span>&#61;<span class="hljs-value">&#34;TenanatReplace&#34;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-title">Field</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-title">Field</span> <span class="hljs-attribute">Name</span>&#61;<span class="hljs-value">&#34;Application&#34;</span>  <span class="hljs-attribute">Method</span>&#61;<span class="hljs-value">&#34;Equal&#34;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-title">Field</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-title">Fields</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-title">TableConfig</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-title">TableConfigs</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-title">DataBase</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">DataBases</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">CheckMetaDataConfig</span>&gt;</span></span></code></pre>
+<p>以上的结构为&#xff0c;一系列的库&#xff0c;一系列的表&#xff0c;一系列的字段&#xff0c;每一级都可以有很多个&#xff0c;每个又可以有自己的属性。为了对应xml&#xff0c;我们需要解析&#xff0c;还要考虑到我们会通过库来调用表&#xff0c;通过表来调用字段</p>
+<h3 id="解析xml文件的类的编写">解析xml文件的类的编写</h3>
+<pre class="prettyprint"><code class=" hljs cs"><span class="hljs-keyword">using</span> User.Configuration;
+<span class="hljs-keyword">using</span> System;
+<span class="hljs-keyword">using</span> System.Collections.Generic;
+<span class="hljs-keyword">using</span> System.Xml.Serialization;
+
+namespace User
+{
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;对应根节点的类&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+
+    <span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 对应根节点的类</span>
+
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 类&#xff1a;对应根节点的类</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+    [XmlRoot(<span class="hljs-string">&#34;CheckMetaDataConfig&#34;</span>)]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> CheckMetaDataConfig : BaseConfig&lt;CheckMetaDataConfig&gt;
+    {
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-keyword">object</span> LockThis &#61; <span class="hljs-keyword">new</span> <span class="hljs-keyword">object</span>(); <span class="hljs-comment">//获取锁对象</span>
+
+        <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;属性部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+        [XmlArray(<span class="hljs-string">&#34;DataBases&#34;</span>)]
+        [XmlArrayItem(<span class="hljs-string">&#34;DataBase&#34;</span>)]
+        <span class="hljs-keyword">public</span> DataBase[] DataBases { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+        <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;字段部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+        <span class="hljs-keyword">private</span> Dictionary&lt;<span class="hljs-keyword">string</span>, DataBase&gt; _databasedic; <span class="hljs-comment">//设置字段的字典类</span>
+
+        <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;方法部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 公有方法:获取指定名称数据库的xml实例</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;param name&#61;&#34;dataBaseName&#34;&gt;</span><span class="hljs-xmlDocTag">&lt;/param&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+        <span class="hljs-keyword">public</span> DataBase <span class="hljs-title">FindDatabase</span>(<span class="hljs-keyword">string</span> dataBaseName)
+        {
+            dataBaseName &#61; dataBaseName.ToLower();
+            <span class="hljs-keyword">if</span> (_databasedic &#61;&#61; <span class="hljs-keyword">null</span>)
+            {
+                InitDatabaseDic();
+            }
+
+            <span class="hljs-keyword">return</span> _databasedic !&#61; <span class="hljs-keyword">null</span> &amp;&amp; _databasedic.ContainsKey(dataBaseName) ? _databasedic[dataBaseName] : <span class="hljs-keyword">null</span>;
+        }
+
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 私有方法&#xff1a;初始化数据库</span>
+        <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">InitDatabaseDic</span>()
+        {
+            <span class="hljs-keyword">lock</span> (LockThis)
+            {
+                <span class="hljs-keyword">if</span> (_databasedic &#61;&#61; <span class="hljs-keyword">null</span>) <span class="hljs-comment">//如果字典为null&#xff0c;则初始化字典类</span>
+                {
+                    <span class="hljs-keyword">var</span> dic &#61; <span class="hljs-keyword">new</span> Dictionary&lt;String, DataBase&gt;(); <span class="hljs-comment">//新建一个字典类</span>
+                    <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> app <span class="hljs-keyword">in</span> Instance.DataBases) <span class="hljs-comment">//遍历该数据库</span>
+                    {
+                        app.Name &#61; app.Name.ToLower(); <span class="hljs-comment">//将数据库名全部转为大写</span>
+                        <span class="hljs-keyword">if</span> (<span class="hljs-keyword">string</span>.IsNullOrEmpty(app.Name)) <span class="hljs-keyword">continue</span>; <span class="hljs-comment">//如果该配置文件里的数据库名字存在&#xff0c;则中止&#xff0c;进入下一个</span>
+                        <span class="hljs-keyword">if</span> (!dic.ContainsKey(app.Name)) <span class="hljs-comment">//如果字段名字典里不包括该实例里的数据库的名字&#xff0c;添加进去</span>
+                        {
+                            dic.Add(app.Name, app); <span class="hljs-comment">//把数据库名字和数据库实例以字典对的形式添加进去</span>
+                        }
+                    }
+                    _databasedic &#61; dic; <span class="hljs-comment">//把处理好的dic赋给字典&#xff0c;全新的字典诞生</span>
+                }
+            }
+        }
+    }
+}
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 对应根节点的类</span>
+
+<span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;对应数据库节点的类&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 对应数据库节点的类</span>
+
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 类&#xff1a;数据库节点类</span>
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> DataBase
+{
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-keyword">object</span> LockThis &#61; <span class="hljs-keyword">new</span> <span class="hljs-keyword">object</span>(); <span class="hljs-comment">//获取锁对象</span>
+
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;属性部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    [XmlAttribute(<span class="hljs-string">&#34;Name&#34;</span>)]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> Name { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+    [XmlArray(<span class="hljs-string">&#34;TableConfigs&#34;</span>)]
+    [XmlArrayItem(<span class="hljs-string">&#34;TableConfig&#34;</span>)]
+    <span class="hljs-keyword">public</span> TableConfig[] TableConfigs { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;字段部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-keyword">private</span> Dictionary&lt;<span class="hljs-keyword">string</span>, TableConfig&gt; _tableDic;
+
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;方法部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span>公有方法&#xff1a; 获取指定名称的数据表</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;param name&#61;&#34;tableName&#34;&gt;</span><span class="hljs-xmlDocTag">&lt;/param&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+    <span class="hljs-keyword">public</span> TableConfig <span class="hljs-title">FindTable</span>(<span class="hljs-keyword">string</span> tableName)
+    {
+        tableName &#61; tableName.ToLower();
+        <span class="hljs-keyword">if</span> (_tableDic &#61;&#61; <span class="hljs-keyword">null</span>)
+        {
+            InitTableDic();
+        }
+        <span class="hljs-keyword">return</span> _tableDic !&#61; <span class="hljs-keyword">null</span> &amp;&amp; _tableDic.ContainsKey(tableName) ? _tableDic[tableName] : <span class="hljs-keyword">null</span>;
+    }
+
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 私有方法&#xff1a;初始化数据表的信息</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">InitTableDic</span>()
+    {
+        <span class="hljs-keyword">lock</span> (LockThis)
+        {
+            <span class="hljs-keyword">if</span> (_tableDic &#61;&#61; <span class="hljs-keyword">null</span>) <span class="hljs-comment">//如果字典为null&#xff0c;则初始化字典类</span>
+            {
+                <span class="hljs-keyword">var</span> dic &#61; <span class="hljs-keyword">new</span> Dictionary&lt;String, TableConfig&gt;(); <span class="hljs-comment">//新建一个字典类</span>
+                <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> app <span class="hljs-keyword">in</span> TableConfigs) <span class="hljs-comment">//遍历该表集合</span>
+                {
+                    app.Name &#61; app.Name.ToLower(); <span class="hljs-comment">//将数据表名全部转为大写</span>
+                    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">string</span>.IsNullOrEmpty(app.Name)) <span class="hljs-keyword">continue</span>; <span class="hljs-comment">//如果该配置文件里的数据库名字存在&#xff0c;则中止&#xff0c;进入下一个</span>
+                    <span class="hljs-keyword">if</span> (!dic.ContainsKey(app.Name)) <span class="hljs-comment">//如果字段名字典里不包括该实例里的数据表的名字&#xff0c;添加进去</span>
+                    {
+                        dic.Add(app.Name, app); <span class="hljs-comment">//把数据表名字和数据表实例以字典对的形式添加进去</span>
+                    }
+                }
+                _tableDic &#61; dic; <span class="hljs-comment">//把处理好的dic赋给字典&#xff0c;全新的字典诞生</span>
+            }
+        }
+    }
+}
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 对应数据库节点的类</span>
+
+<span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;对应数据表节点的类&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 对应数据表节点的类</span>
+
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 类&#xff1a;数据表节点类</span>
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> TableConfig
+{
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-keyword">object</span> LockThis &#61; <span class="hljs-keyword">new</span> <span class="hljs-keyword">object</span>(); <span class="hljs-comment">//获取锁对象</span>
+
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;属性部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    [XmlAttribute(<span class="hljs-string">&#34;Name&#34;</span>)]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> Name { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+    [XmlAttribute(<span class="hljs-string">&#34;ConditionCode&#34;</span>)]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> ConditionCode { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+    [XmlArray(<span class="hljs-string">&#34;Fields&#34;</span>)]
+    [XmlArrayItem(<span class="hljs-string">&#34;Field&#34;</span>)]
+    <span class="hljs-keyword">public</span> Field[] Fields { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;字段部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-keyword">private</span> Dictionary&lt;String, <span class="hljs-keyword">string</span>&gt; _conditionCodDic;
+
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;方法部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 公有方法&#xff1a;获取特征码</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;returns&gt;</span><span class="hljs-xmlDocTag">&lt;/returns&gt;</span></span>
+    <span class="hljs-keyword">public</span> Dictionary&lt;String, <span class="hljs-keyword">string</span>&gt; <span class="hljs-title">GetConditionCodeDic</span>()
+    {
+        <span class="hljs-keyword">if</span> (_conditionCodDic &#61;&#61; <span class="hljs-keyword">null</span>)
+        {
+            InitConditionCodeDic();
+        }
+        <span class="hljs-keyword">return</span> _conditionCodDic;
+    }
+
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 私有方法&#xff1a; 初始化特征码</span>
+    <span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">InitConditionCodeDic</span>()
+    {
+        <span class="hljs-keyword">lock</span> (LockThis)
+        {
+            <span class="hljs-keyword">if</span> (_conditionCodDic &#61;&#61; <span class="hljs-keyword">null</span>) <span class="hljs-comment">//如果字典为null&#xff0c;则初始化字典类</span>
+            {
+                <span class="hljs-keyword">var</span> dic &#61; <span class="hljs-keyword">new</span> Dictionary&lt;<span class="hljs-keyword">string</span>, <span class="hljs-keyword">string</span>&gt;(); <span class="hljs-comment">//新建一个字典类</span>
+                <span class="hljs-keyword">var</span> strs &#61; ConditionCode.Split(<span class="hljs-keyword">new</span>[] { <span class="hljs-string">&#34;,&#34;</span> }, StringSplitOptions.RemoveEmptyEntries);
+                <span class="hljs-comment">//不保留空元素,获取到特征值字段集合</span>
+                <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> s <span class="hljs-keyword">in</span> strs)
+                {
+                    dic.Add(s, <span class="hljs-keyword">null</span>);
+                }
+                _conditionCodDic &#61; dic; <span class="hljs-comment">//把处理好的dic赋给字典&#xff0c;全新的字典诞生</span>
+            }
+        }
+    }
+}
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 对应数据表节点的类</span>
+
+<span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;对应字段节点的类&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">region</span> 对应字段节点的类</span>
+
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;summary&gt;</span></span>
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> 类&#xff1a; 字段类</span>
+<span class="hljs-comment"><span class="hljs-xmlDocTag">///</span> <span class="hljs-xmlDocTag">&lt;/summary&gt;</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> Field
+{
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;属性部分&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;</span>
+    [XmlAttribute(<span class="hljs-string">&#34;Name&#34;</span>)]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> Name { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+
+    [XmlAttribute(<span class="hljs-string">&#34;Method&#34;</span>)]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> Method { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+}
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">endregion</span> 对应字段节点的类</span></code></pre>
+<p>以上代码类似InitTableDic用到的初始化方式可以大大减少访问次数&#xff0c;如果存在就不需要再次获取</p>
+<h3 id="调用xml文件类">调用xml文件类</h3>
+<pre class="prettyprint"><code class=" hljs cs"><span class="hljs-keyword">var</span> dataDaseConfig &#61; CheckMetaDataConfig.Instance.FindDatabase(MetaDataBaseName);  <span class="hljs-comment">//获取一个配置文件中数据库节点实例</span></code></pre>
+<h2 id="踩过的坑">踩过的坑</h2>
+<p>1&#xff0c;xml解析类编写的时候&#xff0c;字典类的访问修饰符必须是private&#xff1a;<code>private Dictionary&lt;String, string&gt; _conditionCodDic;</code> <br /> 2&#xff0c;xml解析类尽量不要出现子类&#xff0c;要写为同级的 <br /> 3&#xff0c;<strong>注意xml文件名必须和xml解析类必须同名</strong></p>

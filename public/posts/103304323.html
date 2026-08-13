@@ -1,0 +1,155 @@
+<p>最近在做的一个功能是通过ESB调用http的client来发送Http请求&#xff0c;学习了相关的调用方式&#xff0c;如何让<strong>请求带有重试机制的发送</strong>呢&#xff1f;</p>
+<h4><a rel="noopener noreferrer" id="HttpClient_2"></a>HttpClient初始化</h4>
+<p>在整个调用过程中&#xff0c;我们使用到了委托方法的方式&#xff0c;<strong>在外层的委托里加入了重试机制以及线程的休眠机制</strong>。然后委托调用的方法又分为POST和Get&#xff0c;同时我还使用了返回结果泛型类的方式来定义响应情况&#xff0c;包括成功还是失败的响应状态码。</p>
+<pre><code class="prism language-csharp">    <span class="token comment">/// &lt;summary&gt;</span>
+    <span class="token comment">/// 用于访问Rest接口&#xff08;访问站点的请求&#xff09;</span>
+    <span class="token comment">/// &lt;/summary&gt;</span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HttpClientHelper</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> 日志及单例</span>
+
+        <span class="token keyword">protected</span> <span class="token keyword">static</span> <span class="token keyword">readonly</span> <span class="token class-name">LogWrapper</span> Logger <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">LogWrapper</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> 日志及单例</span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> 委托方式进行重试调用</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> TResult <span class="token generic-method"><span class="token function">ExecuteFunc</span><span class="token punctuation">&lt;</span><span class="token class-name">TResult</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>Func<span class="token operator">&lt;</span>TResult<span class="token operator">&gt;</span> target<span class="token punctuation">,</span> <span class="token keyword">int</span> retryCount <span class="token operator">&#61;</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token keyword">int</span> current <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token keyword">int</span> sleepMilliseconds <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">try</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> target<span class="token punctuation">.</span><span class="token function">Invoke</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//超过重试次数后抛出异常</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>retryCount <span class="token operator">-</span> current <span class="token operator">&lt;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">throw</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>sleepMilliseconds <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    Thread<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span>sleepMilliseconds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">//递归调用直至超出重试次数后抛出异常</span>
+            <span class="token keyword">return</span> <span class="token function">ExecuteFunc</span><span class="token punctuation">(</span>target<span class="token punctuation">,</span> retryCount<span class="token punctuation">,</span> current <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">,</span> sleepMilliseconds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> 委托方式进行重试调用</span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">region</span> POST及GET请求方法</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 通过post请求数据</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;typeparam name&#61;&#34;TResult&#34;&gt;&lt;/typeparam&gt;</span>
+        <span class="token comment">/// &lt;typeparam name&#61;&#34;TData&#34;&gt;&lt;/typeparam&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;url&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;data&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> ApiResult<span class="token operator">&lt;</span>TResult<span class="token operator">&gt;</span> <span class="token generic-method"><span class="token function">Post</span><span class="token punctuation">&lt;</span><span class="token class-name">TResult</span><span class="token punctuation">,</span> <span class="token class-name">TData</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token keyword">string</span> url<span class="token punctuation">,</span> <span class="token class-name">TData</span> data<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//获取请求数据</span>
+            <span class="token keyword">var</span> <span class="token keyword">value</span> <span class="token operator">&#61;</span> data <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">?</span> <span class="token keyword">string</span><span class="token punctuation">.</span>Empty <span class="token punctuation">:</span> JsonConvert<span class="token punctuation">.</span><span class="token function">SerializeObject</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//封装有关个别HTTP请求的所有HTTP特定的信息&#xff08;上下文信息&#xff09;</span>
+            <span class="token keyword">var</span> content <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">StringContent</span><span class="token punctuation">(</span><span class="token keyword">value</span><span class="token punctuation">,</span> Encoding<span class="token punctuation">.</span>UTF8<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//设置请求头的上下文类型</span>
+            content<span class="token punctuation">.</span>Headers<span class="token punctuation">.</span>ContentType <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">MediaTypeHeaderValue</span><span class="token punctuation">(</span><span class="token string">&#34;application/json&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">//发送Post异步请求信息</span>
+            <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> client <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HttpClient</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//发送异步请求</span>
+                <span class="token keyword">var</span> result <span class="token operator">&#61;</span> client<span class="token punctuation">.</span><span class="token function">PostAsync</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> content<span class="token punctuation">)</span><span class="token punctuation">.</span>Result<span class="token punctuation">;</span>
+                <span class="token comment">//获取请求返回的结果数据并将其序列化为字符串</span>
+                <span class="token keyword">var</span> response <span class="token operator">&#61;</span> result<span class="token punctuation">.</span>Content<span class="token punctuation">.</span><span class="token function">ReadAsStringAsync</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>Result<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">.</span>StatusCode <span class="token operator">!&#61;</span> System<span class="token punctuation">.</span>Net<span class="token punctuation">.</span>HttpStatusCode<span class="token punctuation">.</span>OK<span class="token punctuation">)</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">HttpRequestException</span><span class="token punctuation">(</span>$<span class="token string">&#34;调用接口&#xff1a;{url}报错&#xff0c;StatusCode:{result.StatusCode},Msg:{response}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//将返回结果反序列化为指定Model</span>
+                <span class="token keyword">return</span> JsonConvert<span class="token punctuation">.</span>DeserializeObject<span class="token operator">&lt;</span>ApiResult<span class="token operator">&lt;</span>TResult<span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 通过Get方式请求数据</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;typeparam name&#61;&#34;T&#34;&gt;&lt;/typeparam&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;url&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> ApiResult<span class="token operator">&lt;</span>T<span class="token operator">&gt;</span> <span class="token generic-method"><span class="token function">Get</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token keyword">string</span> url<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//发送Get异步请求信息</span>
+            <span class="token keyword">using</span> <span class="token punctuation">(</span><span class="token keyword">var</span> client <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HttpClient</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">//发送异步请求</span>
+                <span class="token keyword">var</span> result <span class="token operator">&#61;</span> client<span class="token punctuation">.</span><span class="token function">GetAsync</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">.</span>Result<span class="token punctuation">;</span>
+                <span class="token comment">//获取请求返回的结果数据并将其序列化为字符串</span>
+                <span class="token keyword">var</span> response <span class="token operator">&#61;</span> result<span class="token punctuation">.</span>Content<span class="token punctuation">.</span><span class="token function">ReadAsStringAsync</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>Result<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">.</span>StatusCode <span class="token operator">!&#61;</span> System<span class="token punctuation">.</span>Net<span class="token punctuation">.</span>HttpStatusCode<span class="token punctuation">.</span>OK<span class="token punctuation">)</span>
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">HttpRequestException</span><span class="token punctuation">(</span>$<span class="token string">&#34;调用接口&#xff1a;{url}报错&#xff0c;StatusCode:{result.StatusCode},Msg:{response}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">//将返回结果反序列化为指定Model</span>
+                <span class="token keyword">return</span> JsonConvert<span class="token punctuation">.</span>DeserializeObject<span class="token operator">&lt;</span>ApiResult<span class="token operator">&lt;</span>T<span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token preprocessor property">#<span class="token directive keyword">endregion</span> POST及GET请求方法</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/// &lt;summary&gt;</span>
+    <span class="token comment">/// 返回结果类</span>
+    <span class="token comment">/// &lt;/summary&gt;</span>
+    <span class="token comment">/// &lt;typeparam name&#61;&#34;T&#34;&gt;&lt;/typeparam&gt;</span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ApiResult</span><span class="token operator">&lt;</span>T<span class="token operator">&gt;</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">readonly</span> <span class="token keyword">string</span> SUCCESS <span class="token operator">&#61;</span> <span class="token string">&#34;200&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">readonly</span> <span class="token keyword">string</span> FAIL <span class="token operator">&#61;</span> <span class="token string">&#34;500&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Code <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Message <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token class-name">T</span> Data <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Total <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 访问成功</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;data&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> ApiResult<span class="token operator">&lt;</span>T<span class="token operator">&gt;</span> <span class="token function">Success</span><span class="token punctuation">(</span><span class="token class-name">T</span> data<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">ApiResult</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Data <span class="token operator">&#61;</span> data<span class="token punctuation">,</span>
+                Code <span class="token operator">&#61;</span> SUCCESS
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">/// &lt;summary&gt;</span>
+        <span class="token comment">/// 访问失败</span>
+        <span class="token comment">/// &lt;/summary&gt;</span>
+        <span class="token comment">/// &lt;param name&#61;&#34;message&#34;&gt;&lt;/param&gt;</span>
+        <span class="token comment">/// &lt;returns&gt;&lt;/returns&gt;</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> ApiResult<span class="token operator">&lt;</span>T<span class="token operator">&gt;</span> <span class="token function">Fail</span><span class="token punctuation">(</span><span class="token keyword">string</span> message<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token generic-method"><span class="token function">ApiResult</span><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Code <span class="token operator">&#61;</span> FAIL<span class="token punctuation">,</span>
+                Message <span class="token operator">&#61;</span> message
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_142"></a>接口调用</h4>
+<p>在定义好了HttpClient之后&#xff0c;我们就可以通过接口调用的方式来启动对站点的访问了&#xff0c;这部分因为我们的环境不同&#xff0c;所以域名需要不同&#xff0c;所以域名就需要通过配置来读取&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token comment">//封装url请求Model&#xff0c;用于填充到POST请求的body里</span>
+<span class="token keyword">var</span> urlModel <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">UrlModel</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+ <span class="token punctuation">{<!-- --></span>
+    tenantId <span class="token operator">&#61;</span> tenantId<span class="token punctuation">,</span>
+    appName <span class="token operator">&#61;</span> appName<span class="token punctuation">,</span>
+    api_key <span class="token operator">&#61;</span> ApiKey
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> url <span class="token operator">&#61;</span> $<span class="token string">&#34;{HOST}/tmlapi/tmlRequest?&amp;tenantId&#61;{tenantId}&amp;appName&#61;{appName}&amp;api_key&#61;{ApiKey}&#34;</span><span class="token punctuation">;</span>
+<span class="token comment">//开启http客户端发送Post请求</span>
+<span class="token keyword">var</span> result <span class="token operator">&#61;</span> HttpClientHelper<span class="token punctuation">.</span>ExecuteFunc<span class="token operator">&lt;</span>ApiResult<span class="token operator">&lt;</span><span class="token keyword">string</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> HttpClientHelper<span class="token punctuation">.</span><span class="token generic-method"><span class="token function">Post</span><span class="token punctuation">&lt;</span><span class="token keyword">string</span><span class="token punctuation">,</span> <span class="token class-name">UrlModel</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> urlModel<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>在这个过程中我们<strong>设计好body里要放置的POST请求所需参数并将其放置到一个model里</strong>&#xff0c;然后<strong>依据配置读取域名并拼接好url&#xff0c;把应该放置到query里的参数拼接到url上</strong>&#xff0c;连同model一起传入HttpClient方法中。需要特别注意的是<font color="red"><strong>如果是POST请求&#xff0c;那么定义在body里的请求参数要放到一个model里传进去&#xff0c;而定义为query的请求参数必须拼接到url上传入</strong></font>&#xff0c;如果定义为query&#xff0c;再放到body里来是会导致缺少参数请求不通的。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103304323-01-819593fcc2.png" loading="lazy"><br />
+总而言之&#xff0c;需要调用HttpClient的时候&#xff0c;一定要封装一层方法&#xff0c;然后做重试机制的处理&#xff0c;毕竟是访问站点。还要注意参数的传递形式&#xff01;</p>

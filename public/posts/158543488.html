@@ -1,0 +1,42 @@
+<p>在分布式系统设计中，<strong>数据访问模式</strong>是决定集群架构的根本因素。不同的业务场景催生了不同的数据模型和操作特征，进而塑造了各个中间件独特的集群设计。MySQL、Elasticsearch（ES）、Kafka、Redis 作为四类经典系统，分别代表了关系型事务、全文搜索、消息管道和内存缓存。它们的集群架构差异巨大，但都完美适配了各自的核心操作。本文将深入剖析这四大系统的设计哲学，揭示背后的权衡逻辑，并基于 CAP 理论分析它们在分区下的行为。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="_4"></a>一、四大经典系统的设计哲学</h2>
+<h3><a rel="noopener noreferrer" id="1_MySQL_6"></a>1. MySQL：关系型数据库的事务优先</h3>
+<ul>
+ <li><strong>数据模型</strong>：关系表 + 索引（B+树），支持 ACID 事务。</li>
+ <li><strong>复制模式</strong>：一主多从，主库写，从库读。复制可以是异步、半同步或同步。</li>
+ <li><strong>为什么从库可读？</strong> 业务多为读多写少，从库分担读压力可提升整体吞吐，但主从延迟可能导致读到旧数据（最终一致性）。业务可根据重要性选择读主库或从库。</li>
+ <li><strong>为什么主库写是瓶颈？</strong> 事务 ACID 要求带来锁、日志等开销，且所有写集中在一台主库。写能力无法水平扩展，需分库分表解决。</li>
+ <li><strong>分库分表</strong>：当单机写能力不足时，可通过分库分表（如 MyCAT、ShardingSphere）将数据水平拆分到多个主库，每个主库仍是一主多从架构。此时写能力可扩展，但跨库事务需分布式事务支持（通常避免）。</li>
+ <li><strong>设计权衡</strong>：
+  <ul>
+   <li><strong>事务支持</strong>：要求写集中（考虑到事务），无法自然分片扩展写。否则就需要处理分布式事务了</li>
+   <li><strong>读写比例</strong>：读多写少，通过从库扩展读，接受最终一致性。</li>
+   <li><strong>一致性容忍度</strong>：核心业务读主库，非核心读从库，差异化容忍。</li>
+  </ul> </li>
+ <li><strong>故障转移</strong>：依赖第三方工具（MHA、Orchestrator）或组复制（Group Replication）自动提升从库为主库，异步复制可能丢数据，半同步可减少丢失。</li>
+ <li><strong>CAP 分类</strong>：<strong>AP</strong>。主从异步复制，分区时主库继续写，从库可能落后，优先保证可用性。</li>
+</ul>
+<h3><a rel="noopener noreferrer" id="2_Elasticsearch_20"></a>2. Elasticsearch：搜索场景的读写均衡</h3>
+<ul>
+ <li><strong>数据模型</strong>：倒排索引 + 文档（JSON），支持全文搜索和聚合分析。</li>
+ <li><strong>分片与副本</strong>：索引分成多个主分片，每个主分片有多个副本分片。主分片负责写，副本分片负责读（轮询负载均衡）。</li>
+ <li><strong>为什么副本可读？</strong> 搜索场景读操作是核心，让副本分担读请求可线性提升查询吞吐量。轻微的不一致（如读未提交）对用户体验影响较小。</li>
+ <li><strong>写模型</strong>：主分片写，并行同步给所有同步副本，等待所有副本成功才返回，保证写后所有存活副本数据一致。</li>
+ <li><strong>为什么主分片写必须同步所有副本？</strong> 为保证搜索结果的时效性和一致性，写入成功即代表数据在所有活跃副本上都已存在，避免读请求分发到不同副本时读到不一致版本。这牺牲了部分写入性能（同步等待），但换取了读取时的强一致性视图。</li>
+ <li><strong>设计权衡</strong>：
+  <ul>
+   <li><strong>事务支持</strong>：无事务，写操作简单（单个文档更新实为删除+新建），可通过分片扩展写能力。</li>
+   <li><strong>顺序追求</strong>：不追求全局顺序，接受读的轻微不一致（但写后所有副本一致，读负载均衡可能读到旧版本？实际上写后所有副本已同步，读任何副本都能读到最新，前提是副本已确认；但副本确认后可能还在内存中尚未落盘，但内存副本一致）。</li>
+   <li><strong>读写比例</strong>：读写均衡，通过分片扩展写，副本扩展读。</li>
+  </ul> </li>
+ <li><strong>故障转移</strong>：自动选举新主节点（Master）；主分片故障时，将副本分片提升为主分片，由 Master 协调，基于 Zen Discovery 或新的集群协调机制。</li>
+ <li><strong>CAP 分类</strong>：<strong>CP</strong>。写入需等待所有同步副本确认，分区时若副本不可用，写入失败，优先保证一致性。</li>
+</ul>
+<h3><a rel="noopener noreferrer" id="3_Kafka_34"></a>3. Kafka：消息管道的顺序与吞吐</h3>
+<ul>
+ <li><strong>数据模型</strong>：不可变的日志（Log），按 Partition 组织，每条消息追加到 Partition 末尾。</li>
+ <li><strong>分片与副本</strong>：一个 Topic 分成多个 Partition，每个 Partition 有多个副本，但只有一个 Leader 负责读写，Follower 仅做备份。</li>
+ <li><strong>为什么 Leader 只写？</strong> 为了保证 Partition 内消息顺序绝对一致，简化复制逻辑。如果允许多点写，需要复杂冲突解决，违背 Kafka“简单、高性能”的初衷。</li>
+ <li><strong>为什么 Follower 不读？</strong> 如果允许从 Follower 读，可能读到延迟数据，破坏消费者的一致性体验，且消费进度（offset）管理会变得复杂。通过增加 Parti</li>
+</ul>

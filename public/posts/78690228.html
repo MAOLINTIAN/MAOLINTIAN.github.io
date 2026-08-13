@@ -1,0 +1,44 @@
+<p>本篇用于总结工作中常用的git操作&#xff0c;持续更新</p>
+
+
+
+<h3 id="总结工作中常用的git操作">总结工作中常用的git操作</h3>
+
+
+
+<h4 id="分支合并">分支合并&#xff1a;</h4>
+
+<p>1&#xff0c;将自己的git add .到缓存&#xff0c;然后git commit -m “单元测试”  到本地仓库 <br />
+2&#xff0c;然后用自己的分支合并git merge dev_wuwei,然后再看一下 <br />
+3&#xff0c;解决冲突&#xff0c;vim或者notpad <br />
+4&#xff0c;再次git add .到缓存&#xff0c;然后git commit -m “合并冲突”  到本地仓库</p>
+
+
+
+<h4 id="撤销本地操作">撤销本地操作</h4>
+
+<p>git reset –hard head   撤销本地所有代码&#xff0c;然后git pull拉取新代码</p>
+
+
+
+<h3 id="分支创建及关联">分支创建及关联</h3>
+
+<h4 id="创建分支-1">创建分支</h4>
+
+
+
+<pre class="prettyprint"><code class=" hljs ruby"><span class="hljs-variable">$ </span>git checkout -b dev_maolin</code></pre>
+
+<p>从当前分支上操作就是获取当前分支代码。</p>
+
+<h4 id="创建远程分支">创建远程分支</h4>
+
+
+
+<pre class="prettyprint"><code class=" hljs ruby"><span class="hljs-variable">$ </span>git push origin dev_maolin</code></pre>
+
+<h4 id="关联本地分支和远程分支">关联本地分支和远程分支</h4>
+
+
+
+<pre class="prettyprint"><code class=" hljs avrasm">$ git <span class="hljs-keyword">push</span> --<span class="hljs-keyword">set</span>-upstream origin dev_maolin</code></pre>

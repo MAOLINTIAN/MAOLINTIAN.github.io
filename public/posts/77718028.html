@@ -1,0 +1,38 @@
+<p>昨天腾讯的模拟考编程题&#xff0c;当时一脸懵逼。。。。<br />
+##题目描述<br />
+对于一棵满二叉搜索树深度为K&#xff0c;节点数为2^k - 1&#xff0c;节点值为[1, 2^k - 1]。给出k和任意三个节点的值&#xff0c;输出包含该三个节点的最小子树的根节点值。</p>
+<p>输入&#xff1a; 4 10 15 13</p>
+<p>输出&#xff1a;12<br />
+##解题思路<br />
+依据二叉搜索树的特殊性质和满二叉树的特殊性质&#xff0c;可用二分查找的方式</p>
+<p><img alt="这里写图片描述" src="./posts/assets/77718028-ext-26edf27f9df6.png" loading="lazy"><br />
+##代码实现</p>
+<pre><code>package 腾讯;
+
+import java.util.Scanner;
+
+public class Main {
+
+	public static int binarySearch(int a, int b, int c, int left, int right) {
+		int m &#61; (left &#43; right) / 2;
+
+		if ((a - m) * (b - m) &lt;&#61; 0 || (a - m) * (c - m) &lt;&#61; 0 || (c - m) * (b - m) &lt;&#61; 0) {    //如果三个数不都在同一侧
+			return m;
+		} else if (a &gt; m) { //如果在同一侧且都在右侧
+			return binarySearch(a, b, c, m &#43; 1, right);
+		} else {  //如果在同一侧且都在左侧
+			return binarySearch(a, b, c, left, m - 1);
+		}
+	}
+
+	public static void main(String[] args) {
+		&#64;SuppressWarnings(&#34;resource&#34;)
+		Scanner sc &#61; new Scanner(System.in);
+		int k &#61; sc.nextInt();
+		int a &#61; sc.nextInt();
+		int b &#61; sc.nextInt();
+		int c &#61; sc.nextInt();
+		System.out.println(binarySearch(a, b, c, 1, (1 &lt;&lt; k) - 1));
+	}
+}
+</code></pre>

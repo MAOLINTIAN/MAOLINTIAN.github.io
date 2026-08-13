@@ -1,0 +1,105 @@
+<p>以下规范都是个人书写习惯&#xff0c;便于阅读总结的个人规范&#xff0c;对于每个人可以有自己的理解。<strong>终极目标就是消除警告呀哈哈。</strong></p>
+<h3 id="布局规范">布局规范</h3>
+<p>对于项目的总体规范&#xff0c;建议分为以下几部分&#xff1a;1&#xff0c;对外提供服务的文件。2&#xff0c;配置文件和配置文件解析类&#xff08;如果有&#xff09;。3&#xff0c;接口文件夹&#xff08;接口和实现类&#xff09;。4单元测试文件夹。5&#xff0c;实体类文件夹。</p>
+<h3 id="命名规范">命名规范</h3>
+<p>1&#xff0c;接口的命名&#xff1a;例如IConditionKeyBuilder&#xff0c;以I开头&#xff0c;<strong>方式&#43;名词</strong> <br /> 2&#xff0c;类的命名&#xff1a;驼峰命名法 <br /> 3&#xff0c;方法的命名&#xff1a;动词&#xff1a;GetConditionKey&#xff08;&#xff09; <br /> 4&#xff0c;字段的命名&#xff1a;_keyCondition <br /> 5&#xff0c;属性的命名&#xff1a;GetConditionKey&#xff08;在C#里能用属性不用字段&#xff0c;基本都用属性&#xff09;</p>
+<h3 id="注释规范">注释规范</h3>
+<h4 id="类的注释">类的注释</h4>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78815268-ext-e5918d4943ab.png" loading="lazy"></p>
+<p><strong>类&#43;属性&#xff08;服务提供类&#xff09;或来源&#xff08;某接口的实现类&#xff09;&#43;具体功能</strong></p>
+<h4 id="接口的注释">接口的注释</h4>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78815268-ext-81c4d1d9f5bc.png" loading="lazy"></p>
+<p><strong>接口&#43;属性&#xff08;字段比较规则接口&#xff09;或来源&#xff08;某接口的子接口&#xff09;&#43;具体功能</strong></p>
+<h4 id="方法的注释">方法的注释</h4>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78815268-ext-04763d7a23db.png" loading="lazy"></p>
+<p><strong>方法属性&#xff08;私有还是公有&#xff09;&#43;功能&#43;参数列表</strong></p>
+<h4 id="属性的注释">属性的注释</h4>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78815268-ext-52ec566b312c.png" loading="lazy"></p>
+<p><strong>属性要完成的功能</strong></p>
+<h4 id="流程注释">流程注释</h4>
+<p><img alt="这里写图片描述" title="" src="./posts/assets/78815268-ext-836e58412adb.png" loading="lazy"></p>
+<p>1&#xff0c;数据预处理注释&#xff1a;这一部分用来预处理想要处理的数据 <br /> 2&#xff0c;核心功能方法注释&#xff1a;核心功能为一个区域&#xff0c;用注释隔离开 <br /> 3&#xff0c;辅助方法注释&#xff1a;辅助需要的方法为一个区域&#xff0c;也用注释隔离</p>
+<p><strong>每一个功能的辅助方法集合都要用一个region来包含&#xff0c;核心方法也是&#xff0c;用region隔开</strong></p>
+<h3 id="常用规范">常用规范</h3>
+<blockquote>
+ <p>以下内容引自武哥&#xff0c;尊重知识产权<a href="https://www.evernote.com/shard/s69/sh/aabd8e65-b619-4a77-baf7-fde4886299b5/6ce578ef4547559d" target="_blank" rel="nofollow noopener noreferrer">https://www.evernote.com/shard/s69/sh/aabd8e65-b619-4a77-baf7-fde4886299b5/6ce578ef4547559d</a></p>
+</blockquote>
+<h4 id="1能使用foreach-不使用-for">1.能使用foreach 不使用 for</h4>
+<pre class="prettyprint"><code class=" hljs cs">原因&#xff1a;
+<span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> i <span class="hljs-keyword">in</span> getlist() )            <span class="hljs-comment">//getlist() 只会执行一次</span>
+<span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i&#61;<span class="hljs-number">0</span>;i&lt; getlist().count ;i&#43;&#43;)     <span class="hljs-comment">//getlist() 会执行多次</span></code></pre>
+<h4 id="2如果throw-的异常是一种己知的异常应该自定义一个异常类">2.如果throw 的异常是一种己知的异常&#xff0c;应该自定义一个异常类</h4>
+<pre class="prettyprint"><code class=" hljs php"><span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-keyword">Exception</span>(“数据己存在”)
+<span class="hljs-comment">//改成  throw new DataExistedException()</span></code></pre>
+<h4 id="3有效复用">3.有效复用</h4>
+<p>大代码中出现大量常见重复的判断值有效性或提取对象里的信息的场景&#xff0c;应该封装成一个函数方便复用。 <br /> 示例&#xff1a;</p>
+<pre class="prettyprint"><code class=" hljs php"><span class="hljs-keyword">if</span>(obj.name&#61;&#61;<span class="hljs-keyword">null</span> || obj.<span class="hljs-keyword">list</span>&#61;&#61;<span class="hljs-keyword">null</span> || obj.<span class="hljs-keyword">list</span>.count&#61;&#61;<span class="hljs-number">0</span>)
+<span class="hljs-comment">//添加函数 isValidValue(obj)</span>
+<span class="hljs-keyword">return</span> $(<span class="hljs-string">&#34;{obj.app}.{obj.metaobject}.{obj.feildname}”)
+//添加函数 obj.GetXX()   或  GetXX(obj)
+return result&#61;resultData.Count &gt; 0 :true?false ;
+//改成   isSuccess(resultData)</span></code></pre>
+<h4 id="4代码中常用或多个地方会使用到的字符串不能使用明文-应该用常量">4.代码中常用或多个地方会使用到的字符串不能使用明文&#xff0c; 应该用常量。</h4>
+<pre class="prettyprint"><code class=" hljs cs">示例
+sortFields.Add(<span class="hljs-string">&#34;_uid&#34;</span>, SortDirection.Asc);
+<span class="hljs-comment">//改成</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> UID_Field &#61; “_uid”
+sortFields.Add(UID_Field, SortDirection.Asc);</code></pre>
+<h4 id="5参数有效性验证">5.参数有效性验证</h4>
+<p>代码给外层提供服务的接口&#xff0c;函数第一行&#xff0c; 就应该要给传入的参数进行有效性验证 (如&#xff1a;Provider中的public函数&#xff09;</p>
+<pre class="prettyprint"><code class=" hljs cs"><span class="hljs-keyword">public</span> DataResult&lt;<span class="hljs-keyword">bool</span>&gt; <span class="hljs-title">ImportObjectData</span>(<span class="hljs-keyword">string</span> ids, <span class="hljs-keyword">bool</span> isTransferAll &#61; <span class="hljs-keyword">false</span>)
+{
+   <span class="hljs-keyword">string</span>[] idArray &#61; ids.Split(<span class="hljs-string">&#39;,&#39;</span>);
+   <span class="hljs-keyword">if</span> (ids.Count() &gt; <span class="hljs-number">0</span>)
+   {
+       <span class="hljs-comment">//run ….</span>
+   }
+}
+
+改成
+<span class="hljs-keyword">public</span> DataResult&lt;<span class="hljs-keyword">bool</span>&gt; <span class="hljs-title">ImportObjectData</span>(<span class="hljs-keyword">string</span> ids, <span class="hljs-keyword">bool</span> isTransferAll &#61; <span class="hljs-keyword">false</span>)
+{
+   ArgumentHelper.AssertPositive(ids, <span class="hljs-string">&#34;ids&#34;</span>);
+   <span class="hljs-keyword">string</span>[] idArray &#61; ids.Split(<span class="hljs-string">&#39;,&#39;</span>);
+   <span class="hljs-keyword">if</span> (ids.Count() &gt; <span class="hljs-number">0</span>)
+   {
+       <span class="hljs-comment">//run ….</span>
+   }
+}</code></pre>
+<h4 id="6关于注释">6.关于注释</h4>
+<ul><li><p>1.Model里的属性一定要有注释&#xff0c;同时要确保注释是正确的。</p></li><li><p>2.Class一定要有描述是干什么事情的</p></li><li><p>3.核心代码&#xff0c;关键算法一定要注释清楚为什么是这样做的&#xff0c;场景是什么&#xff1f;而不是只注释函数在干什么&#xff1f;</p></li><li><p>4.函数的参数注释要与代码匹配</p></li></ul>
+<h4 id="7关于代码的可读性">7.关于代码的可读性</h4>
+<p>1.每个函数一般要求“圈复杂度”不超过5</p>
+<h4 id="8关于函数命名">8.关于函数命名</h4>
+<p>1.函数命名要统一规范&#xff0c; 如&#xff1a; getXXX() getXXXs() isXXX() hasXXX() <br /> 2.函数命名要能表达函数的操作行为&#xff0c;命名应该是动词。 如&#xff1a; run() getXXX() </p>
+<h4 id="9关于变量的使用">9.关于变量的使用</h4>
+<p>1.当变量只有一个地方使用时&#xff0c;就不使用变量。</p>
+<pre class="prettyprint"><code class=" hljs avrasm">示例&#xff1a;
+Exception ex &#61; new Exception(<span class="hljs-string">&#34;RelationFilter Range条件配置错误&#xff1a;&#34;</span> &#43; User<span class="hljs-preprocessor">.Common</span><span class="hljs-preprocessor">.Serialize</span><span class="hljs-preprocessor">.SerializeHelper</span><span class="hljs-preprocessor">.Serialize</span>(relationFilter))<span class="hljs-comment">;</span>
+throw ex<span class="hljs-comment">;</span>
+改成
+throw new Exception(<span class="hljs-string">&#34;RelationFilter Range条件配置错误&#xff1a;&#34;</span> &#43; User<span class="hljs-preprocessor">.Common</span><span class="hljs-preprocessor">.Serialize</span><span class="hljs-preprocessor">.SerializeHelper</span><span class="hljs-preprocessor">.Serialize</span>(relationFilter))<span class="hljs-comment">;</span></code></pre>
+<p>2.进行大量反复修改变量值时&#xff08;如 i&#43;&#43; )&#xff0c;应该使用局部变量&#xff0c;不要直接使用全局变量进行i&#43;&#43;操作. 这样性能更高。</p>
+<pre class="prettyprint"><code class=" hljs cs">示例
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> i &#61;<span class="hljs-number">0</span>;
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">fun</span>(){
+    <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> n&#61;<span class="hljs-number">0</span>;n&lt;<span class="hljs-number">1000</span>;n&#43;&#43;)
+   {
+        i&#43;&#43;;
+   }
+}
+改成
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">fun</span>(){
+   <span class="hljs-keyword">int</span> i&#61;<span class="hljs-number">0</span>;
+   <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> n&#61;<span class="hljs-number">0</span>;n&lt;<span class="hljs-number">1000</span>;n&#43;&#43;)
+   {
+        i&#43;&#43;;
+   }
+}</code></pre>
+<h4 id="10关判断参数是否为空">10.关判断参数是否为空</h4>
+<p>ArgumentHelper.AssertNotEmpty(name,”name”) <br /> 判断值是否大于0 <br /> ArgumentHelper.AssertPositive(userId,”userId”) <br /> 判断是否为null <br /> ArgumentHelper.AssertNotNull(objectData,”objectData”)11.关于性能</p>
+<pre class="prettyprint"><code class=" hljs handlebars"><span class="xml"><span class="hljs-tag"><span class="hljs-attribute">1.</span>使用<span class="hljs-attribute">String.Empty</span> 代替 “&#34;
+
+<span class="hljs-attribute">string</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">&#34;&#34;</span><span class="hljs-value">;</span>
+改成
+<span class="hljs-attribute">string</span> <span class="hljs-attribute">name</span>&#61;<span class="hljs-value">String.Empty;</span></span></span></code></pre>

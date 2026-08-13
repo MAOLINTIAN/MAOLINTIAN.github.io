@@ -1,0 +1,273 @@
+<p>前面四篇博客主要介绍了一些基本的操作内容&#xff0c;包含之前不了解的冷知识&#xff0c;以及一些新学到的C#较新版本的新知识&#xff0c;做个简单的小结&#xff1a;</p>
+<ul><li><strong>新知识</strong>&#xff1a;元组、tryParse(out可内联)、字符串插值、空合并操作符、空条件操作符、可空修饰符、switch的模式匹配</li><li><strong>冷知识</strong>&#xff1a;同类型单行声明赋值、字符串的不可变、字符串驻留技术、运算符优先级、预编译指令</li></ul>
+<p>对于个人来说还是小有帮助的&#xff0c;至少再看到一些奇怪的类似??的符号不会说不认识了。从本篇博客开始&#xff0c;了解下方法的调用和参数&#xff0c;依旧惯例&#xff0c;因为知道方法怎么调&#xff0c;所以还是使用新、老知识的方式。</p>
+<h3><a rel="noopener noreferrer" id="_7"></a>新学概念</h3>
+<p>包括一些方法的多种参数形式&#xff0c;传递形式。</p>
+<h4><a rel="noopener noreferrer" id="_9"></a>引用的方式传递值类型</h4>
+<p>三大引用类别的参数及返回引用&#xff1a;ref&#xff0c;out&#xff0c;in&#xff0c;返回引用&#xff1a;</p>
+<p>1 &#xff0c;<strong>使用ref方式</strong>&#xff0c;可以将一个值类型以传引用的方式传递&#xff0c;在IL代码里可以看到&#xff0c;传递的是一个地址&#xff08;指向值&#xff09;而非值的拷贝&#xff0c;所以通过这种方式可以改变值&#xff0c;<font color="red"><strong>使值类型可以像引用类型一样使用&#xff0c;需要注意的是引用类型传值之前必须赋值&#xff01;</strong></font>&#xff0c;ref只是为现有变量分配别名&#xff0c;而非创建新变量并将实参的值拷贝给它。</p>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token comment">// ...</span>
+          <span class="token keyword">int</span> first <span class="token operator">&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span>
+          <span class="token keyword">int</span> second <span class="token operator">&#61;</span> <span class="token number">6</span><span class="token punctuation">;</span>
+          <span class="token function">Swap</span><span class="token punctuation">(</span><span class="token keyword">ref</span> first<span class="token punctuation">,</span> <span class="token keyword">ref</span> second<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+          System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+              $<span class="token string">&#64;&#34;first &#61; &#34;&#34;{ first }&#34;&#34;, second &#61; &#34;&#34;{ second }&#34;&#34;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token comment">// ...</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Swap</span><span class="token punctuation">(</span><span class="token keyword">ref</span> <span class="token keyword">int</span> x<span class="token punctuation">,</span> <span class="token keyword">ref</span> <span class="token keyword">int</span> y<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          <span class="token keyword">int</span> temp <span class="token operator">&#61;</span> x<span class="token punctuation">;</span>
+          x <span class="token operator">&#61;</span> y<span class="token punctuation">;</span>
+          y <span class="token operator">&#61;</span> temp<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>  <span class="token comment">//交换first和second的值:first为6&#xff0c;second为5, 如果是值类型&#xff0c;其不会变</span>
+</code></pre>
+<p>2&#xff0c; <strong>使用out方式</strong>&#xff0c;C#7.0开始out类型不用事先声明&#xff0c;用法和ref类似&#xff0c;需要注意的是&#xff0c;<strong>out参数在方法里必须被赋值</strong></p>
+<pre><code class="prism language-csharp">  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>args<span class="token punctuation">.</span>Length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;ConvertToPhoneNumber.exe &lt;phrase&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;&#39;_&#39; indicates no standard phone button&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">foreach</span><span class="token punctuation">(</span><span class="token keyword">string</span> word <span class="token keyword">in</span> args<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">foreach</span><span class="token punctuation">(</span><span class="token keyword">char</span> character <span class="token keyword">in</span> word<span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+<span class="token preprocessor property">#<span class="token directive keyword">if</span> !PRECSHARP7   </span><span class="token comment">//预编译指令&#xff0c;用来区分环境&#xff0c;只有7.0以上版本才允许使用内联而不用提前声明</span>
+                    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">TryGetPhoneButton</span><span class="token punctuation">(</span>character<span class="token punctuation">,</span> <span class="token keyword">out</span> <span class="token keyword">char</span> button<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token preprocessor property">#<span class="token directive keyword">else</span></span>
+                    <span class="token keyword">char</span> button<span class="token punctuation">;</span>
+                    <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token function">TryGetPhoneButton</span><span class="token punctuation">(</span>character<span class="token punctuation">,</span> <span class="token keyword">out</span> button<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token preprocessor property">#<span class="token directive keyword">endif</span> </span><span class="token comment">// PRECSHARP7</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span>button<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    <span class="token keyword">else</span>
+                    <span class="token punctuation">{<!-- --></span>
+                        Console<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span><span class="token string">&#39;_&#39;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>3&#xff0c; <strong>使用in方式</strong>&#xff0c;<font color="red"><strong>不仅可以让值类型以引用的方式传递&#xff0c;而且被调用的方法不能修改值类型</strong></font>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">Method</span><span class="token punctuation">(</span><span class="token keyword">in</span> <span class="token keyword">int</span> number<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">}</span>
+</code></pre>
+<p>4&#xff0c;<strong>返回引用&#xff1a;7.0版本新增</strong>&#xff0c;可以返回对变量的引用&#xff0c;照常理说数组被方法改变后&#xff0c;里面的值就不会变化了&#xff0c;但是<font color="red"><strong>返回引用可以运行变量在没有接触到数组的前提下&#xff0c;直接修改数组里的元素&#xff0c;因为它持有这个元素的引用啊</strong></font></p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// Returning a reference</span>
+        <span class="token keyword">static</span> <span class="token keyword">public</span> <span class="token keyword">ref</span> <span class="token keyword">byte</span> <span class="token function">FindFirstRedEyePixel</span><span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> image<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// Do fancy image detection perhaps with machine learning</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> counter <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> counter <span class="token operator">&lt;</span> image<span class="token punctuation">.</span>Length<span class="token punctuation">;</span> counter<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>image<span class="token punctuation">[</span>counter<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">)</span>ConsoleColor<span class="token punctuation">.</span>Red<span class="token punctuation">)</span>
+                <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">return</span> <span class="token keyword">ref</span> image<span class="token punctuation">[</span>counter<span class="token punctuation">]</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">InvalidOperationException</span><span class="token punctuation">(</span><span class="token string">&#34;No pixels are red.&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> image <span class="token operator">&#61;</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+            <span class="token comment">// Load image</span>
+            image <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token number">42</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> image<span class="token punctuation">.</span>Length<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                image<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">)</span>ConsoleColor<span class="token punctuation">.</span>Black<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            image<span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Next</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> image<span class="token punctuation">.</span>Length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">)</span>ConsoleColor<span class="token punctuation">.</span>Red<span class="token punctuation">;</span>
+
+            <span class="token comment">// Obtain a reference to the first red pixel</span>
+            <span class="token keyword">ref</span> <span class="token keyword">byte</span> redPixel <span class="token operator">&#61;</span> <span class="token keyword">ref</span> <span class="token function">FindFirstRedEyePixel</span><span class="token punctuation">(</span>image<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// Update it to be Black</span>
+            redPixel <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">byte</span><span class="token punctuation">)</span>ConsoleColor<span class="token punctuation">.</span>Black<span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token punctuation">(</span>ConsoleColor<span class="token punctuation">)</span>image<span class="token punctuation">[</span>redPixel<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//byte数组里第一个元素颜色被更新为黑色</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>使用禁忌&#xff1a;只能返回对字段或数组元素的引用、其它返回引用的属性或方法、作为参数传递给返回引用的方法的引用&#xff08;<strong>image</strong>&#xff09;.</p>
+<h4><a rel="noopener noreferrer" id="_117"></a>参数数组、可空参数及具名参数</h4>
+<p>三种动态使用方法参数的方式&#xff1a;参数数组、可选参数及具名参数。</p>
+<p>1&#xff0c;参数数组支持将数组作为参数传递&#xff0c;有个好处就是&#xff0c;可以充分使用这些参数&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span> fullName<span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+
+            <span class="token comment">// Call Combine() with four parameters</span>
+            fullName <span class="token operator">&#61;</span> <span class="token function">Combine</span><span class="token punctuation">(</span>
+                Directory<span class="token punctuation">.</span><span class="token function">GetCurrentDirectory</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token string">&#34;bin&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;config&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;index.html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>fullName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+
+            <span class="token comment">// Call Combine() with only three parameters</span>
+            fullName <span class="token operator">&#61;</span> <span class="token function">Combine</span><span class="token punctuation">(</span>
+                Directory<span class="token punctuation">.</span><span class="token function">GetParent</span><span class="token punctuation">(</span>Directory<span class="token punctuation">.</span><span class="token function">GetCurrentDirectory</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>FullName<span class="token punctuation">,</span>
+                <span class="token string">&#34;Temp&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;index.html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>fullName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+
+            <span class="token comment">// Call Combine() with an array</span>
+            fullName <span class="token operator">&#61;</span> <span class="token function">Combine</span><span class="token punctuation">(</span>
+                <span class="token keyword">new</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{<!-- --></span>
+                    $<span class="token string">&#34;C:{Path.DirectorySeparatorChar}&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Data&#34;</span><span class="token punctuation">,</span>
+                    <span class="token string">&#34;HomeDir&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;index.html&#34;</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>fullName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">static</span> <span class="token keyword">string</span> <span class="token function">Combine</span><span class="token punctuation">(</span><span class="token keyword">params</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> paths<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span> result <span class="token operator">&#61;</span> <span class="token keyword">string</span><span class="token punctuation">.</span>Empty<span class="token punctuation">;</span>
+            <span class="token keyword">foreach</span><span class="token punctuation">(</span><span class="token keyword">string</span> path <span class="token keyword">in</span> paths<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                result <span class="token operator">&#61;</span> System<span class="token punctuation">.</span>IO<span class="token punctuation">.</span>Path<span class="token punctuation">.</span><span class="token function">Combine</span><span class="token punctuation">(</span>result<span class="token punctuation">,</span> path<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//将一系列参数拼接为一个完整路径</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>我感觉比较适合将某一类参数作为数组&#xff0c;聚类效应吧。<font color="red"><strong>注意&#xff0c;如果要使用参数数组&#xff0c;要放到参数列表最后一个</strong></font>。</p>
+<p>2&#xff0c;可选参数&#xff0c;通常用法是给参数赋默认值&#xff0c;使用可选参数的时候如果不传值就用默认值。<font color="red"><strong>注意&#xff0c;如果要使用可空参数&#xff0c;要放到参数列表最后一个&#xff0c;默认值必须是常量或者能在编译时确定的值</strong></font>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">DirectoryCountLines</span><span class="token punctuation">(</span>
+            <span class="token keyword">string</span> directory<span class="token punctuation">,</span> <span class="token keyword">string</span> extension <span class="token operator">&#61;</span> <span class="token string">&#34;*.cs&#34;</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> lineCount <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+            <span class="token keyword">foreach</span><span class="token punctuation">(</span><span class="token keyword">string</span> file <span class="token keyword">in</span>
+                Directory<span class="token punctuation">.</span><span class="token function">GetFiles</span><span class="token punctuation">(</span>directory<span class="token punctuation">,</span> extension<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                lineCount <span class="token operator">&#43;</span><span class="token operator">&#61;</span> <span class="token function">CountLines</span><span class="token punctuation">(</span>file<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">foreach</span><span class="token punctuation">(</span><span class="token keyword">string</span> subdirectory <span class="token keyword">in</span>
+                Directory<span class="token punctuation">.</span><span class="token function">GetDirectories</span><span class="token punctuation">(</span>directory<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                lineCount <span class="token operator">&#43;</span><span class="token operator">&#61;</span> <span class="token function">DirectoryCountLines</span><span class="token punctuation">(</span>subdirectory<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> lineCount<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+</code></pre>
+<p>3&#xff0c;具名参数&#xff0c;<strong>调用者可利用具名参数显示指定值</strong>&#xff0c;但是有限制&#xff0c;如果参数名改变了&#xff0c;代码会报错</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token function">DisplayGreeting</span><span class="token punctuation">(</span>
+                firstName<span class="token punctuation">:</span> <span class="token string">&#34;Inigo&#34;</span><span class="token punctuation">,</span> lastName<span class="token punctuation">:</span> <span class="token string">&#34;Montoya&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">DisplayGreeting</span><span class="token punctuation">(</span>
+            <span class="token keyword">string</span> firstName<span class="token punctuation">,</span>
+            <span class="token keyword">string</span> middleName <span class="token operator">&#61;</span> <span class="token keyword">default</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            <span class="token keyword">string</span> lastName <span class="token operator">&#61;</span> <span class="token keyword">default</span><span class="token punctuation">(</span><span class="token keyword">string</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>值得注意的是&#xff0c;可选参数、具名参数、方法重载这些方式可能会导致方法之间无法区分&#xff0c;这时候会优先选择最具体的方法&#xff0c;有个先后顺序&#xff1a;例如对于方法重载&#xff0c;<strong>int比long具体&#xff0c;long比double具体等等</strong>。还有就是如果两个方法都有相同参数&#xff0c;但一个使用可选参数&#xff0c;则优先使用另一个&#xff0c;<strong>因为编译器只使用调用者显式标识的参数。</strong></p>
+<h3><a rel="noopener noreferrer" id="C_216"></a>C#冷知识</h3>
+<p>1&#xff0c;虽然完全限定的方法名称包括&#xff1a;<strong>命名空间.类型名称.方法名称</strong>&#xff0c;但是假定<strong>要调用的方法与发出调用的方法在同一个命名空间&#xff0c;就没必要指定命名空间</strong>&#xff0c;同理要调用的方法与发出调用的方法在同一个类型里 &#xff0c;<strong>不仅没必要指定命名空间&#xff0c;而且没必要指定类型名称</strong>。</p>
+<p>2&#xff0c;<strong>不能在方法中声明与参数同名的局部变量</strong>。</p>
+<p>3&#xff0c;<font color="red"><strong>嵌套命名空间必须显示导入&#xff01;</strong></font>&#xff0c;例如想使用StringBuilder&#xff0c;虽然添加了using System&#xff0c;但是还是需要有using System.Text&#xff0c;这解释了之前的疑惑。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">using</span> System<span class="token punctuation">;</span>   <span class="token comment">//不必须</span>
+<span class="token keyword">using</span> System<span class="token punctuation">.</span>Text<span class="token punctuation">;</span>
+
+<span class="token keyword">namespace</span> ClassLibrary1
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Class1</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">private</span> <span class="token class-name">StringBuilder</span> stringBuilder <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>4&#xff0c;using指令允许省略命名空间&#xff0c;<strong>而using static 允许省略命名空间和类型名称&#xff0c;只需写静态成员名称</strong>。可以理解&#xff0c;因为静态方法不允许重复。</p>
+<p>5&#xff0c;<strong>利用using指令为命名空间或类取一个别名</strong>&#xff0c;可以避免冲突(System.Timers和System.Threading下均有Timer类)&#xff0c;例如这里的Timer类型就用CountDownTimerd代替。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter05<span class="token punctuation">.</span>Listing05_10
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">using</span> System<span class="token punctuation">;</span>
+    <span class="token keyword">using</span> System<span class="token punctuation">.</span>Threading<span class="token punctuation">;</span>  <span class="token comment">//该命名空间下也包含Timer类</span>
+    <span class="token keyword">using</span> CountDownTimer <span class="token operator">&#61;</span> System<span class="token punctuation">.</span>Timers<span class="token punctuation">.</span>Timer<span class="token punctuation">;</span>  <span class="token comment">//别名</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloWorld</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">CountDownTimer</span> timer<span class="token punctuation">;</span>
+
+            <span class="token comment">// ...</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>6&#xff0c;虽然C#允许提前返回&#xff0c;但为了增强代码可读性&#xff0c;应尽量确定单一的退出位置&#xff0c;而不是在方法的各个路径上散布return。</p>
+<p>7&#xff0c;<strong>方法唯一性取决于方法名、参数类型和参数数量差异</strong>。</p>
+<p>8&#xff0c;异常的捕获顺序应该由具体到不具体&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">try</span>
+      <span class="token punctuation">{<!-- --></span>
+          Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;Begin executing&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;Throw exception&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">&#34;Arbitrary exception&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;End executing&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">FormatException</span> exception<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+              <span class="token string">&#34;A FormatException was thrown&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">Exception</span> exception<span class="token punctuation">)</span>
+      <span class="token punctuation">{<!-- --></span>
+          Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+              $<span class="token string">&#34;Unexpected error: { exception.Message }&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">throw</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">catch</span>
+      <span class="token punctuation">{<!-- --></span>
+          Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;Unexpected error!&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+          <span class="token string">&#34;Shutting down...&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+</code></pre>
+<p>需要注意的是&#xff0c;<strong>C#程序集中无论从System.Exception派生的类型都会表现的和从从System.Exception派生一样</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/103411872-01-2797946c71.png" loading="lazy"></p>
+<p>9&#xff0c;<strong>要在捕获并重新抛出异常时使用空的throw语句&#xff0c;以便保留调用栈信息。</strong></p>
+<h3><a rel="noopener noreferrer" id="C_302"></a>C#新知识</h3>
+<p>1&#xff0c;虽然方法只能有一个返回值&#xff0c;但是可以利用元组&#xff0c;返回多个&#xff1a;</p>
+<pre><code class="prism language-csharp">     <span class="token keyword">static</span> <span class="token punctuation">(</span><span class="token keyword">string</span> First<span class="token punctuation">,</span> <span class="token keyword">string</span> Last<span class="token punctuation">)</span> <span class="token function">GetName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span> firstName<span class="token punctuation">,</span> lastName<span class="token punctuation">;</span>
+            firstName <span class="token operator">&#61;</span> <span class="token function">GetUserInput</span><span class="token punctuation">(</span><span class="token string">&#34;Enter your first name: &#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            lastName <span class="token operator">&#61;</span> <span class="token function">GetUserInput</span><span class="token punctuation">(</span><span class="token string">&#34;Enter your last name: &#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span>firstName<span class="token punctuation">,</span> lastName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>2&#xff0c;表达式主题方法&#xff0c;如果方法只是返回简单语句这种方式&#xff0c;可以使用该方法&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">string</span> <span class="token function">GetFullName</span><span class="token punctuation">(</span><span class="token keyword">string</span> firstName<span class="token punctuation">,</span> <span class="token keyword">string</span> lastName<span class="token punctuation">)</span> <span class="token operator">&#61;</span><span class="token operator">&gt;</span> $<span class="token string">&#34;{firstName}{lastName}&#34;</span><span class="token punctuation">;</span>
+</code></pre>
+<p>3&#xff0c;<strong>最好将核心功能放到单一方法中供其他重载方法调用</strong>。</p>

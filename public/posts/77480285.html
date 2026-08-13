@@ -1,0 +1,79 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>输入一个链表&#xff0c;输出该链表中倒数第k个结点。</p>
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;硬解&#xff0c;先求出链表总长度&#xff0c;然后倒数第k个就是正数第count-k&#43;1个 <br />
+2&#xff0c;软解&#xff0c;双指针&#xff0c;两个同时开始走&#xff0c;p指针先跑&#xff0c;并且记录节点数&#xff0c;当p指针跑了k-1个节点后&#xff0c;pre指针开始跑&#xff0c; 当p指针跑到最后时&#xff0c;pre所指指针就是倒数第k个节点&#xff0c;也就是说两个指针之间相差k-1&#xff0c;一个到最后&#xff0c;另一个刚好到k</p>
+
+<h3 id="代码实现">代码实现</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> 链表;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:FindKthToTail
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月22日 下午2:32:24
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FindKthToTail</span> {<!-- --></span>
+    <span class="hljs-keyword">public</span> ListNode <span class="hljs-title">NodeFindKthToTail</span>(ListNode head, <span class="hljs-keyword">int</span> k) {
+        <span class="hljs-keyword">if</span> (head &#61;&#61; <span class="hljs-keyword">null</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+        }
+        <span class="hljs-keyword">int</span> count &#61; <span class="hljs-number">1</span>;
+        ListNode p &#61; head;
+        <span class="hljs-keyword">while</span> (p.next !&#61; <span class="hljs-keyword">null</span>) {
+            p &#61; p.next;
+            count&#43;&#43;;
+        }
+        <span class="hljs-keyword">if</span> (k &gt; count || k &lt; <span class="hljs-number">1</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+        }
+        p&#61;head;
+        <span class="hljs-keyword">int</span> curcount &#61;<span class="hljs-number">1</span>;
+        <span class="hljs-keyword">while</span>(curcount&lt;count-k&#43;<span class="hljs-number">1</span>&amp;&amp;p.next!&#61;<span class="hljs-keyword">null</span>){
+            p&#61;p.next;
+            curcount&#43;&#43;;
+        }
+        <span class="hljs-keyword">return</span> p;
+
+    }
+    <span class="hljs-comment">//&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;优化</span>
+    <span class="hljs-keyword">public</span> ListNode <span class="hljs-title">NodeFindKthToTailSuper</span>(ListNode head, <span class="hljs-keyword">int</span> k) {
+        <span class="hljs-keyword">if</span> (head &#61;&#61; <span class="hljs-keyword">null</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+        }
+        <span class="hljs-keyword">if</span> ( k &lt; <span class="hljs-number">1</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+        }
+        ListNode p &#61; head;
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i &#61; <span class="hljs-number">1</span>; i &lt; k; i&#43;&#43;) {
+            <span class="hljs-keyword">if</span>(p.next!&#61;<span class="hljs-keyword">null</span>)
+               p &#61; p.next;
+            <span class="hljs-keyword">else</span>
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;   <span class="hljs-comment">//用来控制k的长度&#xff0c;防止k的长度超过了总长</span>
+        }         <span class="hljs-comment">//p到达了指定位置</span>
+        ListNode pre &#61; head;
+        <span class="hljs-keyword">while</span>(p.next!&#61;<span class="hljs-keyword">null</span>){
+            p&#61;p.next;
+            pre &#61; pre.next;    <span class="hljs-comment">//p和pre同时出发</span>
+        }
+        <span class="hljs-keyword">return</span> pre;
+
+
+    }
+
+}
+</code></pre>

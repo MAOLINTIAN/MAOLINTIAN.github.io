@@ -1,0 +1,73 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>输入两棵二叉树A&#xff0c;B&#xff0c;判断B是不是A的子结构。&#xff08;ps&#xff1a;我们约定空树不是任意一个树的子结构&#xff09;</p>
+
+
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;首先判断根节点是否相等 <br />
+2&#xff0c;如果根节点相等&#xff0c;在接着判断其子结构是否相等 <br />
+3&#xff0c;显然是两个递归&#xff0c;第一个用于发现相等的根节点&#xff0c;第二个用于判断子结构是否相等。</p>
+
+
+
+<h3 id="代码实现">代码实现</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> offerTest;
+
+<span class="hljs-javadoc">/**
+ * &lt;p&gt;
+ * Title:HasSubtree
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Description:
+ * &lt;/p&gt;
+ *
+ *<span class="hljs-javadoctag"> &#64;author</span> 田茂林
+ *<span class="hljs-javadoctag"> &#64;data</span> 2017年8月20日 下午8:33:03
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HasSubtree</span> {<!-- --></span>
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">HasSubtrees</span>(TreeNode root1, TreeNode root2) {
+
+        <span class="hljs-keyword">boolean</span> result &#61; <span class="hljs-keyword">false</span>;
+        <span class="hljs-keyword">if</span> (root1 !&#61; <span class="hljs-keyword">null</span> &amp;&amp; root2 !&#61; <span class="hljs-keyword">null</span>) {
+            <span class="hljs-keyword">if</span> (root1.val &#61;&#61; root2.val) { <span class="hljs-comment">// 根节点相同</span>
+                result &#61; helper(root1, root2);
+                <span class="hljs-comment">// 根节点相同,如果子结构也相同&#xff0c;返回true&#xff0c;否则仍然是false</span>
+
+            }
+            <span class="hljs-keyword">if</span> (!result) { <span class="hljs-comment">//如果是false&#xff0c;继续从左右子树寻找相同的</span>
+                result &#61; HasSubtrees(root1.left, root2)||HasSubtrees(root1.right, root2);
+            }
+        }
+        <span class="hljs-keyword">return</span> result;
+
+    }
+
+    <span class="hljs-comment">// 判断子结构是否相同</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">helper</span>(TreeNode root1, TreeNode root2) {
+        <span class="hljs-keyword">if</span> (root2 &#61;&#61; <span class="hljs-keyword">null</span>)
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+        <span class="hljs-comment">// 如果2为空&#xff0c;则说明树2已结递归调用完了&#xff0c;都符合</span>
+        <span class="hljs-keyword">if</span> (root1 &#61;&#61; <span class="hljs-keyword">null</span>)
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>; <span class="hljs-comment">// 如果2不为空&#xff0c;1为空则说明不符合</span>
+
+        <span class="hljs-keyword">if</span> (root1.val !&#61; root2.val)
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+        <span class="hljs-keyword">return</span> helper(root1.left, root2.left) &amp;&amp; helper(root1.right, root2.right);
+
+    }
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span>(String[] args) {
+        <span class="hljs-comment">// TODO Auto-generated method stub</span>
+
+    }
+
+}
+</code></pre>

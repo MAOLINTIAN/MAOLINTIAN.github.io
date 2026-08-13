@@ -1,0 +1,13 @@
+<h3><a rel="noopener noreferrer" id="MySQL_1"></a>MySQL日志机制</h3>
+<blockquote>
+ <p><font color="red"><strong>MySQL一条查询和更新语句的执行流程是什么</strong></font></p>
+</blockquote>
+<p>假如我们要更新ID为2的这条数据当前值自增1，其中ID为主键，加了索引：</p>
+<pre><code class="prism language-java">use <span class="token class-name">User</span>
+go
+update <span class="token class-name">T</span> set c<span class="token operator">=</span>c<span class="token operator">+</span><span class="token number">1</span> where <span class="token constant">ID</span><span class="token operator">=</span><span class="token number">2</span><span class="token punctuation">;</span>
+</code></pre>
+<p>我们就以 InnoDB 模式下来探讨这个语句的执行流程。流程如下：</p>
+<ol>
+ <li><strong>连接器</strong>： 连接数据库User，并通过输入账号密码通过连接认证， <strong>查询缓存不执行，因为在一个表上有更新的时候，跟这个表有关的查询缓存会失效，所以这条语句就会把表 T 上所有缓存结果都清空</strong></li>
+</ol>

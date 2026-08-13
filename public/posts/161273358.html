@@ -1,0 +1,276 @@
+<p>按照我之前的学习习惯&#xff0c;在具体到一个模块时先明确其在整体中的定位&#xff0c;所以要先有整体&#xff0c;然后逐步深入到大的业务方向&#xff0c;最后再到自己负责的模块&#xff0c;这样比较好融会贯通&#xff0c;所以整体分为三篇</p>
+<ul><li><strong>第一篇&#xff1a;</strong> 主要学习未来企业在 AI 时代背景下一些开发模式的变化&#xff1b;企业业务能力的开发方向&#xff0c;更具体的是未来产研的精力会更多的投入到哪里&#xff0c;也就是人才的流动方向、研发资源的流动方向&#xff0c;我们以后的关注重点在哪儿。<font color="red"><strong>AI 时代产研大趋势 &#43; 架构变革 &#43; 人力流向&#xff08;全局视野&#xff09;</strong></font></li><li><strong>第二篇&#xff1a;</strong>  在正式学习 CMDB 之前&#xff0c;先要了解其在整个企业信息化体系中的一个定位&#xff0c;即整个企业信息化体系要包含哪些模块和能力&#xff0c;以及CMDB 和 CSDM 在其中发挥什么作用。<font color="red">  <strong>企业整体信息化大盘 → 锚定 CMDB/CSDM 定位&#xff08;找准自身位置&#xff09;</strong></font></li><li><strong>第三篇&#xff1a;</strong> 深入到 CMDB 、 CSDM去了解其中的核心逻辑和核心实践。<font color="red">  <strong>深耕 CMDB、CSDM 核心原理与落地&#xff08;专精学习&#xff09;</strong></font></li></ul>
+<p>接下来是第二篇&#xff0c;关于整个企业信息化大盘的服务范围以及CMDB究竟在哪儿发挥作用&#xff1f;</p>
+<h2><a rel="noopener noreferrer" id="__7"></a>一 用哪些视角去切入企业信息化</h2>
+<p>首先明确用哪些视角去切入&#xff0c;按照以往对新平台的学习过程&#xff0c;往往是先了解能力地图&#xff0c;再了解业务流&#xff0c;然后再看如何建模&#xff0c;和商户平台的建设习惯类似了&#xff0c;经过与AI多轮对话&#xff0c;最终锚定了五个视角来 进行切入&#xff0c;总结为&#xff1a; <strong>先认地图 → 再跟业务走 → 再认对象 → 再建数据 → 最后查六要素是否齐全</strong>&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/161273358-01-81fc1ea0f7.png" loading="lazy"></p>
+
+<table><thead><tr><th align="left">视角</th><th align="left">要解决的问题</th><th align="left">日常在干什么</th></tr></thead><tbody><tr><td align="left"><strong>管理视角</strong></td><td align="left">「IT 到底要管哪些事&#xff1f;」</td><td align="left">对齐能力版图&#xff0c;知道 CMDB 该支撑谁</td></tr><tr><td align="left"><strong>流程实践视角</strong></td><td align="left">「事平时怎么转&#xff1f;」</td><td align="left">跟工单/变更/发现走一遍&#xff0c;找读写点</td></tr><tr><td align="left"><strong>技术域视角</strong></td><td align="left">「现实世界有哪些类东西&#xff1f;」</td><td align="left">定 CI 大类、分层&#xff0c;别漏域别乱类</td></tr><tr><td align="left"><strong>数据与信息视角</strong></td><td align="left">「我怎么做成配置真相源&#xff1f;」</td><td align="left"><strong>主战场</strong>&#xff1a;模型、边界、集成、质量 &#xff1b;怎么建模、入库、集成、治理</td></tr><tr><td align="left"><strong>要素视角</strong></td><td align="left">「这套东西能长期跑吗&#xff1f;」</td><td align="left">查组织/流程/工具/指标是否配套能长期运营&#xff1f;</td></tr></tbody></table><p><strong>其中要素视角是贯穿首尾的体检表</strong>——前面四步设计完了&#xff0c;用要素问&#xff1a;谁负责、流程是否强制、工具是否接上、指标是否考核。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="1____25"></a>1  管理视角 ——「全局能力地图」</h3>
+<p><strong>视角目标&#xff1a;</strong> 推开一扇门&#xff0c;看整张 IT 管理大厦有几层、几间房。<font color="red"><strong>静态能力版图&#xff08;有哪些块&#xff09;</strong></font></p>
+<p><strong>核心工作&#xff1a;</strong></p>
+<ul><li>不画 CMDB 表结构&#xff0c;先回答&#xff1a;<strong>企业 IT 要提供哪些管理能力&#xff1f;</strong></li><li>例如&#xff1a;事件、变更、资产、监控、安全、BCM、组合管理……分在战略 / 建设 / 运营 / 横切哪一层。</li><li>关联&#xff1a;<strong>圈出 CMDB 主要服务的房间</strong>——通常是 <strong>R4 资产与配置</strong>&#xff0c;加上 <strong>R1–R3、D2 变更、X1–X3</strong> 等「强依赖配置关系」的房间。</li></ul>
+<p><strong>产出物&#xff1a;</strong> 能力域清单、依赖强度&#xff08;高/中/低&#xff09;、和业务的边界说明。</p>
+<blockquote>
+<p><strong>管理视角 &#61; WHAT&#xff08;管什么能力&#xff09;&#xff0c;还不是 HOW&#xff08;怎么流转、怎么存&#xff09;。</strong></p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="2___41"></a>2 流程实践视角 ——「业务平时怎么转」</h3>
+<p><strong>视角目标&#xff1a;</strong> 站在服务台/变更专员旁边&#xff0c;看一张 <strong>动态流转图</strong>——谁发起、谁审批、什么时候结束。<font color="red"><strong>静态能力版图&#xff08;有哪些块,  管理是 <strong>地图</strong>&#xff0c;流程是 <strong>地图上走的路线</strong>&#xff09;</strong></font></p>
+<p><strong>核心工作&#xff1a;</strong></p>
+<ul><li>在管理视角的「房间」里&#xff0c;换成 <strong>ITIL 实践语言</strong>&#xff1a;事件、变更、问题、SACM、发现……</li><li>对每个实践标&#xff1a;<strong>什么时候读配置数据&#xff1f;什么时候写&#xff1f;谁负责写&#xff1f;</strong></li><li>关联&#xff1a;<strong>CMDB 的价值不在库里躺着&#xff0c;而在流程转的时候被用起来</strong>——影响分析、变更后回写、发现入库。</li><li><strong>ITSM 在哪&#xff1f;</strong>  &#xff1a; <strong>ITSM 不是单独一层视角</strong>&#xff0c;而是 <strong>流程实践的载体&#xff08;工具&#43;流程实现&#xff09;</strong>。</li></ul>
+<p><strong>产出物&#xff1a;</strong> 实践 × Read/Write CMDB 矩阵、变更闭环是否强制回写。</p>
+<blockquote>
+<p><strong>流程实践视角 &#61; HOW work flows&#xff08;事怎么转&#xff09;&#xff0c;决定 CMDB 何时被消费和生产。</strong></p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="3___57"></a>3 技术域视角 ——「世界上要管哪些类型的东西」</h3>
+<p><strong>视角目标&#xff1a;</strong> 像在做 <strong>领域模型前的名词盘点</strong>——网络、服务器、应用、数据库、云资源、安全设备……各长什么样。<font color="red"><strong>现实世界分几类名词&#xff08;偏领域分析&#xff09;</strong></font></p>
+<p><strong>核心工作&#xff1a;</strong></p>
+<ul><li>按 <strong>技术分层</strong> 列域&#xff1a;计算、网络、存储、应用、中间件、云、终端、安全等。</li><li>定 <strong>CI 类型空间</strong>&#xff1a;每一域有哪些 Class、关键属性、常见关系&#xff08;运行在、连接到、包含&#xff09;。</li><li><strong>避免 CMDB 变成一个大杂物表</strong>。</li></ul>
+<p><strong>CSDM 在不在这一层&#xff1f;</strong>  &#xff1a; <strong>只有一部分在。</strong></p>
+<ul><li><strong>技术域视角</strong>&#xff1a;偏 <strong>「技术组件怎么分类、怎么分层」</strong>&#xff08;Infrastructure / Application 等技术侧&#xff09;。</li><li><strong>CSDM 完整语义</strong>&#xff08;Business Service → Application Service → Application → Infrastructure&#xff09;&#xff1a;主战场在 <strong>④ 数据与信息视角的「配置与服务模型」</strong>&#xff0c;因为那是 <strong>业务服务到技术的映射规则</strong>&#xff0c;不只是「网络算网络、服务器算服务器」。</li></ul>
+<blockquote>
+<p><strong>技术域视角 &#61; 管什么类型的对象&#xff08;名词表&#43;分层&#xff09;&#xff1b;CSDM 的「服务→技术」语义在数据视角里定稿。</strong></p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="4___75"></a>4 数据与信息视角 ——「怎么做成配置数据源」</h3>
+<p><strong>视角目标&#xff1a;</strong> 从「认对象」进入 <strong>「定规则、建库、接管道、保质量」</strong>。<font color="red"><strong>这些名词如何变成模型、入库、集成、治理&#xff08;偏方案与实现&#xff09;, 先技术域列全 → 再在数据视角里定 CSDM 规则与 CMDB  schema</strong></font></p>
+<p><strong>核心工作&#xff1a;</strong></p>
+
+<table><thead><tr><th align="left">子块</th><th align="left">日常在干什么</th></tr></thead><tbody><tr><td align="left"><strong>A. 配置与服务模型</strong></td><td align="left">CSDM/BTM&#xff1a;服务、Offer、App、Tech 怎么连&#xff1b;和流程里的 Service、Change 对象怎么对齐</td></tr><tr><td align="left"><strong>B. 数据域与治理</strong></td><td align="left">CMDB 管什么、不管什么&#xff1b;质量 KPI&#xff1b;Steward&#xff1b;基线、审计</td></tr><tr><td align="left"><strong>C. 集成与数据流</strong></td><td align="left">Discovery、云 API、变更回写、ITSM/ITOM 消费&#xff1b;去重、主键、时效</td></tr></tbody></table><p><strong>CMDB 在哪&#xff1f;</strong></p>
+<blockquote>
+<p><strong>CMDB &#61; 本视角的核心实现</strong>&#xff08;配置与关系数据的存储与关系引擎&#xff09;&#xff0c;不是管理视角里的一个「业务能力名」&#xff0c;而是 <strong>R4 等能力在数据层的落地</strong>。</p>
+</blockquote>
+<blockquote>
+<p><strong>数据与信息视角 &#61; 对象怎么建模、怎么写入、怎么存储、怎么被消费、怎么治理质量。</strong></p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="5___94"></a>5 要素视角 ——「横切体检&#xff1a;能运营吗」</h3>
+<p><strong>视角目标&#xff1a;</strong> 不是再画一张新地图&#xff0c;而是拿着 <strong>六要素 checklist</strong> 问&#xff1a;前面设计的东西&#xff0c;公司真跑得起来吗&#xff1f;</p>
+<p><strong>核心工作</strong>&#xff1a;对 每一个支撑的能力&#xff08;如变更管理、SACM&#xff09;或 <strong>CMDB 本身</strong> 考核&#xff1a;</p>
+
+<table><thead><tr><th align="left">要素</th><th align="left">对 CMDB 架构师的日常含义</th></tr></thead><tbody><tr><td align="left">① 组织</td><td align="left">有没有配置管理员、数据管家&#xff1f;变更谁回写&#xff1f;</td></tr><tr><td align="left">② 流程</td><td align="left">SACM 有没有&#xff1f;变更后是否强制更新&#xff1f;</td></tr><tr><td align="left">③ 数据</td><td align="left">模型、质量规则</td></tr><tr><td align="left">④ 工具</td><td align="left">CMDB、Discovery、ITSM 是否集成</td></tr><tr><td align="left">⑤ 指标</td><td align="left">完整率、关联率是否进考核</td></tr><tr><td align="left">⑥ 伙伴</td><td align="left">厂商发现、云、外包谁提供数据</td></tr></tbody></table><blockquote>
+<p><strong>要素视角 &#61; 不是新业务流&#xff0c;而是「组织/流程/数据/工具/指标/伙伴」是否配套&#xff0c;防止只做模型没人管、有库无流程。</strong></p>
+</blockquote>
+<hr />
+<p><strong>管理定范围 → 流程定触点 → 技术域定对象 → 数据定方案 → 要素定能否长期运营。</strong></p>
+<h2><a rel="noopener noreferrer" id="_SDRG__CMDB__120"></a>二 管理视角&#xff1a;SDRG 十六能力域与 CMDB 聚焦</h2>
+<p>做 CMDB 或配置数据方案之前&#xff0c;需要先有一张 <strong>能力地图</strong>。否则容易掉进细节&#xff1a;表怎么建、接口怎么接&#xff0c;却不清楚 <strong>在支撑哪块 IT 管理职责</strong>。<strong>管理视角</strong>只做一件事&#xff1a;划定 <strong>企业 IT 应具备的管理能力</strong>&#xff0c;不涉及流程怎么转、CI 怎么分、CMDB 怎么建——那些分别在流程、技术域、数据视角中展开。</p>
+
+<table><thead><tr><th align="left">项</th><th align="left">内容</th></tr></thead><tbody><tr><td align="left">对齐需求时</td><td align="left">判断「这是事件、变更、资产&#xff0c;还是安全、BCM」——先把需求归到正确的管理域</td></tr><tr><td align="left">划范围时</td><td align="left">明确本期方案覆盖哪几块能力域&#xff0c;不贪大求全</td></tr><tr><td align="left">沟通时</td><td align="left">用业务和管理语言对话&#xff08;“故障影响范围”“变更风险”“灾备恢复优先级”&#xff09;&#xff0c;而不是一上来就讲配置项和数据库字段</td></tr></tbody></table><hr />
+<p>企业 IT 管理能力分为 <strong>四大类、十六个能力域</strong>&#xff1a;</p>
+
+<table><thead><tr><th align="left">大类</th><th align="left">代号</th><th align="left">定位</th></tr></thead><tbody><tr><td align="left"><strong>战略与组合</strong></td><td align="left">S</td><td align="left">定方向、配资源、对业务</td></tr><tr><td align="left"><strong>建设与设计</strong></td><td align="left">D</td><td align="left">建系统、改环境、定服务</td></tr><tr><td align="left"><strong>运营与保障</strong></td><td align="left">R</td><td align="left">日常跑服、响应、稳态运营</td></tr><tr><td align="left"><strong>治理与韧性</strong></td><td align="left">G</td><td align="left">安全、合规、连续、改进&#xff08;贯穿 S/D/R&#xff09;</td></tr></tbody></table><p><img alt="在这里插入图片描述" src="./posts/assets/161273358-02-d8f31915e8.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="S___145"></a>S · 战略与组合</h3>
+<p>共同特征&#xff1a; <strong>决定 做什么、先做什么、花多少钱、对业务承诺什么&#xff1b;周期偏长&#xff0c;非一线灭火</strong>。</p>
+
+<table><thead><tr><th align="left">能力域</th><th align="left">定义</th><th align="left">管理什么</th><th align="left">关键概念</th><th align="left">典型产出</th><th align="center">配置数据相关度</th></tr></thead><tbody><tr><td align="left"><strong>S1 IT 战略与治理</strong></td><td align="left">使 IT 与业务战略一致&#xff0c;建立治理规则</td><td align="left">数字化战略、治理组织、政策与标准、架构原则</td><td align="left">治理委员会、政策库</td><td align="left">战略纲要、治理章程</td><td align="center">低</td></tr><tr><td align="left"><strong>S2 投资组合与需求</strong></td><td align="left">集中管理投资与需求优先级</td><td align="left">项目组合、应用组合、需求 backlog、路线图、技术债务</td><td align="left">PPM、APM</td><td align="left">组合看板、路线图</td><td align="center">中</td></tr><tr><td align="left"><strong>S3 业务关系与价值</strong></td><td align="left">与业务协作&#xff0c;管理服务预期与价值</td><td align="left">业务对接、服务评审、满意度、成效汇报</td><td align="left">BRM、SLM</td><td align="left">评审纪要、价值报告</td><td align="center">低</td></tr><tr><td align="left"><strong>S4 IT 财务管理</strong></td><td align="left">管理预算、成本与内部分摊</td><td align="left">预算、预测、TCO、Showback/Chargeback</td><td align="left">ITFM、FinOps</td><td align="left">预算表、成本分摊报告</td><td align="center">中</td></tr></tbody></table><pre><code class="prism language-bash">S1 定规则 → S2 定投资与优先级 → S3 对齐业务预期 → S4 约束钱怎么花
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="D___161"></a>D · 建设与设计</h3>
+<p><strong>共同特征&#xff1a; 通过 项目、变更、架构、服务定义 改变或新增 IT 能力&#xff1b;强调 可控上线</strong>。</p>
+
+<table><thead><tr><th align="left">能力域</th><th align="left">定义</th><th align="left">管理什么</th><th align="left">关键概念</th><th align="left">典型产出</th><th align="center">配置数据相关度</th></tr></thead><tbody><tr><td align="left"><strong>D1 企业架构与工程</strong></td><td align="left">统一技术方向与构建方式</td><td align="left">EA 蓝图、技术标准、集成规范、平台工程</td><td align="left">企业架构、平台工程</td><td align="left">架构图、标准规范</td><td align="center">中</td></tr><tr><td align="left"><strong>D2 项目与交付管理</strong></td><td align="left">在约束下交付 IT 成果</td><td align="left">立项、计划、里程碑、资源、验收</td><td align="left">项目管理</td><td align="left">项目计划、验收单</td><td align="center">低&#xff5e;中</td></tr><tr><td align="left"><strong>D3 变更、发布与部署</strong></td><td align="left">控制对生产环境的修改与上线</td><td align="left">变更、审批、CAB、发布、回滚、部署流水线</td><td align="left">变更/发布/部署管理</td><td align="left">变更单、发布记录</td><td align="center">高</td></tr><tr><td align="left"><strong>D4 服务组合与服务设计</strong></td><td align="left">定义可提供的服务及级别</td><td align="left">服务目录、服务组合、SLA/SLO、服务渠道</td><td align="left">服务目录、SLA</td><td align="left">服务目录、SLA 文档</td><td align="center">高</td></tr><tr><td align="left"><strong>D5 采购与供应商管理</strong></td><td align="left">管理采购、合同与供应商履约</td><td align="left">采购、合同、供应商绩效、外包与云厂商</td><td align="left">供应商管理、UC</td><td align="left">合同台账、供应商评分</td><td align="center">中</td></tr></tbody></table><pre><code class="prism language-bash">D1 定标准 → D2 立项交付 → D3 控变更上线 → D4 定义「服务长什么样」
+D5 支撑采购与外包&#xff0c;贯穿 D2/D3
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="R___179"></a>R · 运营与保障</h3>
+<p><strong>共同特征&#xff1a; 高频、稳态&#xff1b;保障服务可用、用户有响应、故障能恢复</strong>。</p>
+
+<table><thead><tr><th align="left">能力域</th><th align="left">定义</th><th align="left">管理什么</th><th align="left">关键概念</th><th align="left">典型产出</th><th align="center">配置数据相关度</th></tr></thead><tbody><tr><td align="left"><strong>R1 服务台与履行</strong></td><td align="left">统一入口&#xff0c;处理中断与标准请求</td><td align="left">事件、服务请求、重大事件、门户与自助</td><td align="left">Incident、Service Request</td><td align="left">事件单、请求单</td><td align="center">高</td></tr><tr><td align="left"><strong>R2 问题与修复</strong></td><td align="left">根因分析与永久修复</td><td align="left">问题、已知错误、RCA、修复跟踪</td><td align="left">Problem、Known Error</td><td align="left">问题单、已知错误库</td><td align="center">高</td></tr><tr><td align="left"><strong>R3 监控与 IT 运营</strong></td><td align="left">可观测性与日常运营控制</td><td align="left">监控、告警、容量、可用性、依赖可视化</td><td align="left">ITOM、可用性管理</td><td align="left">告警、运营看板</td><td align="center">高</td></tr><tr><td align="left"><strong>R4 配置、资产与许可</strong></td><td align="left">维护配置真相与资产/许可合规</td><td align="left">CI 生命周期、SACM、ITAM、SAM</td><td align="left">CMDB、SACM、ITAM、SAM</td><td align="left">配置清单、资产台账</td><td align="center"><strong>最高</strong></td></tr><tr><td align="left"><strong>R5 职场与终端 IT</strong></td><td align="left">终端用户工作与协作环境</td><td align="left">桌面、终端、协作工具、终端策略</td><td align="left">EUC、数字化职场</td><td align="left">终端镜像、EUC 服务项</td><td align="center">中</td></tr></tbody></table><pre><code class="prism language-bash">R3 发现问题 → R1 受理与恢复 → R2 根因与根治
+R4 为 R1/R2/R3/D3 提供配置与资产数据
+R5 覆盖终端用户侧
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="G___198"></a>G · 治理与韧性</h3>
+<p><strong>共同特征&#xff1a; 风险可控、合规可证、中断可恢复、组织能学习&#xff1b;贯穿 S/D/R</strong>。</p>
+
+<table><thead><tr><th align="left">能力域</th><th align="left">定义</th><th align="left">管理什么</th><th align="left">关键概念</th><th align="left">典型产出</th><th align="center">配置数据相关度</th></tr></thead><tbody><tr><td align="left"><strong>G1 安全运营</strong></td><td align="left">检测、响应、处置安全威胁</td><td align="left">漏洞、威胁检测、安全事件、安全基线</td><td align="left">SecOps、漏洞管理</td><td align="left">漏洞报告、安全事件单</td><td align="center">高</td></tr><tr><td align="left"><strong>G2 风险与合规</strong></td><td align="left">管理风险、控制与合规证据</td><td align="left">风险登记、控制框架、合规测试、审计</td><td align="left">GRC、ITGC、ISO 27001</td><td align="left">风险库、审计证据</td><td align="center">高</td></tr><tr><td align="left"><strong>G3 业务连续性</strong></td><td align="left">中断时维持或恢复关键业务</td><td align="left">BCM、BIA、DR、RTO/RPO、演练</td><td align="left">BCM、灾难恢复</td><td align="left">BCP、演练报告</td><td align="center"><strong>最高</strong></td></tr><tr><td align="left"><strong>G4 知识管理</strong></td><td align="left">沉淀可复用知识</td><td align="left">知识库、KCS、Runbook、架构文档</td><td align="left">KCS、知识文章</td><td align="left">知识文章、FAQ</td><td align="center">低</td></tr><tr><td align="left"><strong>G5 绩效与持续改进</strong></td><td align="left">度量表现并驱动改进</td><td align="left">KPI/OKR、成熟度、复盘、改进项</td><td align="left">持续改进</td><td align="left">仪表盘、复盘纪要</td><td align="center">中</td></tr></tbody></table><blockquote>
+<p><strong>说明&#xff1a;</strong> R1 的 <strong>服务事件</strong>&#xff08;计划外服务中断&#xff09;与 G1 的 <strong>安全事件</strong>&#xff08;威胁与漏洞&#xff09;要分开管理。</p>
+</blockquote>
+<hr />
+<h3><a rel="noopener noreferrer" id="_CMDB__213"></a>协作关系与 CMDB 聚焦</h3>
+<p><strong>纵向&#xff1a;</strong> S 定方向与资源 → D 建设与定义服务 → R 日常运营&#xff1b;G 贯穿 S/D/R。</p>
+<p><strong>横向&#xff08;常见链路&#xff09;&#xff1a;</strong></p>
+
+<table><thead><tr><th align="left">场景</th><th align="left">能力域</th></tr></thead><tbody><tr><td align="left">新系统上线</td><td align="left">S2 → D2 → D1 → D3 → D4 → R4 → R3</td></tr><tr><td align="left">生产故障</td><td align="left">R3 → R1 → R2 → R4</td></tr><tr><td align="left">安全漏洞</td><td align="left">G1 → R4 → D3</td></tr><tr><td align="left">服务评审</td><td align="left">S3 → D4 → R1 → G5</td></tr></tbody></table><p><strong>CMDB 架构师优先对齐&#xff1a;</strong> R4&#xff08;主场&#xff09;、D3 / R1 / R2 / R3 / D4 / G3&#xff08;P0&#xff09;&#xff0c;G1 / G2 / D1 / S2&#xff08;P1&#xff09;。CMDB 不是第 17 个能力域&#xff0c;而是支撑 R4 并为上述高相关域提供配置与关系数据。</p>
+<hr />
+<h2><a rel="noopener noreferrer" id="__229"></a>三 流程实践视角&#xff1a;分层流程、主链路与读写矩阵</h2>
+<p>流程实践视角&#xff1a; 承接管理视角的 S/D/R/G 能力域&#xff0c;说明&#34;这些事通过哪些 ITIL 实践来执行、工单怎么流转&#xff0c;以及 CMDB 在哪一步被读、在哪一步被写&#34;</p>
+
+<table><thead><tr><th align="left">项</th><th align="left">内容</th></tr></thead><tbody><tr><td align="left">干什么</td><td align="left">把 S/D/R/G 能力域落到 <strong>ITIL 实践</strong> 与 <strong>工单流转</strong>&#xff0c;说明这些事通过哪些流程执行、工单如何在环节间流转&#xff0c;以及 CMDB 在哪一步被读、在哪一步被写</td></tr><tr><td align="left">日常怎么用</td><td align="left">接到需求 → 先判断属于哪条实践链&#xff08;事件链 / 变更链 / 问题链 / SACM 链&#xff09;→ 在方案中标出 CMDB 的读写触点</td></tr><tr><td align="left">不做</td><td align="left">不定义 CI 类型&#xff08;→ 交给 ③ 技术域视角&#xff09;&#xff1b;不设计表结构与集成方案&#xff08;→ 交给 ④ 数据与信息视角&#xff09;&#xff1b;不做六要素成熟度体检&#xff08;→ 交给 ⑤ 要素视角&#xff09;</td></tr></tbody></table><hr />
+<h3><a rel="noopener noreferrer" id="1____241"></a>1 管理域 → 流程实践映射</h3>
+<p>管理域定义了&#34;管什么&#34;&#xff0c;流程实践定义了&#34;怎么执行&#34;。先把 S/D/R/G 落到具体的 ITIL 流程上&#xff1a;</p>
+
+<table><thead><tr><th align="left">管理域</th><th align="left">核心业务目标</th><th align="left">对应的流程实践</th></tr></thead><tbody><tr><td align="left"><strong>D3</strong> 变更发布与部署</td><td align="left">安全地改变 IT 环境</td><td align="left">变更管理、发布管理、部署管理</td></tr><tr><td align="left"><strong>D4</strong> 服务设计</td><td align="left">定义服务标准与承诺</td><td align="left">服务目录、服务级别、服务设计</td></tr><tr><td align="left"><strong>R1</strong> 服务台与履行</td><td align="left">快速响应用户</td><td align="left">服务台、事件管理、服务请求</td></tr><tr><td align="left"><strong>R2</strong> 问题与修复</td><td align="left">找到根因并根治</td><td align="left">问题管理</td></tr><tr><td align="left"><strong>R3</strong> 监控与运营</td><td align="left">持续感知系统状态</td><td align="left">监控与事件、可用性/容量管理</td></tr><tr><td align="left"><strong>R4</strong> 配置资产与许可</td><td align="left">维护配置数据的唯一真实来源</td><td align="left"><strong>SACM、ITAM、SAM</strong></td></tr><tr><td align="left"><strong>G1</strong> 安全运营</td><td align="left">检测与响应安全威胁</td><td align="left">漏洞管理、安全事件响应</td></tr><tr><td align="left"><strong>G3</strong> 业务连续性</td><td align="left">灾难后恢复业务</td><td align="left">BCM、DR、演练</td></tr><tr><td align="left"><strong>G4</strong> 知识管理</td><td align="left">经验可复用</td><td align="left">知识管理&#xff08;KCS&#xff09;</td></tr><tr><td align="left"><strong>G5</strong> 持续改进</td><td align="left">越来越好</td><td align="left">度量、复盘、改进项跟踪</td></tr></tbody></table><hr />
+<h3><a rel="noopener noreferrer" id="2__260"></a>2 流程分层&#xff1a;三个运转节奏</h3>
+<p>IT 流程按节奏分为三层。这张分层图是&#34;链上找触点&#34;的基础——不同层对 CMDB 的读写模式完全不同&#xff1a;</p>
+
+<table><thead><tr><th align="left">层级</th><th align="left">节奏特征</th><th align="left">核心流程</th><th align="left">CMDB 交互模式</th></tr></thead><tbody><tr><td align="left"><strong>L1 战略与组合</strong></td><td align="left">低频、决策型</td><td align="left">组合评审、需求立项、预算审批</td><td align="left">读报表/看趋势&#xff0c;不直接写</td></tr><tr><td align="left"><strong>L2 建设与设计</strong></td><td align="left">中频、项目型</td><td align="left">架构评审、项目交付、变更/发布/部署、服务目录发布</td><td align="left"><strong>变更后必回写</strong>&#xff0c;服务定义写入</td></tr><tr><td align="left"><strong>L3 运营与保障</strong></td><td align="left">高频、持续型</td><td align="left">监控告警 → 事件/请求 → 问题 → SACM/资产 → 容量/可用性</td><td align="left">读影响分析&#xff0c;发现自动入库</td></tr><tr><td align="left"><strong>L4 治理与韧性</strong></td><td align="left">横切嵌入</td><td align="left">安全响应、合规审计、BCM 演练、知识/改进</td><td align="left">读依赖链/历史&#xff0c;审计读基线</td></tr></tbody></table><p><strong>关键关系&#xff1a;</strong> L1 决策驱动 L2 建设&#xff0c;L2 交付物进入 L3 持续运营&#xff0c;L4 横向嵌入所有层&#xff08;不算到核心运转层&#xff09;。</p>
+<hr />
+<div class="mermaid mermaid-newversion"></div>
+<h3><a rel="noopener noreferrer" id="3___298"></a>3 运维主链路 —工单流转的黄金路径</h3>
+<p>日常运维最核心的六步闭环&#xff0c;每条链路上 CMDB 的读写时机是确定的&#xff1a;</p>
+
+<table><thead><tr><th align="left">阶段</th><th align="left">实践</th><th align="left">业务目的</th><th align="left">典型输出</th><th align="left">CMDB 动作</th></tr></thead><tbody><tr><td align="left"><strong>发现</strong></td><td align="left">监控与事件</td><td align="left">感知异常</td><td align="left">Alert</td><td align="left">告警关联 CI</td></tr><tr><td align="left"><strong>响应</strong></td><td align="left">事件管理</td><td align="left">恢复服务</td><td align="left">已关闭 Incident</td><td align="left"><strong>读</strong>&#xff1a;影响分析、优先级判断</td></tr><tr><td align="left"><strong>根治</strong></td><td align="left">问题管理</td><td align="left">消除根因</td><td align="left">Problem / Known Error</td><td align="left"><strong>读</strong>&#xff1a;CI 历史、依赖链</td></tr><tr><td align="left"><strong>控制</strong></td><td align="left">变更管理</td><td align="left">安全改环境</td><td align="left">已实施 Change</td><td align="left"><strong>读</strong>前评估 &#43; <strong>写</strong>后更新</td></tr><tr><td align="left"><strong>上线</strong></td><td align="left">发布管理</td><td align="left">打包交付</td><td align="left">Release</td><td align="left"><strong>写</strong>&#xff1a;更新部署版本</td></tr><tr><td align="left"><strong>沉淀</strong></td><td align="left">知识管理</td><td align="left">可复用</td><td align="left">Knowledge Article</td><td align="left">关联 CI 标签&#xff08;轻量&#xff09;</td></tr></tbody></table><hr />
+<h3><a rel="noopener noreferrer" id="4_CMDB__313"></a>4 CMDB 读写情况与触点关联</h3>
+<p>把上面的每个实践拆开&#xff0c;明确&#34;读什么、写什么、强度多大&#34;&#xff1a;</p>
+
+<table><thead><tr><th align="left">实践</th><th align="left">读 CMDB&#xff08;查询&#xff09;</th><th align="left">写 CMDB&#xff08;更新&#xff09;</th><th align="center">强度</th></tr></thead><tbody><tr><td align="left"><strong>事件管理</strong></td><td align="left">影响范围、服务依赖、优先级</td><td align="left">故障 CI&#xff08;可选标记&#xff09;</td><td align="center">高</td></tr><tr><td align="left"><strong>问题管理</strong></td><td align="left">CI 故障历史、依赖关系</td><td align="left">一般不写</td><td align="center">高</td></tr><tr><td align="left"><strong>变更管理</strong></td><td align="left">变更前影响范围评估</td><td align="left"><strong>实施后必须回写</strong></td><td align="center"><strong>最高</strong></td></tr><tr><td align="left"><strong>发现/服务映射</strong></td><td align="left">—</td><td align="left"><strong>自动入库</strong>&#xff08;高吞吐&#xff09;</td><td align="center"><strong>最高</strong></td></tr><tr><td align="left"><strong>SACM</strong></td><td align="left">审计比对、基线查询</td><td align="left"><strong>权威维护</strong>&#xff08;增删改&#xff09;</td><td align="center"><strong>最高</strong></td></tr><tr><td align="left"><strong>ITAM/SAM</strong></td><td align="left">资产状态、许可证用量</td><td align="left">同步资产实例/状态</td><td align="center">高</td></tr><tr><td align="left"><strong>BCM/DR</strong></td><td align="left">依赖链、恢复优先级</td><td align="left">一般不写</td><td align="center">最高&#xff08;读&#xff09;</td></tr></tbody></table><p><strong>三条硬规则&#xff08;研发侧必须遵守&#xff09;&#xff1a;</strong></p>
+<ol><li><strong>变更必回写</strong>&#xff1a;变更实施后&#xff0c;CMDB 中对应 CI 的属性和关系必须同步更新</li><li><strong>能发现不手工</strong>&#xff1a;CI 数据优先由 Discovery/Service Mapping 自动填充&#xff0c;禁止手工录入可自动发现的数据</li><li><strong>告警必关联 CI</strong>&#xff1a;所有监控告警必须携带 CI 标识&#xff0c;否则无法触发影响分析和自动分派</li></ol>
+<hr />
+<h3><a rel="noopener noreferrer" id="5_ITSM__CMDB__334"></a>5 ITSM 与 CMDB 的关系</h3>
+<p>ITSM 负责承载<strong>工单流转与审批</strong>&#xff0c;它<strong>引用</strong> CMDB 中的 CI 数据&#xff0c;但不替代 CMDB。</p>
+<p><strong>关注三个集成点&#xff1a;</strong></p>
+<ul><li><strong>强制关联 CI</strong>&#xff1a;事件单/变更单必须关联至少一个 CI&#xff0c;否则无法提交</li><li><strong>关闭触发回写</strong>&#xff1a;工单关闭时&#xff0c;自动触发 CMDB 状态/属性的同步更新</li><li><strong>CAB 影响分析</strong>&#xff1a;变更顾问委员会审批时&#xff0c;直接调用 CMDB 的影响分析 API</li></ul>
+<hr />
+<p><strong>管理定域&#xff0c;流程定链&#xff1b;链上找触点&#xff0c;触点定 CMDB 读写。</strong></p>
+<h2><a rel="noopener noreferrer" id="_CI__348"></a>四 技术域视角&#xff1a;分层、CI 类型与关系</h2>
+<p>技术域视角的核心任务&#xff0c;是为 CMDB 建模打底——<strong>盘点整个 IT 环境中到底有哪些类型的技术对象&#xff0c;把它们整理成一张完整的&#34;名词表&#34;</strong>。</p>
+
+<table><thead><tr><th align="left">项</th><th align="left">内容</th></tr></thead><tbody><tr><td align="left">干什么</td><td align="left">盘点 <strong>技术分层</strong> 与 <strong>CI 类型</strong>&#xff0c;为建模打底——做一张完整的&#34;名词表&#34;</td></tr><tr><td align="left">日常感觉</td><td align="left">判断服务器、应用、数据库、网络设备各自属于什么 Class&#xff0c;该有什么属性</td></tr><tr><td align="left">不做</td><td align="left">不定 CSDM 服务语义主规则&#xff08;→ 交给 ④-A 数据与信息视角&#xff09;、不写集成方案&#xff08;→ ④-C&#xff09;</td></tr><tr><td align="left">与 CSDM 的关系</td><td align="left">本篇负责 <strong>技术组件分类</strong>&#xff1b;<strong>服务如何映射到技术组件</strong> 的规则在 ④-A 中定义</td></tr></tbody></table><p><strong>一句话&#xff1a;</strong> 流程实践视角回答&#34;<strong>工单走哪条链</strong>&#34;&#xff0c;技术域视角回答&#34;<strong>链上带的 CI 都是什么类型</strong>&#34;。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="1___363"></a>1  技术分层总图</h3>
+<p>自上而下四层&#xff0c;语义逐层细化。上层靠近业务&#xff0c;下层靠近基础设施&#xff1a;</p>
+<div class="mermaid mermaid-newversion"></div>
+<p><strong>分层逻辑&#xff1a;</strong></p>
+
+<table><thead><tr><th align="left">层级</th><th align="left">核心问题</th><th align="left">CI 示例</th></tr></thead><tbody><tr><td align="left">L1 业务与服务层</td><td align="left">业务依赖哪些服务&#xff1f;</td><td align="left">Business Service、Application Service</td></tr><tr><td align="left">L2 应用与数据层</td><td align="left">服务由哪些应用组件构成&#xff1f;</td><td align="left">Application、Microservice、DB</td></tr><tr><td align="left">L3 平台与基础设施层</td><td align="left">应用跑在什么上面&#xff1f;</td><td align="left">Server、VM、Container、Pod</td></tr><tr><td align="left">L4 网络与安全层</td><td align="left">组件之间怎么通&#xff1f;安全边界在哪&#xff1f;</td><td align="left">Switch、LB、Firewall</td></tr></tbody></table><p><strong>读图方式&#xff1a;</strong> ③ 定义每个框里是什么 <strong>类</strong>&#xff1b;④-A 定义 <strong>服务→技术组件</strong> 的映射规则。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="2___CI____404"></a>2 技术域 × CI 类型 × 管理域</h3>
+<p>这是技术域视角的核心产出——一张完整的 CI 名词表&#xff0c;并与管理视角的 S/D/R/G 域做对应&#xff1a;</p>
+
+<table><thead><tr><th align="left">技术域</th><th align="left">典型 CI 类</th><th align="left">常见关系</th><th align="left">主管理域</th><th align="left">说明</th></tr></thead><tbody><tr><td align="left"><strong>业务与服务</strong></td><td align="left">Business Service, Application Service, Service Offering</td><td align="left">交付、依赖于</td><td align="left">D4 服务设计</td><td align="left">服务层 CI&#xff0c;与 CSDM 直接对应</td></tr><tr><td align="left"><strong>应用</strong></td><td align="left">Application, Microservice, API, Function</td><td align="left">调用、运行在</td><td align="left">D3 变更发布、R2 问题</td><td align="left">应用生命周期管理的核心对象</td></tr><tr><td align="left"><strong>数据</strong></td><td align="left">Database, Schema, Cache, Queue</td><td align="left">运行于、连接到</td><td align="left">R2 问题、R3 监控</td><td align="left">数据层组件&#xff0c;与中间件紧耦合</td></tr><tr><td align="left"><strong>中间件</strong></td><td align="left">MQ, ESB, Web Server, App Server</td><td align="left">运行于、连接到</td><td align="left">D3 变更发布、R3 监控</td><td align="left">连接应用与数据的关键链路</td></tr><tr><td align="left"><strong>计算</strong></td><td align="left">Server, VM, Container, Pod, Cluster</td><td align="left">包含、运行在</td><td align="left">R3 运营、R4 配置资产</td><td align="left">最核心的基础设施 CI</td></tr><tr><td align="left"><strong>网络</strong></td><td align="left">Switch, Router, Load Balancer, DNS, Firewall</td><td align="left">连接到、托管于</td><td align="left">R3 运营、D3 变更</td><td align="left">网络拓扑依赖&#xff0c;故障影响分析关键</td></tr><tr><td align="left"><strong>存储</strong></td><td align="left">Storage, Volume, LUN, NAS</td><td align="left">连接到、包含</td><td align="left">R3 运营、R4 资产</td><td align="left">持久化存储组件</td></tr><tr><td align="left"><strong>云</strong></td><td align="left">Cloud Account, Region, VPC, Resource Group</td><td align="left">包含、标签归属</td><td align="left">R4 资产、D4 设计</td><td align="left">云原生场景下的资源组织单元</td></tr><tr><td align="left"><strong>安全</strong></td><td align="left">Vulnerability, Security Policy, Certificate</td><td align="left">影响、运行于</td><td align="left">G1 安全运营</td><td align="left">安全对象多关联到已有 CI</td></tr><tr><td align="left"><strong>终端</strong></td><td align="left">Endpoint, Mobile, Workstation</td><td align="left">分配给</td><td align="left">R1 服务台</td><td align="left">用户侧设备&#xff0c;弱依赖关系</td></tr><tr><td align="left"><strong>机房</strong></td><td align="left">Datacenter, Rack, Power Unit</td><td align="left">位于、包含</td><td align="left">R4 资产</td><td align="left">物理位置信息</td></tr></tbody></table><p><strong>与管理域的对应逻辑&#xff1a;</strong></p>
+<ul><li>D 域&#xff08;建设/设计/部署&#xff09;&#xff1a;关注应用、中间件、网络、服务类 CI</li><li>R 域&#xff08;运营/响应/配置&#xff09;&#xff1a;关注计算、存储、网络、终端类 CI</li><li>G 域&#xff08;治理/安全/韧性&#xff09;&#xff1a;关注安全、合规、灾备相关 CI</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="3__429"></a>3 典型关系定义</h3>
+<p>关系是 CMDB 区别于资产台账的核心。以下五种关系覆盖了绝大多数场景&#xff1a;</p>
+
+<table><thead><tr><th align="left">关系类型</th><th align="left">语义</th><th align="left">方向</th><th align="left">典型场景</th></tr></thead><tbody><tr><td align="left"><strong>包含</strong></td><td align="left">上下级组成</td><td align="left">父 → 子</td><td align="left">集群包含 Pod、VPC 包含子网</td></tr><tr><td align="left"><strong>运行在</strong></td><td align="left">部署位置</td><td align="left">上 → 下</td><td align="left">应用运行在主机、DB 运行在存储</td></tr><tr><td align="left"><strong>连接到</strong></td><td align="left">网络/数据连接</td><td align="left">双向</td><td align="left">应用到数据库、微服务到微服务</td></tr><tr><td align="left"><strong>依赖于</strong></td><td align="left">服务可用性依赖</td><td align="left">下游 → 上游</td><td align="left">业务服务依赖应用服务、应用依赖中间件</td></tr><tr><td align="left"><strong>分配给</strong></td><td align="left">资产归属</td><td align="left">设备 → 人</td><td align="left">笔记本分配给用户、服务器分配给团队</td></tr></tbody></table><p><strong>建模提示&#xff1a;</strong></p>
+<ul><li>&#34;包含&#34;和&#34;运行在&#34;的区别&#xff1a;前者是强组成关系&#xff08;删父必删子&#xff09;&#xff0c;后者是部署关系&#xff08;迁移不删&#xff09;</li><li>&#34;依赖于&#34;是故障影响分析的核心关系&#xff0c;必须精确维护</li><li>&#34;连接到&#34;通常由 Discovery 自动生成&#xff0c;不手工维护</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="4__448"></a>4 分层建设优先级</h3>
+<p>不要追求一步到位&#xff0c;按优先级渐进覆盖&#xff1a;</p>
+
+<table><thead><tr><th align="center">优先级</th><th align="left">范围</th><th align="left">具体动作</th><th align="left">原因</th></tr></thead><tbody><tr><td align="center"><strong>P0</strong></td><td align="left">计算 &#43; 应用 &#43; 网络 &#43; “依赖于”</td><td align="left">建核心三类 CI 和依赖关系</td><td align="left">覆盖80%的故障影响分析和变更评估场景</td></tr><tr><td align="center"><strong>P1</strong></td><td align="left">云标签归属 &#43; 容器层级</td><td align="left">补云资源、K8s 对象&#xff08;Pod/Cluster&#xff09;</td><td align="left">云原生场景下的资产可见性</td></tr><tr><td align="center"><strong>P2</strong></td><td align="left">安全 &#43; 机房 &#43; 终端</td><td align="left">按项目范围按需扩展</td><td align="left">特定领域需求驱动&#xff0c;非全局必选</td></tr></tbody></table><p><strong>判断一个 CI 类该不该进 CMDB 的三问&#xff1a;</strong></p>
+<ol><li>故障时&#xff0c;需要知道它影响谁吗&#xff1f;</li><li>变更时&#xff0c;需要评估改它的风险吗&#xff1f;</li><li>合规/审计时&#xff0c;需要证明它的配置状态吗&#xff1f;</li></ol>
+<p>三问任一为&#34;是&#34;&#xff0c;就应该纳入。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="5__467"></a>5 日常使用方式</h3>
+<p>作为 CMDB 架构师或开发者&#xff0c;接到新需求时&#xff0c;按这个顺序思考&#xff1a;</p>
+
+<table><thead><tr><th align="center">步骤</th><th align="left">问题</th><th align="left">输出</th></tr></thead><tbody><tr><td align="center">1</td><td align="left">这个需求涉及哪些<strong>技术域</strong>&#xff1f;</td><td align="left">确定域范围&#xff08;应用&#xff1f;计算&#xff1f;网络&#xff1f;&#xff09;</td></tr><tr><td align="center">2</td><td align="left">这些域在 CMDB 里<strong>有没有对应的 Class</strong>&#xff1f;</td><td align="left">有 → 复用&#xff1b;无 → 新增</td></tr><tr><td align="center">3</td><td align="left">这些 Class 之间的<strong>关系</strong>&#xff08;依赖于/运行在/连接到&#xff09;是否已定义&#xff1f;</td><td align="left">有 → 建模完成&#xff1b;无 → 补充关系定义</td></tr><tr><td align="center">4</td><td align="left">这个 Class 在<strong>流程里谁读、谁写</strong>&#xff1f;</td><td align="left">回到②流程实践视角标触点</td></tr></tbody></table><p><strong>技术域定名词&#xff0c;类不清则关系必乱。</strong></p>
+<hr />
+<h3><a rel="noopener noreferrer" id="6__482"></a>6 与其它视角的衔接</h3>
+
+<table><thead><tr><th align="center">顺序</th><th align="left">视角</th><th align="left">核心问题</th><th align="left">本篇如何衔接</th></tr></thead><tbody><tr><td align="center">①</td><td align="left">管理视角</td><td align="left">WHAT — 管哪些能力域</td><td align="left">本篇的&#34;主管理域&#34;列完成映射</td></tr><tr><td align="center">②</td><td align="left">流程实践视角</td><td align="left">HOW — 工单怎么流转</td><td align="left">流程里的&#34;CI&#34;就是本篇定义的 Class</td></tr><tr><td align="center">③</td><td align="left"><strong>技术域视角&#xff08;本篇&#xff09;</strong></td><td align="left"><strong>WHAT OBJECT — 管哪些类型对象</strong></td><td align="left">—</td></tr><tr><td align="center">④</td><td align="left">数据与信息视角</td><td align="left">MODEL — 怎么建模与集成</td><td align="left">本篇 Class 进入 ④ 做属性定义、表结构</td></tr><tr><td align="center">⑤</td><td align="left">要素视角</td><td align="left">QUALITY — 六要素体检</td><td align="left">用六要素评估本篇 Class 的数据质量</td></tr></tbody></table><hr />
+<h2><a rel="noopener noreferrer" id="_CSDM__494"></a>五 数据与信息视角&#xff1a;CSDM 模型、边界、治理、集成</h2>
+<p>数据信息视角的基本档案&#xff1a;</p>
+
+<table><thead><tr><th align="left">维度</th><th align="left">内容</th></tr></thead><tbody><tr><td align="left"><strong>核心任务</strong></td><td align="left">配置与关系类数据的 <strong>语义、边界、质量、集成、消费</strong></td></tr><tr><td align="left"><strong>日常焦点</strong></td><td align="left">定模型 → 画边界 → 接管道 → 定 KPI → 对消费方</td></tr><tr><td align="left"><strong>关键实现</strong></td><td align="left">CMDB&#xff08;主支撑 R4&#xff0c;服务 D3/R1/R2/R3/D4/G1/G3&#xff09;</td></tr><tr><td align="left"><strong>内部层次</strong></td><td align="left"><strong>A 配置与服务模型 → B 数据域与治理 → C 集成与数据流</strong></td></tr></tbody></table><div class="mermaid mermaid-newversion"></div>
+<hr />
+<h3><a rel="noopener noreferrer" id="A___524"></a>A · 配置与服务模型</h3>
+<blockquote>
+<p><strong>目标</strong>&#xff1a;把业务语言翻译成配置数据模型&#xff0c;确保“服务→应用→资源”映射一致且可消费。</p>
+</blockquote>
+
+<table><thead><tr><th align="left">内容</th><th align="left">关键点</th><th align="left">典型产出</th></tr></thead><tbody><tr><td align="left"><strong>CSDM 分层</strong></td><td align="left">Business Service → Application Service → Application → Infrastructure</td><td align="left">分层服务映射图</td></tr><tr><td align="left"><strong>服务目录对齐</strong></td><td align="left">每个服务目录项&#xff08;Offering&#xff09;对应哪类 CI&#xff0c;粒度如何</td><td align="left">目录-CI 映射矩阵</td></tr><tr><td align="left"><strong>服务拓扑规则</strong></td><td align="left">业务服务到技术组件&#xff08;如 DB、中间件&#xff09;的依赖定义</td><td align="left">Service Mapping 规则表</td></tr><tr><td align="left"><strong>与技术域&#xff08;③&#xff09;的分工</strong></td><td align="left">③定义 <strong>类与属性</strong>&#xff1b;本篇定义 <strong>服务语义及映射</strong></td><td align="left">模型边界说明文档</td></tr></tbody></table><p>&#x1f449; <strong>关键检查</strong>&#xff1a;能否从一次故障 CI 向上推导到受影响的业务服务&#xff1f;路径中的每一跳是否在模型中有明确的关系类型&#xff1f;</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="B___539"></a>B · 数据域与治理</h3>
+<h4><a rel="noopener noreferrer" id="1__IT_CMDB__541"></a>1. 企业 IT 数据域全景&#xff08;CMDB 所处的上下文&#xff09;</h4>
+
+<table><thead><tr><th align="left">数据域</th><th align="left">主要内容</th><th align="left">与 CMDB 的关系</th></tr></thead><tbody><tr><td align="left"><strong>配置与关系</strong></td><td align="left">CI 属性、依赖、拓扑</td><td align="left"><strong>CMDB 核心&#xff0c;唯一权威</strong></td></tr><tr><td align="left"><strong>资产与财务</strong></td><td align="left">采购合同、折旧、成本中心、序列号</td><td align="left">与 ITAM 系统对齐&#xff0c;CI 与资产可重叠/关联</td></tr><tr><td align="left"><strong>事件与工单</strong></td><td align="left">Incident、Change、Problem</td><td align="left"><strong>引用 CI</strong>&#xff0c;工单原文不进 CMDB</td></tr><tr><td align="left"><strong>监控指标</strong></td><td align="left">时序指标、告警事件</td><td align="left">关联 CI 作为标签&#xff0c;<strong>时序数据不进 CMDB</strong></td></tr><tr><td align="left"><strong>身份与安全</strong></td><td align="left">账号、权限、漏洞、补丁</td><td align="left">漏洞与 CI 关联&#xff0c;账号一般不作为 CI</td></tr><tr><td align="left"><strong>组合与项目</strong></td><td align="left">项目、版本发布、需求</td><td align="left">应用版本可做为 CI 的属性或独立 CI</td></tr><tr><td align="left"><strong>合规证据</strong></td><td align="left">配置基线、审计日志、变更审批记录</td><td align="left">基线/变更历史保留在 CMDB 中</td></tr></tbody></table><h4><a rel="noopener noreferrer" id="2_CMDB__553"></a>2. CMDB 边界&#xff08;明确什么该进、什么不该进&#xff09;</h4>
+
+<table><thead><tr><th align="left">✅ 属于 CMDB</th><th align="left">❌ 不属于&#xff08;仅存关联&#xff09;</th></tr></thead><tbody><tr><td align="left">CI 的唯一标识与核心属性</td><td align="left">全量的监控时序数据&#xff08;如每秒 CPU 使用率&#xff09;</td></tr><tr><td align="left">CI 之间的关系&#xff08;依赖、包含、连接&#xff09;</td><td align="left">工单的全文描述、客户对话记录</td></tr><tr><td align="left">服务 → 技术组件的映射关系</td><td align="left">财务总账、采购合同扫描件</td></tr><tr><td align="left">配置基线&#xff08;期望状态&#xff09;与变更历史</td><td align="left">原始安全日志流&#xff08;保留在 SIEM&#xff09;</td></tr></tbody></table><blockquote>
+<p>边界原则&#xff1a;<strong>CMDB 是“配置与关系”的事实源&#xff0c;不是数据湖</strong>。时序、日志、全文等大数据量或非配置类数据应放在专用系统中&#xff0c;仅保留关联索引。</p>
+</blockquote>
+<h4><a rel="noopener noreferrer" id="3__KPI_564"></a>3. 数据质量 KPI&#xff08;示例口径&#xff09;</h4>
+
+<table><thead><tr><th align="left">维度</th><th align="left">含义</th><th align="left">可度量方式</th></tr></thead><tbody><tr><td align="left"><strong>完整性</strong></td><td align="left">该存在的 CI 是否都在</td><td align="left">预期 CI 数 vs 实际 CI 数&#xff08;按资源清单比对&#xff09;</td></tr><tr><td align="left"><strong>准确性</strong></td><td align="left">属性值是否与真实环境一致</td><td align="left">抽样验证 &#43; 自动对账&#xff08;如云 API vs CMDB&#xff09;</td></tr><tr><td align="left"><strong>及时性</strong></td><td align="left">变更发生后多久更新</td><td align="left">P90/P95 更新延迟&#xff08;分钟/小时&#xff09;</td></tr><tr><td align="left"><strong>关联率</strong></td><td align="left">告警/工单/漏洞是否正确挂到 CI</td><td align="left">有 CI 关联的事件占比</td></tr><tr><td align="left"><strong>一致性</strong></td><td align="left">多源同一属性是否冲突</td><td align="left">冲突记录数 / 总属性对数</td></tr><tr><td align="left"><strong>可追溯</strong></td><td align="left">谁改的、何时改的、为什么</td><td align="left">审计日志覆盖率、无主数据比例</td></tr></tbody></table><h4><a rel="noopener noreferrer" id="4_Steward_575"></a>4. 角色与职责&#xff1a;配置管家&#xff08;Steward&#xff09;</h4>
+
+<table><thead><tr><th align="left">角色</th><th align="left">负责数据域</th><th align="left">主要职责</th></tr></thead><tbody><tr><td align="left">应用配置管家</td><td align="left">应用服务、应用 CI</td><td align="left">维护服务拓扑、应用属性准确性</td></tr><tr><td align="left">基础设施管家</td><td align="left">服务器、网络、存储</td><td align="left">保证资源 CI 的发现与生命周期</td></tr><tr><td align="left">业务配置管家</td><td align="left">业务服务、产品目录</td><td align="left">确保业务与技术映射正确</td></tr><tr><td align="left">CMDB 平台负责人</td><td align="left">模型、集成、工具</td><td align="left">定标准、管平台、推动治理</td></tr></tbody></table><p>&#x1f449; <strong>关键实践</strong>&#xff1a;每个 CI 类型必须指定一个“管家角色”&#xff0c;KPI 与管家绩效挂钩。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="C___588"></a>C · 集成与数据流</h3>
+<h4><a rel="noopener noreferrer" id="1__590"></a>1. 数据源&#xff08;谁产生配置数据&#xff09;</h4>
+
+<table><thead><tr><th align="left">源</th><th align="left">写入内容</th><th align="left">同步模式</th></tr></thead><tbody><tr><td align="left">Discovery / 探针</td><td align="left">基础设施 CI、关系、IP 等</td><td align="left">定时扫描&#xff08;小时/天级&#xff09;</td></tr><tr><td align="left">云 API&#xff08;AWS/Azure/…&#xff09;</td><td align="left">云资源 CI、标签、区域</td><td align="left">准实时&#xff08;事件驱动 &#43; 定时兜底&#xff09;</td></tr><tr><td align="left">ITSM 变更管理</td><td align="left">变更后的属性、关系、状态</td><td align="left">事件驱动&#xff08;变更关闭时触发&#xff09;</td></tr><tr><td align="left">ITAM / 采购系统</td><td align="left">资产属性&#xff08;成本中心、序列号&#xff09;</td><td align="left">批量同步 / 事件驱动</td></tr><tr><td align="left">DevOps 流水线</td><td align="left">应用版本、部署关系、配置项</td><td align="left">事件驱动&#xff08;发布时更新&#xff09;</td></tr><tr><td align="left">手工导入 / 审计</td><td align="left">纠错、基线、特殊 CI</td><td align="left">人工 &#43; 审批流程</td></tr></tbody></table><blockquote>
+<p>避免“多写冲突”&#xff1a;每个属性只允许一个源系统写入&#xff0c;其他系统只读或通过 API 更新。</p>
+</blockquote>
+<h4><a rel="noopener noreferrer" id="2__CMDB__603"></a>2. 消费方&#xff08;谁使用 CMDB 数据&#xff09;</h4>
+
+<table><thead><tr><th align="left">消费方</th><th align="left">典型问题</th><th align="left">需要的数据</th></tr></thead><tbody><tr><td align="left">事件管理 / 重大事件</td><td align="left">“这个故障影响哪些业务&#xff1f;”</td><td align="left">故障 CI → 服务树 → 业务服务</td></tr><tr><td align="left">变更管理 / CAB</td><td align="left">“改动这个 CI 会影响谁&#xff1f;风险多高&#xff1f;”</td><td align="left">CI 关系、依赖服务、历史变更</td></tr><tr><td align="left">问题管理 / RCA</td><td align="left">“同类故障在过去发生过吗&#xff1f;”</td><td align="left">CI 属性、关系、变更历史</td></tr><tr><td align="left">监控 &amp; ITOM</td><td align="left">“这个告警对应哪个 CI&#xff1f;需要通知谁&#xff1f;”</td><td align="left">Event → CI 映射&#xff0c;CI 负责人</td></tr><tr><td align="left">安全与合规</td><td align="left">“漏洞影响哪些 CI&#xff1f;哪些暴露在外&#xff1f;”</td><td align="left">版本、暴露面、网络区域</td></tr><tr><td align="left">业务连续性&#xff08;BCM&#xff09;</td><td align="left">“如果机房宕了&#xff0c;先恢复哪些服务&#xff1f;”</td><td align="left">关键服务路径、依赖资源</td></tr><tr><td align="left">财务 / ITFM</td><td align="left">“这个 CI 的成本归哪个部门&#xff1f;”</td><td align="left">CI → 成本中心 / 产品线</td></tr></tbody></table><h4><a rel="noopener noreferrer" id="3__615"></a>3. 集成核心原则</h4>
+
+<table><thead><tr><th align="left">原则</th><th align="left">说明</th><th align="left">反面案例</th></tr></thead><tbody><tr><td align="left"><strong>单一写入路径</strong></td><td align="left">同一属性只有一个权威数据源</td><td align="left">监控系统和 CMDB 都在改 CPU 核数&#xff0c;导致冲突</td></tr><tr><td align="left"><strong>统一标识符</strong></td><td align="left">所有系统使用同一套 CI 身份&#xff08;UUID / FQDN / ARN&#xff09;</td><td align="left">不同系统用不同名称&#xff0c;无法关联</td></tr><tr><td align="left"><strong>变更闭环</strong></td><td align="left">任何变更成功 → 必须回写或触发同步</td><td align="left">变更已上线&#xff0c;CMDB 仍是旧状态</td></tr><tr><td align="left"><strong>引用而非复制</strong></td><td align="left">时序、日志、全文保留在源系统&#xff0c;CMDB 只存关联指针</td><td align="left">把几 TB 的监控指标塞入 CMDB</td></tr><tr><td align="left"><strong>可观测的同步</strong></td><td align="left">每个同步任务要有延迟、错误率、冲突数监控</td><td align="left">同步失败无人知&#xff0c;数据腐烂</td></tr></tbody></table><h4><a rel="noopener noreferrer" id="4__625"></a>4. 典型数据流示例&#xff08;变更驱动的配置更新&#xff09;</h4>
+<div class="mermaid mermaid-newversion mermaid-sequence"></div>
+<hr />
+<p>日常检查清单</p>
+
+<table><thead><tr><th align="left">层次</th><th align="left">每周一问</th></tr></thead><tbody><tr><td align="left"><strong>A 模型</strong></td><td align="left">服务与技术之间的映射规则有没有出现过“断链”&#xff1f;新上线的应用是否已纳入模型&#xff1f;</td></tr><tr><td align="left"><strong>B 治理</strong></td><td align="left">质量 KPI 是否达标&#xff1f;谁为当前最差的 CI 类型负责&#xff1f;边界外是否有人私自建表&#xff1f;</td></tr><tr><td align="left"><strong>C 集成</strong></td><td align="left">最近一周同步延迟最长的数据源是哪个&#xff1f;有没有“多源写同一属性”的冲突&#xff1f;</td></tr></tbody></table><hr />
+<h3><a rel="noopener noreferrer" id="_654"></a>与其他视角的关系</h3>
+
+<table><thead><tr><th align="center">顺序</th><th align="left">视角</th><th align="left">分工</th><th align="left">与本篇关系</th></tr></thead><tbody><tr><td align="center">①</td><td align="left">管理视角</td><td align="left">明确 <strong>WHAT</strong>&#xff08;配置管理要达成什么业务目标&#xff09;</td><td align="left">输入&#xff1a;目标与范围</td></tr><tr><td align="center">②</td><td align="left">流程实践视角</td><td align="left">定义 <strong>HOW 流转</strong>&#xff08;变更流程、配置审计流程&#xff09;</td><td align="left">协作&#xff1a;流程触发数据更新</td></tr><tr><td align="center">③</td><td align="left">技术域视角</td><td align="left">定义 <strong>对象类型</strong>&#xff08;服务器、网络、应用的具体属性&#xff09;</td><td align="left">输入&#xff1a;CI 类与属性定义</td></tr><tr><td align="center"><strong>④</strong></td><td align="left"><strong>数据与信息视角&#xff08;本篇&#xff09;</strong></td><td align="left"><strong>模型与集成、边界与质量</strong></td><td align="left">—</td></tr><tr><td align="center">⑤</td><td align="left">要素视角</td><td align="left">六要素体检&#xff08;人、流程、工具、度量等&#xff09;</td><td align="left">输出&#xff1a;检查数据视角的落地健康度</td></tr></tbody></table><h2><a rel="noopener noreferrer" id="__665"></a>六 要素视角&#xff1a;六要素与长期运营</h2>
+<p>要素视角的基本定位&#xff1a;</p>
+
+<table><thead><tr><th align="left">项</th><th align="left">内容</th></tr></thead><tbody><tr><td align="left"><strong>干什么</strong></td><td align="left">用 <strong>六要素</strong> 检查能力域或 CMDB 项目能否真正落地并长期运营&#xff0c;而不是建完就废</td></tr><tr><td align="left"><strong>日常感觉</strong></td><td align="left">交付前做一次全面体检——有数据模型&#xff0c;是不是也有人管&#xff1f;有流程&#xff0c;是不是也有考核指标&#xff1f;</td></tr><tr><td align="left"><strong>顺序</strong></td><td align="left">六要素 <strong>横切</strong> ①&#xff5e;④ 所有视角。每个阶段都可以用它自检&#xff0c;但项目收尾时必须完整走一遍</td></tr><tr><td align="left"><strong>不是</strong></td><td align="left">不是一张新的业务全景图&#xff0c;不是主链路设计——它是质量保证层&#xff0c;站在旁边问&#34;这样能跑起来吗&#34;</td></tr></tbody></table><p><strong>一句话&#xff1a;</strong> 前四个视角回答&#34;管什么、怎么转、有哪些对象、数据怎么建&#34;&#xff0c;要素视角追问一句——“这些东西组合在一起&#xff0c;能持续健康运行么”</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="1__679"></a>1 六要素详解</h3>
+<p>六要素是 CMDB 项目从&#34;能用&#34;到&#34;好用&#34;的六个必要条件&#xff0c;缺任何一个都会让前面的设计打折扣。</p>
+<p><strong>① 组织——谁负责、谁决策</strong></p>
+<p>管配置数据&#xff0c;首先要有人。配置管理员负责 CMDB 数据的日常维护和审计&#xff0c;Data Steward 负责数据质量标准的制定和争议仲裁。组织要素要回答的是一串 RACI 问题&#xff1a;谁对 CI 数据的准确性负责&#xff1f;变更后谁来回写 CMDB&#xff1f;数据出问题找谁&#xff1f;如果这些问题没有答案&#xff0c;CMDB 很快就会变成没人敢用的&#34;鬼库&#34;。</p>
+<p>缺了组织会怎样&#xff1f;数据无人认领&#xff0c;质量无人负责&#xff0c;CI 属性过期了也没人发现。</p>
+<p><strong>② 流程——怎么做、如何审批</strong></p>
+<p>有了人&#xff0c;还要有章法。流程要素的核心是把 CMDB 的维护动作嵌入到日常 ITIL 流程里&#xff0c;而不是让维护 CMDB 变成一项独立的工作。SACM 流程定义了 CI 的创建、更新、删除和审计规则。变更管理流程里必须嵌入&#34;变更实施后强制回写 CMDB&#34;的步骤——不是靠自觉&#xff0c;是靠流程强制。</p>
+<p>缺了流程会怎样&#xff1f;CMDB 数据只减不增&#xff0c;越用越烂&#xff0c;半年后准确率跌破 50%。</p>
+<p><strong>③ 数据——管什么信息</strong></p>
+<p>数据要素定义了 CMDB 里存什么、怎么存。CI 类型有哪些、每个 CI 该有哪些属性、属性之间有什么校验规则、数据质量的标准是什么。这些在④数据与信息视角里有详细设计&#xff0c;要素视角要做的是检查——这些东西是否被正式定义、是否有文档、是否被团队理解。</p>
+<p>缺了数据会怎样&#xff1f;只有工具没有标准&#xff0c;每个人按自己理解往 CMDB 里填&#xff0c;格式不统一、字段乱填&#xff0c;查询时谁也找不到想要的信息。</p>
+<p><strong>④ 工具——用什么系统</strong></p>
+<p>工具是承载组织、流程和数据的平台。<strong>CMDB 本身是核心存储&#xff0c;Discovery 负责自动发现和写入&#xff0c;ITSM 系统在事件/变更/问题流程里读写 CMDB 数据</strong>。要素视角检查的是——这些工具之间是否真的打通了&#xff0c;数据能不能自动流转&#xff0c;而不是靠手工导出再导入。</p>
+<p>缺了工具会怎样&#xff1f;CMDB 变成信息孤岛&#xff0c;发现工具扫出来的数据和 ITSM 里用的数据是两套&#xff0c;谁也不信谁。</p>
+<p><strong>⑤ 指标——如何考核</strong></p>
+<p>没有度量就没有改进。指标要素定义了什么算&#34;好&#34;——CMDB 数据的完整率&#xff08;必填字段是否填了&#xff09;、关联率&#xff08;CI 之间的关系是否建立了&#xff09;、及时率&#xff08;变更后多久回写 CMDB&#xff09;、准确率&#xff08;随机抽查与实际情况是否一致&#xff09;。这些指标要有人盯、有人被考核&#xff0c;否则设计再好的流程也会退化。</p>
+<p>缺了指标会怎样&#xff1f;无人有动力维护数据质量&#xff0c;&#34;能用就行&#34;的心态蔓延&#xff0c;数据质量持续下滑无人察觉。</p>
+<p><strong>⑥ 伙伴——内外部依赖</strong></p>
+<p>IT 环境里不是所有 CI 都在自己掌控中。云厂商的资源配置、外包团队的资产录入、硬件厂商的维保信息&#xff0c;这些外部数据源的质量直接影响 CMDB 的可靠性。伙伴要素要回答——谁对这些外部数据的准确性负责&#xff1f;合同里有没有约定数据交付的标准和时效&#xff1f;</p>
+<p>缺了伙伴会怎样&#xff1f;源数据不可靠&#xff0c;CMDB 再怎么维护也是建立在沙滩上的城堡。</p>
+<hr />
+<p><strong>六要素之间的闭环关系&#xff1a;</strong></p>
+<p>组织定义了&#34;谁来做&#34;&#xff0c;驱动流程的设计。流程规定了&#34;怎么做&#34;&#xff0c;对数据提出质量要求。数据标准落地到工具里&#xff0c;由工具承载和自动化。工具的运行效果通过指标来衡量&#xff0c;暴露短板。伙伴作为外部输入&#xff0c;影响整个链条的可靠度。六个要素互为前提&#xff0c;形成闭环。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="2____727"></a>2 六要素 × 管理域&#xff08;示例&#xff09;</h3>
+<p>同一个六要素&#xff0c;在不同管理域里会有不同的具体内容。以下以两个核心管理域为例&#xff1a;</p>
+<p><strong>R4 配置与资产管理域&#xff1a;</strong></p>
+<p>组织方面&#xff0c;需要明确的配置管理员和资产管理员角色&#xff0c;以及两者的职责边界。流程方面&#xff0c;核心是 SACM 流程和定期配置审计流程。数据方面&#xff0c;CMDB 和资产台账是核心数据资产&#xff0c;两者的数据必须一致。工具方面&#xff0c;CMDB 和 Discovery 是主力工具。指标方面&#xff0c;关注 CI 完整率和准确率。伙伴方面&#xff0c;硬件厂商的维保数据、云厂商的资源清单是主要外部依赖。</p>
+<p><strong>D3 变更发布与部署域&#xff1a;</strong></p>
+<p>组织方面&#xff0c;CAB&#xff08;变更顾问委员会&#xff09;和变更经理是核心角色。流程方面&#xff0c;变更审批流程和紧急变更通道是重点。数据方面&#xff0c;变更影响分析所依赖的 CI 关系数据是核心。工具方面&#xff0c;ITSM 的变更管理模块与 CMDB 的集成是关键。指标方面&#xff0c;变更成功率是核心考核指标。伙伴方面&#xff0c;供应商的变更窗口和通知机制需要合同约束。</p>
+<hr />
+<hr />
+<h3><a rel="noopener noreferrer" id="3__743"></a>3 与其它视角的关系</h3>
+<p>要素视角是五视角系列的收尾&#xff0c;与前面四个视角的关系如下&#xff1a;</p>
+<ul><li>管理视角&#xff08;①&#xff09;定义了要管哪些能力域。要素视角追问——每个域都有人负责吗&#xff0c;有流程吗&#xff0c;有指标吗&#xff1f;</li><li>流程实践视角&#xff08;②&#xff09;定义了工单怎么流转、CMDB 在哪读写。要素视角追问——这些读写动作被流程强制了吗&#xff0c;还是靠自觉&#xff1f;</li><li>技术域视角&#xff08;③&#xff09;定义了 CI 类型空间。要素视角追问——这些 Class 的数据质量标准定义了吗&#xff0c;由谁维护&#xff1f;</li><li>数据与信息视角&#xff08;④&#xff09;定义了模型和集成方案。要素视角追问——集成跑起来了&#xff0c;但数据进来之后有人校验吗&#xff0c;不准确怎么办&#xff1f;</li></ul>
+<hr />
+<h2><a rel="noopener noreferrer" id="__ITSMCMDBCSDM__754"></a>七  ITSM、CMDB、CSDM 三层关系收束</h2>
+<p>这三者的关系&#xff0c;用一句话说清楚&#xff1a;**CSDM 是骨架&#xff0c;CMDB 是血肉&#xff0c;ITSM 是动作。**它们不是平级关系&#xff0c;而是从抽象到具象、从数据到行为的三层依赖。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="1_CSDM__759"></a>1 CSDM 是什么&#xff1f;——“数据的组织架构图”</h3>
+<p>CSDM&#xff08;Common Service Data Model&#xff0c;通用服务数据模型&#xff09;不是数据库&#xff0c;不是产品&#xff0c;而是一套<strong>标准化的数据建模框架</strong>。它回答&#xff1a;IT 世界里有哪些东西&#xff08;业务服务、应用、服务器、网络……&#xff09;&#xff0c;这些东西之间应该怎么关联&#xff0c;以及每个东西该叫什么名字。</p>
+<p>打个比方&#xff1a;CSDM 就是城市规划局发布的&#34;城市分区规范&#34;——住宅区、商业区、工业区分别在哪&#xff0c;主干道怎么连。它只管规则&#xff0c;不建房子。</p>
+<p>CSDM 的核心价值是<strong>统一语言</strong>。没它之前&#xff0c;A 团队管服务器叫&#34;主机&#34;&#xff0c;B 团队叫&#34;物理机&#34;&#xff0c;C 团队叫&#34;Server&#34;&#xff1b;A 认为&#34;应用&#34;包含&#34;服务&#34;&#xff0c;B 反过来。所有人都在说同一件事&#xff0c;但互相听不懂。CSDM 就是那本&#34;标准术语和关系手册&#34;&#xff0c;让所有人对齐。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="2__CMDB__769"></a>2  CMDB 是什么&#xff1f;——“按规则存数据的地方”</h3>
+<p>CMDB&#xff08;Configuration Management Database&#xff0c;配置管理数据库&#xff09;是<strong>实际的存储系统</strong>&#xff0c;里面存着一个个 CI&#xff08;配置项&#xff09;以及它们之间的关系。</p>
+<p>CMDB 和 CSDM 的关系是&#xff1a;<strong>CSDM 画蓝图&#xff0c;CMDB 按蓝图盖楼。</strong> CSDM 说&#34;业务服务应该依赖应用服务&#xff0c;应用服务应该运行在服务器上&#34;&#xff0c;CMDB 就按照这个规则建表、存数据、查关系。一个 CMDB 好不好&#xff0c;很大程度上取决于它有没有遵循一套清晰的数据模型——而 CSDM 就是业界最成熟的模型之一。</p>
+<hr />
+<h3><a rel="noopener noreferrer" id="3_ITSM__777"></a>3 ITSM 是什么&#xff1f;——“用数据干活的动作层”</h3>
+<p>ITSM&#xff08;IT Service Management&#xff0c;IT 服务管理&#xff09;是一整套<strong>管理流程和工具平台</strong>&#xff0c;处理日常 IT 工作&#xff1a;用户报故障&#xff08;事件管理&#xff09;、查根因&#xff08;问题管理&#xff09;、上线新功能&#xff08;变更/发布管理&#xff09;、员工申请设备&#xff08;服务请求&#xff09;等等。</p>
+<p>ITSM 和 CMDB 的关系是&#xff1a;<strong>ITSM 消费 CMDB 的数据来做决策&#xff0c;执行完后又把结果写回 CMDB。</strong> 比如&#xff1a;</p>
+<ul><li>事件来了 → ITSM 读 CMDB 的 CI 关系图&#xff0c;判断影响范围</li><li>变更执行完 → ITSM 把 CMDB 里对应 CI 的状态和属性更新掉</li><li>用户申请笔记本 → ITSM 在 CMDB 里新建一个资产 CI 记录</li></ul>
+<p>ITSM 不存 CI 数据&#xff0c;它只是<strong>引用和更新</strong> CMDB。CMDB 是&#34;大脑&#34;&#xff0c;ITSM 是&#34;四肢&#34;。</p>
+<hr />
+
+<table><thead><tr><th align="left">层次</th><th align="left">是什么</th><th align="left">核心问题</th><th align="left">比喻</th></tr></thead><tbody><tr><td align="left"><strong>CSDM</strong></td><td align="left">数据建模框架</td><td align="left">“数据应该怎么组织和命名&#xff1f;”</td><td align="left">城市规划规范</td></tr><tr><td align="left"><strong>CMDB</strong></td><td align="left">实际数据库</td><td align="left">“具体的 CI 和关系存在哪里&#xff1f;”</td><td align="left">按规范建的房子</td></tr><tr><td align="left"><strong>ITSM</strong></td><td align="left">流程与工具平台</td><td align="left">“日常 IT 工作怎么流转和执行&#xff1f;”</td><td align="left">人在房子里干活</td></tr></tbody></table><p><strong>链式关系&#xff1a;CSDM 指导 CMDB 怎么建 → CMDB 存储 CI 和关系 → ITSM 消费 CMDB 数据来跑流程 → 流程执行结果回写 CMDB</strong> 。</p>
+<hr />
+<h2><a rel="noopener noreferrer" id="_800"></a>总结一下</h2>
+<p>为了能全面的理解企业信息化的内容以及CMDB在其中的位置&#xff0c;我尝试从架构设计的逻辑的多个视角去看待整个信息化平台。管理视角先画出静态能力地图&#xff0c;知道IT要管战略、建设、运营、治理四大类十六个域&#xff0c;其中R4配置与资产就是CMDB要服务的主场&#xff08;能力地图&#xff09;。流程实践视角把能力落到ITIL流程上&#xff0c;看事件、变更、问题这些事怎么转&#xff0c;从而明确CMDB的读写触点——变更后必回写、发现自动入库、告警关联CI&#xff0c;这三条是硬规则&#xff08;业务流&#xff09;。技术域视角回到现实世界&#xff0c;把基础设施从业务服务到网络设备按L1到L4分层&#xff0c;盘点CI类型和关系&#xff08;依赖于、运行在、连接到&#xff09;&#xff0c;给建模打底&#xff08;物理世界&#xff09;。数据与信息视角是重点需要关注的&#xff0c;在这里定CSDM模型、画CMDB边界、管理配置与关系&#xff08;模型世界&#xff09;。要素视角拿组织、流程、数据、工具、指标、伙伴这六要素当体检表&#xff0c;问自己一句&#xff1a;这套东西能长期跑起来吗&#xff1f;&#xff08;自检清单&#xff09;。最后再理解几个核心概念之间的关系&#xff1a;CSDM 指导 CMDB 怎么建 → CMDB 存储 CI 和关系 → ITSM 消费 CMDB 数据来跑流程 → 流程执行结果回写 CMDB</p>

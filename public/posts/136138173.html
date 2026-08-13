@@ -1,0 +1,16 @@
+<p>关于Java 虚拟机部分的核心知识进行一网打尽，主要包括Java虚拟机的内存分区，执行流程等，通过一篇文章串联面试重点，并且帮助加强日常基础知识的理解，全局思维导图如下所示<br> <img alt="在这里插入图片描述" src="./posts/assets/136138173-01-2872b2df82.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="JVM__3"></a>JVM 程序执行流程</h2>
+<p>包括Java程序的完整执行流程，以及Javac编译，JIT即时编译</p>
+<h3><a rel="noopener noreferrer" id="Java_5"></a>Java程序的完整执行流程是什么样的</h3>
+<p>从一个Java程序被编写，最后一直到创建的对象被垃圾回收，全流程包括以下几步，加粗部分为本系列接下来的blog重点讲解内容：</p>
+<ol>
+ <li>编辑生成源代码.java文件</li>
+ <li>编译（<strong>javac编译和jit编译(直接生成机器码)</strong>）生成字节码文件</li>
+ <li>类文件被加载到虚拟机（<strong>类Class文件结构，虚拟机运行时内存分析，类加载机制</strong>）</li>
+ <li>虚拟机执行二进制字节码（<strong>虚拟机字节码执行系统</strong>）</li>
+ <li>垃圾回收（<strong>JVM垃圾回收机制</strong>）</li>
+</ol>
+<p>虚拟机发挥作用的部分从第3步到第5步之间：</p>
+<ol>
+ <li><strong>类加载阶段</strong>：一个类文件首先加载到方法区，一些符号引用被解析（静态解析）为直接引用或者等到运行时分派（动态绑定），经过一系列的加载过程（class文件的常量池被加</li>
+</ol>

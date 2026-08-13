@@ -1,0 +1,25 @@
+<p>基于你公司的自研事件管理平台（binlog + Kafka + 定时任务），下面给出一个<strong>生产级的数据一致性同步方案</strong>，整体架构清晰，关键点覆盖，可直接作为设计参考。</p>
+<hr>
+<h3><a rel="noopener noreferrer" id="_Binlog__5"></a>方案名称：基于 Binlog 的异步最终一致性同步方案</h3>
+<h4><a rel="noopener noreferrer" id="_7"></a>一、整体架构</h4>
+<pre><code>MySQL → Binlog采集（Canal/Debezium） → Kafka（事件中心） → 数据消费服务 → Elasticsearch
+           ↑                                  ↓
+       全量同步任务                     定时对账任务
+</code></pre>
+<p><strong>核心组件</strong>：</p>
+<ul>
+ <li><strong>Binlog 采集器</strong>：伪装 MySQL 从库，实时解析 binlog，将数据变更（增、删、改）转换为消息发送到 Kafka。必须支持 GTID，保证断点续传。</li>
+ <li><strong>Kafka 集群</strong>：作为事件中心持久化变更事件，提供削峰、解耦和重试能力。Topic 按业务或表划分，副本数至少 2。</li>
+ <li><strong>数据消费服务</strong>：从 Kafka 拉取消息，将数据写入 ES。必须实现幂等、顺序控制、异常重试。</li>
+ <li><strong>全量同步工具</strong>：负责初始化 ES 索引，或在极端不一致时重建索引。能批量拉取 MySQL 数据并写入 ES。</li>
+ <li><strong>定时对账任务</strong>：周期性比对 MySQL 和 ES 数据，发现不一致触发补偿。</li>
+</ul>
+<hr>
+<h4><a rel="noopener noreferrer" id="_24"></a>二、核心流程</h4>
+<h5><a rel="noopener noreferrer" id="1__26"></a>1. 全量同步（首次建索引或重建）</h5>
+<ul>
+ <li><strong>步骤</strong>：
+  <ol>
+   <li>记录当前 binlog 位置（GTID </li>
+  </ol></li>
+</ul>

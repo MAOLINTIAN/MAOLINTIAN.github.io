@@ -1,0 +1,34 @@
+<p>根据不同的业务需求和场景&#xff0c;选择适合的数据库类型至关重要。以下是一个优化后的表格展示&#xff0c;涵盖了管理型系统、大流量系统、日志型系统、搜索型系统、事务型系统、离线计算和实时计算七大类业务系统的数据库选型建议。先明确下NoSQL的分类</p>
+<h3><a rel="noopener noreferrer" id="NoSQL_1"></a>NoSQL数据库分类</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/140580461-01-adbebf898b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_3"></a>场景分析及选型</h3>
+
+<table><thead><tr><th>系统类型</th><th>场景</th><th>数据量</th><th>并发量</th><th>实时性</th><th>一致性要求</th><th>读写分布和类型</th><th>安全性</th><th>运维性</th><th>数据库选型</th></tr></thead><tbody><tr><td><strong>管理型系统</strong></td><td><strong>运营类管理</strong></td><td>中等</td><td>中等</td><td>中等</td><td>高</td><td><strong>读写均衡</strong></td><td>高</td><td>高</td><td><strong>关系型数据库&#xff08;如MySQL</strong>、PostgreSQL&#xff09;</td></tr><tr><td><strong>大流量系统</strong></td><td><strong>电商单品页服务</strong></td><td>高</td><td>高</td><td>高</td><td>高&#xff08;后台&#xff09;</td><td><strong>读多写少&#xff08;前台&#xff09;</strong></td><td>高</td><td>高</td><td><strong>后台&#xff1a;关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;<br />前台&#xff1a;<strong>K-V数据库</strong>&#xff08;如Redis、Memcached&#xff09;</strong></td></tr><tr><td><strong>日志型系统</strong></td><td><strong>日志收集与分析</strong></td><td>高</td><td>低</td><td>低</td><td>低</td><td><strong>写多读少</strong></td><td>中</td><td>中</td><td><strong>原始数据&#xff1a;列式数据库&#xff08;如HBase、Cassandra&#xff09;<br />日志搜索&#xff1a;倒排索引数据库&#xff08;如Elasticsearch&#xff09;</strong></td></tr><tr><td><strong>搜索型系统</strong></td><td><strong>站内商品搜索</strong></td><td>中等</td><td>高</td><td>高</td><td>低</td><td><strong>读多写少</strong></td><td>中</td><td>中</td><td><strong>后台&#xff1a;关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;<br />前台&#xff1a;倒排索引数据库&#xff08;如Elasticsearch&#xff09;</strong></td></tr><tr><td><strong>事务型系统</strong></td><td><strong>金融交易、库存</strong></td><td>中等</td><td>高</td><td>高</td><td>高</td><td><strong>读写均衡</strong></td><td>高</td><td>高</td><td><strong>关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;&#43; 缓存&#xff08;如Redis&#xff09;&#43; 一致性协议&#xff08;如Paxos、Raft&#xff09;或新型关系数据库&#xff08;如CockroachDB、TiDB&#xff09;</strong></td></tr><tr><td><strong>离线计算</strong></td><td><strong>大数据批量分析</strong></td><td>高</td><td>低</td><td>低</td><td>低</td><td><strong>读多写少</strong></td><td>中</td><td>中</td><td><strong>列式数据库&#xff08;如Hadoop HDFS、Apache Parquet&#xff09;<br />或关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;</strong></td></tr><tr><td><strong>实时计算</strong></td><td><strong>实时监控、物联网</strong></td><td>中高</td><td>高</td><td>高</td><td>中</td><td><strong>写多读少</strong></td><td>中</td><td>中</td><td><strong>时序数据库&#xff08;如InfluxDB、TimescaleDB&#xff09;<br />或列式数据库&#xff08;如Druid、ClickHouse&#xff09;</strong></td></tr></tbody></table><h3><a rel="noopener noreferrer" id="_15"></a>详细说明</h3>
+<ol><li>
+<p><strong>管理型系统</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;运营类系统、管理信息系统。</li><li><strong>数据库选型</strong>&#xff1a;关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;因为其高一致性和数据完整性。</li></ul>
+</li><li>
+<p><strong>大流量系统</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;电商单品页的某个服务。</li><li><strong>数据库选型</strong>&#xff1a;
+<ul><li>后台&#xff1a;关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;以确保数据一致性。</li><li>前台&#xff1a;内存型数据库&#xff08;如Redis、Memcached&#xff09;以应对高并发和快速响应需求。</li></ul>
+</li></ul>
+</li><li>
+<p><strong>日志型系统</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;日志收集和分析。</li><li><strong>数据库选型</strong>&#xff1a;
+<ul><li>原始数据存储&#xff1a;列式数据库&#xff08;如HBase、Cassandra&#xff09;以优化大数据写入。</li><li>日志搜索&#xff1a;倒排索引数据库&#xff08;如Elasticsearch&#xff09;以实现快速查询和搜索。</li></ul>
+</li></ul>
+</li><li>
+<p><strong>搜索型系统</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;站内搜索&#xff08;如商品搜索&#xff09;。</li><li><strong>数据库选型</strong>&#xff1a;
+<ul><li>后台&#xff1a;关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;用于数据管理。</li><li>前台&#xff1a;倒排索引数据库&#xff08;如Elasticsearch&#xff09;用于快速搜索和查询。</li></ul>
+</li></ul>
+</li><li>
+<p><strong>事务型系统</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;库存管理、交易系统、记账系统。</li><li><strong>数据库选型</strong>&#xff1a;关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;&#43; 缓存&#xff08;如Redis&#xff09;&#43; 一致性协议&#xff08;如Paxos、Raft&#xff09;&#xff0c;或者使用新型关系数据库&#xff08;如CockroachDB、TiDB&#xff09;以确保数据一致性和高并发处理。</li></ul>
+</li><li>
+<p><strong>离线计算</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;大数据分析和处理。</li><li><strong>数据库选型</strong>&#xff1a;列式数据库&#xff08;如Hadoop HDFS、Apache Parquet&#xff09;或关系型数据库&#xff08;如MySQL、PostgreSQL&#xff09;以应对大量数据的批量处理需求。</li></ul>
+</li><li>
+<p><strong>实时计算</strong>&#xff1a;</p>
+<ul><li><strong>适用场景</strong>&#xff1a;实时监控和分析。</li><li><strong>数据库选型</strong>&#xff1a;时序数据库&#xff08;如InfluxDB、TimescaleDB&#xff09;或列式数据库&#xff08;如Druid、ClickHouse&#xff09;以支持高频数据写入和实时分析。</li></ul>
+</li></ol>

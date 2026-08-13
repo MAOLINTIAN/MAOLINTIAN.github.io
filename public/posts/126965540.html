@@ -1,0 +1,198 @@
+<p>其实之前的工作中强调过很多次自己做测试的重要性&#xff0c;例如讲单元测试的&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/78563929"><strong>【C#编程最佳实践 一】单元测试实践</strong></a>&#xff0c;讲单元测试规范的<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/121445686"><strong>【阿里巴巴Java编程规范学习 四】Java质量安全规约</strong></a>&#xff0c;讲接口测试的&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/article/details/79463039"><strong>【C#编程最佳实践 十三】接口测试实践</strong></a>&#xff0c;这里旧事重提就不再详细展开了&#xff0c;回顾下单元测试的基本概念&#xff0c;重点来看如何提升代码的可测试性。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>单元测试</h2>
+<p>依次从WHAT&#xff0c;WHY&#xff0c;HOW&#xff0c;HOW去了解。</p>
+<h3><a rel="noopener noreferrer" id="_3"></a>什么是单元测试</h3>
+<p>单元测试由RD自己来编写&#xff0c;用来测试自己写的代码的正确性。它与集成测试的区别是测试粒度</p>
+<ul><li>集成测试的测试对象是整个系统或者某个功能模块&#xff0c;比如测试用户注册、登录功能是否正常&#xff0c;是一种<strong>端到端&#xff08;end to end&#xff09;的测试</strong>。</li><li>单元测试的测试对象是<strong>类或者函数&#xff0c;用来测试一个类和函数是否都按照预期的逻辑执行。这是代码层级的测试</strong></li></ul>
+<p>单元测试相对于集成测试&#xff08;Integration Testing&#xff09;来说&#xff0c;测试的粒度更小一些。</p>
+<h3><a rel="noopener noreferrer" id="_10"></a>写单元测试的好处</h3>
+<p>单元测试除了能有效地为重构保驾护航之外&#xff0c;也是保证代码质量最有效的两个手段之一&#xff08;另一个是 Code Review&#xff09;&#xff0c;写单元测试有如下好处&#xff1a;</p>
+<ul><li><strong>写单元测试能有效地发现代码中的 bug</strong>&#xff0c;通过写单元测试可以节省很多 fix 低级 bug 的时间&#xff0c;能够有时间去做其他更有意义的事情。</li><li><strong>写单元测试能发现代码设计上的问题</strong>&#xff0c;代码的<strong>可测试性</strong>是评判代码质量的一个重要标准。对于一段代码&#xff0c;如果很难为其编写单元测试&#xff0c;或者单元测试写起来很吃力&#xff0c;需要依靠单元测试框架里很高级的特性才能完成&#xff0c;那往往就意味着代码设计得不够合理&#xff0c;比如&#xff0c;没有使用依赖注入、大量使用静态函数、全局变量、代码高度耦合等</li><li><strong>单元测试是对集成测试的有力补充</strong>&#xff0c;程序运行的 bug 往往出现在一些边界条件、异常情况下&#xff0c;比如&#xff0c;除数未判空、网络超时。而大部分异常情况都比较难在测试环境中模拟</li><li><strong>写单元测试的过程本身就是代码重构的过程</strong>&#xff0c;持续重构应该作为开发的一部分来执行&#xff0c;写单元测试实际上就是落地执行持续重构的一个有效途径。设计和实现代码的时候&#xff0c;我们很难把所有的问题都想清楚编写单元测试就相当于对代码的一次自我 Code Review&#xff0c;在这个过程中&#xff0c;可以发现一些设计上的问题&#xff08;比如代码设计的不可测试&#xff09;以及代码编写方面的问题&#xff08;比如一些边界条件处理不当&#xff09;等&#xff0c;然后针对性的进行重构</li><li><strong>阅读单元测试能帮助我们快速熟悉代码</strong>&#xff0c;文档结合单元测试&#xff0c;我们不需要深入的阅读代码&#xff0c;便能知道代码实现了什么功能&#xff0c;有哪些特殊情况需要考虑&#xff0c;有哪些边界条件需要处理。不需要深入的阅读代码&#xff0c;便能知道代码实现了什么功能&#xff0c;有哪些特殊情况需要考虑&#xff0c;有哪些边界条件需要处理。</li><li><strong>单元测试是 TDD 可落地执行的改进方案</strong>&#xff0c;测试驱动开发&#xff08;Test-Driven Development&#xff0c;简称 TDD&#xff09;是一个经常被提及但很少被执行的开发模式。它的核心指导思想就是<strong>测试用例先于代码编写</strong>&#xff0c;但很难落地&#xff0c;不如先写代码&#xff0c;紧接着写单元测试&#xff0c;最后根据单元测试反馈出来问题&#xff0c;再回过头去重构代码&#xff0c;变相落实TDD&#xff0c;测试驱动重构与FIX</li></ul>
+<p>其实单元测试就是对代码设计和功能逻辑的一次反思&#xff0c;粗粒度的CR&#xff0c;结合CR&#xff0c;推动和保障持续重构。</p>
+<h3><a rel="noopener noreferrer" id="_20"></a>如何编写单元测试</h3>
+<p>物理上可以借助Java 中比较出名的单元测试框架有 Junit、TestNG、Spring Test 等。这些框架提供了通用的执行流程&#xff08;比如执行测试用例的 TestCaseRunner&#xff09;和工具类库&#xff08;比如各种 Assert 判断函数&#xff09;&#xff0c;而主观经验上要有这样的意识</p>
+<ul><li><strong>编写单元测试尽管繁琐&#xff0c;但并不是太耗时</strong>&#xff0c;不同测试用例之间的代码差别可能并不是很大&#xff0c;简单 copy-paste 改改就行</li><li><strong>可以稍微放低对单元测试代码质量的要求</strong>&#xff0c;命名稍微有些不规范&#xff0c;代码稍微有些重复&#xff0c;也都是没有问题的&#xff0c;但代码规范意识要时刻有&#xff0c;要达到想降低要求都降不了的水平</li><li><strong>覆盖率作为衡量单元测试质量的重要但不是唯一标准&#xff0c;更重要的是要看测试用例是否覆盖了所有可能的情况</strong></li><li><strong>单元测试不要依赖被测试函数的具体实现逻辑&#xff0c;它只关心被测函数实现了什么功能</strong>。切不可为了追求覆盖率&#xff0c;逐行阅读代码</li><li><strong>通过单元测试框架无法测试&#xff0c;多半是因为代码的可测试性不好</strong>&#xff0c;需要思考下代码的设计</li></ul>
+<p>单元测试就是一个透明测试&#xff0c;我们只关注功能而无需关注实现细节&#xff0c;关注的功能要关注是否覆盖了所有可能场景</p>
+<h3><a rel="noopener noreferrer" id="_30"></a>单元测试为何难落地执行</h3>
+<p>一方面&#xff0c;写<strong>单元测试本身比较繁琐&#xff0c;技术挑战不大</strong>&#xff0c;很多程序员不愿意去写&#xff1b;另一方面&#xff0c;研发比较偏向“快、糙、猛”&#xff0c;<strong>容易因为开发进度紧&#xff0c;导致单元测试的执行虎头蛇尾</strong>。最后&#xff0c;关键问题还是团队没有建立对单元测试正确的认识&#xff0c;觉得可有可无&#xff0c;单靠督促很难执行得很好</p>
+<h2><a rel="noopener noreferrer" id="_32"></a>代码可测试性</h2>
+<p>简而言之&#xff0c;<font color="red"><strong>代码的可测试性&#xff0c;就是针对代码编写单元测试的难易程度</strong></font>。对于一段代码&#xff0c;如果很难为其编写单元测试&#xff0c;或者单元测试写起来很费劲&#xff0c;需要依靠单元测试框架中很高级的特性&#xff0c;那往往就意味着代码设计得不够合理&#xff0c;代码的可测试性不好.</p>
+<h3><a rel="noopener noreferrer" id="_35"></a>提高代码可测试性&#xff1a;依赖注入和二次封装</h3>
+<p>如何让代码可测试性更好呢&#xff1f;<font color="red"><strong>最常用的方式就是依赖注入了&#xff0c;通过DI实现反转&#xff0c;将对象的创建交给业务调用方&#xff0c;这样就可以随意控制输出的结果&#xff0c;从而达到mock数据的目的&#xff0c;最好搭配多态&#xff0c;让mock类之间基于父类注入</strong></font>&#xff0c;例如将Mock数据注入到类中进行测试。例如</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MockWalletRpcServiceOne</span> <span class="token keyword">extends</span> <span class="token class-name">WalletRpcService</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">moveMoney</span><span class="token punctuation">(</span><span class="token class-name">Long</span> id<span class="token punctuation">,</span> <span class="token class-name">Long</span> fromUserId<span class="token punctuation">,</span> <span class="token class-name">Long</span> toUserId<span class="token punctuation">,</span> <span class="token class-name">Double</span> amount<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token string">&#34;123bac&#34;</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MockWalletRpcServiceTwo</span> <span class="token keyword">extends</span> <span class="token class-name">WalletRpcService</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">moveMoney</span><span class="token punctuation">(</span><span class="token class-name">Long</span> id<span class="token punctuation">,</span> <span class="token class-name">Long</span> fromUserId<span class="token punctuation">,</span> <span class="token class-name">Long</span> toUserId<span class="token punctuation">,</span> <span class="token class-name">Double</span> amount<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>通过依赖注入注入到主类</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Transaction</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//...</span>
+  <span class="token comment">// 添加一个成员变量及其set方法</span>
+  <span class="token keyword">private</span> <span class="token class-name">WalletRpcService</span> walletRpcService<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setWalletRpcService</span><span class="token punctuation">(</span><span class="token class-name">WalletRpcService</span> walletRpcService<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>walletRpcService <span class="token operator">&#61;</span> walletRpcService<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">// ...</span>
+  <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// ...</span>
+    <span class="token comment">// 删除下面这一行代码</span>
+    <span class="token comment">// WalletRpcService walletRpcService &#61; new WalletRpcService();</span>
+    <span class="token comment">// ...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>使用时直接注入Mock类</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testExecute</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token class-name">Long</span> buyerId <span class="token operator">&#61;</span> <span class="token number">123L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Long</span> sellerId <span class="token operator">&#61;</span> <span class="token number">234L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Long</span> productId <span class="token operator">&#61;</span> <span class="token number">345L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Long</span> orderId <span class="token operator">&#61;</span> <span class="token number">456L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Transction</span> transaction <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Transaction</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">,</span> buyerId<span class="token punctuation">,</span> sellerId<span class="token punctuation">,</span> productId<span class="token punctuation">,</span> orderId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// 使用mock对象来替代真正的RPC服务</span>
+  transaction<span class="token punctuation">.</span><span class="token function">setWalletRpcService</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MockWalletRpcServiceOne</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">:</span>
+  <span class="token keyword">boolean</span> executedResult <span class="token operator">&#61;</span> transaction<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">assertTrue</span><span class="token punctuation">(</span>executedResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">assertEquals</span><span class="token punctuation">(</span>STATUS<span class="token punctuation">.</span>EXECUTED<span class="token punctuation">,</span> transaction<span class="token punctuation">.</span><span class="token function">getStatus</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>对于一些需要外部依赖的远程服务&#xff0c;因为我们不能修改远程服务代码&#xff0c;所以需要组合<font color="red"><strong>mock、二次封装、依赖注入</strong></font>等方式解决&#xff0c;也就是类不直接依赖于远程类&#xff0c;而是依赖于封装在远程类之上的本地方法&#xff0c;测试的时候mock封装类即可。例如在远程调用的RedisDistributedLock之上封装一层而不是直接调用</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TransactionLock</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">lock</span><span class="token punctuation">(</span><span class="token class-name">String</span> id<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">return</span> <span class="token class-name">RedisDistributedLock</span><span class="token punctuation">.</span><span class="token function">getSingletonIntance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">lockTransction</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">RedisDistributedLock</span><span class="token punctuation">.</span><span class="token function">getSingletonIntance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unlockTransction</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>主类与依赖的封装类通过依赖注入来组织</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Transaction</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">//...</span>
+  <span class="token keyword">private</span> <span class="token class-name">TransactionLock</span> lock<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setTransactionLock</span><span class="token punctuation">(</span><span class="token class-name">TransactionLock</span> lock<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>lock <span class="token operator">&#61;</span> lock<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//...</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+      isLocked <span class="token operator">&#61;</span> lock<span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment">//...</span>
+    <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>isLocked<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        lock<span class="token punctuation">.</span><span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>我们在测试时就可以直接将Mock的封装类注入主类测试</p>
+<pre><code class="prism language-java"><span class="token comment">// 二次封装远程调用类&#xff0c;然后将mock的封装类DI注入到主类中进行测试</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testExecute</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token class-name">Long</span> buyerId <span class="token operator">&#61;</span> <span class="token number">123L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Long</span> sellerId <span class="token operator">&#61;</span> <span class="token number">234L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Long</span> productId <span class="token operator">&#61;</span> <span class="token number">345L</span><span class="token punctuation">;</span>
+  <span class="token class-name">Long</span> orderId <span class="token operator">&#61;</span> <span class="token number">456L</span><span class="token punctuation">;</span>
+
+  <span class="token class-name">TransactionLock</span> mockLock <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">TransactionLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">lock</span><span class="token punctuation">(</span><span class="token class-name">String</span> id<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+  <span class="token class-name">Transction</span> transaction <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Transaction</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">,</span> buyerId<span class="token punctuation">,</span> sellerId<span class="token punctuation">,</span> productId<span class="token punctuation">,</span> orderId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  transaction<span class="token punctuation">.</span><span class="token function">setWalletRpcService</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MockWalletRpcServiceOne</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  transaction<span class="token punctuation">.</span><span class="token function">setTransactionLock</span><span class="token punctuation">(</span>mockLock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">boolean</span> executedResult <span class="token operator">&#61;</span> transaction<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">assertTrue</span><span class="token punctuation">(</span>executedResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">assertEquals</span><span class="token punctuation">(</span>STATUS<span class="token punctuation">.</span>EXECUTED<span class="token punctuation">,</span> transaction<span class="token punctuation">.</span><span class="token function">getStatus</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_157"></a>哪些代码可测试性不好</h3>
+<p>下面整理一些影响代码可测试性的问题</p>
+<h4><a rel="noopener noreferrer" id="1__159"></a>1 未决行为</h4>
+<p>所谓的未决行为逻辑就是&#xff0c;代码的输出是随机或者说不确定的&#xff0c;比如&#xff0c;跟时间、随机数有关的代码&#xff0c;例如&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Demo</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">long</span> <span class="token function">caculateDelayDays</span><span class="token punctuation">(</span><span class="token class-name">Date</span> dueTime<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">long</span> currentTimestamp <span class="token operator">&#61;</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>dueTime<span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;&#61;</span> currentTimestamp<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">long</span> delayTime <span class="token operator">&#61;</span> currentTimestamp <span class="token operator">-</span> dueTime<span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">long</span> delayDays <span class="token operator">&#61;</span> delayTime <span class="token operator">/</span> <span class="token number">86400</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> delayDays<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这是一段计算延期时间的代码&#xff0c;当前时间一直在变&#xff0c;而这种变化不是通过参数传递进来的&#xff0c;所以随着时间的推移&#xff0c;单元测试的输出结果会有不同&#xff0c;所以为了提高代码可测试性&#xff0c;可以把currentTimestamp 这个参数当成局部变量传进来&#xff1a;</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Demo</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">long</span> <span class="token function">caculateDelayDays</span><span class="token punctuation">(</span><span class="token class-name">Date</span> dueTime<span class="token punctuation">,</span> <span class="token class-name">Date</span> currentTime<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>dueTime<span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;&#61;</span> currentTime<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">long</span> delayTime <span class="token operator">&#61;</span> currentTime<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> dueTime<span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">long</span> delayDays <span class="token operator">&#61;</span> delayTime <span class="token operator">/</span> <span class="token number">86400</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> delayDays<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="2__190"></a>2 全局变量</h4>
+<p>全局变量是一种面向过程的编程风格&#xff0c;有种种弊端。滥用全局变量也让编写单元测试变得困难&#xff0c;同一个全局变量被多个单元测试用例访问并设置值&#xff0c;会让单元测试结果不准确&#xff0c;例如</p>
+<pre><code class="prism language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RangeLimiter</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token class-name">AtomicInteger</span> position <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">AtomicInteger</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">int</span> MAX_LIMIT <span class="token operator">&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">int</span> MIN_LIMIT <span class="token operator">&#61;</span> <span class="token operator">-</span><span class="token number">5</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">move</span><span class="token punctuation">(</span><span class="token keyword">int</span> delta<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">int</span> currentPos <span class="token operator">&#61;</span> position<span class="token punctuation">.</span><span class="token function">addAndGet</span><span class="token punctuation">(</span>delta<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">boolean</span> betweenRange <span class="token operator">&#61;</span> <span class="token punctuation">(</span>currentPos <span class="token operator">&lt;&#61;</span> MAX_LIMIT<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>currentPos <span class="token operator">&gt;&#61;</span> MIN_LIMIT<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> betweenRange<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RangeLimiterTest</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testMove_betweenRange</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">RangeLimiter</span> rangeLimiter <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RangeLimiter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assertTrue</span><span class="token punctuation">(</span>rangeLimiter<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assertTrue</span><span class="token punctuation">(</span>rangeLimiter<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assertTrue</span><span class="token punctuation">(</span>rangeLimiter<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testMove_exceedRange</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">RangeLimiter</span> rangeLimiter <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">RangeLimiter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assertFalse</span><span class="token punctuation">(</span>rangeLimiter<span class="token punctuation">.</span><span class="token function">move</span><span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>position 是一个静态全局变量&#xff0c;第一个测试用例执行完成之后&#xff0c;position 的值变成了 -1&#xff1b;再执行第二个测试用例的时候&#xff0c;position 变成了 5&#xff0c;move() 函数返回 true&#xff0c;assertFalse 语句判定失败。所以&#xff0c;第二个测试用例运行失败</p>
+<h4><a rel="noopener noreferrer" id="3__222"></a>3 静态方法</h4>
+<p>静态方法跟全局变量一样&#xff0c;也是一种面向过程的编程思维。在代码中调用静态方法&#xff0c;有时候会导致代码不易测试。<strong>主要原因是静态方法也很难 mock</strong>&#xff0c;因为静态方法没有多态的特性&#xff0c;没办法使用mock方法。</p>
+<h4><a rel="noopener noreferrer" id="4__224"></a>4 复杂继承</h4>
+<p>相比组合关系&#xff0c;<strong>继承关系的代码结构更加耦合、不灵活&#xff0c;更加不易扩展、不易维护。实际上&#xff0c;继承关系也更加难测试</strong>。这也印证了代码的可测试性跟代码质量的相关性。</p>
+<p>如果父类需要 mock 某个依赖对象才能进行单元测试&#xff0c;那所有的子类、子类的子类……在编写单元测试的时候&#xff0c;都要 mock 这个依赖对象。对于层次很深&#xff08;在继承关系类图中表现为纵向深度&#xff09;、结构复杂&#xff08;在继承关系类图中表现为横向广度&#xff09;的继承关系&#xff0c;越底层的子类要 mock 的对象可能就会越多&#xff0c;这样就会导致&#xff0c;底层子类在写单元测试的时候&#xff0c;要一个一个 mock 很多依赖对象&#xff0c;而且还需要查看父类代码&#xff0c;去了解该如何 mock 这些依赖对象。</p>
+<p><strong>利用组合而非继承来组织类之间的关系&#xff0c;类之间的结构层次比较扁平&#xff0c;在编写单元测试的时候&#xff0c;只需要 mock 类所组合依赖的对象即可</strong>。</p>
+<h4><a rel="noopener noreferrer" id="5__230"></a>5 高耦合代码</h4>
+<p>如果一个类职责很重&#xff0c;需要依赖十几个外部对象才能完成工作&#xff0c;代码高度耦合&#xff0c;那在编写单元测试的时候&#xff0c;可能需要 mock 这十几个依赖的对象。不管是从代码设计的角度来说&#xff0c;还是从编写单元测试的角度来说&#xff0c;这都是不合理的</p>
+<h2><a rel="noopener noreferrer" id="_232"></a>总结一下</h2>
+<p>单元测试好像写的没有之前多了&#xff0c;更多的是写相对更粗粒度的接口测试&#xff0c;一个主要原因就是觉得写单元测试琐碎&#xff0c;写接口测试能通就证明主流程OK&#xff0c;就能提测了&#xff0c;事实上在比较紧凑的迭代节奏里这是常态&#xff0c;幸而测试同学的集成测试比较给力&#xff0c;没出什么问题&#xff0c;但其实也不能老依赖于接口测试和集成测试&#xff0c;单元测试也有必要写的&#xff0c;更多的是通过写单测CR下自己的代码吧&#xff0c;践行持续重构的理念。对于代码的可测试性而言&#xff0c;其实我们日常基于Spring去开发&#xff0c;本身大多数场景都是依赖注入&#xff0c;所以体会可能没有那么深&#xff0c;至于对于远程服务的依赖&#xff0c;使用二次封装是个不错的方法&#xff0c;但是代码侵入性还是有一些的&#xff0c;其实也能通过一些测试工具例如AnyMock解决。重要的还是要有单测和提高代码可测试性的意识吧…</p>

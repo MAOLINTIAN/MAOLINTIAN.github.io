@@ -1,0 +1,48 @@
+<p>从今天开始&#xff0c;学习《C# 本质论7.0》这本书&#xff0c;究其本质&#xff01;当然已经了解过面向对象思想和有一定Java和C#编程基础&#xff0c;所以无需全盘细节整理&#xff0c;在学习记录的过程中对于简单的前几章学习内容准备采用<strong>QA和记录重点提炼的方式</strong>记录&#xff0c;也就是对于重点难点以及自己之前不理解的地方采用论述或者问答的形式记录。</p>
+<h4><a rel="noopener noreferrer" id="C_2"></a>C#冷知识</h4>
+<p>1&#xff0c;C#是区分大小写的语言&#xff0c;<strong>大小写不正确会使代码无法成功编译</strong>。<br />
+2&#xff0c;C#的Main方法除了能返回void还能返回int&#xff0c;<strong>int是状态码&#xff0c;返回0意味着错误</strong>。<br />
+3&#xff0c;换行与否不影响语句的分隔&#xff0c;<strong>C#的语句分隔只认分号</strong>&#xff0c;只要有分号执行结果就换行显示&#xff0c;没有就一直在一行显示。<br />
+4&#xff0c;C#允许在同一语句中进行多个赋值操作&#xff0c;并且<strong>声明的时候同类型也可多个逗号隔开</strong>&#xff0c;例如&#xff1a;</p>
+<pre><code class="prism language-csharp">       <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">string</span> tml2<span class="token punctuation">,</span> tml3<span class="token punctuation">;</span>
+            <span class="token keyword">var</span> tml1 <span class="token operator">&#61;</span> tml2 <span class="token operator">&#61;</span> tml3 <span class="token operator">&#61;</span> <span class="token string">&#34;多个tml都能接受值&#34;</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>tml2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>tml1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>tml3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>5&#xff0c;字符串的不可变性&#xff0c;要知道字符串是不允许改变的&#xff0c;<strong>不能修改最初引用的数据&#xff0c;只能重新赋值&#xff0c;让它指向内存中的新位置</strong>。<br />
+6&#xff0c;Java要求文件名和类名必须一致&#xff0c;<strong>在C#中一个文件可以包含多个类&#xff0c;并且类的代码可通过<font color="red">分部类</font>拆分到多个文件中</strong><br />
+7&#xff0c;什么是SDK&#xff1f;其实和Java里的JDK类似&#xff0c;包括&#xff1a;<strong>编译器、运行时执行引擎&#xff08;CLR&#xff09;、“运行时”能访问的语言可访问功能框架</strong>以及<strong>可能和SDK捆绑的其它工具</strong>&#xff0c;说白了就是一套开发环境。</p>
+<h4><a rel="noopener noreferrer" id="C_23"></a>C#新知识</h4>
+<p>1&#xff0c;<strong>字符串插值功能</strong>&#xff0c;妈妈再也不担心使用复合格式化发生错误了</p>
+<pre><code class="prism language-csharp">    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+     <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">const</span> <span class="token keyword">string</span> tml2 <span class="token operator">&#61;</span> <span class="token string">&#34;多个tml都能接受值&#34;</span><span class="token punctuation">;</span>
+        <span class="token keyword">const</span> <span class="token keyword">string</span> tml3 <span class="token operator">&#61;</span> <span class="token string">&#34;我都能接受&#34;</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>$<span class="token string">&#34;字符串插值{tml2}{tml3}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//字符串插值多个tml都能接受值我都能接受</span>
+     <span class="token punctuation">}</span>
+</code></pre>
+<p>而以前的复合格式化是通过索引的方式&#xff0c;按照顺序输出变量&#xff0c;不直观。</p>
+<p>2&#xff0c;在字符串之前<strong>使用&#64;符合来指明转义序列不被处理&#xff0c;并且逐字解释所有空白字符</strong>&#xff0c;通俗的说&#xff0c;以前想输出换行&#xff0c;需要在需要换行的地方加\n&#xff0c;现在只需要原样换行就行了。并且&#64;和$可以组合使用&#xff0c;也可以达到换行的效果&#xff1a;</p>
+<pre><code class="prism language-csharp">     <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">const</span> <span class="token keyword">string</span> tml2 <span class="token operator">&#61;</span> <span class="token string">&#34;多个tml都能接受值&#34;</span><span class="token punctuation">;</span>
+            <span class="token keyword">const</span> <span class="token keyword">string</span> tml3 <span class="token operator">&#61;</span> <span class="token string">&#34;我都能接受&#34;</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>$<span class="token string">&#64;&#34;字符串插值
+            {tml2}{tml3}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//字符串插值</span>
+            <span class="token comment">//多个tml都能接受值我都能接受</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_51"></a>标识符相关规范</h4>
+<p><strong>1&#xff0c;标识符的命名规范&#xff08;个人&#xff09;</strong></p>
+<p>结合标准的规范以及自己的习惯&#xff0c;总结出这样的标识符使用规范&#xff1a;结合下C#命名规范&#xff1a;</p>
+<ul><li>标识符可以包含<strong>大小写字母、数字、下划线和&#64;字符</strong>。</li><li>标识符不能以数字开头&#xff0c;也不能包含空格。</li><li><strong>标识符必须区分大小写</strong>。大写字母和小写字母被认为是不同的字母。</li><li>&#64;字符只能是标识符的第一个字符。带&#64;前缀的标识符称为逐字标识符。</li><li>不能使用C#中的关键字。但是&#xff0c;&#64;字符加关键字可以成为合法的标识符&#xff0c;建议不要这样做。</li><li>不能与C#的类库名称相同。</li></ul>
+<p><strong>不要使用单词缩写</strong>&#xff0c;要重视其清晰而非简短性&#xff1b;尽量不要使用下划线&#xff0c;所以<font color="red"><strong>最好仅使用数字和字母的非缩写形式</strong></font>。</p>
+<p><strong>2&#xff0c;标识符的书写规范&#xff08;个人&#xff09;</strong></p>
+<p>首先明确两种命名规范&#xff1a;</p>
+<ul><li><strong>Camel&#xff08;驼峰&#xff09;命名法</strong>&#xff1a;首个单词首字母小写&#xff0c;后续单词首字母大写&#xff1a;适用于变量命名&#xff08;参数名、成员变量、局部变量&#xff09;&#xff0c;例如&#xff1a;tmlGetGirl</li><li><strong>Pascal&#xff08;帕斯卡&#xff09;命名法</strong>&#xff1a;每个单词首字母均大写&#xff1a;适用于<strong>方法和类</strong>&#xff0c;例如&#xff1a;TmlAiTest</li></ul>
+<p><font color="red"><strong>推荐使用名称或名词短语来命名类&#xff0c;推荐使用第一个单词为动词的短语来命名方法</strong></font>。</p>

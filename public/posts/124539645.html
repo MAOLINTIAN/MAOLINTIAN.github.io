@@ -1,0 +1,81 @@
+<p><font color="red"><strong>如果说数据结构与算法是教我们写出高效的代码&#xff0c;那设计模式就是教我们写出可扩展、可读、可维护的高质量代码</strong></font>。在正式学习设计模式之前&#xff0c;我们需要知道什么是好代码&#xff0c;设计模式为什么被提出来&#xff0c;对于代码质量的提高的帮助是什么&#xff1f;那么什么是高质量代码的标准呢&#xff1f;</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>高质量代码的标准</h2>
+<p><font color="red"><strong>代码质量的评价有很强的主观性</strong></font>&#xff0c;描述代码质量的词汇也有很多&#xff0c;比如可读性、可维护性、灵活、优雅、简洁等&#xff0c;这些词汇是从不同的维度去评价代码质量的。它们之间有互相作用&#xff0c;并不是独立的&#xff0c;比如&#xff0c;代码的可读性好、可扩展性好就意味着代码的可维护性好。<strong>代码质量高低是一个综合各种因素得到的结论。我们并不能通过单一的维度去评价一段代码的好坏</strong></p>
+<h3><a rel="noopener noreferrer" id="_4"></a>代码评价常用指标</h3>
+<p>最常用的、最重要的评价标准包括&#xff1a;<font color="red"><strong>可维护性、可读性、可扩展性、灵活性、简洁性&#xff08;简单、复杂&#xff09;、可复用性、可测试性</strong></font></p>
+<h4><a rel="noopener noreferrer" id="1_maintainability_7"></a>1 可维护性&#xff08;maintainability&#xff09;</h4>
+<blockquote>
+ <p><strong>什么是代码的可维护性&#xff1f;</strong></p>
+</blockquote>
+<p>所谓的代码维护无外乎就是<strong>修改 bug、修改老的代码、添加新的代码</strong>之类的工作&#xff0c;这类工作的便捷程度代表了代码的可维护性</p>
+<blockquote>
+ <p><strong>什么样的代码算可维护性高呢&#xff1f;</strong></p>
+</blockquote>
+<p><strong>客观上</strong>可以这么判断&#xff1a;</p>
+<ul><li>代码的可维护性是由很多因素协同作用的结果。代码的<strong>可读性好、简洁、可扩展性好&#xff0c;就会使得代码易维护</strong>&#xff1b;相反&#xff0c;就会使得代码不易维护。</li><li>更细化地讲&#xff0c;如果<strong>代码分层清晰、模块化好、高内聚低耦合、遵从基于接口而非实现编程的设计原则</strong>等等&#xff0c;那就可能意味着代码易维护。除此之外&#xff0c;代码的易维护性还跟<strong>项目代码量的多少、业务的复杂程度、利用到的技术的复杂程度、文档是否全面、团队成员的开发水平</strong>等诸多因素有关</li></ul>
+<p><strong>主观上</strong>上可以这么判断&#xff1a;</p>
+<ul><li><strong>代码易维护</strong>指&#xff0c;在不破坏原有代码设计、不引入新的 bug 的情况下&#xff0c;修改、添加功能能够轻松完成、bug 容易修复。那我们就可以主观地认为代码对我们来说易维护</li><li><strong>代码不易维护</strong>指&#xff0c;修改或者添加代码需要冒着极大的引入新 bug 的风险&#xff0c;并且需要花费很长的时间才能完成&#xff0c;那我们就可以主观地认为代码对我们来说不易维护</li></ul>
+<h4><a rel="noopener noreferrer" id="2_readability_24"></a>2 可读性&#xff08;readability&#xff09;</h4>
+<p>代码的可读性应该是评价代码质量最重要的指标之一。我们在编写代码的时候&#xff0c;<strong>时刻要考虑到代码是否易读、易理解</strong>。</p>
+<p><strong>代码的可读性在非常大程度上会影响代码的可维护性</strong>。毕竟&#xff0c;不管是修改 bug&#xff0c;还是修改添加功能代码&#xff0c;我们首先要做的事情就是读懂代码。代码读不大懂&#xff0c;就很有可能因为考虑不周全&#xff0c;而引入新的 bug。</p>
+<blockquote>
+ <p><strong>什么样的代码算可读性高呢&#xff1f;</strong></p>
+</blockquote>
+<p>客观上可以这么判断&#xff1a;</p>
+<ul><li>我们需要看<strong>代码是否符合编码规范、命名是否达意、注释是否详尽、函数是否长短合适、模块划分是否清晰、是否符合高内聚低耦合</strong>等等</li></ul>
+<p>主观上可以这么判断&#xff1a;</p>
+<ul><li><strong>code review 是一个很好的测验代码可读性的手段</strong>。如果同事可以轻松地读懂你写的代码&#xff0c;那说明你的代码可读性很好&#xff1b;如果同事在读你的代码时&#xff0c;有很多疑问&#xff0c;那就说明你的代码可读性有待提高了</li></ul>
+<h4><a rel="noopener noreferrer" id="3_extensibility_37"></a>3 可扩展性&#xff08;extensibility&#xff09;</h4>
+<blockquote>
+ <p><strong>什么是代码的可扩展性&#xff1f;</strong></p>
+</blockquote>
+<p><strong>它表示我们的代码应对未来需求变化的能力</strong>&#xff0c;我们在不修改或少量修改原有代码的情况下&#xff0c;通过扩展的方式添加新的功能代码。。跟可读性一样&#xff0c;代码是否易扩展也很大程度上决定代码是否易维护</p>
+<blockquote>
+ <p><strong>什么样的代码算可扩展性高呢&#xff1f;</strong></p>
+</blockquote>
+<p>如果代码预留了一些功能扩展点&#xff0c;你可以把新功能代码&#xff0c;直接插到扩展点上&#xff0c;而不需要因为要添加一个功能而大动干戈&#xff0c;改动大量的原始代码&#xff0c;这就说明代码的可扩展性不错</p>
+<h4><a rel="noopener noreferrer" id="4_flexibility_46"></a>4 灵活性&#xff08;flexibility&#xff09;</h4>
+<blockquote>
+ <p><strong>什么样的代码算灵活性高呢&#xff1f;</strong></p>
+</blockquote>
+<p>实际上&#xff0c;灵活性是一个挺抽象的评价标准&#xff0c;要给灵活性下个定义也是挺难的&#xff0c;满足如下几个场景可以大致判断&#xff1a;</p>
+<ul><li>当我们添加一个新的功能代码的时候&#xff0c;原有的代码已经预留好了扩展点&#xff0c;我们不需要修改原有的代码&#xff0c;只要在扩展点上添加新的代码即可。这个时候&#xff0c;我们除了可以说<strong>代码易扩展</strong>&#xff0c;还可以说代码写得好灵活。</li><li>当我们要实现一个功能的时候&#xff0c;发现原有代码中&#xff0c;已经抽象出了很多底层可以复用的模块、类等代码&#xff0c;我们可以拿来直接使用。这个时候&#xff0c;我们除了可以说<strong>代码易复用</strong>之外&#xff0c;还可以说代码写得好灵活。</li><li>当我们使用某组接口的时候&#xff0c;如果这组接口可以应对各种使用场景&#xff0c;满足各种不同的需求&#xff0c;我们除了可以说<strong>接口易用</strong>之外&#xff0c;还可以说这个接口设计得好灵活或者代码写得好灵活。</li></ul>
+<p>如果一段代码<strong>易扩展、易复用或者易用</strong>&#xff0c;我们都可以称这段代码写得比较灵活</p>
+<h4><a rel="noopener noreferrer" id="5_simplicity_57"></a>5 简洁性&#xff08;simplicity&#xff09;</h4>
+<p>KISS 原则&#xff1a;<code>Keep It Simple&#xff0c;Stupid</code>。这个原则说的意思就是&#xff0c;尽量保持代码简单。代码简单、逻辑清晰&#xff0c;也就意味着易读、易维护。我们在编写代码的时候&#xff0c;往往也会把简单、清晰放到首位&#xff0c;<font color="red"><strong>思从深而行从简</strong></font>&#xff0c;真正的高手能云淡风轻地用最简单的方法解决最复杂的问题</p>
+<h4><a rel="noopener noreferrer" id="6_reusability_60"></a>6 可复用性&#xff08;reusability&#xff09;</h4>
+<p>代码的可复用性可以简单地理解为&#xff0c;<strong>尽量减少重复代码的编写&#xff0c;复用已有的代码</strong></p>
+<h4><a rel="noopener noreferrer" id="7_testability_63"></a>7 可测试性&#xff08;testability&#xff09;</h4>
+<p><strong>代码可测试性的好坏&#xff0c;能从侧面上非常准确地反应代码质量的好坏</strong>。代码的可测试性差&#xff0c;比较难写单元测试&#xff0c;那基本上就能说明代码设计得有问题</p>
+<h3><a rel="noopener noreferrer" id="_66"></a>如何写出高质量代码</h3>
+<p>问如何写出高质量的代码&#xff0c;也就等同于在问&#xff0c;如何写出<font color="red"><strong>易维护、易读、易扩展、灵活、简洁、可复用、可测试</strong></font>的代码。其中&#xff0c;<font color="red"><strong>易维护、易读、易扩展</strong></font>又是提到最多的、最重要的三个评价标准。</p>
+<p>要写出满足这些评价标准的高质量代码&#xff0c;我们需要掌握一些更加细化、更加能落地的编程方法论&#xff0c;包括<font color="red"><strong>面向对象设计思想、设计原则、设计模式、编码规范、代码重构</strong></font>等。而所有这些编程方法论的最终目的都是为了编写出高质量的代码。比如&#xff0c;</p>
+<ul><li><strong>面向对象思想</strong>中的继承、多态能让我们写出<strong>可复用</strong>的代码</li><li><strong>编码规范</strong>能让我们写出<strong>可读性好</strong>的代码</li><li><strong>设计原则</strong>中的单一职责、DRY、基于接口而非实现、里式替换原则等&#xff0c;可以让我们写出<strong>可复用、灵活、可读性好、易扩展、易维护</strong>的代码</li><li><strong>设计模式</strong>可以让我们写出<strong>易扩展</strong>的代码</li><li><strong>持续重构</strong>可以时刻保持代码的<strong>可维护性</strong></li></ul>
+<p>当然以上的评价标准也有一些包含关系&#xff1a;</p>
+<table><thead><tr><th>评价标准</th><th>评价标准子项</th></tr></thead><tbody><tr><td>可维护性</td><td>可读性、可扩展性</td></tr><tr><td>可读性</td><td>-</td></tr><tr><td>可扩展性</td><td>-</td></tr><tr><td>灵活性</td><td>可扩展性、可复用性</td></tr><tr><td>简洁性</td><td>-</td></tr><tr><td>可复用性</td><td>-</td></tr><tr><td>可测试性</td><td>-</td></tr></tbody></table>
+<h2><a rel="noopener noreferrer" id="_88"></a>高质量代码编程方法论</h2>
+<p>要具备编写高质量代码的能力&#xff0c;需要学习一些编程方法论&#xff0c;其中就包含<strong>面向对象设计思想、设计原则、设计模式、编程规范、重构技巧</strong>。</p>
+<h3><a rel="noopener noreferrer" id="_90"></a>面向对象设计思想</h3>
+<p>主流的编程范式或者是编程风格有三种&#xff0c;它们分别是<strong>面向过程、面向对象</strong>和<strong>函数式编程</strong>。面向对象这种编程风格又是这其中最主流的。现在比较流行的编程语言大部分都是面向对象编程语言。大部分项目也都是基于面向对象编程风格开发的。<font color="red"><strong>面向对象编程因为其具有丰富的特性&#xff08;<font color="red"><strong>封装、抽象、继承、多态</strong></font>&#xff09;&#xff0c;可以实现很多复杂的设计思路&#xff0c;是很多设计原则、设计模式编码实现的基础</strong></font>&#xff0c;设计思想需要了解如下路径</p>
+<ol><li>面向对象的四大特性&#xff1a;封装、抽象、继承、多态</li><li>面向对象编程与面向过程编程的区别和联系</li><li>面向对象分析、面向对象设计、面向对象编程</li><li>接口和抽象类的区别以及各自的应用场景</li><li>基于接口而非实现编程的设计思想</li><li>多用组合少用继承的设计思想</li><li>面向过程的贫血模型和面向对象的充血模型</li></ol>
+<p>能回答完整以上问题即认为掌握了这种设计思想。</p>
+<h3><a rel="noopener noreferrer" id="_102"></a>设计原则</h3>
+<p><font color="red"><strong>设计原则是指导我们代码设计的一些经验总结</strong></font>。设计原则这块儿的知识有一个非常大的特点&#xff0c;那就是这些原则听起来都比较抽象&#xff0c;定义描述都比较模糊&#xff0c;不同的人会有不同的解读。所以&#xff0c;如果单纯地去记忆定义&#xff0c;对于编程、设计能力的提高&#xff0c;意义并不大。</p>
+<ol><li>SOLID 原则 -SRP 单一职责原则</li><li>SOLID 原则 -OCP 开闭原则</li><li>SOLID 原则 -LSP 里式替换原则</li><li>SOLID 原则 -ISP 接口隔离原则</li><li>SOLID 原则 -DIP 依赖倒置原则</li><li>DRY 原则、KISS 原则、YAGNI 原则、LOD 法则</li></ol>
+<p><strong>对于每一种设计原则&#xff0c;我们需要掌握它的设计初衷&#xff0c;能解决哪些编程问题&#xff0c;有哪些应用场景</strong>。只有这样&#xff0c;我们才能在项目中灵活恰当地应用这些原则</p>
+<h3><a rel="noopener noreferrer" id="_113"></a>设计模式</h3>
+<p><font color="red"><strong>设计模式是针对软件开发中经常遇到的一些设计问题&#xff0c;总结出来的一套解决方案或者设计思路。大部分设计模式要解决的都是代码的可扩展性问题</strong></font>。设计模式相对于设计原则来说&#xff0c;没有那么抽象&#xff0c;而且大部分都不难理解&#xff0c;代码实现也并不复杂。这一块的学习难点是了解它们都能解决哪些问题&#xff0c;掌握典型的应用场景&#xff0c;并且懂得不过度应用</p>
+<p>总共有 <strong>23</strong> 种设计模式。这些模式可以分为三大类&#xff1a;<strong>创建型模式&#xff08;Creational Patterns&#xff09;、结构型模式&#xff08;Structural Patterns&#xff09;、行为型模式&#xff08;Behavioral Patterns&#xff09;</strong>。</p>
+<table><thead><tr><th>模式分类</th><th align="left">模式分类描述</th><th align="left">模式</th></tr></thead><tbody><tr><td><strong>创建型</strong></td><td align="left">这些模式关注<strong>实例对象的创建</strong> &#xff0c;共5种</td><td align="left">工厂方法模式、抽象工厂模式、单例模式、建造者模式、原型模式</td></tr><tr><td><strong>结构型</strong></td><td align="left">这些模式关注<strong>类和对象的组合</strong> &#xff0c;共7种</td><td align="left">适配器模式、装饰器模式、代理模式、外观模式、桥接模式、组合模式、享元模式</td></tr><tr><td><strong>行为型</strong></td><td align="left">这些模式关注<strong>对象之间的通信</strong> &#xff0c;共11种</td><td align="left">策略模式、模板方法模式、观察者模式、迭代子模式、责任链模式、命令模式、备忘录模式、状态模式、访问者模式、中介者模式、解释器模式</td></tr></tbody></table>
+<h3><a rel="noopener noreferrer" id="_124"></a>编码规范</h3>
+<p><font color="red"><strong>编程规范主要解决的是代码的可读性问题</strong></font>。编码规范相对于设计原则、设计模式&#xff0c;更加具体、更加偏重代码细节。即便对设计原则不熟悉、对设计模式不了解&#xff0c;但最起码要掌握基本的编码规范&#xff0c;比如&#xff0c;如何给变量、类、函数命名&#xff0c;如何写代码注释&#xff0c;函数不宜过长、参数不能过多等等</p>
+<p>编码规范也可以理解为重构中的小重构&#xff0c;关于编码规范我单独有个专栏专门去介绍&#xff1a;<a rel="noopener noreferrer" href="https://blog.csdn.net/sinat_33087001/category_11178970.html"><strong>阿里巴巴Java编程规范学习</strong></a></p>
+<h3><a rel="noopener noreferrer" id="_128"></a>代码重构</h3>
+<p>在软件开发中&#xff0c;只要软件在不停地迭代&#xff0c;就没有一劳永逸的设计。随着需求的变化&#xff0c;代码的不停堆砌&#xff0c;原有的设计必定会存在这样那样的问题。针对这些问题&#xff0c;我们就需要进行代码重构。重构是软件开发中非常重要的一个环节。</p>
+<p>持续重构是保持代码质量不下降的有效手段&#xff0c;能有效避免代码腐化到无可救药的地步。而<strong>重构的工具就是前面罗列的那些面向对象设计思想、设计原则、设计模式、编码规范</strong>。实际上&#xff0c;设计思想、设计原则、设计模式一个最重要的应用场景就是在重构的时候。代码重构需要掌握&#xff1a;</p>
+<ol><li>重构的目的&#xff08;why&#xff09;、对象&#xff08;what&#xff09;、时机&#xff08;when&#xff09;、方法&#xff08;how&#xff09;</li><li>保证重构不出错的技术手段&#xff1a;单元测试和代码的可测试性</li><li>两种不同规模的重构&#xff1a;大重构&#xff08;大规模高层次&#xff09;和小重构&#xff08;小规模低层次&#xff09;</li></ol>
+<p>需要注意&#xff0c;以上重构工具中&#xff0c;虽然使用设计模式可以提高代码的可扩展性&#xff0c;但过度不恰当地使用&#xff0c;也会增加代码的复杂度&#xff0c;影响代码的可读性。在开发初期&#xff0c;除非特别必须&#xff0c;我们一定不要过度设计&#xff0c;应用复杂的设计模式。而是当代码出现问题的时候&#xff0c;我们再针对问题&#xff0c;应用原则和模式进行重构。这样就能有效避免前期的过度设计</p>
+<h2><a rel="noopener noreferrer" id="_139"></a>总结一下</h2>
+<p>我们明确了什么是高质量的代码&#xff1a;<font color="red"><strong>易维护、易读、易扩展、灵活、简洁、可复用、可测试</strong></font>&#xff0c;也知道高质量代码的达成路径工具箱&#xff1a;面向对象设计思想是基本指导思想&#xff0c;是很多设计原则、设计模式的实现基础&#xff1b;设计原则是代码设计的抽象经验总结、是设计模式设计的指导原则&#xff1b;设计模式是代码设计的一套具体解决方案或设计思路&#xff0c;主要用来提高代码可扩展性&#xff1b;编程规范是一套可执行的代码编写规范&#xff0c;主要用来提高代码的可读性&#xff1b;代码重构依赖面向对象设计思想、设计原则、设计模式、编程规范实现&#xff0c;主要用来提高代码的可维护性。</p>
+<ul><li><strong>面向对象设计思想</strong>因为其具有丰富的特性&#xff08;封装、抽象、继承、多态&#xff09;&#xff0c;可以实现很多复杂的设计思路&#xff0c;是很多设计原则、设计模式等编码实现的基础。</li><li><strong>设计原则</strong>是指导我们代码设计的一些经验总结&#xff0c;对于某些场景下&#xff0c;是否应该应用某种设计模式&#xff0c;具有指导意义。比如&#xff0c;“开闭原则”是很多设计模式&#xff08;策略、模板等&#xff09;的指导原则。</li><li><strong>设计模式</strong>是针对软件开发中经常遇到的一些设计问题&#xff0c;总结出来的一套解决方案或者设计思路。应用设计模式的主要目的是提高代码的可扩展性。从抽象程度上来讲&#xff0c;设计原则比设计模式更抽象。设计模式更加具体、更加可执行。</li><li><strong>编程规范</strong>主要解决的是代码的可读性问题。编码规范相对于设计原则、设计模式&#xff0c;更加具体、更加偏重代码细节、更加能落地。持续的小重构依赖的理论基础主要就是编程规范。</li><li><strong>代码重构</strong>作为保持代码质量不下降的有效手段&#xff0c;利用的就是面向对象、设计原则、设计模式、编码规范这些理论。</li></ul>
+<p>实际上&#xff0c;面向对象、设计原则、设计模式、编程规范、代码重构&#xff0c;这五者都是保持或者提高代码质量的方法论&#xff0c;本质上都是服务于编写高质量代码这一件事的。也可以这么理解&#xff1a;1个设计思想、6个设计原则、23个设计模式、一套编程规范&#xff0c;在合适的时机进行代码重构&#xff0c;时刻保证和提高代码的质量<br /> <img alt="在这里插入图片描述" src="./posts/assets/124539645-01-fcc5e56003.png" loading="lazy"></p>

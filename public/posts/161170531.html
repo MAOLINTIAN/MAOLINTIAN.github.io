@@ -1,0 +1,575 @@
+<p>上一篇主要学习了Go并发的基本模型以及并发相关的原生能力 <a href="https://tianmaolin.blog.csdn.net/article/details/161168189?spm&#61;1001.2014.3001.5502" rel="nofollow"><strong>【GO语言开发实践】二 GO 并发快速上手</strong></a>&#xff0c;这一篇主要学习一下Go的Web工程化过程&#xff0c;深入理解下Go在实际开发中的使用姿势&#xff0c;主要学习内容&#xff1a;</p>
+<ul><li>Go Mod 依赖管理规范</li><li>企业级标准分层目录架构&#xff08;对标 SpringBoot&#xff09;</li><li>Gin 框架&#xff1a;路由、参数接收、路由分组、跨域、全局中间件</li><li>统一响应封装、全局异常捕获</li><li>YAML 配置文件读取&#xff0c;分离环境配置</li><li>GORM MySQL 连接、模型映射、单表 CRUD、基础用法</li><li>结构化日志输出</li><li>完整三层架构&#xff08;Model→Dao→Service→Controller&#xff09;</li><li>用户模块全套 RESTful CURD 接口</li><li>项目启动流程、规范开发习惯</li></ul>
+<p>上手写一遍web工程代码后续工作中熟练度应该会更高一些&#xff0c;当然前提可以先了解一些基础框架或者工具</p>
+<table><thead><tr><th>技术名称</th><th>定位/作用</th><th>Java 对标技术</th><th>核心功能</th></tr></thead><tbody><tr><td><strong>Go Mod</strong></td><td>Go 官方依赖管理工具</td><td>Maven / Gradle</td><td>自动管理项目依赖、版本控制、第三方包引入</td></tr><tr><td><strong>Gin</strong></td><td>Go 生态最流行高性能 Web 框架</td><td>SpringMVC / SpringBoot</td><td>路由分发、参数接收、中间件、响应封装、跨域处理、接口开发</td></tr><tr><td><strong>GORM</strong></td><td>Go 最流行数据库 ORM 操作库</td><td>MyBatis / MyBatis-Plus</td><td>数据库连接、数据表模型映射、CURD 操作、事务支持、链式查询</td></tr></tbody></table>
+<h2><a rel="noopener noreferrer" id="__20"></a>一 服务整体架构、代码结构</h2>
+<p>项目的整体架构如下图所示&#xff0c;就是一个最简单的基于Web的CRUD&#xff0c;也是最好理解的一种模式</p>
+<pre><code class="prism language-go">┌───────────────────────────────────────────────────┐
+│                   外部请求                         │
+└───────────────────────┬───────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│                Controller 控制层                   │  接收请求、参数校验、返回响应
+└───────────────────────┬───────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│                 Service 业务层                     │  业务逻辑处理
+└───────────────────────┬───────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│                   Dao 数据层                       │  数据库操作
+└───────────────────────┬───────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│                  Model 模型层                     │  数据库表结构体
+└───────────────────────┬───────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│                   MySQL 数据库                     │
+└───────────────────────────────────────────────────┘
+</code></pre>
+<p>以用户查询接口为例整体的调用过程如下&#xff1a;</p>
+<div class="mermaid mermaid-newversion mermaid-sequence">
+
+</div>
+<hr />
+<p>代码的完整架构如下图所示</p>
+<pre><code class="prism language-go"><span class="token keyword">go</span><span class="token punctuation">.</span>first<span class="token punctuation">.</span>web<span class="token punctuation">.</span>project<span class="token operator">/</span>
+├── config<span class="token operator">/</span>          # 配置文件解析
+│   └── app<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── global<span class="token operator">/</span>          # 全局变量
+│   └── global<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── model<span class="token operator">/</span>           # 数据库模型
+│   └── user<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── dao<span class="token operator">/</span>             # 数据访问层
+│   └── user_dao<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── service<span class="token operator">/</span>         # 业务逻辑层
+│   └── user_service<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── controller<span class="token operator">/</span>      # 请求控制层
+│   └── user_controller<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── router<span class="token operator">/</span>          # 路由注册
+│   └── router<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── utils<span class="token operator">/</span>           # 工具包
+│   ├── result<span class="token punctuation">.</span><span class="token keyword">go</span>    # 统一响应
+│   └── logger<span class="token punctuation">.</span><span class="token keyword">go</span>
+├── config<span class="token punctuation">.</span>yaml      # 外部配置
+├── <span class="token keyword">go</span><span class="token punctuation">.</span>mod
+└── main<span class="token punctuation">.</span><span class="token keyword">go</span>          # 项目入口
+</code></pre>
+<hr />
+<p><img alt="在这里插入图片描述" src="./posts/assets/161170531-01-8782f8ce4c.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="__109"></a>二 项目启动所需配置</h2>
+<p>项目是如何从main启动加载的&#xff1f;</p>
+<h3><a rel="noopener noreferrer" id="1_maingo__113"></a>1 main.go —项目入口</h3>
+<p><strong>模块作用</strong>&#xff1a;项目启动入口&#xff0c;加载配置、初始化数据库、初始化路由、启动服务。<strong>对标 Java</strong>&#xff1a;<code>SpringApplication.run()</code> 启动类</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;fmt&#34;</span>
+
+	<span class="token string">&#34;gorm.io/driver/mysql&#34;</span>
+	<span class="token string">&#34;gorm.io/gorm&#34;</span>
+
+	<span class="token string">&#34;go-web-project/config&#34;</span>
+	<span class="token string">&#34;go-web-project/global&#34;</span>
+	<span class="token string">&#34;go-web-project/router&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// initMysql 初始化数据库连接</span>
+<span class="token keyword">func</span> <span class="token function">initMysql</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 读取配置</span>
+	cfg <span class="token operator">:&#61;</span> config<span class="token punctuation">.</span>Conf<span class="token punctuation">.</span>Mysql
+
+	<span class="token comment">// 拼接数据库连接字符串</span>
+	dsn <span class="token operator">:&#61;</span> fmt<span class="token punctuation">.</span><span class="token function">Sprintf</span><span class="token punctuation">(</span>
+		<span class="token string">&#34;%s:%s&#64;tcp(%s:%d)/%s?charset&#61;%s&amp;parseTime&#61;True&amp;loc&#61;Local&#34;</span><span class="token punctuation">,</span>
+		cfg<span class="token punctuation">.</span>User<span class="token punctuation">,</span>
+		cfg<span class="token punctuation">.</span>Password<span class="token punctuation">,</span>
+		cfg<span class="token punctuation">.</span>Host<span class="token punctuation">,</span>
+		cfg<span class="token punctuation">.</span>Port<span class="token punctuation">,</span>
+		cfg<span class="token punctuation">.</span>Dbname<span class="token punctuation">,</span>
+		cfg<span class="token punctuation">.</span>Charset<span class="token punctuation">,</span>
+	<span class="token punctuation">)</span>
+
+	<span class="token comment">// 建立连接</span>
+	db<span class="token punctuation">,</span> err <span class="token operator">:&#61;</span> gorm<span class="token punctuation">.</span><span class="token function">Open</span><span class="token punctuation">(</span>mysql<span class="token punctuation">.</span><span class="token function">Open</span><span class="token punctuation">(</span>dsn<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token operator">&amp;</span>gorm<span class="token punctuation">.</span>Config<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		<span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">&#34;mysql 连接失败&#xff1a;&#34;</span> <span class="token operator">&#43;</span> err<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+
+	<span class="token comment">// 赋值给全局DB对象</span>
+	global<span class="token punctuation">.</span>DB <span class="token operator">&#61;</span> db
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;mysql 连接成功&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// main 主函数</span>
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 1. 加载配置文件</span>
+	<span class="token keyword">if</span> err <span class="token operator">:&#61;</span> config<span class="token punctuation">.</span><span class="token function">InitConfig</span><span class="token punctuation">(</span><span class="token string">&#34;config.yaml&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		<span class="token function">panic</span><span class="token punctuation">(</span><span class="token string">&#34;配置文件加载失败&#xff1a;&#34;</span> <span class="token operator">&#43;</span> err<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+	<span class="token punctuation">}</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;配置加载成功&#34;</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 2. 初始化数据库</span>
+	<span class="token function">initMysql</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 3. 初始化路由</span>
+	r <span class="token operator">:&#61;</span> router<span class="token punctuation">.</span><span class="token function">InitRouter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 4. 启动服务</span>
+	port <span class="token operator">:&#61;</span> <span class="token string">&#34;:&#34;</span> <span class="token operator">&#43;</span> config<span class="token punctuation">.</span>Conf<span class="token punctuation">.</span>Server<span class="token punctuation">.</span>Port
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">&#34;服务启动成功&#xff1a;http://localhost&#34;</span> <span class="token operator">&#43;</span> port<span class="token punctuation">)</span>
+	<span class="token boolean">_</span> <span class="token operator">&#61;</span> r<span class="token punctuation">.</span><span class="token function">Run</span><span class="token punctuation">(</span>port<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>main.go 是总司令&#xff0c;它指挥所有模块&#xff1a;配置 → 数据库 → 路由 → 启动服务&#xff0c;所有模块都是被 main 主动调用的&#xff0c;不是自动找到对方的&#xff01;</strong></p>
+<hr />
+<h4><a rel="noopener noreferrer" id="_1__maingo___180"></a>第 1 步&#xff1a;运行 main.go → 项目启动</h4>
+<pre><code class="prism language-go"><span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 1. 加载配置</span>
+    <span class="token comment">// 2. 初始化数据库</span>
+    <span class="token comment">// 3. 初始化路由</span>
+    <span class="token comment">// 4. 启动服务</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h4><a rel="noopener noreferrer" id="_2_main__config__192"></a>第 2 步&#xff1a;main 调用 config 加载配置文件</h4>
+<pre><code class="prism language-go">config<span class="token punctuation">.</span><span class="token function">InitConfig</span><span class="token punctuation">(</span><span class="token string">&#34;config.yaml&#34;</span><span class="token punctuation">)</span>
+</code></pre>
+<ul><li>去读 <strong>config.yaml</strong></li><li>解析成结构体&#xff0c;放进 <strong>config.Conf</strong> 全局对象</li><li>之后任何地方都能使用&#xff1a;端口、MySQL信息</li></ul>
+<p><code>application.yml</code> 被 SpringBoot 加载</p>
+<hr />
+<h4><a rel="noopener noreferrer" id="_3_main__initMysql__206"></a>第 3 步&#xff1a;main 调用 initMysql() 初始化数据库</h4>
+<pre><code class="prism language-go"><span class="token function">initMysql</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<ul><li>从 config 里拿 MySQL 配置</li><li>创建数据库连接</li><li>把连接放到 <strong>global.DB</strong> 全局变量</li></ul>
+<p>对应 Java,数据源自动配置&#xff0c;创建 DataSource</p>
+<hr />
+<h4><a rel="noopener noreferrer" id="_4_main__routerInitRouter_218"></a>第 4 步&#xff1a;main 调用 router.InitRouter()</h4>
+<pre><code class="prism language-go">r <span class="token operator">:&#61;</span> router<span class="token punctuation">.</span><span class="token function">InitRouter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<ul><li>创建 Gin 引擎</li><li>注册跨域中间件</li><li><strong>注册所有接口路径 → 绑定到对应 controller</strong></li></ul>
+<pre><code class="prism language-go">userGroup<span class="token punctuation">.</span><span class="token function">POST</span><span class="token punctuation">(</span><span class="token string">&#34;/add&#34;</span><span class="token punctuation">,</span> controller<span class="token punctuation">.</span>AddUser<span class="token punctuation">)</span>
+</code></pre>
+<p>对应 Java:&#64;Controller &#43; &#64;RequestMapping 注册</p>
+<hr />
+<h4><a rel="noopener noreferrer" id="_5_main__Web__234"></a>第 5 步&#xff1a;main 启动 Web 服务</h4>
+<pre><code class="prism language-go">r<span class="token punctuation">.</span><span class="token function">Run</span><span class="token punctuation">(</span><span class="token string">&#34;:8080&#34;</span><span class="token punctuation">)</span>
+</code></pre>
+<ul><li>启动 HTTP 服务</li><li>监听端口</li><li>等待请求</li></ul>
+<hr />
+<h3><a rel="noopener noreferrer" id="2_configyaml___245"></a>2. config.yaml —— 外部配置文件</h3>
+<p><strong>模块作用</strong>&#xff1a;项目配置文件&#xff0c;存放可动态修改的配置。<strong>对标 Java</strong>&#xff1a;<code>application.yml</code></p>
+<pre><code class="prism language-yaml"><span class="token comment"># 服务配置</span>
+<span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">8080</span>
+  <span class="token key atrule">mode</span><span class="token punctuation">:</span> debug
+
+<span class="token comment"># 数据库配置</span>
+<span class="token key atrule">mysql</span><span class="token punctuation">:</span>
+  <span class="token key atrule">host</span><span class="token punctuation">:</span> 127.0.0.1
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">3306</span>
+  <span class="token key atrule">user</span><span class="token punctuation">:</span> root
+  <span class="token key atrule">password</span><span class="token punctuation">:</span> <span class="token number">123456</span>
+  <span class="token key atrule">dbname</span><span class="token punctuation">:</span> go_web_db
+  <span class="token key atrule">charset</span><span class="token punctuation">:</span> utf8mb4
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__configappgo___264"></a>3 config/app.go 配置解析模块</h3>
+<p><strong>模块作用</strong>&#xff1a;读取外部 <code>config.yaml</code> 配置文件&#xff0c;解析为结构体&#xff0c;统一管理服务、数据库等配置信息。<strong>对标 Java</strong>&#xff1a;<code>application.yml</code> &#43; <code>&#64;ConfigurationProperties</code> 配置类</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> config
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;os&#34;</span> <span class="token comment">// 操作系统文件读取</span>
+
+	<span class="token string">&#34;gopkg.in/yaml.v3&#34;</span> <span class="token comment">// yaml解析库</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// AppConfig 总配置结构体</span>
+<span class="token comment">// 对应整个yaml文件的根结构</span>
+<span class="token keyword">type</span> AppConfig <span class="token keyword">struct</span> <span class="token punctuation">{<!-- --></span>
+	Server ServerConfig <span class="token string">&#96;yaml:&#34;server&#34;&#96;</span> <span class="token comment">// 服务配置</span>
+	Mysql  MysqlConfig  <span class="token string">&#96;yaml:&#34;mysql&#34;&#96;</span>  <span class="token comment">// 数据库配置</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// ServerConfig 服务配置结构体</span>
+<span class="token keyword">type</span> ServerConfig <span class="token keyword">struct</span> <span class="token punctuation">{<!-- --></span>
+	Port <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;port&#34;&#96;</span> <span class="token comment">// 端口号</span>
+	Mode <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;mode&#34;&#96;</span> <span class="token comment">// 运行模式 debug/release</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// MysqlConfig 数据库配置结构体</span>
+<span class="token keyword">type</span> MysqlConfig <span class="token keyword">struct</span> <span class="token punctuation">{<!-- --></span>
+	Host     <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;host&#34;&#96;</span>     <span class="token comment">// 地址</span>
+	Port     <span class="token builtin">int</span>    <span class="token string">&#96;yaml:&#34;port&#34;&#96;</span>     <span class="token comment">// 端口</span>
+	User     <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;user&#34;&#96;</span>     <span class="token comment">// 用户名</span>
+	Password <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;password&#34;&#96;</span> <span class="token comment">// 密码</span>
+	Dbname   <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;dbname&#34;&#96;</span>   <span class="token comment">// 数据库名</span>
+	Charset  <span class="token builtin">string</span> <span class="token string">&#96;yaml:&#34;charset&#34;&#96;</span>  <span class="token comment">// 编码</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Conf 全局配置对象</span>
+<span class="token comment">// 外部可直接调用 config.Conf 读取配置</span>
+<span class="token keyword">var</span> Conf AppConfig
+
+<span class="token comment">// InitConfig 读取并解析yaml配置文件</span>
+<span class="token comment">// path: 配置文件路径</span>
+<span class="token keyword">func</span> <span class="token function">InitConfig</span><span class="token punctuation">(</span>path <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 读取文件内容</span>
+	data<span class="token punctuation">,</span> err <span class="token operator">:&#61;</span> os<span class="token punctuation">.</span><span class="token function">ReadFile</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		<span class="token keyword">return</span> err
+	<span class="token punctuation">}</span>
+
+	<span class="token comment">// 将yaml数据反序列化为结构体</span>
+	err <span class="token operator">&#61;</span> yaml<span class="token punctuation">.</span><span class="token function">Unmarshal</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> <span class="token operator">&amp;</span>Conf<span class="token punctuation">)</span>
+	<span class="token keyword">return</span> err
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="4__globalglobalgo__320"></a>4 global/global.go —全局变量模块</h3>
+<p><strong>模块作用</strong>&#xff1a;存放项目全局共用对象&#xff0c;例如数据库连接实例&#xff0c;全局唯一。<strong>对标 Java</strong>&#xff1a;<code>ApplicationContext</code> 全局上下文 / 静态 Bean 对象</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> global
+
+<span class="token keyword">import</span> <span class="token string">&#34;gorm.io/gorm&#34;</span>
+
+<span class="token comment">// DB 全局数据库连接对象</span>
+<span class="token comment">// 整个项目都使用这一个连接实例&#xff0c;避免重复创建</span>
+<span class="token keyword">var</span> DB <span class="token operator">*</span>gorm<span class="token punctuation">.</span>DB
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="5_routerroutergo__335"></a>5 router/router.go —路由模块</h3>
+<p><strong>模块作用</strong>&#xff1a;统一管理所有接口路由、注册中间件&#xff08;跨域、日志等&#xff09;。<strong>对标 Java</strong>&#xff1a;<code>WebMvcConfig</code> &#43; 路由配置</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> router
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;github.com/gin-contrib/cors&#34;</span>
+	<span class="token string">&#34;github.com/gin-gonic/gin&#34;</span>
+	<span class="token string">&#34;time&#34;</span>
+
+	<span class="token string">&#34;go-web-project/controller&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// InitRouter 初始化路由</span>
+<span class="token comment">// 返回gin引擎实例</span>
+<span class="token keyword">func</span> <span class="token function">InitRouter</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">*</span>gin<span class="token punctuation">.</span>Engine <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 创建默认gin引擎</span>
+	r <span class="token operator">:&#61;</span> gin<span class="token punctuation">.</span><span class="token function">Default</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 配置全局跨域中间件</span>
+	<span class="token comment">// 允许前端访问接口</span>
+	r<span class="token punctuation">.</span><span class="token function">Use</span><span class="token punctuation">(</span>cors<span class="token punctuation">.</span><span class="token function">New</span><span class="token punctuation">(</span>cors<span class="token punctuation">.</span>Config<span class="token punctuation">{<!-- --></span>
+		AllowAllOrigins<span class="token punctuation">:</span>  <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token comment">// 允许所有域名</span>
+		AllowMethods<span class="token punctuation">:</span>     <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">{<!-- --></span><span class="token string">&#34;GET&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;POST&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;PUT&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;DELETE&#34;</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token comment">// 允许的请求方法</span>
+		AllowHeaders<span class="token punctuation">:</span>     <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">{<!-- --></span><span class="token string">&#34;Origin&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;Content-Type&#34;</span><span class="token punctuation">}</span><span class="token punctuation">,</span>       <span class="token comment">// 允许的请求头</span>
+		ExposeHeaders<span class="token punctuation">:</span>    <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">{<!-- --></span><span class="token string">&#34;Content-Length&#34;</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+		MaxAge<span class="token punctuation">:</span>           <span class="token number">12</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Hour<span class="token punctuation">,</span>
+		AllowCredentials<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 用户模块路由分组</span>
+	userGroup <span class="token operator">:&#61;</span> r<span class="token punctuation">.</span><span class="token function">Group</span><span class="token punctuation">(</span><span class="token string">&#34;/user&#34;</span><span class="token punctuation">)</span>
+	<span class="token punctuation">{<!-- --></span>
+		userGroup<span class="token punctuation">.</span><span class="token function">POST</span><span class="token punctuation">(</span><span class="token string">&#34;/add&#34;</span><span class="token punctuation">,</span> controller<span class="token punctuation">.</span>AddUser<span class="token punctuation">)</span>          <span class="token comment">// 新增</span>
+		userGroup<span class="token punctuation">.</span><span class="token function">GET</span><span class="token punctuation">(</span><span class="token string">&#34;/list&#34;</span><span class="token punctuation">,</span> controller<span class="token punctuation">.</span>GetUserList<span class="token punctuation">)</span>      <span class="token comment">// 列表</span>
+		userGroup<span class="token punctuation">.</span><span class="token function">GET</span><span class="token punctuation">(</span><span class="token string">&#34;/info/:id&#34;</span><span class="token punctuation">,</span> controller<span class="token punctuation">.</span>GetUserInfo<span class="token punctuation">)</span>  <span class="token comment">// 根据ID查询</span>
+		userGroup<span class="token punctuation">.</span><span class="token function">PUT</span><span class="token punctuation">(</span><span class="token string">&#34;/update/:id&#34;</span><span class="token punctuation">,</span> controller<span class="token punctuation">.</span>UpdateUser<span class="token punctuation">)</span>  <span class="token comment">// 修改</span>
+		userGroup<span class="token punctuation">.</span><span class="token function">DELETE</span><span class="token punctuation">(</span><span class="token string">&#34;/delete/:id&#34;</span><span class="token punctuation">,</span> controller<span class="token punctuation">.</span>DeleteUser<span class="token punctuation">)</span> <span class="token comment">// 删除</span>
+	<span class="token punctuation">}</span>
+
+	<span class="token keyword">return</span> r
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="6_utilsresultgo___382"></a>6 utils/result.go — 统一响应工具</h3>
+<p><strong>模块作用</strong>&#xff1a;封装全局统一的 API 返回格式&#xff0c;前后端交互规范。<strong>对标 Java</strong>&#xff1a;<code>R</code> / <code>Result</code> 统一返回工具类</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> utils
+
+<span class="token keyword">import</span> <span class="token string">&#34;github.com/gin-gonic/gin&#34;</span>
+
+<span class="token comment">// Result 统一响应结构体</span>
+<span class="token comment">// 所有接口统一返回格式</span>
+<span class="token keyword">type</span> Result <span class="token keyword">struct</span> <span class="token punctuation">{<!-- --></span>
+	Code <span class="token builtin">int</span>         <span class="token string">&#96;json:&#34;code&#34;&#96;</span> <span class="token comment">// 状态码 200成功 500失败</span>
+	Msg  <span class="token builtin">string</span>      <span class="token string">&#96;json:&#34;msg&#34;&#96;</span>  <span class="token comment">// 提示信息</span>
+	Data <span class="token keyword">interface</span><span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span> <span class="token string">&#96;json:&#34;data&#34;&#96;</span> <span class="token comment">// 数据</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// 状态常量</span>
+<span class="token keyword">const</span> <span class="token punctuation">(</span>
+	SUCCESS <span class="token operator">&#61;</span> <span class="token number">200</span>
+	FAIL    <span class="token operator">&#61;</span> <span class="token number">500</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// Success 成功响应</span>
+<span class="token keyword">func</span> <span class="token function">Success</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">,</span> data <span class="token keyword">interface</span><span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">,</span> msg <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	c<span class="token punctuation">.</span><span class="token function">JSON</span><span class="token punctuation">(</span><span class="token number">200</span><span class="token punctuation">,</span> Result<span class="token punctuation">{<!-- --></span>
+		Code<span class="token punctuation">:</span> SUCCESS<span class="token punctuation">,</span>
+		Msg<span class="token punctuation">:</span>  msg<span class="token punctuation">,</span>
+		Data<span class="token punctuation">:</span> data<span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Fail 失败响应</span>
+<span class="token keyword">func</span> <span class="token function">Fail</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">,</span> msg <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	c<span class="token punctuation">.</span><span class="token function">JSON</span><span class="token punctuation">(</span><span class="token number">200</span><span class="token punctuation">,</span> Result<span class="token punctuation">{<!-- --></span>
+		Code<span class="token punctuation">:</span> FAIL<span class="token punctuation">,</span>
+		Msg<span class="token punctuation">:</span>  msg<span class="token punctuation">,</span>
+		Data<span class="token punctuation">:</span> <span class="token boolean">nil</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="7__gomod__425"></a>7 go.mod 启动依赖相关配置</h3>
+<p><strong>go.mod &#61; Java 里的 pom.xml&#xff08;Maven&#xff09; &#43; build.gradle&#xff08;Gradle&#xff09;</strong></p>
+<pre><code class="prism language-go">module <span class="token keyword">go</span><span class="token punctuation">.</span>first<span class="token punctuation">.</span>web<span class="token punctuation">.</span>project
+
+<span class="token keyword">go</span> <span class="token number">1.26</span>
+
+require <span class="token punctuation">(</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>gin<span class="token operator">-</span>contrib<span class="token operator">/</span>cors v1<span class="token punctuation">.</span><span class="token number">7.7</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>gin<span class="token operator">-</span>gonic<span class="token operator">/</span>gin v1<span class="token punctuation">.</span><span class="token number">12.0</span>
+	gopkg<span class="token punctuation">.</span>in<span class="token operator">/</span>yaml<span class="token punctuation">.</span>v3 v3<span class="token punctuation">.</span><span class="token number">0.1</span>
+	gorm<span class="token punctuation">.</span>io<span class="token operator">/</span>driver<span class="token operator">/</span>mysql v1<span class="token punctuation">.</span><span class="token number">6.0</span>
+	gorm<span class="token punctuation">.</span>io<span class="token operator">/</span>gorm v1<span class="token punctuation">.</span><span class="token number">31.1</span>
+<span class="token punctuation">)</span>
+
+require <span class="token punctuation">(</span>
+	filippo<span class="token punctuation">.</span>io<span class="token operator">/</span>edwards25519 v1<span class="token punctuation">.</span><span class="token number">1.1</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>bytedance<span class="token operator">/</span>gopkg v0<span class="token punctuation">.</span><span class="token number">1.3</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>bytedance<span class="token operator">/</span>sonic v1<span class="token punctuation">.</span><span class="token number">15.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>bytedance<span class="token operator">/</span>sonic<span class="token operator">/</span>loader v0<span class="token punctuation">.</span><span class="token number">5.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>cloudwego<span class="token operator">/</span>base64x v0<span class="token punctuation">.</span><span class="token number">1.6</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>gabriel<span class="token operator">-</span>vasile<span class="token operator">/</span>mimetype v1<span class="token punctuation">.</span><span class="token number">4.12</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>gin<span class="token operator">-</span>contrib<span class="token operator">/</span>sse v1<span class="token punctuation">.</span><span class="token number">1.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>playground<span class="token operator">/</span>locales v0<span class="token punctuation">.</span><span class="token number">14.1</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>playground<span class="token operator">/</span>universal<span class="token operator">-</span>translator v0<span class="token punctuation">.</span><span class="token number">18.1</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>playground<span class="token operator">/</span>validator<span class="token operator">/</span>v10 v10<span class="token punctuation">.</span><span class="token number">30.1</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>sql<span class="token operator">-</span>driver<span class="token operator">/</span>mysql v1<span class="token punctuation">.</span><span class="token number">8.1</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>goccy<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>json v0<span class="token punctuation">.</span><span class="token number">10.5</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>goccy<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>yaml v1<span class="token punctuation">.</span><span class="token number">19.2</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>jinzhu<span class="token operator">/</span>inflection v1<span class="token punctuation">.</span><span class="token number">0.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>jinzhu<span class="token operator">/</span>now v1<span class="token punctuation">.</span><span class="token number">1.5</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>json<span class="token operator">-</span>iterator<span class="token operator">/</span><span class="token keyword">go</span> v1<span class="token punctuation">.</span><span class="token number">1.12</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>klauspost<span class="token operator">/</span>cpuid<span class="token operator">/</span>v2 v2<span class="token punctuation">.</span><span class="token number">3.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>leodido<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>urn v1<span class="token punctuation">.</span><span class="token number">4.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>mattn<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>isatty v0<span class="token punctuation">.</span><span class="token number">0.20</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>modern<span class="token operator">-</span><span class="token keyword">go</span><span class="token operator">/</span>concurrent v0<span class="token punctuation">.</span><span class="token number">0.0</span><span class="token operator">-</span><span class="token number">20180306012644</span><span class="token operator">-</span>bacd9c7ef1dd <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>modern<span class="token operator">-</span><span class="token keyword">go</span><span class="token operator">/</span>reflect2 v1<span class="token punctuation">.</span><span class="token number">0.2</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>pelletier<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">-</span>toml<span class="token operator">/</span>v2 v2<span class="token punctuation">.</span><span class="token number">2.4</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>quic<span class="token operator">-</span><span class="token keyword">go</span><span class="token operator">/</span>qpack v0<span class="token punctuation">.</span><span class="token number">6.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>quic<span class="token operator">-</span><span class="token keyword">go</span><span class="token operator">/</span>quic<span class="token operator">-</span><span class="token keyword">go</span> v0<span class="token punctuation">.</span><span class="token number">59.0</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>twitchyliquid64<span class="token operator">/</span>golang<span class="token operator">-</span>asm v0<span class="token punctuation">.</span><span class="token number">15.1</span> <span class="token comment">// indirect</span>
+	github<span class="token punctuation">.</span>com<span class="token operator">/</span>ugorji<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>codec v1<span class="token punctuation">.</span><span class="token number">3.1</span> <span class="token comment">// indirect</span>
+	<span class="token keyword">go</span><span class="token punctuation">.</span>mongodb<span class="token punctuation">.</span>org<span class="token operator">/</span>mongo<span class="token operator">-</span>driver<span class="token operator">/</span>v2 v2<span class="token punctuation">.</span><span class="token number">5.0</span> <span class="token comment">// indirect</span>
+	golang<span class="token punctuation">.</span>org<span class="token operator">/</span>x<span class="token operator">/</span>arch v0<span class="token punctuation">.</span><span class="token number">23.0</span> <span class="token comment">// indirect</span>
+	golang<span class="token punctuation">.</span>org<span class="token operator">/</span>x<span class="token operator">/</span>crypto v0<span class="token punctuation">.</span><span class="token number">48.0</span> <span class="token comment">// indirect</span>
+	golang<span class="token punctuation">.</span>org<span class="token operator">/</span>x<span class="token operator">/</span>net v0<span class="token punctuation">.</span><span class="token number">51.0</span> <span class="token comment">// indirect</span>
+	golang<span class="token punctuation">.</span>org<span class="token operator">/</span>x<span class="token operator">/</span>sys v0<span class="token punctuation">.</span><span class="token number">41.0</span> <span class="token comment">// indirect</span>
+	golang<span class="token punctuation">.</span>org<span class="token operator">/</span>x<span class="token operator">/</span>text v0<span class="token punctuation">.</span><span class="token number">35.0</span> <span class="token comment">// indirect</span>
+	google<span class="token punctuation">.</span>golang<span class="token punctuation">.</span>org<span class="token operator">/</span>protobuf v1<span class="token punctuation">.</span><span class="token number">36.10</span> <span class="token comment">// indirect</span>
+<span class="token punctuation">)</span>
+
+</code></pre>
+<h2><a rel="noopener noreferrer" id="__479"></a>三 项目核心业务代码</h2>
+<p>项目的业务逻辑代码如下</p>
+<h3><a rel="noopener noreferrer" id="1__modelusergo___482"></a>1 model/user.go — 数据模型模块</h3>
+<p><strong>模块作用</strong>&#xff1a;定义数据库表对应的结构体&#xff0c;ORM 自动映射表结构。<br /> <strong>对标 Java</strong>&#xff1a;<code>Entity</code> / <code>Model</code> 实体类</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> model
+
+<span class="token keyword">import</span> <span class="token string">&#34;time&#34;</span>
+
+<span class="token comment">// User 用户结构体</span>
+<span class="token comment">// 对应数据库 user 表</span>
+<span class="token keyword">type</span> User <span class="token keyword">struct</span> <span class="token punctuation">{<!-- --></span>
+	ID        <span class="token builtin">uint64</span>    <span class="token string">&#96;gorm:&#34;primaryKey;autoIncrement&#34; json:&#34;id&#34;&#96;</span>         <span class="token comment">// 主键自增</span>
+	Username  <span class="token builtin">string</span>    <span class="token string">&#96;gorm:&#34;size:32;not null&#34; json:&#34;username&#34;&#96;</span>           <span class="token comment">// 用户名</span>
+	Age       <span class="token builtin">int</span>       <span class="token string">&#96;json:&#34;age&#34;&#96;</span>                                        <span class="token comment">// 年龄</span>
+	Email     <span class="token builtin">string</span>    <span class="token string">&#96;json:&#34;email&#34;&#96;</span>                                      <span class="token comment">// 邮箱</span>
+	CreatedAt time<span class="token punctuation">.</span>Time <span class="token string">&#96;json:&#34;created_at&#34;&#96;</span>                                 <span class="token comment">// 创建时间</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// TableName 强制指定表名</span>
+<span class="token keyword">func</span> <span class="token punctuation">(</span>User<span class="token punctuation">)</span> <span class="token function">TableName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">string</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">return</span> <span class="token string">&#34;user&#34;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="2_daouser_daogo___509"></a>2 dao/user_dao.go — 数据访问层</h3>
+<p><strong>模块作用</strong>&#xff1a;只做数据库 CURD 操作&#xff0c;不包含任何业务逻辑。<br /> <strong>对标 Java</strong>&#xff1a;<code>Mapper/Dao</code> 数据访问层</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> dao
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;go-web-project/global&#34;</span>
+	<span class="token string">&#34;go-web-project/model&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// CreateUser 创建用户</span>
+<span class="token comment">// 参数&#xff1a;user 用户结构体指针</span>
+<span class="token comment">// 返回&#xff1a;错误信息</span>
+<span class="token keyword">func</span> <span class="token function">CreateUser</span><span class="token punctuation">(</span>user <span class="token operator">*</span>model<span class="token punctuation">.</span>User<span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 调用gorm的Create方法插入数据</span>
+	<span class="token keyword">return</span> global<span class="token punctuation">.</span>DB<span class="token punctuation">.</span><span class="token function">Create</span><span class="token punctuation">(</span>user<span class="token punctuation">)</span><span class="token punctuation">.</span>Error
+<span class="token punctuation">}</span>
+
+<span class="token comment">// GetUserById 根据ID查询用户</span>
+<span class="token keyword">func</span> <span class="token function">GetUserById</span><span class="token punctuation">(</span>id <span class="token builtin">uint64</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token operator">*</span>model<span class="token punctuation">.</span>User<span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">var</span> user model<span class="token punctuation">.</span>User
+	<span class="token comment">// First 根据主键查询单条记录</span>
+	err <span class="token operator">:&#61;</span> global<span class="token punctuation">.</span>DB<span class="token punctuation">.</span><span class="token function">First</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>user<span class="token punctuation">,</span> id<span class="token punctuation">)</span><span class="token punctuation">.</span>Error
+	<span class="token keyword">return</span> <span class="token operator">&amp;</span>user<span class="token punctuation">,</span> err
+<span class="token punctuation">}</span>
+
+<span class="token comment">// GetUserList 查询所有用户</span>
+<span class="token keyword">func</span> <span class="token function">GetUserList</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span>model<span class="token punctuation">.</span>User<span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">var</span> list <span class="token punctuation">[</span><span class="token punctuation">]</span>model<span class="token punctuation">.</span>User
+	<span class="token comment">// Find 查询所有记录</span>
+	err <span class="token operator">:&#61;</span> global<span class="token punctuation">.</span>DB<span class="token punctuation">.</span><span class="token function">Find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>list<span class="token punctuation">)</span><span class="token punctuation">.</span>Error
+	<span class="token keyword">return</span> list<span class="token punctuation">,</span> err
+<span class="token punctuation">}</span>
+
+<span class="token comment">// UpdateUser 根据ID更新用户</span>
+<span class="token keyword">func</span> <span class="token function">UpdateUser</span><span class="token punctuation">(</span>id <span class="token builtin">uint64</span><span class="token punctuation">,</span> user <span class="token operator">*</span>model<span class="token punctuation">.</span>User<span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// Updates 批量更新非零字段</span>
+	<span class="token keyword">return</span> global<span class="token punctuation">.</span>DB<span class="token punctuation">.</span><span class="token function">Model</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>model<span class="token punctuation">.</span>User<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span><span class="token string">&#34;id&#61;?&#34;</span><span class="token punctuation">,</span> id<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Updates</span><span class="token punctuation">(</span>user<span class="token punctuation">)</span><span class="token punctuation">.</span>Error
+<span class="token punctuation">}</span>
+
+<span class="token comment">// DeleteUser 根据ID删除用户</span>
+<span class="token keyword">func</span> <span class="token function">DeleteUser</span><span class="token punctuation">(</span>id <span class="token builtin">uint64</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// Delete 删除数据</span>
+	<span class="token keyword">return</span> global<span class="token punctuation">.</span>DB<span class="token punctuation">.</span><span class="token function">Delete</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>model<span class="token punctuation">.</span>User<span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">,</span> id<span class="token punctuation">)</span><span class="token punctuation">.</span>Error
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="3_serviceuser_servicego__560"></a>3 service/user_service.go —业务逻辑层</h3>
+<p><strong>模块作用</strong>&#xff1a;处理业务规则、流程编排、调用数据层&#xff0c;项目核心逻辑层。<br /> <strong>对标 Java</strong>&#xff1a;<code>Service</code> 业务逻辑层</p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> service
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;go-web-project/dao&#34;</span>
+	<span class="token string">&#34;go-web-project/model&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// AddUser 添加用户</span>
+<span class="token comment">// 调用dao层完成数据库操作</span>
+<span class="token keyword">func</span> <span class="token function">AddUser</span><span class="token punctuation">(</span>user <span class="token operator">*</span>model<span class="token punctuation">.</span>User<span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">return</span> dao<span class="token punctuation">.</span><span class="token function">CreateUser</span><span class="token punctuation">(</span>user<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// FindUserById 根据ID查询用户</span>
+<span class="token keyword">func</span> <span class="token function">FindUserById</span><span class="token punctuation">(</span>id <span class="token builtin">uint64</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token operator">*</span>model<span class="token punctuation">.</span>User<span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">return</span> dao<span class="token punctuation">.</span><span class="token function">GetUserById</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// FindUserList 查询用户列表</span>
+<span class="token keyword">func</span> <span class="token function">FindUserList</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span>model<span class="token punctuation">.</span>User<span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">return</span> dao<span class="token punctuation">.</span><span class="token function">GetUserList</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// EditUser 修改用户</span>
+<span class="token keyword">func</span> <span class="token function">EditUser</span><span class="token punctuation">(</span>id <span class="token builtin">uint64</span><span class="token punctuation">,</span> user <span class="token operator">*</span>model<span class="token punctuation">.</span>User<span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">return</span> dao<span class="token punctuation">.</span><span class="token function">UpdateUser</span><span class="token punctuation">(</span>id<span class="token punctuation">,</span> user<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// RemoveUser 删除用户</span>
+<span class="token keyword">func</span> <span class="token function">RemoveUser</span><span class="token punctuation">(</span>id <span class="token builtin">uint64</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token keyword">return</span> dao<span class="token punctuation">.</span><span class="token function">DeleteUser</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h3><a rel="noopener noreferrer" id="4_controlleruser_controllergo__601"></a>4 controller/user_controller.go —请求控制层</h3>
+<p><strong>模块作用</strong>&#xff1a;接收 HTTP 请求、参数校验、调用 Service、返回统一响应。<br /> <strong>对标 Java</strong>&#xff1a;<code>Controller</code> 控制层 &#43; <code>RequestMapping</code></p>
+<pre><code class="prism language-go"><span class="token keyword">package</span> controller
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">&#34;strconv&#34;</span>
+
+	<span class="token string">&#34;github.com/gin-gonic/gin&#34;</span>
+	<span class="token string">&#34;go-web-project/model&#34;</span>
+	<span class="token string">&#34;go-web-project/service&#34;</span>
+	<span class="token string">&#34;go-web-project/utils&#34;</span>
+<span class="token punctuation">)</span>
+
+<span class="token comment">// AddUser 新增用户接口</span>
+<span class="token comment">// POST /user/add</span>
+<span class="token keyword">func</span> <span class="token function">AddUser</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 1. 定义接收参数结构体</span>
+	<span class="token keyword">var</span> user model<span class="token punctuation">.</span>User
+
+	<span class="token comment">// 2. 绑定前端传来的JSON参数</span>
+	<span class="token keyword">if</span> err <span class="token operator">:&#61;</span> c<span class="token punctuation">.</span><span class="token function">ShouldBindJSON</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>user<span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;参数绑定失败&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+
+	<span class="token comment">// 3. 调用service层执行业务逻辑</span>
+	<span class="token keyword">if</span> err <span class="token operator">:&#61;</span> service<span class="token punctuation">.</span><span class="token function">AddUser</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>user<span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;新增失败&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+
+	<span class="token comment">// 4. 返回成功响应</span>
+	utils<span class="token punctuation">.</span><span class="token function">Success</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> user<span class="token punctuation">,</span> <span class="token string">&#34;新增成功&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// GetUserInfo 根据ID查询用户</span>
+<span class="token comment">// GET /user/info/:id</span>
+<span class="token keyword">func</span> <span class="token function">GetUserInfo</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	<span class="token comment">// 1. 获取路径参数 id</span>
+	idStr <span class="token operator">:&#61;</span> c<span class="token punctuation">.</span><span class="token function">Param</span><span class="token punctuation">(</span><span class="token string">&#34;id&#34;</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 2. 字符串转uint64</span>
+	id<span class="token punctuation">,</span> <span class="token boolean">_</span> <span class="token operator">:&#61;</span> strconv<span class="token punctuation">.</span><span class="token function">ParseUint</span><span class="token punctuation">(</span>idStr<span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>
+
+	<span class="token comment">// 3. 调用service查询</span>
+	user<span class="token punctuation">,</span> err <span class="token operator">:&#61;</span> service<span class="token punctuation">.</span><span class="token function">FindUserById</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;用户不存在&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+
+	utils<span class="token punctuation">.</span><span class="token function">Success</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> user<span class="token punctuation">,</span> <span class="token string">&#34;查询成功&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// GetUserList 查询所有用户</span>
+<span class="token keyword">func</span> <span class="token function">GetUserList</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	list<span class="token punctuation">,</span> err <span class="token operator">:&#61;</span> service<span class="token punctuation">.</span><span class="token function">FindUserList</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;查询失败&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+	utils<span class="token punctuation">.</span><span class="token function">Success</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> list<span class="token punctuation">,</span> <span class="token string">&#34;查询成功&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// UpdateUser 修改用户</span>
+<span class="token keyword">func</span> <span class="token function">UpdateUser</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	idStr <span class="token operator">:&#61;</span> c<span class="token punctuation">.</span><span class="token function">Param</span><span class="token punctuation">(</span><span class="token string">&#34;id&#34;</span><span class="token punctuation">)</span>
+	id<span class="token punctuation">,</span> <span class="token boolean">_</span> <span class="token operator">:&#61;</span> strconv<span class="token punctuation">.</span><span class="token function">ParseUint</span><span class="token punctuation">(</span>idStr<span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>
+
+	<span class="token keyword">var</span> user model<span class="token punctuation">.</span>User
+	<span class="token keyword">if</span> err <span class="token operator">:&#61;</span> c<span class="token punctuation">.</span><span class="token function">ShouldBindJSON</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>user<span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;参数错误&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+
+	<span class="token keyword">if</span> err <span class="token operator">:&#61;</span> service<span class="token punctuation">.</span><span class="token function">EditUser</span><span class="token punctuation">(</span>id<span class="token punctuation">,</span> <span class="token operator">&amp;</span>user<span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;修改失败&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+	utils<span class="token punctuation">.</span><span class="token function">Success</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token boolean">nil</span><span class="token punctuation">,</span> <span class="token string">&#34;修改成功&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// DeleteUser 删除用户</span>
+<span class="token keyword">func</span> <span class="token function">DeleteUser</span><span class="token punctuation">(</span>c <span class="token operator">*</span>gin<span class="token punctuation">.</span>Context<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+	idStr <span class="token operator">:&#61;</span> c<span class="token punctuation">.</span><span class="token function">Param</span><span class="token punctuation">(</span><span class="token string">&#34;id&#34;</span><span class="token punctuation">)</span>
+	id<span class="token punctuation">,</span> <span class="token boolean">_</span> <span class="token operator">:&#61;</span> strconv<span class="token punctuation">.</span><span class="token function">ParseUint</span><span class="token punctuation">(</span>idStr<span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>
+
+	<span class="token keyword">if</span> err <span class="token operator">:&#61;</span> service<span class="token punctuation">.</span><span class="token function">RemoveUser</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!&#61;</span> <span class="token boolean">nil</span> <span class="token punctuation">{<!-- --></span>
+		utils<span class="token punctuation">.</span><span class="token function">Fail</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token string">&#34;删除失败&#34;</span><span class="token punctuation">)</span>
+		<span class="token keyword">return</span>
+	<span class="token punctuation">}</span>
+	utils<span class="token punctuation">.</span><span class="token function">Success</span><span class="token punctuation">(</span>c<span class="token punctuation">,</span> <span class="token boolean">nil</span><span class="token punctuation">,</span> <span class="token string">&#34;删除成功&#34;</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr />
+<h2><a rel="noopener noreferrer" id="_700"></a>总结一下</h2>
+<p>Go Web 与 Java Web 分层与 CRUD 模式类似&#xff0c;上手快。但总体而言感觉Java 依托 Spring 生态&#xff0c;功能会更强大&#xff0c;可以开箱即用的快速且稳定的支撑构建一个企业级项目且不太需要随着复杂度的上升着急拆分项目&#xff08;但这也容易埋下隐患&#xff1a;不着急拆&#xff0c;发展到后面往往就挺难拆了&#xff09;&#xff1b;Go 无注解、无自动装配&#xff0c;手动配置多、封装性低&#xff0c;但好处是让开发者清晰感知底层配置。低封装也导致 Go 做复杂单体吃力&#xff0c;从而倒逼拆分服务、走向微服务化&#xff0c;更贴近云原生分布式生态。我感觉这很可能也是语言设计者的初衷&#xff0c;不去设计Spring这样提供万能解决方案的框架&#xff0c;而是更多的引导开发者走向轻量、可组合的架构。</p>

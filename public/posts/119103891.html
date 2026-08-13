@@ -1,0 +1,381 @@
+<p>前几篇Blog主要在学习Servlet组件&#xff0c;包括Servlet的基本概念、注解使用方式、生命周期以及Servlet的常用对象HttpServletRequest、HttpServletResponse、ServletConfig、ServletContext&#xff0c;之后又了解了常用于会话追踪的HttpSession对象和Cookie对象。算是对Servlet有了个全局的认知&#xff0c;其实Java Web有三大组件&#xff1a;<strong>Servlet 程序、Listener 监听器、Filter 过滤器</strong>&#xff0c;今天这篇Blog则着重介绍下过滤器</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>过滤器基本概念</h2>
+<p>聊组件之前一定要聊聊为什么有这个组件&#xff0c;我们知道为什么需要用Servlet&#xff0c;因为Servlet提供了一系列的对象来处理用户的请求和返回给用户响应&#xff0c;核心功能就是用来完成一次连接的逻辑处理&#xff0c;而一些通用的处理&#xff0c;与各请求无关的水平逻辑就需要过滤器来处理。</p>
+<h3><a rel="noopener noreferrer" id="_3"></a>过滤器作用</h3>
+<p>那么过滤器有什么作用呢&#xff1f;就像它的名字一样&#xff0c;它是过滤器&#xff0c;<strong>用来拦截请求和过滤响应</strong>的&#xff0c;具体一点&#xff0c;主要用来完成一些通用的操作&#xff1a;<strong>登录检查&#xff08;判断用户登录状态&#xff09;、编码过滤、操作记录、事务管理、图像转换过滤、认证过滤、审核过滤、加密过滤</strong>等等&#xff0c;有点像AOP切面的操作&#xff0c;例如我们下面提到的登录检查&#xff1a;<br /> <img src="./posts/assets/119103891-ext-63c9bb5b1d48.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="_7"></a>创建过滤器</h3>
+<p>用IDEA可以很轻松的创建一个过滤器出来&#xff0c;按照如下步骤&#xff1a;<br /> <img src="./posts/assets/119103891-ext-b626fd2223cf.png" alt="在这里插入图片描述"><br /> 创建完成后可以看到已经生成了过滤器的代码模板了&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/27
+ */</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebFilter</span><span class="token punctuation">(</span>filterName <span class="token operator">&#61;</span> <span class="token string">&#34;ServletFilter&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServletFilter</span> <span class="token keyword">implements</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token class-name">FilterConfig</span> config<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">ServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">ServletResponse</span> response<span class="token punctuation">,</span> <span class="token class-name">FilterChain</span> chain<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span><span class="token punctuation">,</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        chain<span class="token punctuation">.</span><span class="token function">doFilter</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>可以看到使用了WebFilter的注解&#xff0c;这样就不需要通过web.xml进行配置了&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//</span>
+<span class="token comment">// Source code recreated from a .class file by IntelliJ IDEA</span>
+<span class="token comment">// (powered by FernFlower decompiler)</span>
+<span class="token comment">//</span>
+
+<span class="token keyword">package</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Documented</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">ElementType</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Retention</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Target</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token class-name">DispatcherType</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">WebFilter</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> <span class="token function">description</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span> <span class="token function">displayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">WebInitParam</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">initParams</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span> <span class="token function">filterName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span> <span class="token function">smallIcon</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span> <span class="token function">largeIcon</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">servletNames</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">urlPatterns</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">DispatcherType</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">dispatcherTypes</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token class-name">DispatcherType</span><span class="token punctuation">.</span>REQUEST<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">boolean</span> <span class="token function">asyncSupported</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>注解的一些配置说明如下&#xff1a;<br /> <img src="./posts/assets/119103891-ext-0428f61057e4.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="_89"></a>过滤器常用方法</h3>
+<p>过滤器的常用方法有三个&#xff0c;主要贯穿其生命周期&#xff0c;包含如下几个方法&#xff1a;</p>
+<ol><li>构造器方法和init 初始化方法&#xff0c;在 web 工程启动的时候执行&#xff0c;进行Filter 已经创建</li><li>doFilter 过滤方法&#xff0c;每次拦截到请求&#xff0c;就会执行</li><li>destroy 销毁方法&#xff0c;停止 web 工程的时候&#xff0c;就会执行&#xff0c;所以停止 web 工程&#xff0c;也会销毁 Filter 过滤器</li></ol>
+<p>我们最常用的就是doFilter方法&#xff0c;通常在里面重写就行了&#xff0c;整体的方法继承结构如下&#xff1b;<br /> <img src="./posts/assets/119103891-ext-b92f0e4626b8.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_98"></a>过滤器实现登录拦截</h2>
+<p>我们用过滤器来实现个拦截登录&#xff0c;实现起来很简单&#xff0c;就是所有的jsp页面请求都需要被过滤器给拦截到然后判断是否登录成功&#xff0c;如果登录成功了则允许访问&#xff0c;如果没有登录成功则跳转到登录页面&#xff0c;同时记忆当前请求的页面&#xff0c;登录成功后自动跳转到请求的页面。</p>
+<h3><a rel="noopener noreferrer" id="JSP_100"></a>JSP页面</h3>
+<p>我们先预置三个JSP页面用来测试&#xff0c;其中一个为login.jsp也就是登录表单的提交页面&#xff1a;</p>
+<blockquote>
+ <p><strong>index.jsp页面</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html; charset&#61;UTF-8&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.*&#34;</span> errorPage<span class="token operator">&#61;</span><span class="token string">&#34;jsp/error.jsp&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; include file<span class="token operator">&#61;</span><span class="token string">&#34;jsp/top.jsp&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">!</span>DOCTYPE html<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>JSP <span class="token operator">-</span> <span class="token class-name">Hello</span> <span class="token class-name">World</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span>
+        <span class="token keyword">int</span> number <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span><span class="token comment">// 声明全局变量</span>
+        <span class="token keyword">int</span> <span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            number<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span><span class="token comment">//number 自增</span>
+            <span class="token keyword">return</span> number<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h1<span class="token punctuation">&gt;</span></span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span> <span class="token string">&#34;Hello World!&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h1<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+
+    <span class="token class-name">String</span> print <span class="token operator">&#61;</span> <span class="token string">&#34;我是脚本语句内容&#34;</span><span class="token punctuation">;</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> strList <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//  strList.add(&#34;脚本语句4&#34;);  //这是一个Java注释&#xff0c;用来注释Java代码&#xff0c;查看源码时不可见</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>a href<span class="token operator">&#61;</span><span class="token string">&#34;hello-servlet&#34;</span><span class="token operator">&gt;</span>我的第一个<span class="token class-name">JavaWeb</span>项目<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 这是一个html注释&#xff0c;可见<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>这是一个JSP注释&#xff0c;查看源码时不可见<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+声明语句示例&#xff1a;这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+表达式语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+</code></pre>
+<blockquote>
+ <p><strong>look.jsp页面</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">28</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">11</span><span class="token operator">:</span><span class="token number">21</span> 上午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>登录后可见哦<span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+登录后可见哦
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<blockquote>
+ <p><strong>login.jsp页面</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">27</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">9</span><span class="token operator">:</span><span class="token number">39</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;进入登录页面&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>form action<span class="token operator">&#61;</span><span class="token string">&#34;myServlet&#34;</span> method<span class="token operator">&#61;</span><span class="token string">&#34;post&#34;</span><span class="token operator">&gt;</span>
+    用户名 <span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;text&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;username&#34;</span><span class="token operator">&gt;</span><span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+    密码   <span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;text&#34;</span> name<span class="token operator">&#61;</span><span class="token string">&#34;password&#34;</span><span class="token operator">&gt;</span><span class="token generics"><span class="token punctuation">&lt;</span>br<span class="token punctuation">&gt;</span></span>
+    <span class="token operator">&lt;</span>input type<span class="token operator">&#61;</span><span class="token string">&#34;submit&#34;</span> value<span class="token operator">&#61;</span><span class="token string">&#34;submit&#34;</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>form<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Servlet_193"></a>Servlet页面</h3>
+<p>当然要有处理登录信息的Servlet代码&#xff0c;用来塞入用户的信息和用户登录状态信息&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/19
+ */</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;myServlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/myServlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LoginServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">HttpServletResponse</span> response<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span><span class="token punctuation">,</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doPost</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">HttpServletResponse</span> response<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span><span class="token punctuation">,</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setCharacterEncoding</span><span class="token punctuation">(</span><span class="token string">&#34;utf-8&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;进入用户登录页面&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> username <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> password <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;用户名 &#34;</span> <span class="token operator">&#43;</span> username <span class="token operator">&#43;</span> <span class="token string">&#34;密码 &#34;</span> <span class="token operator">&#43;</span> password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//满足如下条件则认为登录成功</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>username<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;admin&#34;</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> password<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;root&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//重置登录session</span>
+            <span class="token class-name">HttpSession</span> session <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">,</span> username<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;password&#34;</span><span class="token punctuation">,</span> password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;loginStatus&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;登录成功&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;用户登录成功&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">//获取登录前的url做跳转</span>
+            <span class="token class-name">String</span> url <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">)</span> session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;URL&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            request<span class="token punctuation">.</span><span class="token function">getRequestDispatcher</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forward</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Servlet_244"></a>Servlet过滤器</h3>
+<p>当然最关键的就是我们写的Servlet过滤器了&#xff0c;每一个jsp请求到达都会被该过滤器拦截然后进行相关操作&#xff0c;例如判断是否登录成功&#xff0c;没有登录成功一律转到登录的jsp页面&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>filter</span><span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/27
+ */</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServletRequest</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServletResponse</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpSession</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebFilter</span><span class="token punctuation">(</span>filterName <span class="token operator">&#61;</span> <span class="token string">&#34;ServletFilter&#34;</span><span class="token punctuation">,</span>urlPatterns<span class="token operator">&#61;</span> <span class="token string">&#34;*.jsp&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServletFilter</span> <span class="token keyword">implements</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token class-name">FilterConfig</span> config<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器的init()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器的destroy()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">ServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">ServletResponse</span> response<span class="token punctuation">,</span> <span class="token class-name">FilterChain</span> chain<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span><span class="token punctuation">,</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器的doFilter()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">HttpServletRequest</span> requestServlet <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span><span class="token punctuation">)</span> request<span class="token punctuation">;</span>
+        <span class="token class-name">HttpServletResponse</span> responseServlet <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token class-name">HttpServletResponse</span><span class="token punctuation">)</span> response<span class="token punctuation">;</span>
+        <span class="token class-name">HttpSession</span> session<span class="token operator">&#61;</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span><span class="token punctuation">)</span> request<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> loginStatus<span class="token operator">&#61;</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">)</span>session<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;loginStatus&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> url<span class="token operator">&#61;</span>requestServlet<span class="token punctuation">.</span><span class="token function">getRequestURI</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;url链接&#34;</span><span class="token operator">&#43;</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//登录页面无需跳转登录页面&#xff0c;否则会一直报重定向的错误</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token string">&#34;login.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;访问的登录页面login.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            chain<span class="token punctuation">.</span><span class="token function">doFilter</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>loginStatus<span class="token operator">&#61;&#61;</span><span class="token keyword">null</span> <span class="token operator">||</span> <span class="token operator">!</span>loginStatus<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;登录成功&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;未登录&#xff0c;跳转到登录页面&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">String</span> urlget<span class="token operator">&#61;</span>url<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">lastIndexOf</span><span class="token punctuation">(</span><span class="token string">&#34;/&#34;</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token number">1</span><span class="token punctuation">,</span>url<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            session<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;URL&#34;</span><span class="token punctuation">,</span>urlget<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            responseServlet<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span><span class="token string">&#34;login.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token keyword">else</span><span class="token punctuation">{<!-- --></span>
+            chain<span class="token punctuation">.</span><span class="token function">doFilter</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_304"></a>实现效果</h3>
+<p>当我们启动服务器访问index.jsp或者look.jsp页面时请求会被拦截&#xff0c;然后进行登录判断&#xff0c;只有登录成功的才会允许继续执行&#xff1a;<br /> <img src="./posts/assets/119103891-ext-737fc0b0b645.png" alt="在这里插入图片描述"><br /> 输入用户名和密码后自动依据当前请求的链接进行请求转发&#xff1a;<br /> <img src="./posts/assets/119103891-ext-ef6f4603d8a5.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_309"></a>过滤器链</h2>
+<p>Filter 过滤器&#xff0c;也就是Chain 链&#xff0c;链条的意思&#xff0c;FilterChain 就是过滤器链&#xff0c;是用来描述多个过滤器如何一起工作。<br /> <img src="./posts/assets/119103891-ext-44f3d5f610bf.png" alt="在这里插入图片描述"><br /> 过滤器链有如下特征&#xff1a;</p>
+<ol><li>所有filter和目标资源默认都执行在同一个线程中</li><li>多个filter共同执行时&#xff0c;他们都是用同一个Request对象</li></ol>
+<p>多个filter组成的过滤器链&#xff0c;在WebFilter注解使用情况下网上很多人说依据类名字典顺序执行&#xff0c;实际操作后发现并非如此&#xff0c;并且官方并没有给出具体的排序&#xff0c;所以还是最好配置web.xml里。</p>
+<p>我们使用过滤器链来观察下&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="_323"></a>第一个过滤器</h3>
+<blockquote>
+ <p><strong>Filter0过滤器</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>filter</span><span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/29
+ */</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebFilter</span><span class="token punctuation">(</span>filterName <span class="token operator">&#61;</span> <span class="token string">&#34;Filter0&#34;</span><span class="token punctuation">,</span> urlPatterns <span class="token operator">&#61;</span> <span class="token string">&#34;/index.jsp&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Filter0</span> <span class="token keyword">implements</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token class-name">FilterConfig</span> config<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器Filter0的init()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器Filter0的destroy()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">ServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">ServletResponse</span> response<span class="token punctuation">,</span> <span class="token class-name">FilterChain</span> chain<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span><span class="token punctuation">,</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是过滤器Filter0的前置代码&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        chain<span class="token punctuation">.</span><span class="token function">doFilter</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是过滤器Filter0的后置代码&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_360"></a>第二个过滤器</h3>
+<blockquote>
+ <p><strong>Filter1过滤器</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>filter</span><span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/29
+ */</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebFilter</span><span class="token punctuation">(</span>filterName <span class="token operator">&#61;</span> <span class="token string">&#34;Filter1&#34;</span><span class="token punctuation">,</span> urlPatterns <span class="token operator">&#61;</span> <span class="token string">&#34;/index.jsp&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Filter1</span> <span class="token keyword">implements</span> <span class="token class-name">Filter</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token class-name">FilterConfig</span> config<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器Filter1的init()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;执行过滤器Filter1的destroy()方法&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doFilter</span><span class="token punctuation">(</span><span class="token class-name">ServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">ServletResponse</span> response<span class="token punctuation">,</span> <span class="token class-name">FilterChain</span> chain<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">ServletException</span><span class="token punctuation">,</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是过滤器Filter1的前置代码&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        chain<span class="token punctuation">.</span><span class="token function">doFilter</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;我是过滤器Filter1的后置代码&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Webxml_395"></a>Web.xml配置</h3>
+<p>配置顺序在先的先执行&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token operator">&lt;</span>filter<span class="token operator">-</span>mapping<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>filter<span class="token operator">-</span>name<span class="token operator">&gt;</span><span class="token class-name">Filter0</span><span class="token operator">&lt;</span><span class="token operator">/</span>filter<span class="token operator">-</span>name<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>url<span class="token operator">-</span>pattern<span class="token operator">&gt;</span><span class="token operator">/</span>index<span class="token punctuation">.</span>jsp<span class="token operator">&lt;</span><span class="token operator">/</span>url<span class="token operator">-</span>pattern<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>filter<span class="token operator">-</span>mapping<span class="token operator">&gt;</span>
+
+    <span class="token operator">&lt;</span>filter<span class="token operator">-</span>mapping<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>filter<span class="token operator">-</span>name<span class="token operator">&gt;</span><span class="token class-name">Filter1</span><span class="token operator">&lt;</span><span class="token operator">/</span>filter<span class="token operator">-</span>name<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>url<span class="token operator">-</span>pattern<span class="token operator">&gt;</span><span class="token operator">/</span>index<span class="token punctuation">.</span>jsp<span class="token operator">&lt;</span><span class="token operator">/</span>url<span class="token operator">-</span>pattern<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>filter<span class="token operator">-</span>mapping<span class="token operator">&gt;</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_411"></a>打印结果展示</h3>
+<p>请求index.jsp页面后分别被过滤器链上的过滤器执行&#xff1a;<br /> <img src="./posts/assets/119103891-ext-65deda533657.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_415"></a>总结一下</h2>
+<p>过滤器有点像一个切面&#xff0c;它主要是对通用的一些逻辑进行统一处理&#xff0c;例如编码转换&#xff0c;日志输出&#xff0c;登录判断&#xff0c;权限判断等。而且可以使用过滤器链来完成一系列逻辑&#xff0c;注意过滤器链使用时要在web.xml中配置执行顺序</p>

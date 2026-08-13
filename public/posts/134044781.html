@@ -1,0 +1,237 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是【动态规划】&#xff0c;使用【数组】这个基本的数据结构来实现&#xff0c;这个高频题的站点是&#xff1a;<a href="https://codetop.cc/home" rel="nofollow"><strong>CodeTop</strong></a>&#xff0c;筛选条件为&#xff1a;<font color="red"><strong>目标公司&#43;最近一年&#43;出现频率排序</strong></font>&#xff0c;由高到低的去<a href="https://www.nowcoder.com/exam/oj?page&#61;1&amp;tab&#61;%E7%AE%97%E6%B3%95%E7%AF%87&amp;topicId&#61;295" rel="nofollow"><strong>牛客TOP101</strong></a>去找&#xff0c;只有两个地方都出现过才做这道题&#xff08;CodeTop本身汇聚了LeetCode的来源&#xff09;&#xff0c;确保刷的题都是高频要面试考的题。<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-01-220414113c.png" loading="lazy"></p>
+<p>明确目标题后&#xff0c;附上题目链接&#xff0c;后期可以依据解题思路反复快速练习&#xff0c;<font color="red"><strong>题目按照题干的基本数据结构分类&#xff0c;且每个分类的第一篇必定是对基础数据结构的介绍</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="MID_4"></a>最大正方形【MID】</h2>
+<p>来解决一道最大正方形的题目</p>
+<h3><a rel="noopener noreferrer" id="_6"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/134044781-02-8c922ed126.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_10"></a>解题思路</h3>
+<p><a href="https://leetcode.cn/problems/maximal-square/solutions/44586/li-jie-san-zhe-qu-zui-xiao-1-by-lzhlyle/" rel="nofollow"><strong>原题解出处</strong></a>按照动态规划的标准解题讨论来进行解题&#xff0c;理解 <code>min(上, 左, 左上) &#43; 1</code>&#xff0c;如题&#xff0c;在其他动态规划方法的题解中&#xff0c;大都会涉及到下列形式的代码&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">// 伪代码</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">matrix</span><span class="token punctuation">(</span>i <span class="token punctuation">,</span> j <span class="token punctuation">)</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;1&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token function">dp</span><span class="token punctuation">(</span>i<span class="token punctuation">,</span> j<span class="token punctuation">)</span> <span class="token operator">&#61;</span> <span class="token function">min</span><span class="token punctuation">(</span><span class="token function">dp</span><span class="token punctuation">(</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> j<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">dp</span><span class="token punctuation">(</span>i<span class="token punctuation">,</span> j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">dp</span><span class="token punctuation">(</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>其中&#xff0c;<code>dp(i, j)</code> 是以 <code>matrix(i , j )</code> 为 <strong>右下角</strong> 的正方形的<strong>最大边长</strong>&#xff0c;</p>
+<blockquote>
+ <p><strong>若某格子值为 1&#xff0c;则以此为右下角的正方形的、最大边长为&#xff1a;上面的正方形、左面的正方形或左上的正方形中&#xff0c;最小的那个&#xff0c;再加上此格</strong></p>
+</blockquote>
+<p>先来阐述简单共识</p>
+<ul><li>若形成正方形&#xff08;非单 1&#xff09;&#xff0c;以当前为右下角的视角看&#xff0c;则需要&#xff1a;当前格、上、左、左上都是 1</li><li>可以换个角度&#xff1a;当前格、上、左、左上都不能受 0 的限制&#xff0c;才能成为正方形</li></ul>
+<p><img alt="在这里插入图片描述" src="./posts/assets/134044781-03-a07c83062b.png" loading="lazy"><br /> 上面详解了 三者取最小 的含义&#xff1a;</p>
+<ul><li>图 1&#xff1a;受限于左上的 0</li><li>图 2&#xff1a;受限于上边的 0</li><li>图 3&#xff1a;受限于左边的 0</li></ul>
+<p>数字表示&#xff1a;以此为正方形右下角的最大边长&#xff1b;黄色表示&#xff1a;格子 ? 作为右下角的正方形区域。就像 木桶的短板理论 那样——附近的最小边长&#xff0c;才与 ? 的最长边长有关。 此时已可得到递推公式</p>
+<pre><code class="prism language-java"><span class="token comment">// 伪代码</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;1&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token function">min</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="1__43"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p><strong>dp 具体定义&#xff1a;<code>dp[i ][j ]</code> 表示 <code>「以第 i 行、第 j 列为右下角的正方形的最大边长」</code></strong></p>
+<p>为何不是 dp[i][j]&#xff0c;回到图解中&#xff0c;任何一个正方形&#xff0c;我们都「依赖」当前格 左、上、左上三个方格的情况&#xff0c;但第一行的上层已经没有格子&#xff0c;第一列左边已经没有格子&#xff0c;需要做特殊 if 判断来处理&#xff0c;为了代码简洁&#xff0c;我们 假设补充 了多一行全 ‘0’、多一列全 ‘0’</p>
+<h4><a rel="noopener noreferrer" id="2__48"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p>取自己左上、上方、左边最小值再加上自身</p>
+<pre><code class="prism language-java"><span class="token comment">// 伪代码</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span>grid<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;1&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token function">min</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__56"></a>3 初始化状态</h4>
+<p>初始值就是将第一列 <code>dp[row][0]</code> 、第一行 <code>dp[0][col]</code> 都赋为 0&#xff0c;相当于已经计算了所有的第一行、第一列的 dp 值<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-04-889ce5ac3e.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="4__61"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__63"></a>5 找到最终解</h4>
+<p>题目要求面积。根据 「<strong>面积 &#61; 边长 x 边长</strong>」可知&#xff0c;我们只需求出 <strong>最大边长</strong> 即可,定义 maxSide 表示最长边长&#xff0c;每次得出一个 dp&#xff0c;就 <code>maxSide &#61; max(maxSide, dp);</code> 最终返回 <code>return maxSide * maxSide;</code></p>
+<h3><a rel="noopener noreferrer" id="_68"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param nums int整型一维数组
+     * &#64;return int整型一维数组
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">maximalSquare</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> matrix<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">// 1 入参校验</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>matrix <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> matrix<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">||</span> matrix<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 定义最长边&#xff0c;以及获取边长</span>
+        <span class="token keyword">int</span> maxSide <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> row <span class="token operator">&#61;</span> matrix<span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+        <span class="token keyword">int</span> col <span class="token operator">&#61;</span> matrix<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 定义dp数组,dp[i][j]表示以i、j为坐标的元素作为右下角的最大正方形边长&#xff0c;默认初始化了两列0</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>row <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>col <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 4 编写状态转移方程</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> row<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> j <span class="token operator">&lt;&#61;</span> col<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>matrix<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">&#61;&#61;</span> <span class="token char">&#39;1&#39;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+                    maxSide <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span>maxSide<span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> maxSide <span class="token operator">*</span> maxSide<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>考虑到每个方格都需要参与计算&#xff0c;双重循环要从索引1开始&#xff08;<strong>否则dp[0][0]无法进行状态转移&#xff0c;会数组越界</strong>&#xff09;&#xff0c;这样为了第0行第0列可以参与计算&#xff0c;就给dp数组补了0&#xff0c;也就是base case&#xff0c;补0后dp的第1行和第1列对应的判断元素其实是matrix的第0行和第0列&#xff0c;所以这里的if条件是&#xff1a;<code>matrix[i - 1][j - 1] &#61;&#61; &#39;1&#39;</code></p>
+<h3><a rel="noopener noreferrer" id="_122"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;<strong>O(N*M)</strong>&#xff0c;这里 N 是数组的长度&#xff0c;我们写了两个 for 循环&#xff0c;每个 for 循环的时间复杂度都是线性的&#xff1b;<br /> 空间复杂度&#xff1a;<strong>O(N*M)</strong>&#xff0c;我们使用了二维dp,所以其空间复杂度也是O(N*M)</p>
+<h2><a rel="noopener noreferrer" id="MID_127"></a>最小路径和【MID】</h2>
+<p>再来一道类似的二维DP题&#xff0c;最小路径和<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-05-38b080aa7f.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_131"></a>题干</h3>
+<p>首先还是限制在一个二维矩阵中&#xff0c;求最值问题很容易联想到动态规划<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-06-de959fa034.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_137"></a>解题思路</h3>
+<p>既然是二维矩阵&#xff0c;我们需要同样定义个动态规划表来填充&#xff0c;这里可以通过补充边界来避免判断边界<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-07-2d27f1a738.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="1__144"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p><strong>dp 具体定义&#xff1a;<code>dp[i ][j ]</code> 表示 <code>「以grid第 i-1 行、第 j -1列为结尾的路径中的最小路径和」</code></strong></p>
+<h4><a rel="noopener noreferrer" id="2__147"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p>既然是以grid[i][j]为结尾的最小路径和&#xff0c;且因为路径只能向右和向下&#xff0c;所以对于当前元素来说&#xff0c;之前的路径和就是来自于<strong>上边</strong>或者<strong>左边</strong></p>
+<h4><a rel="noopener noreferrer" id="3__149"></a>3 初始化状态</h4>
+<pre><code class="prism language-java"><span class="token comment">// 这里默认初始化了全0的一行和一列</span>
+<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>row <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>col <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+</code></pre>
+<p>为了避免判断边界条件&#xff0c;我们将边界补充为最大值</p>
+<pre><code class="prism language-java"><span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> row<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+     dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> j <span class="token operator">&lt;&#61;</span> col<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+     dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="4__166"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__168"></a>5 找到最终解</h4>
+<p><strong>最终解就是dp表的右下角dp[row][col]</strong></p>
+<h3><a rel="noopener noreferrer" id="_171"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param matrix int整型二维数组 the matrix
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> minPathSum <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> matrix<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 处理异常入参</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>matrix <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span> <span class="token operator">||</span> matrix<span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span> <span class="token operator">||</span> matrix<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length <span class="token operator">&#61;&#61;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义dp[i][j]为以grid[i][j]元素为结尾的最小路径和</span>
+        <span class="token keyword">int</span> row <span class="token operator">&#61;</span> matrix<span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+        <span class="token keyword">int</span> col <span class="token operator">&#61;</span> matrix<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+        <span class="token comment">// 这里默认初始化了全0的一行和一列</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>row <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>col <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 第一行和第一列填充为INT最大值</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> row<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">2</span><span class="token punctuation">;</span> j <span class="token operator">&lt;&#61;</span> col<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            dp<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token constant">MAX_VALUE</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 3 状态转移递推</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> row<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> j <span class="token operator">&lt;&#61;</span> col<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// dp[i][j]为上方和左方最小路径和&#43;当前元素的值</span>
+                dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token class-name">Math</span><span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> matrix<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+
+        <span class="token keyword">return</span> dp<span class="token punctuation">[</span>row<span class="token punctuation">]</span><span class="token punctuation">[</span>col<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_231"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;<strong>O(N*M)</strong>&#xff0c;这里 N 是数组的长度&#xff0c;我们写了两个 for 循环&#xff0c;每个 for 循环的时间复杂度都是线性的&#xff1b;<br /> 空间复杂度&#xff1a;<strong>O(N*M)</strong>&#xff0c;我们使用了二维dp,所以其空间复杂度也是O(N*M)</p>
+<h2><a rel="noopener noreferrer" id="MID_236"></a>不同路径【MID】</h2>
+<p>再来一道类似的二维DP题&#xff0c;同时也是剑指offer的经典题目<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-08-90fdc7c39a.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_240"></a>题干</h3>
+<p>和最小路径和类似&#xff0c;只是没有权重的概念<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-09-86b2c69ff1.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_246"></a>解题思路</h3>
+<p>和最小路径和的思路一样&#xff0c;也是漫游二维动规DP<br /> <img alt="在这里插入图片描述" src="./posts/assets/134044781-10-79a06f6ac8.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="1__252"></a>1 定义状态&#xff08;定义子问题&#xff09;</h4>
+<p><strong>dp 具体定义&#xff1a;<code>dp[i][j] 为以i-1、j-1元素为结尾的路径总数</code></strong></p>
+<h4><a rel="noopener noreferrer" id="2__255"></a>2 状态转移方程&#xff08;描述子问题之间的联系&#xff09;</h4>
+<p>走到当前元素的路径总和为从上边和左边来的路径总和之和</p>
+<pre><code class="prism language-java"> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#43;</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="3__262"></a>3 初始化状态</h4>
+<p>为了避免边界判断&#xff0c;对第一列和第一行进行补0&#xff0c;对于第一行第一列&#xff0c;其路径来源提供的是0</p>
+<h4><a rel="noopener noreferrer" id="4__265"></a>4 求解方向</h4>
+<p>这里采用自底向上&#xff0c;从最小的状态开始求解</p>
+<h4><a rel="noopener noreferrer" id="5__267"></a>5 找到最终解</h4>
+<p>DP的右下角就是最终解<code>dp[m][n]</code></p>
+<h3><a rel="noopener noreferrer" id="_270"></a>代码实现</h3>
+<p>给出代码实现基本档案</p>
+<blockquote>
+ <p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>数组</strong></font><br /> <strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>无</strong></font><br /> <strong>算法</strong>&#xff1a;<font color="red"><strong>动态规划</strong></font><br /> <strong>技巧</strong>&#xff1a;<font color="red"><strong>无</strong></font></p>
+</blockquote>
+<p>其中数据结构、算法和技巧分别来自&#xff1a;</p>
+<ul><li>10 个数据结构&#xff1a;<strong>数组、链表、栈、队列、散列表、二叉树、堆、跳表、图、Trie 树</strong></li><li>10 个算法&#xff1a;<strong>递归、排序、二分查找、搜索、哈希算法、贪心算法、分治算法、回溯算法、动态规划、字符串匹配算法</strong></li><li>技巧&#xff1a;<strong>双指针、滑动窗口、中心扩散</strong></li></ul>
+<p>当然包括但不限于以上</p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">/**
+     * 代码中的类名、方法名、参数名已经指定&#xff0c;请勿修改&#xff0c;直接返回方法规定的值即可
+     *
+     *
+     * &#64;param m int整型
+     * &#64;param n int整型
+     * &#64;return int整型
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> uniquePaths <span class="token punctuation">(</span><span class="token keyword">int</span> m<span class="token punctuation">,</span> <span class="token keyword">int</span> n<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 入参进行校验,不满足入参条件返回0</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>m <span class="token operator">&lt;</span> <span class="token number">1</span> <span class="token operator">&amp;&amp;</span> n <span class="token operator">&lt;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 2 定义dp数组&#xff0c;dp[i][j] 为以i-1、j-1元素为结尾的路径总数,初始化补0&#xff0c;对于第一行第一列&#xff0c;其路径来源提供的是0</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span> dp <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token keyword">int</span><span class="token punctuation">[</span>m <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>n <span class="token operator">&#43;</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 3 递推构建动态转移</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;&#61;</span> m<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span> <span class="token keyword">int</span> j <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> j <span class="token operator">&lt;&#61;</span> n<span class="token punctuation">;</span> j<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&#61;&#61;</span> <span class="token number">1</span> <span class="token operator">&amp;&amp;</span> j <span class="token operator">&#61;&#61;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// base case&#xff0c;以matrix[0][0]也就是矩阵第一个元素为结尾的路径有1条                </span>
+                    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token comment">// 以i、j为终点的元素的路径总和为从上方来的路径&#43;从左边来的路径总和</span>
+                    dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#61;</span> dp<span class="token punctuation">[</span>i <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span>j<span class="token punctuation">]</span> <span class="token operator">&#43;</span> dp<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span>j <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dp<span class="token punctuation">[</span>m<span class="token punctuation">]</span><span class="token punctuation">[</span>n<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_322"></a>复杂度分析</h3>
+<p>时间复杂度&#xff1a;<strong>O(N*M)</strong>&#xff0c;这里 N 是数组的长度&#xff0c;我们写了两个 for 循环&#xff0c;每个 for 循环的时间复杂度都是线性的&#xff1b;<br /> 空间复杂度&#xff1a;<strong>O(N*M)</strong>&#xff0c;我们使用了二维dp,所以其空间复杂度也是O(N*M)</p>

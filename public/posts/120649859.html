@@ -1,0 +1,230 @@
+<p>上篇Blog我们学习了SpringBoot是如何实现自动配置的&#xff0c;通过&#64;Configuration的全注解配置方式和Spring Factories 发现机制自动将组件注入到容器&#xff0c;然后依据配置绑定&#xff0c;确定组件的属性值该是多少&#xff0c;实现了全自动的实现方式&#xff0c;不用我们再操心。在第一篇Blog中我们就提到过场景启动器&#xff0c;那么本篇Blog结合SpringBoot自动配置以及前面学的yaml配置文件等知识来自己实现一个自定义的场景启动器。</p>
+<h2><a rel="noopener noreferrer" id="starter_1"></a>starter基本概念</h2>
+<p>我们再回顾下starter的概念&#xff1a;<strong>starter 是 SpringBoot 中一种非常重要的机制&#xff0c;它可以繁杂的配置统一集成到 starter 中&#xff0c;我们只需要通过 maven 将 starter 依赖引入到项目中&#xff0c;SpringBoot 就能自动扫描并加载相应的默认配置</strong>。starter 的出现让开发人员从繁琐的框架配置中解放出来&#xff0c;将更多的精力专注于业务逻辑的开发&#xff0c;极大的提高了开发效率。在一些特殊情况下&#xff0c;<strong>我们也可以将一些通用功能封装成自定义的 starter 进行使用</strong></p>
+<h3><a rel="noopener noreferrer" id="_3"></a>命名规范</h3>
+<p>SpringBoot 提供的 starter 以 <code>spring-boot-starter-xxx</code> 的形式命名。为了与 SpringBoot 生态提供的 starter 进行区分&#xff0c;官方建议第三方开发者或技术&#xff08;例如 Druid、Mybatis 等等&#xff09;厂商自定义的 starter 使用 <code>xxx-spring-boot-starter</code> 的形式命名&#xff0c;例如 <code>mybatis-spring-boot-starter、druid-spring-boot-starter</code> 等等</p>
+<h3><a rel="noopener noreferrer" id="_5"></a>模块规范</h3>
+<p>Spring Boot 官方建议我们在自定义 starter 时&#xff0c;创建两个 Module &#xff1a;<code>autoConfigure Module</code> 和 <code>starter Module</code>&#xff0c;其中 starter Module 依赖于 autoConfigure Module。当然&#xff0c;这只是 Spring Boot 官方的建议&#xff0c;并不是硬性规定&#xff0c;若不需要自动配置代码和依赖项目分离&#xff0c;我们也可以将它们组合到同一个 Module 里</p>
+<h2><a rel="noopener noreferrer" id="starter_7"></a>自定义starter步骤</h2>
+<p>自定义 starter 可以分为以下 7 步&#xff1a;<strong>创建工程—》添加 POM 依赖—》定义 propertie 类—》定义 Service 类–》定义自动配置类—》创建 spring.factories文件—》构建 starter</strong>&#xff0c;接下来我们按照步骤实现一遍</p>
+<h3><a rel="noopener noreferrer" id="1__9"></a>1 创建工程</h3>
+<p>在IDEA中新建一个空项目<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-01-8bd9d06ee5.png" loading="lazy"><br />
+填写项目信息:<code>tml-spring-boot-starter</code><br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-02-18765443b4.png" loading="lazy"></p>
+<p>创建第一个模块:<code>tml-spring-boot-starter</code><br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-03-9111009ff0.png" loading="lazy"><br />
+创建第二个模块&#xff1a;<code>tml-spring-boot-starter-autoconfiguration</code><br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-04-827ee2ee15.png" loading="lazy"><br />
+两个模块都按照如下选项创建&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-05-8a803e297b.png" loading="lazy"><br />
+两个模块选择好后如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-06-32b5493d1e.png" loading="lazy"><br />
+创建完后项目界面如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-07-0ba18d949a.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="2__POM__25"></a>2 添加 POM 依赖</h3>
+<p>在<code>tml-spring-boot-starter</code>的 pom.xml 中添加以下代码&#xff0c;将 <code>tml-spring-boot-starter-autoconfiguration</code> 作为其依赖项</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>添加自动配置模块为其依赖<span class="token operator">--</span><span class="token operator">&gt;</span>
+     <span class="token generics"><span class="token punctuation">&lt;</span>dependency<span class="token punctuation">&gt;</span></span>
+         <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>com<span class="token punctuation">.</span>example<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+         <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>tml<span class="token operator">-</span>spring<span class="token operator">-</span>boot<span class="token operator">-</span>starter<span class="token operator">-</span>autoconfiguration<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+         <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">0.0</span><span class="token number">.1</span><span class="token operator">-</span>SNAPSHOT<span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+     <span class="token operator">&lt;</span><span class="token operator">/</span>dependency<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__propertie__38"></a>3 定义 propertie 类</h3>
+<p>在 tml-spring-boot-starter-autoconfiguration 的properties 包中&#xff0c;创建一个实体类&#xff1a;PersonProperties&#xff0c;通过它来映射配置信息</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>properties</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">lombok<span class="token punctuation">.</span></span><span class="token class-name">Data</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>context<span class="token punctuation">.</span>properties<span class="token punctuation">.</span></span><span class="token class-name">ConfigurationProperties</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">PropertySource</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * 实体类&#xff0c;用来映射配置信息
+ */</span>
+<span class="token annotation punctuation">&#64;Data</span>
+<span class="token annotation punctuation">&#64;ConfigurationProperties</span><span class="token punctuation">(</span>prefix <span class="token operator">&#61;</span> <span class="token string">&#34;person&#34;</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;PropertySource</span><span class="token punctuation">(</span>value <span class="token operator">&#61;</span> <span class="token string">&#34;classpath:application.properties&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonProperties</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> prefix<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> suffix<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="4__Service__61"></a>4 定义 Service 类</h3>
+<p>在tml-spring-boot-starter-autoconfiguration 的 services包中&#xff0c;创建一个 Service 类&#xff1a;PersonService&#xff0c;供其他项目使用</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>services</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>properties<span class="token punctuation">.</span></span><span class="token class-name">PersonProperties</span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Resource</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonService</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">PersonProperties</span> personProperties<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">sayHello</span><span class="token punctuation">(</span><span class="token class-name">String</span> userName<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> personProperties<span class="token punctuation">.</span><span class="token function">getPrefix</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&#43;</span> userName <span class="token operator">&#43;</span> personProperties<span class="token punctuation">.</span><span class="token function">getSuffix</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="5__82"></a>5 定义自动配置类</h3>
+<p>在tml-spring-boot-starter-autoconfiguration的autoConfiguration包 中&#xff0c;创建一个配置类&#xff1a;PersonAutoConfiguration&#xff0c;其代码如下</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>autoConfiguration</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>properties<span class="token punctuation">.</span></span><span class="token class-name">PersonProperties</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>services<span class="token punctuation">.</span></span><span class="token class-name">PersonService</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>autoconfigure<span class="token punctuation">.</span>condition<span class="token punctuation">.</span></span><span class="token class-name">ConditionalOnMissingBean</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>context<span class="token punctuation">.</span>properties<span class="token punctuation">.</span></span><span class="token class-name">EnableConfigurationProperties</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Bean</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>context<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Configuration</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Configuration</span>
+<span class="token annotation punctuation">&#64;EnableConfigurationProperties</span><span class="token punctuation">(</span><span class="token class-name">PersonProperties</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span> <span class="token comment">//启用 PersonProperties&#xff0c;并默认将它添加到容器中</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonAutoConfiguration</span><span class="token punctuation">{<!-- --></span>
+        <span class="token annotation punctuation">&#64;ConditionalOnMissingBean</span><span class="token punctuation">(</span><span class="token class-name">PersonService</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span> <span class="token comment">//当容器中没有 PersonService 时生效</span>
+
+        <span class="token annotation punctuation">&#64;Bean</span>
+        <span class="token keyword">public</span> <span class="token class-name">PersonService</span> <span class="token function">personService</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">PersonService</span> personService <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">PersonService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> personService <span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>PersonAutoConfiguration使用了以下 4 个注解&#xff1a;</p>
+<ul><li>&#64;Configuration&#xff1a;表示该类是一个配置类&#xff1b;</li><li>&#64;EnableConfigurationProperties(HelloProperties.class)&#xff1a;该注解的作用是为 HelloProperties 开启属性配置功能&#xff0c;并将这个类以组件的形式注入到容器中&#xff1b;</li><li>&#64;ConditionalOnMissingBean(HelloService.class)&#xff1a;该注解表示当容器中没有 HelloService 类时&#xff0c;该方法才生效&#xff1b;</li><li>&#64;Bean&#xff1a;该注解用于将方法的返回值以 Bean 对象的形式添加到容器中。</li></ul>
+<p>这样自动配置类就将组件和配置绑定并且都注入到容器中了。</p>
+<h3><a rel="noopener noreferrer" id="6__springfactories_115"></a>6 创建 spring.factories文件</h3>
+<p>由于 Spring Boot 的自动配置是基于 Spring Factories 机制实现的&#xff0c;因此我们自定义 starter 时&#xff0c;同样需要在项目类路径下创建一个 spring.factories 文件。在tml-spring-boot-starter-autoconfiguration 的类路径下&#xff08;resources &#xff09;中创建一个 META-INF 文件夹&#xff0c;并在 META-INF 文件夹中创建一个 spring.factories 文件<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-08-c881afebbd.png" loading="lazy"></p>
+<p>将 Spring Boot 的 EnableAutoConfiguration 接口与自定义 starter 的自动配置类 PersonAutoConfiguration组成一组键值对添加到 spring.factories 文件中&#xff0c;以方便 Spring Boot 在启动时&#xff0c;获取到自定义 starter 的自动配置&#xff0c;代码如下</p>
+<pre><code class="prism language-java"><span class="token class-name"><span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token punctuation">.</span>autoconfigure<span class="token punctuation">.</span></span>EnableAutoConfiguration</span><span class="token operator">&#61;</span>\
+<span class="token class-name"><span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>autoConfiguration<span class="token punctuation">.</span></span>PersonAutoConfiguration</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="7__starter_125"></a>7 构建 starter</h3>
+<p>接下来&#xff0c;我们需要对自定义 starter 进行构建&#xff0c;并将它安装到本地仓库或远程仓库中&#xff0c;供其他项目使用。由于我们是在本地的项目中引用和测试&#xff0c;因此只需要使用 install 命令安装到本地仓库即可&#xff0c;因为存在依赖关系&#xff0c;所以先构建tml-spring-boot-starter-autoconfiguration再构建tml-spring-boot-starter<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-09-6f084ee48b.png" loading="lazy"></p>
+<p>构建过程中遇到一些问题&#xff0c;只要在pom中的build按照如下内容配置即可避免&#xff1a;</p>
+<pre><code class="prism language-java">   <span class="token generics"><span class="token punctuation">&lt;</span>build<span class="token punctuation">&gt;</span></span>
+        <span class="token generics"><span class="token punctuation">&lt;</span>plugins<span class="token punctuation">&gt;</span></span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>plugin<span class="token punctuation">&gt;</span></span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>boot<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>spring<span class="token operator">-</span>boot<span class="token operator">-</span>maven<span class="token operator">-</span>plugin<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span>$<span class="token punctuation">{<!-- --></span>project<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>version<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>configuration<span class="token punctuation">&gt;</span></span>
+                    <span class="token generics"><span class="token punctuation">&lt;</span>excludes<span class="token punctuation">&gt;</span></span>
+                        <span class="token generics"><span class="token punctuation">&lt;</span>exclude<span class="token punctuation">&gt;</span></span>
+                            <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>org<span class="token punctuation">.</span>projectlombok<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+                            <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>lombok<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+                        <span class="token operator">&lt;</span><span class="token operator">/</span>exclude<span class="token operator">&gt;</span>
+                    <span class="token operator">&lt;</span><span class="token operator">/</span>excludes<span class="token operator">&gt;</span>
+                <span class="token operator">&lt;</span><span class="token operator">/</span>configuration<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">/</span>plugin<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>添加配置跳过测试<span class="token operator">--</span><span class="token operator">&gt;</span>
+            <span class="token generics"><span class="token punctuation">&lt;</span>plugin<span class="token punctuation">&gt;</span></span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>groupId<span class="token punctuation">&gt;</span></span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>maven<span class="token punctuation">.</span>plugins<span class="token operator">&lt;</span><span class="token operator">/</span>groupId<span class="token operator">&gt;</span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>artifactId<span class="token punctuation">&gt;</span></span>maven<span class="token operator">-</span>surefire<span class="token operator">-</span>plugin<span class="token operator">&lt;</span><span class="token operator">/</span>artifactId<span class="token operator">&gt;</span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>version<span class="token punctuation">&gt;</span></span><span class="token number">2.22</span><span class="token number">.1</span><span class="token operator">&lt;</span><span class="token operator">/</span>version<span class="token operator">&gt;</span>
+                <span class="token generics"><span class="token punctuation">&lt;</span>configuration<span class="token punctuation">&gt;</span></span>
+                    <span class="token generics"><span class="token punctuation">&lt;</span>skipTests<span class="token punctuation">&gt;</span></span><span class="token boolean">true</span><span class="token operator">&lt;</span><span class="token operator">/</span>skipTests<span class="token operator">&gt;</span>
+                <span class="token operator">&lt;</span><span class="token operator">/</span>configuration<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">/</span>plugin<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span>添加配置跳过测试<span class="token operator">--</span><span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>plugins<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>build<span class="token operator">&gt;</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="starter_161"></a>使用自定义starter</h2>
+<p>我们来测试下自定义的starter</p>
+<h3><a rel="noopener noreferrer" id="1__163"></a>1 新建测试项目</h3>
+<p>新建一个Moudle来使用我们的自定义starter<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-10-3249cfa42a.png" loading="lazy"><br />
+在其 pom.xml 中引入依赖tml-spring-boot-starter&#xff08;自定义 starter&#xff09;&#xff0c;配置如下</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version&#61;&#34;1.0&#34; encoding&#61;&#34;UTF-8&#34;?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>project</span> <span class="token attr-name">xmlns</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://maven.apache.org/POM/4.0.0<span class="token punctuation">&#34;</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>xsi</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://www.w3.org/2001/XMLSchema-instance<span class="token punctuation">&#34;</span></span>
+         <span class="token attr-name"><span class="token namespace">xsi:</span>schemaLocation</span><span class="token attr-value"><span class="token punctuation attr-equals">&#61;</span><span class="token punctuation">&#34;</span>http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd<span class="token punctuation">&#34;</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>modelVersion</span><span class="token punctuation">&gt;</span></span>4.0.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>modelVersion</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>parent</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-parent<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.5.5<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>relativePath</span><span class="token punctuation">/&gt;</span></span> <span class="token comment">&lt;!-- lookup parent from repository --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>parent</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.example<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>test-springboot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>0.0.1-SNAPSHOT<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>name</span><span class="token punctuation">&gt;</span></span>test-springboot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>name</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>description</span><span class="token punctuation">&gt;</span></span>Demo project for Spring Boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>description</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>properties</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>java.version</span><span class="token punctuation">&gt;</span></span>1.8<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>java.version</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>properties</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependencies</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!--引入自定义 starter --&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.example<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>tml-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>0.0.1-SNAPSHOT<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-web<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-test<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>test<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependencies</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>build</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>plugins</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>plugin</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-maven-plugin<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>plugin</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>plugins</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>build</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>project</span><span class="token punctuation">&gt;</span></span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="2__218"></a>2 编写配置文件</h3>
+<p>在 Spring Boot 配置文件 application.yml中&#xff0c;添加以下属性配置</p>
+<pre><code class="prism language-yaml"><span class="token comment">#自定义 starter prefix 属性</span>
+<span class="token key atrule">person</span><span class="token punctuation">:</span>
+   <span class="token key atrule">prefix</span><span class="token punctuation">:</span> 兄弟
+<span class="token comment">#自定义 starter suffix 属性</span>
+   <span class="token key atrule">suffix</span><span class="token punctuation">:</span> 欢迎一起玩儿SpringBoot<span class="token tag">!</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="3__229"></a>3 创建测试控制器</h3>
+<p>在 controller包 中创建一个控制器类 PersonController</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>testspringboot<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>tmlspringbootstarterautoconfiguration<span class="token punctuation">.</span>services<span class="token punctuation">.</span></span><span class="token class-name">PersonService</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>stereotype<span class="token punctuation">.</span></span><span class="token class-name">Controller</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">GetMapping</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>bind<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">ResponseBody</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Resource</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Controller</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">PersonController</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">//自动装配自定义 starter 的 service</span>
+    <span class="token annotation punctuation">&#64;Resource</span>
+    <span class="token class-name">PersonService</span> personService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;ResponseBody</span>
+    <span class="token annotation punctuation">&#64;GetMapping</span><span class="token punctuation">(</span><span class="token string">&#34;/personInfo&#34;</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token class-name">SayHello</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">return</span> personService<span class="token punctuation">.</span><span class="token function">sayHello</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>请求后结果如下&#xff0c;可以看到配置也被读取出来了<br />
+<img alt="在这里插入图片描述" src="./posts/assets/120649859-11-1da7d381b7.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_258"></a>总结一下</h2>
+<p>其实实现一个自定义starter的过程就是把前面所有SpringBoot相关内容复习一遍的过程&#xff0c;通过SpringBoot自动配置&#xff0c;我们初始化好了自动配置类&#xff0c;把组件和配置信息绑定并注入到容器中&#xff0c;然后将这个场景启动器提供出来&#xff0c;供外边的第三方使用&#xff0c;我们成了一个starter的服务提供商&#xff0c;我觉得这样实现一遍后对SpringBoot的实现理解的更加透彻了。</p>

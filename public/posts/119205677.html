@@ -1,0 +1,248 @@
+<p>上篇Blog详细介绍了Servlet的过滤器&#xff0c;了解到过滤器类似一个AOP的概念&#xff0c;这篇Blog就来学习下Servlet的监听器&#xff0c;了解下Java Web的第三大组件的用处是什么&#xff0c;又是怎么工作的。</p>
+<h2><a rel="noopener noreferrer" id="_1"></a>监听器基本概念</h2>
+<p>在JSP技术中我们学习了4大作用域&#xff1a;<strong>pageContext、request、session、application</strong>&#xff0c;用于实现数据共享&#xff0c;其中request、session、application三个作用域分别对应于我们</p>
+<ul><li><strong>HttpServletRequest</strong>接口&#xff1a;请求作用域对象</li><li><strong>HttpSession</strong>接口&#xff1a;会话作用域对象</li><li><strong>ServletContext</strong>接口&#xff1a;全局作用域对象</li></ul>
+<p>虽然有了数据共享的作用域&#xff0c;但是数据的具体流转过程我们看不到&#xff0c;比如作用域对象什么时候创建和销毁的&#xff0c;什么时候存取、改变和删除的&#xff0c;所以无法在指定的时机对数据和对象进行操作&#xff0c;这个时候就需要Servlet监听器来发挥作用了&#xff1a;</p>
+<ul><li><strong>事件</strong>&#xff1a;方法调用、属性改变、状态改变等&#xff0c;这里对应对象的创建与销毁事件&#xff0c;属性改变事件&#xff0c;以及额外对HttpSession附加的监听 HttpSession中的对象状态改变事件。</li><li><strong>事件源</strong>&#xff1a;被监听的对象&#xff0c;这里是HttpServletRequest、HttpSession、ServletContext。</li><li><strong>监听器</strong>&#xff1a;用于监听事件源对象 &#xff0c;事件源对象状态的变化都会触发监听器&#xff0c;这里是我们创建的一个Servlet监听器</li><li><strong>注册监听器</strong>&#xff1a;将监听器与事件源进行绑定</li></ul>
+<p>所以一句话描述就是&#xff1a;给事件源注册好监听器后&#xff0c;当某个事件发生引起事件源变化时&#xff0c;监听器监听到这一变化进行逻辑处理</p>
+<h3><a rel="noopener noreferrer" id="_14"></a>监听器作用</h3>
+<p>Servlet监听器是Servlet规范中定义的一种特殊类&#xff0c;用于监听<code>servletContext(application)、httpsession(session)、servletRequest(request)</code>三个作用域对象的<strong>创建与销毁事件</strong>&#xff0c;以及监听这些作用域对象中<strong>属性发生修改的事件</strong>&#xff0c;说白了就是监听三个作用域对象的生命周期。</p>
+<h3><a rel="noopener noreferrer" id="_16"></a>创建监听器</h3>
+<p>用IDEA可以很轻松的创建一个监听器出来&#xff0c;按照如下步骤&#xff1a;<br /> <img src="./posts/assets/119205677-ext-69527560238c.png" alt="在这里插入图片描述"><br /> 可以看到IDEA自动帮我们生成了监听器代码模板&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>controller</span><span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/27
+ */</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebListener</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServletListener</span> <span class="token keyword">implements</span> <span class="token class-name">ServletContextListener</span><span class="token punctuation">,</span> <span class="token class-name">HttpSessionListener</span><span class="token punctuation">,</span> <span class="token class-name">HttpSessionAttributeListener</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token class-name">ServletListener</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">contextInitialized</span><span class="token punctuation">(</span><span class="token class-name">ServletContextEvent</span> sce<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* This method is called when the servlet context is initialized(when the Web application is deployed). */</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">contextDestroyed</span><span class="token punctuation">(</span><span class="token class-name">ServletContextEvent</span> sce<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* This method is called when the servlet Context is undeployed or Application Server shuts down. */</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sessionCreated</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionEvent</span> se<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* Session is created. */</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sessionDestroyed</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionEvent</span> se<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* Session is destroyed. */</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">attributeAdded</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionBindingEvent</span> sbe<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* This method is called when an attribute is added to a session. */</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">attributeRemoved</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionBindingEvent</span> sbe<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* This method is called when an attribute is removed from a session. */</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">attributeReplaced</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionBindingEvent</span> sbe<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">/* This method is called when an attribute is replaced in a session. */</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>可以看到监听器是通过注解定义的&#xff0c;我们来看下注解的源代码&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//</span>
+<span class="token comment">// Source code recreated from a .class file by IntelliJ IDEA</span>
+<span class="token comment">// (powered by FernFlower decompiler)</span>
+<span class="token comment">//</span>
+
+<span class="token keyword">package</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Documented</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">ElementType</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Retention</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">Target</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span><span class="token class-name">ElementType</span><span class="token punctuation">.</span>TYPE<span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span><span class="token class-name">RetentionPolicy</span><span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token keyword">public</span> <span class="token annotation punctuation">&#64;interface</span> <span class="token class-name">WebListener</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">String</span> <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_101"></a>监听器常用方法</h3>
+<p>Servlet 规范中定义了 8 个监听器接口&#xff0c;可以用于监听 ServletContext、HttpSession 和 ServletRequest 对象的生命周期和属性变化事件。开发 Servlet 监听器需要实现相应的监听器接口并重写接口中的方法&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_103"></a>监听对象创建和销毁的监听器</h4>
+<p>Servlet 规范定义了监听 ServletContext、HttpSession、HttpServletRequest 这三个对象创建和销毁事件的监听器<br /> <img src="./posts/assets/119205677-ext-1d68c6435e03.png" alt="在这里插入图片描述"></p>
+<h4><a rel="noopener noreferrer" id="_106"></a>监听属性变更的监听器</h4>
+<p>Servlet 规范定义了监听 ServletContext、HttpSession、HttpServletRequest 这三个对象中的属性变更事件的监听器&#xff0c;这三个监听器接口分别是 ServletContextAttributeListener、HttpSessionAttributeListener 和 ServletRequestAttributeListener。这三个接口中都定义了三个方法&#xff0c;用来处理被监听对象中属性的增加&#xff0c;删除和替换事件。同一种事件在这三个接口中对应的方法名称完全相同&#xff0c;只是参数类型不同<br /> <img src="./posts/assets/119205677-ext-cf953bf905c9.png" alt="在这里插入图片描述"></p>
+<h4><a rel="noopener noreferrer" id="_Session_109"></a>监听 Session中对象状态改变的监听器</h4>
+<p>Session 中的对象可以有多种状态&#xff1a;<strong>绑定到 Session 中、从 Session 中解除绑定、随 Session 对象持久化到存储设备中(钝化)、随 Session 对象从存储设备中恢复&#xff08;活化&#xff09;</strong>。Servlet 规范中定义了两个特殊的监听器接口&#xff0c;用来帮助对象了解自己在 Session 中的状态&#xff1a;HttpSessionBindingListener 接口和 HttpSessionActivationListener 接口 &#xff0c;实现这两个接口的类不需要进行注册<br /> <img src="./posts/assets/119205677-ext-6f82fef94d47.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_113"></a>监听器实现网站在线人数监听</h2>
+<p>监听网站的在线人数&#xff0c;也就是统计服务器中的session被创建多少次&#xff0c;创建一次在线人数&#43;1&#xff1b;session销毁一次在线人数-1。</p>
+<h3><a rel="noopener noreferrer" id="JSP_115"></a>JSP页面</h3>
+<p>假设登录成功&#xff0c;则跳转到index.jsp页面&#xff0c;和上一篇的过滤器梦幻联动&#xff0c;所有页面请求先到login.jsp&#xff0c;登录后才会跳转&#xff0c;这里我们模拟的是已经登录成功后的跳转&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html; charset&#61;UTF-8&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.*&#34;</span> errorPage<span class="token operator">&#61;</span><span class="token string">&#34;jsp/error.jsp&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; include file<span class="token operator">&#61;</span><span class="token string">&#34;jsp/top.jsp&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">!</span>DOCTYPE html<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+  <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>JSP <span class="token operator">-</span> <span class="token class-name">Hello</span> <span class="token class-name">World</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span>
+    <span class="token keyword">int</span> number <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span><span class="token comment">// 声明全局变量</span>
+    <span class="token keyword">int</span> <span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      number<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span><span class="token comment">//number 自增</span>
+      <span class="token keyword">return</span> number<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h1<span class="token punctuation">&gt;</span></span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span> <span class="token string">&#34;Hello World!&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h1<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+
+  <span class="token class-name">String</span> print <span class="token operator">&#61;</span> <span class="token string">&#34;我是脚本语句内容&#34;</span><span class="token punctuation">;</span>
+  <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> strList <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">//  strList.add(&#34;脚本语句4&#34;);  //这是一个Java注释&#xff0c;用来注释Java代码&#xff0c;查看源码时不可见</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>a href<span class="token operator">&#61;</span><span class="token string">&#34;hello-servlet&#34;</span><span class="token operator">&gt;</span>我的第一个<span class="token class-name">JavaWeb</span>项目<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 这是一个html注释&#xff0c;可见<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>这是一个JSP注释&#xff0c;查看源码时不可见<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+声明语句示例&#xff1a;这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+表达式语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+脚本语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>print<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token punctuation">,</span> 打印列表 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>strList<span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Servlet_160"></a>Servlet页面</h3>
+<p>我们准备两个页面&#xff0c;一个页面用于跳转Servlet到index.jsp&#xff0c;60秒后自动退出&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;helloServlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/hello-servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">HttpServletResponse</span> response<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//假设登录成功</span>
+        <span class="token class-name">HttpSession</span> session <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        session<span class="token punctuation">.</span><span class="token function">setMaxInactiveInterval</span><span class="token punctuation">(</span><span class="token number">60</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//60秒后自动推出</span>
+        response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span><span class="token string">&#34;index.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>还有一个用于手动退出session的页面&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token class-name">WebServlet</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServlet</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServletRequest</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpServletResponse</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token class-name">HttpSession</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;StopSession&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/stop-servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">StopSession</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span><span class="token class-name">HttpServletRequest</span> request<span class="token punctuation">,</span> <span class="token class-name">HttpServletResponse</span> response<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">IOException</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//假设退出成功</span>
+        <span class="token class-name">HttpSession</span> session <span class="token operator">&#61;</span> request<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        session<span class="token punctuation">.</span><span class="token function">invalidate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="Servlet_215"></a>Servlet监听器</h3>
+<p>接下来就是我们监听器的代码了&#xff0c;在application初始化时我们增加一个数量统计&#xff0c;然后在session创建时进行累加&#xff0c;销毁时累减&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> <span class="token namespace">com<span class="token punctuation">.</span>example<span class="token punctuation">.</span></span><span class="token class-name">MyFirstJavaWeb</span><span class="token punctuation">.</span>listener<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span></span><span class="token operator">*</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token class-name">Date</span><span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebListener</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CountListener</span> <span class="token keyword">implements</span> <span class="token class-name">HttpSessionListener</span><span class="token punctuation">,</span><span class="token class-name">ServletContextListener</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token keyword">public</span> <span class="token class-name">CountListener</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//监听application销毁事件--即服务器关闭</span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">contextDestroyed</span><span class="token punctuation">(</span><span class="token class-name">ServletContextEvent</span> sce<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;application销毁~~~~~~~~&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+    <span class="token comment">//监听application创建事件--即服务器开启</span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">contextInitialized</span><span class="token punctuation">(</span><span class="token class-name">ServletContextEvent</span> sce<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;application创建~~~~~~~~&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> sessionCount <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span><span class="token comment">//服务器开启的时候&#xff0c;定义变量用于统计在线人数&#xff0c;保存起来</span>
+        <span class="token class-name">ServletContext</span> application <span class="token operator">&#61;</span> sce<span class="token punctuation">.</span><span class="token function">getServletContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">,</span> sessionCount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">//监听session创建事件--即有人登陆成功&#xff0c;进入项目主页面,则在线人数&#43;1</span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sessionCreated</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionEvent</span> hse<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;登陆成功&#34;</span><span class="token operator">&#43;</span>hse<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;创建时间&#xff1a;&#34;</span><span class="token operator">&#43;</span><span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ServletContext</span> application <span class="token operator">&#61;</span> hse<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getServletContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> sessionCount <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">,</span> <span class="token operator">&#43;&#43;</span>sessionCount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;当前在线用户数为&#xff1a;&#34;</span><span class="token operator">&#43;</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">//监听session销毁事件--销毁有很多种方式&#xff1a;强制销毁、自动过期等&#xff0c;无所谓什么方式&#xff0c;只要session销毁就可以监听到</span>
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sessionDestroyed</span><span class="token punctuation">(</span><span class="token class-name">HttpSessionEvent</span> hse<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;退出成功&#34;</span><span class="token operator">&#43;</span>hse<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">&#43;</span><span class="token string">&#34;退出时间&#xff1a;&#34;</span><span class="token operator">&#43;</span><span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">ServletContext</span> application <span class="token operator">&#61;</span> hse<span class="token punctuation">.</span><span class="token function">getSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getServletContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> sessionCount <span class="token operator">&#61;</span> <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        application<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">,</span> <span class="token operator">--</span>sessionCount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;当前在线用户数为&#xff1a;&#34;</span><span class="token operator">&#43;</span>application<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;sessionCount&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_272"></a>实现效果</h3>
+<p>这样当我们每次通过不同浏览器访问页面都会增加一个新的用户&#xff0c;整个变化过程如下&#xff1a;<br /> <img src="./posts/assets/119205677-ext-4772ea87f903.png" alt="在这里插入图片描述"></p>
+<p>注意要把这个勾掉&#xff0c;否则idea在启动时会额外给你生成一个session&#xff0c;那么启动时就会有两个session了。<br /> <img src="./posts/assets/119205677-ext-81ac094c777d.png" alt="在这里插入图片描述"></p>
+<h2><a rel="noopener noreferrer" id="_278"></a>总结一下</h2>
+<p>其实Servlet监听器最大的作用就是被当作状态机&#xff0c;其实我们任何流程中&#xff0c;抽象出来都是在通过事件对事件源的生命周期管理来实现的&#xff0c;对象在事件驱动下在流程中流转。系统设计时也一样&#xff0c;所以其实监听器能让我们感悟更多的其实是事件驱动生命周期这种设计思想&#xff0c;正如过滤器给我们更多的感悟是切面AOP对所有服务的控制一样&#xff0c;更重要的是思想&#xff0c;而组件只是思想的落地。有了思想我们可以应用再更多其它地方。</p>

@@ -1,0 +1,79 @@
+<h3 id="题目描述">题目描述</h3>
+
+<p>给定一颗二叉搜索树&#xff0c;请找出其中的第k大的结点。例如&#xff0c; 5 / \ 3 7 /\ /\ 2 4 6 8 中&#xff0c;按结点数值大小顺序第三个结点的值为4。</p>
+
+<h3 id="解题思路">解题思路</h3>
+
+<p>1&#xff0c;二叉搜索树的中序遍历是排序的&#xff0c;所以先进行中序遍历得到一个有序list <br />
+2&#xff0c;在该list里查找到第k个</p>
+
+<h3 id="代码">代码</h3>
+
+
+
+<pre class="prettyprint"><code class=" hljs java"><span class="hljs-javadoc">/**
+ *
+ */</span>
+<span class="hljs-keyword">package</span> 二叉树;
+
+<span class="hljs-keyword">import</span> java.util.ArrayList;
+
+<span class="hljs-javadoc">/**
+ * 给定一颗二叉搜索树&#xff0c;请找出其中的第k大的结点。
+ * 例如&#xff0c; 5 / \ 3 7 /\ /\ 2 4 6 8 中&#xff0c;按结点数值大小顺序第三个结点的值为4。
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">KthNode</span> {<!-- --></span>
+
+    <span class="hljs-javadoc">/**
+     * void
+     *
+     *<span class="hljs-javadoctag"> &#64;param</span> args
+     */</span>
+    TreeNode IntKthNode(TreeNode pRoot, <span class="hljs-keyword">int</span> k) {
+        <span class="hljs-keyword">if</span>(pRoot&#61;&#61;<span class="hljs-keyword">null</span>||k&lt;&#61;<span class="hljs-number">0</span>){
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+        }
+        ArrayList&lt;TreeNode&gt; list &#61; <span class="hljs-keyword">new</span> ArrayList&lt;TreeNode&gt;();
+        insort(pRoot, list);
+        <span class="hljs-keyword">if</span>(k&gt;list.size()){
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+        }
+        <span class="hljs-keyword">return</span> list.get(k - <span class="hljs-number">1</span>);    <span class="hljs-comment">//中序遍历后把第k个返回</span>
+
+    }
+
+    <span class="hljs-javadoc">/**
+     * 中序遍历 void
+     *
+     *<span class="hljs-javadoctag"> &#64;param</span> args
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">insort</span>(TreeNode pRoot, ArrayList&lt;TreeNode&gt; list) {
+
+        <span class="hljs-keyword">if</span> (pRoot &#61;&#61; <span class="hljs-keyword">null</span>) {
+            <span class="hljs-keyword">return</span>;
+        }
+        insort(pRoot.left, list);
+        list.add(pRoot);
+        insort(pRoot.right, list);
+
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span>(String[] args) {
+        TreeNode pRoot &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">5</span>);
+         pRoot.left &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">3</span>);
+         pRoot.right &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">7</span>);
+         pRoot.left.left &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">2</span>);
+         pRoot.left.right &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">4</span>);
+         pRoot.right.left &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">6</span>);
+         pRoot.right.right &#61; <span class="hljs-keyword">new</span> TreeNode(<span class="hljs-number">8</span>);
+         KthNode k &#61; <span class="hljs-keyword">new</span> KthNode();
+         <span class="hljs-keyword">int</span> a &#61; k.IntKthNode(pRoot, <span class="hljs-number">3</span>).val;
+         System.out.println(a);
+    }
+
+}
+</code></pre>
+
+<h3 id="易错点">易错点</h3>
+
+<p>一定要注意list和k的边界条件&#xff0c;k不能大于list的size也不能小于等于0</p>

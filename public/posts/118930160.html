@@ -1,0 +1,211 @@
+<p>好了&#xff0c;通过四篇blog我们已经充分了解了<strong>JSP的基本语法、内置对象、JavaBean以及EL&amp;JSTL了</strong>。从今天开始学习下Servlet技术&#xff0c;也就是我们MVC架构中的C&#xff0c;controller层。</p>
+<h2><a rel="noopener noreferrer" id="Servlet_2"></a>Servlet基本概念</h2>
+<p>Servlet是什么&#xff1f;官方定义&#xff1a;Java Servlet 是运行在 Web 服务器或应用服务器上的程序&#xff0c;它是作为来自 Web 浏览器或其他 HTTP 客户端的请求和 HTTP 服务器上的数据库或应用程序之间的<strong>中间层</strong>。这个中间层就是对请求进行分发和控制。</p>
+<h3><a rel="noopener noreferrer" id="Servlet_5"></a>Servlet解决什么问题</h3>
+<p>JSP是JavaWeb应用中处理和显示动态网页的技术&#xff0c;而JSP页面中出现了大量逻辑处理并且和HTML元素混在了一起&#xff0c;这使得JSP页面显得混乱、不易维护&#xff0c;职责不清晰。</p>
+<ul><li>JSP是建立在静态Html基础之上&#xff0c;使得数据显示时具有动态特点&#xff0c;所以JSP的职责就是显示数据&#xff0c;而不是逻辑处理</li><li>Servlet的出现很好的规避了这一点&#xff0c;将复杂的逻辑处理、请求响应交给Servlet处理&#xff0c;JSP则只负责渲染显示页面</li></ul>
+<p>我们之前反复提到JSP优化和发展历史的一切努力就是<strong>简化脚本代码&#xff0c;让JSP专注于页面显示</strong>&#xff0c;控制逻辑则交给Servlet去做&#xff0c;而事实上&#xff0c;JSP编译以后也就成为了Servlet。</p>
+<h3><a rel="noopener noreferrer" id="JSPServlet_12"></a>JSP和Servlet区别和用途</h3>
+<p>分别了解下JSP和Servlet区别和用途&#xff0c;明确它们的使用范围。</p>
+<h4><a rel="noopener noreferrer" id="JSPServlet_15"></a>JSP和Servlet区别</h4>
+<p>了解了JSP和Servlet的区别后才能更好的理解它们各自的用途&#xff1a;</p>
+<ol><li><strong>JSP经编译后就变成了Servlet</strong>&#xff0c;JSP的本质就是Servlet&#xff0c;JVM只能识别Java的类&#xff0c;不能识别JSP的代码,Web容器将JSP的代码编译成JVM能够识别的Java类</li><li><strong>JSP更擅长表现于页面显示&#xff0c;Servlet更擅长于逻辑控制</strong>
+  <ul><li>Servlet能够很好地组织业务逻辑代码&#xff0c;但是在Java源文件中通过字符串拼接的方式生成动态HTML内容会导致代码维护困难、可读性差</li><li>JSP虽然规避了Servlet在生成HTML内容方面的劣势&#xff0c;但是在HTML中混入大量、复杂的业务逻辑同样也是不可取的</li></ul> </li><li>Servlet中没有内置对象&#xff0c;JSP中的内置对象有些是通过Servlet相关对象得到的&#xff0c;例如&#xff1a;HttpServletRequest对象&#xff0c;HttpServletResponse对象</li></ol>
+<p>JSP是Servlet的一种简化&#xff0c;使用JSP只需要完成程序员需要输出到客户端的内容&#xff0c;JSP中的Java脚本如何镶嵌到一个类中&#xff0c;由JSP容器完成。而Servlet则是个完整的Java类&#xff0c;这个类的Service方法用于生成对客户端的响应</p>
+<h4><a rel="noopener noreferrer" id="JSPServlet_25"></a>JSP和Servlet用途</h4>
+<p>依据它们的不同之处来进行分析&#xff0c;Servlet的短板在展示&#xff0c;如果在Servlet里描述html元素&#xff1a;</p>
+<pre><code class="prism language-java">   <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// Hello</span>
+        PrintWriter out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;html&gt;&lt;body&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;h1&gt;&#34;</span> <span class="token operator">&#43;</span> message <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;/h1&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;/body&gt;&lt;/html&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+</code></pre>
+<p>那么会产生大量的html的输出代码&#xff0c;影响业务逻辑梳理。而JSP的短板在逻辑&#xff0c;如果在JSP里加大量逻辑&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token generics function"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+
+    String print <span class="token operator">&#61;</span> <span class="token string">&#34;我是脚本语句内容&#34;</span><span class="token punctuation">;</span>
+    List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> strList <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">//  strList.add(&#34;脚本语句4&#34;);  //这是一个Java注释&#xff0c;用来注释Java代码&#xff0c;查看源码时不可见</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>a href<span class="token operator">&#61;</span><span class="token string">&#34;hello-servlet&#34;</span><span class="token operator">&gt;</span>我的第一个JavaWeb项目<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 这是一个html注释&#xff0c;可见<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>这是一个JSP注释&#xff0c;查看源码时不可见<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+声明语句示例&#xff1a;这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+表达式语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+脚本语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>print<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token punctuation">,</span> 打印列表 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>strList<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>forward page<span class="token operator">&#61;</span><span class="token string">&#34;jsp/result.jsp&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>forward<span class="token operator">&gt;</span>
+跳转语句之后&#xff0c;代码不会被执行&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个跳转后的表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+</code></pre>
+<p>也会使页面看起来比较杂乱。所以双剑合璧&#xff0c;在加上我们之前提到的JavaBean就构成了简易版的MVC模式&#xff1a;<br /> <img src="./posts/assets/118930160-ext-1d6d84f2ebb5.png" alt="在这里插入图片描述"><br /> 在这种模式【模型&#xff08;Model&#xff09;、视图&#xff08;View&#xff09;和控制器&#xff08;Controller&#xff09;】下</p>
+<ol><li>Web浏览器发送HTTP请求到服务端&#xff0c;被Controller(Servlet)获取并进行处理&#xff08;例如参数解析、请求转发&#xff09;</li><li>Controller(Servlet)调用核心业务逻辑——Model部分&#xff0c;获得结果</li><li>Controller(Servlet)将逻辑处理结果交给View&#xff08;JSP&#xff09;&#xff0c;动态输出HTML内容</li></ol>
+<p>MVC模式在Web开发中的好处是非常明显&#xff0c;它规避了JSP与Servlet各自的短板&#xff0c;Servlet只负责业务逻辑而不会通过out.append()动态生成HTML代码&#xff1b;JSP中也不会充斥着大量的业务代码&#xff0c;如果JSP使用标签去显示甚至不需要业务代码。</p>
+<h2><a rel="noopener noreferrer" id="Servlet_77"></a>创建第一个Servlet</h2>
+<p>创建和请求第一个Servlet的流程如下&#xff0c;通过IDEA非常简单&#xff1a;</p>
+<h3><a rel="noopener noreferrer" id="Servlet_79"></a>创建Servlet类</h3>
+<p>通过idea创建Servlet非常简单&#xff0c;只需要创建选项时选择Servlet即可&#xff1a;<br /> <img src="./posts/assets/118930160-ext-022114b486a1.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="Servlet_82"></a>重命名Servlet</h3>
+<p>创建好后重命名为我们包含逻辑的Servlet&#xff0c;例如重命名为FirstServlet&#xff0c;IDEA默认为我们生成了代码&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>controller<span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/19
+ */</span>
+
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>IOException<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>PrintWriter<span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;Servlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/Servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FirstServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doPost</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>需要注意的是在servlet3.0以后&#xff0c;我们可以不用再web.xml里面配置servlet&#xff0c;只需要加上<code>&#64;WebServlet</code>注解就可以修改该servlet的属性了&#xff1a;<br /> <img src="./posts/assets/118930160-ext-376337456be8.png" alt="在这里插入图片描述"><br /> 这个也算是注解的一个应用&#xff0c;解放配置化的东西&#xff0c;让参数可配置&#xff0c;关于注解可以参照我这篇Blog<a href="https://tianmaolin.blog.csdn.net/article/details/118914128" rel="nofollow">注解的基本概念和使用</a></p>
+<h3><a rel="noopener noreferrer" id="_116"></a>修改注解并访问</h3>
+<p>注解的默认属性值如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token comment">//</span>
+<span class="token comment">// Source code recreated from a .class file by IntelliJ IDEA</span>
+<span class="token comment">// (powered by FernFlower decompiler)</span>
+<span class="token comment">//</span>
+
+<span class="token keyword">package</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>Documented<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>ElementType<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>Retention<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>RetentionPolicy<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>Target<span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;Target</span><span class="token punctuation">(</span><span class="token punctuation">{<!-- --></span>ElementType<span class="token punctuation">.</span>TYPE<span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Retention</span><span class="token punctuation">(</span>RetentionPolicy<span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">&#64;Documented</span>
+<span class="token keyword">public</span> &#64;<span class="token keyword">interface</span> <span class="token class-name">WebServlet</span> <span class="token punctuation">{<!-- --></span>
+    String <span class="token function">name</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    String<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    String<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">urlPatterns</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">int</span> <span class="token function">loadOnStartup</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+
+    WebInitParam<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">initParams</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token punctuation">{<!-- --></span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">boolean</span> <span class="token function">asyncSupported</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+    String <span class="token function">smallIcon</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    String <span class="token function">largeIcon</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    String <span class="token function">description</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+
+    String <span class="token function">displayName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">&#34;&#34;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>调整注解的value值为我们想要的url地址&#xff1a;</p>
+<pre><code class="prism language-java"> <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setCharacterEncoding</span><span class="token punctuation">(</span><span class="token string">&#34;UTF-8&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PrintWriter out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;html&gt;&lt;body&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;h1&gt;&#34;</span> <span class="token operator">&#43;</span> <span class="token string">&#34;这是第一个Servlet页面&#34;</span> <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;/h1&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;&lt;/body&gt;&lt;/html&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+</code></pre>
+<p>启动项目后输入该地址查看&#xff1a;<br /> <img src="./posts/assets/118930160-ext-6af7856b40d1.png" alt="在这里插入图片描述"></p>
+<h3><a rel="noopener noreferrer" id="Servlet_176"></a>Servlet请求流程</h3>
+<p>当我们请求一个Servlet的时候发生了什么呢&#xff0c;完整的请求流程如下</p>
+<ol><li>用户在浏览器地址栏中输入请求URL地址&#xff1a;<code>http://localhost:8080/myfirstweb/myFirstServlet</code></li><li>Tomcat 服务器根据请求获取 URL 中最后需要访问的资源&#xff0c;即<code>/myFirstServlet</code></li><li>Tomcat 服务器根据获取的<code>/myFirstServlet</code>的url地址找到注解中url属性为该路径的Servlet</li><li>找到之后服务器实例化Servlet</li><li>执行Servlet对应的请求处理方法&#xff0c;例如doGet&#xff0c;完成给用户响应</li></ol>
+<p>以上就是一个完整的查找并响应的Servlet流程。如果没有匹配到对应路径&#xff0c;则界面会出现404异常</p>
+<h2><a rel="noopener noreferrer" id="Servlet_186"></a>Servlet生命周期</h2>
+<p>Servlet 生命周期是由 Servlet 的容器来控制的&#xff0c;Servlet 生命周期分为 4 个阶段&#xff1a;</p>
+<ol><li><strong>第一阶段&#xff1a;加载并实例化</strong>&#xff0c;Servlet 容器负责加载和实例化&#xff0c;在服务器启动或第一次请求时执行&#xff0c;如果需要服务器启动时加载&#xff0c;则需在注解中加入loadOnStartup配置&#xff08;默认为-1总是启动时加载&#xff09;&#xff0c;数值越小优先级越高&#xff0c;加载后该Servlet实例将常驻内存</li><li><strong>第二阶段&#xff1a;初始化</strong>&#xff0c;在 Servlet 实例化之后&#xff0c;容器将调用 <code>init()</code> 方法&#xff0c;并传递实现 ServletConfig 接口的对象&#xff0c;在 Servlet 的整个生命周期内&#xff0c;<code>init()</code>方法只被调用一次&#xff0c;一般根据需要是否添加init方法&#xff0c;如果Servlet需要初始化一些数据&#xff0c;可以在该方法中完成代码</li><li><strong>第三阶段&#xff1a;请求处理</strong>&#xff0c;当容器收到对这一 Servlet 的请求&#xff0c;就调用 Servlet 的<code>service()</code> 方法&#xff0c;并把请求和响应对象作为参数传递&#xff0c;<code>service()</code> 方法检查 HTTP 请求类型&#xff08;GET、POST等&#xff09;&#xff0c;并在适当的时候调用 <code>doGet()、doPost()</code> 等方法&#xff0c;每次请求都会调用对应的doGet或doPost方法</li><li><strong>第四阶段&#xff1a;销毁</strong>&#xff0c;一旦 Web服务器停止服务&#xff0c;Servlet会自动执行其 <code>destroy()</code> 方法&#xff0c;以释放资源</li></ol>
+<p>我们可以看一下上述提到的一些方法的源码&#xff0c;从类继承关系的角度去看&#xff1a;<br /> <img src="./posts/assets/118930160-ext-a7fd84908771.png" alt="在这里插入图片描述"><br /> 我们可以看到其实是从最顶层的Servlet接口来定义生命周期的&#xff0c;它定义了生命周期的几个默认方法&#xff1a;<br /> <img src="./posts/assets/118930160-ext-b11bf745c39a.png" alt="在这里插入图片描述"><br /> 同时我们可以看到&#xff0c;init方法在GenericServlet有两个重载方法&#xff0c;我认为tomcat使用了带有配合的init方法。</p>
+<pre><code class="prism language-java"> <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span>ServletConfig config<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>config <span class="token operator">&#61;</span> config<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>同时我们可以看到service方法是在HttpServlet类中具体实现的&#xff0c;就是来匹配请求方法的&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">service</span><span class="token punctuation">(</span>ServletRequest req<span class="token punctuation">,</span> ServletResponse res<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>req <span class="token keyword">instanceof</span> <span class="token class-name">HttpServletRequest</span> <span class="token operator">&amp;&amp;</span> res <span class="token keyword">instanceof</span> <span class="token class-name">HttpServletResponse</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            HttpServletRequest request <span class="token operator">&#61;</span> <span class="token punctuation">(</span>HttpServletRequest<span class="token punctuation">)</span>req<span class="token punctuation">;</span>
+            HttpServletResponse response <span class="token operator">&#61;</span> <span class="token punctuation">(</span>HttpServletResponse<span class="token punctuation">)</span>res<span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">service</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ServletException</span><span class="token punctuation">(</span><span class="token string">&#34;non-HTTP request or response&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">service</span><span class="token punctuation">(</span>HttpServletRequest req<span class="token punctuation">,</span> HttpServletResponse resp<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+        String method <span class="token operator">&#61;</span> req<span class="token punctuation">.</span><span class="token function">getMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">long</span> lastModified<span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;GET&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            lastModified <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getLastModified</span><span class="token punctuation">(</span>req<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>lastModified <span class="token operator">&#61;&#61;</span> <span class="token operator">-</span><span class="token number">1</span>L<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doGet</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">long</span> ifModifiedSince <span class="token operator">&#61;</span> req<span class="token punctuation">.</span><span class="token function">getDateHeader</span><span class="token punctuation">(</span><span class="token string">&#34;If-Modified-Since&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>ifModifiedSince <span class="token operator">&lt;</span> lastModified<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">maybeSetLastModified</span><span class="token punctuation">(</span>resp<span class="token punctuation">,</span> lastModified<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doGet</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+                    resp<span class="token punctuation">.</span><span class="token function">setStatus</span><span class="token punctuation">(</span><span class="token number">304</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;HEAD&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            lastModified <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getLastModified</span><span class="token punctuation">(</span>req<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">maybeSetLastModified</span><span class="token punctuation">(</span>resp<span class="token punctuation">,</span> lastModified<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doHead</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;POST&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doPost</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;PUT&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doPut</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;DELETE&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doDelete</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;OPTIONS&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doOptions</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">&#34;TRACE&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">doTrace</span><span class="token punctuation">(</span>req<span class="token punctuation">,</span> resp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            String errMsg <span class="token operator">&#61;</span> lStrings<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">&#34;http.method_not_implemented&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Object<span class="token punctuation">[</span><span class="token punctuation">]</span> errArgs <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{<!-- --></span>method<span class="token punctuation">}</span><span class="token punctuation">;</span>
+            errMsg <span class="token operator">&#61;</span> MessageFormat<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span>errMsg<span class="token punctuation">,</span> errArgs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            resp<span class="token punctuation">.</span><span class="token function">sendError</span><span class="token punctuation">(</span><span class="token number">501</span><span class="token punctuation">,</span> errMsg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_263"></a>总结一下</h2>
+<p>JSP其实就是特殊的Servlet&#xff0c;创建一个Servlet也非常简单&#xff0c;需要注意的是要重新doGet或doPost方法&#xff0c;还有就是Servlet的继承结构和生命周期也需要详细理解下&#xff0c;总之Servlet是tomcat操作的对象&#xff0c;tomcat创建Servlet实例并接管它的全生命周期&#xff0c;而我们需要做的就是重写业务逻辑达成我们的目标</p>

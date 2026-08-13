@@ -1,0 +1,155 @@
+<p>除了五种基本的Redis结构<a href="https://tianmaolin.blog.csdn.net/article/details/108679876" rel="nofollow">【Redis从入门到放弃系列 四】数据结构应用场景</a>&#xff0c;我们这里总共聊三种&#xff1a;<strong>Bitmaps&#xff0c;HyperLogLog</strong>以及<strong>Geo</strong>三种数据模型。</p>
+<h3><a rel="noopener noreferrer" id="Bitmaps_1"></a>Bitmaps数据模型</h3>
+<p>计算机用二进制&#xff08;位&#xff09; 作为信息的基础单位&#xff0c; 1个字节等于8位&#xff0c; 例如【是】这样一个中文字符占两个字节&#xff0c; <strong>实际在计算机存储时将其用二进制表示</strong>&#xff0c;也就是<strong>16位</strong>来表示&#xff0c;所以说我们如果只是想标明状态的话其实直接用二进制位的<strong>01</strong>也可以&#xff0c;0代表否&#xff0c;1代表是&#xff0c;那么可以<font color="red"><strong>大大节约内存空间</strong></font>&#xff0c;需要注意以下两点&#xff1a;</p>
+<ul><li><strong>Bitmaps本身不是一种数据结构&#xff0c; 实际上它就是字符串</strong> &#xff0c; 但是它可以对字符串的位进行操作。这也是我为啥把这小节的标题设置为数据模型的原因。</li><li>Bitmaps单独提供了一套命令&#xff0c; 所以在Redis中使用Bitmaps和使用字符串的方法不太相同。 <strong>可以把Bitmaps想象成一个以位为单位的数组&#xff0c; 数组的每个单元只能存储0和1&#xff0c; 数组的下标在Bitmaps中叫做偏移量</strong>。</li></ul>
+<p>Bitmaps的优点在于节省内存空间&#xff0c;缺点就是需要找到位移位置&#xff0c;确定位移值&#xff0c;需要计算。<font color="red"><strong>以空间换时间</strong></font>。<br /> <img alt="在这里插入图片描述" src="./posts/assets/109276145-01-e38d62e38b.png" loading="lazy"><br /> 举个例子&#xff0c;如果我要统计最近7天的用户访问量有多少&#xff0c;就可以存储一个bitmaps作为统计&#xff0c;每个二进制位用来标识一个用户的userid&#xff0c;访问了就设置为1&#xff0c;没有访问就设置为0。</p>
+<pre><code class="prism language-java">设置bitmaps位的值&#xff1a; setbit key offset value
+获取bitmaps位的值&#xff1a; getbit key offset
+</code></pre>
+<p>以下就是对各个用户是否访问站点的一个统计。分别对2020-10-30以及2020-10-31登录的用户进行统计</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">0</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">3</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">6</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201031</span> <span class="token number">3</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201031</span> <span class="token number">4</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201031</span> <span class="token number">6</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> getbit <span class="token number">20201030</span> <span class="token number">0</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> getbit <span class="token number">20201030</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit tml <span class="token number">100000000</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit tml <span class="token number">100000000000000000</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>error<span class="token punctuation">)</span> ERR bit offset is not an integer or out of range
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>需要注意如下几点使用&#xff1a;</p>
+<ul><li>很多应用的用户id以一个指定数字&#xff08;例如10000&#xff09; 开头&#xff0c; 直接将用户id和Bitmaps的偏移量对应势必会造成一定的浪费&#xff0c; <strong>通常的做法是每次做setbit操作时将用户id减去这个指定数字</strong>。</li><li>在第一次初始化Bitmaps时&#xff0c; 假如偏移量非常大&#xff0c; 那么整个初始化过程执行会比较慢&#xff0c; <strong>可能会造成Redis的阻塞</strong></li></ul>
+<p>当然我们现在设置好之后是需要统计结果的&#xff0c;这个时候就需要bitmaps的其它操作了。</p>
+<h4><a rel="noopener noreferrer" id="bitcount_44"></a>bitcount统计</h4>
+<p>如果我们想要查询<strong>每天</strong>内有多少用户访问了网站&#xff0c;可以进行操作&#xff0c;如果是每月或者每年&#xff0c;只需要把所有的天按照时间范围做或操作就行。<br /> <img alt="在这里插入图片描述" src="./posts/assets/109276145-02-ed5741d20e.png" loading="lazy"></p>
+<pre><code class="prism language-java">获取Bitmaps指定范围值为<span class="token number">1</span>的个数 bitcount key  <span class="token punctuation">[</span>start<span class="token punctuation">]</span><span class="token punctuation">[</span>end<span class="token punctuation">]</span>
+</code></pre>
+<p>可以获取指定范围访问1的个数</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">0</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">3</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">6</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201031</span> <span class="token number">3</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201031</span> <span class="token number">4</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201031</span> <span class="token number">6</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> bitcount <span class="token number">20201030</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> bitcount <span class="token number">20201030</span>  <span class="token number">0</span> <span class="token number">2</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> setbit <span class="token number">20201030</span> <span class="token number">100000</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> bitcount <span class="token number">20201030</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">4</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> bitcount <span class="token number">20201030</span> <span class="token number">0</span> <span class="token number">1</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+
+</code></pre>
+<p>这里需要注意&#xff1a;就是bitcount命令&#xff0c;在使用<strong>start&#xff0c;end</strong>的时候一定要注意&#xff0c;setbit和getbit命令操作的是bit&#xff0c;但是bitcount用的是byte来计算位数&#xff0c;两者差了8倍&#xff0c;因此这点很容易采坑&#xff0c;例如我查询0-2字节之间的&#xff0c;可以查到bit位为0,3,6的三个全部的&#xff0c;但是查100000 就查不到。</p>
+<h4><a rel="noopener noreferrer" id="_79"></a>复合运算</h4>
+<p>那我如果想查询昨天【30】和今天【31】两天总的用户数有多少可以这么操作&#xff0c;<strong>结果会被保存在destkey里</strong></p>
+<pre><code class="prism language-java"> bitop operation destkey key <span class="token punctuation">[</span>key <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">]</span>  <span class="token comment">//operation 可以为 and、or、not、异或</span>
+</code></pre>
+<p>例如统计这两天的</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> bitop or <span class="token number">30</span><span class="token operator">-</span><span class="token number">31</span> <span class="token number">20201030</span> <span class="token number">20201031</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">12501</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> bitcount <span class="token number">30</span><span class="token operator">-</span><span class="token number">31</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">5</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>可以看的出合并的bit位为&#xff1a;0、3、4、6、100000 这几个比特位。合并计算的返回结果不需要关心。</p>
+<h3><a rel="noopener noreferrer" id="HyperLogLog_95"></a>HyperLogLog数据结构</h3>
+<p>Redis HyperLogLog 是用来做<font color="red"><strong>基数统计</strong></font>的算法&#xff0c;HyperLogLog 的优点是&#xff0c;在输入元素的数量或者体积非常非常大时&#xff0c;计算基数所需的空间总是固定 的、并且是很小的。以数据集 {1, 3, 4, 6, 4, 6, 8}为例&#xff0c; <strong>那么这个数据集的基数集为 {1, 3, 4 ,6, 8}, 基数(不重复元素)为5</strong>。 基数估计就是在误差可接受的范围内&#xff0c;快速计算基数。</p>
+<p>可以这么理解HyperLogLog&#xff1a;<strong>理解为bitmaps进行or操作后进行bitcount统计</strong>。还是bitmaps的场景&#xff0c;统计登录用户&#xff0c;这里就很简单&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201030</span> <span class="token number">0</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201030</span> <span class="token number">3</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201030</span> <span class="token number">3</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">0</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201030</span> <span class="token number">6</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201031</span> <span class="token number">3</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201031</span> <span class="token number">4</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfadd <span class="token number">20201031</span> <span class="token number">6</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">1</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfcount <span class="token number">20201030</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfcount <span class="token number">20201031</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">3</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfmerge <span class="token number">30</span><span class="token operator">-</span><span class="token number">31</span> <span class="token number">20201030</span> <span class="token number">20201031</span>
+OK
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> pfcount <span class="token number">30</span><span class="token operator">-</span><span class="token number">31</span>
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">4</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>在 Redis 里面&#xff0c;每个 HyperLogLog 键只需要花费 <strong>12 KB 内存【使用上限】</strong>&#xff0c;就可以计算接近 2^64 个不同元素的基数。这和计算基数时&#xff0c;元素越多耗费内存就越多的集合形成鲜明对比&#xff1b;和bitmap不同的是&#xff0c;HyperLogLog只是记录基数【4】&#xff0c;因为 <strong>HyperLogLog 只会根据输入元素来计算基数&#xff0c;而不会储存输入元素本身</strong>&#xff0c;所以 HyperLogLog 不能像集合那样&#xff0c;返回输入的各个元素。需要注意HyperLogLog 的误差是<strong>0.81%</strong></p>
+<h3><a rel="noopener noreferrer" id="GEO_126"></a>GEO数据结构</h3>
+<p>Redis GEO 主要用于存储地理位置信息&#xff0c;并对存储的信息进行操作&#xff0c;主要使用经纬度计算。<br /> <img alt="在这里插入图片描述" src="./posts/assets/109276145-03-6fa814ee0f.png" loading="lazy"><br /> 主要使用的操作如下几种&#xff0c;需要注意的是geo只计算水平位置&#xff0c;不附加高度这些信息。</p>
+<ul><li><strong>geoadd</strong>&#xff1a;添加地理位置的坐标【<strong>geoadd key longitude latitude member [longitude latitude member …]</strong>】</li><li><strong>geopos</strong>&#xff1a;获取地理位置的坐标。【<strong>geopos key member [member …]</strong>】</li><li><strong>geodist</strong>&#xff1a;计算两个位置之间的距离。【<strong>geodist key member1 member2 [m|km|ft|mi]</strong>】&#xff0c;其中参数m &#xff1a;米&#xff0c;默认单位、km &#xff1a;千米&#xff1b;mi &#xff1a;英里&#xff1b;ft &#xff1a;英尺。</li><li><strong>georadius</strong>&#xff1a;根据用户给定的经纬度坐标来获取指定范围内的地理位置集合。</li><li><strong>georadiusbymember</strong>&#xff1a;根据储存在位置集合里面的某个地点获取指定范围内的地理位置集合。</li><li><strong>geohash</strong>&#xff1a;返回一个或多个位置对象的 geohash 值。</li></ul>
+<p>接下来实际操作下。</p>
+<h4><a rel="noopener noreferrer" id="_138"></a>计算两点之间距离</h4>
+<p>我想看看百度地图二环的长算的准不准&#xff0c;百度地图显示复兴门地铁站到西直门地铁站距离为6.6km<br /> <img alt="在这里插入图片描述" src="./posts/assets/109276145-04-7ae263c74e.png" loading="lazy"><br /> 我们获取下复兴门地铁站经纬度<br /> <img alt="在这里插入图片描述" src="./posts/assets/109276145-05-bc8d29bb55.png" loading="lazy"><br /> 首先我们录入两个地铁站的经纬度&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> geoadd fuxin<span class="token operator">-</span>jianguo <span class="token number">116.3571631</span> <span class="token number">39.90723718</span> fuxing <span class="token number">116.4352424</span> <span class="token number">39.90860684</span> jianguo
+<span class="token punctuation">(</span>integer<span class="token punctuation">)</span> <span class="token number">2</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> geopos fuxin<span class="token operator">-</span>jianguo fuxing jianguo
+<span class="token number">1</span><span class="token punctuation">)</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token string">&#34;116.35716408491134644&#34;</span>
+   <span class="token number">2</span><span class="token punctuation">)</span> <span class="token string">&#34;39.90723672058083338&#34;</span>
+<span class="token number">2</span><span class="token punctuation">)</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token string">&#34;116.43524318933486938&#34;</span>
+   <span class="token number">2</span><span class="token punctuation">)</span> <span class="token string">&#34;39.90860800472803049&#34;</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>录入完成后我们来进行计算&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> geodist fuxin<span class="token operator">-</span>jianguo fuxing jianguo km
+<span class="token string">&#34;6.6634&#34;</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>结果为6.6634km&#xff0c;与百度提供的6.6km还是比较接近&#xff0c;所以说比较准确。</p>
+<h4><a rel="noopener noreferrer" id="_164"></a>根据坐标求范围内数据【中心不固定】</h4>
+<p>georadius <strong>以给定的经纬度为中心&#xff0c; 返回键包含的位置元素当中&#xff0c; 与中心的距离不超过给定最大距离的所有位置元素</strong>其实比较好理解&#xff0c;就是当我们自己是个点在不停移动的时候用这个比较合适&#xff0c;例如查询我周边的外卖&#xff0c;而我是有可能移动的&#xff0c;所以坐标是不停的在变的。</p>
+<pre><code class="prism language-java">georadius key longitude latitude radius m<span class="token operator">|</span>km<span class="token operator">|</span>ft<span class="token operator">|</span>mi <span class="token punctuation">[</span>WITHCOORD<span class="token punctuation">]</span> <span class="token punctuation">[</span>WITHDIST<span class="token punctuation">]</span> <span class="token punctuation">[</span>WITHHASH<span class="token punctuation">]</span> <span class="token punctuation">[</span>COUNT count<span class="token punctuation">]</span> <span class="token punctuation">[</span>ASC<span class="token operator">|</span>DESC<span class="token punctuation">]</span> <span class="token punctuation">[</span>STORE key<span class="token punctuation">]</span> <span class="token punctuation">[</span>STOREDIST key<span class="token punctuation">]</span>
+</code></pre>
+<ul><li>m &#xff1a;米&#xff0c;默认单位。km &#xff1a;千米。mi &#xff1a;英里。ft &#xff1a;英尺。</li><li>WITHDIST: 在返回位置元素的同时&#xff0c; 将位置元素与中心之间的距离也一并返回。</li><li>WITHCOORD: 将位置元素的经度和维度也一并返回。</li><li>WITHHASH: 以 52 位有符号整数的形式&#xff0c; 返回位置元素经过原始 geohash 编码的有序集合分值。 这个选项主要用于底层应用或者调试&#xff0c; 实际中的作用并不大。</li><li>COUNT 限定返回的记录数。</li><li>ASC: 查找结果根据距离从近到远排序。</li><li>DESC: 查找结果根据从远到近排序。</li></ul>
+<p>那我来查一下指定坐标点周边具体范围内的坐标点&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> GEORADIUS fuxin<span class="token operator">-</span>jianguo <span class="token number">116</span> <span class="token number">39</span> <span class="token number">1000</span> km withdist
+<span class="token number">1</span><span class="token punctuation">)</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token string">&#34;fuxing&#34;</span>
+   <span class="token number">2</span><span class="token punctuation">)</span> <span class="token string">&#34;105.4674&#34;</span>
+<span class="token number">2</span><span class="token punctuation">)</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token string">&#34;jianguo&#34;</span>
+   <span class="token number">2</span><span class="token punctuation">)</span> <span class="token string">&#34;107.7519&#34;</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>感觉这个的具体应用就是<strong>我附近的美食</strong>&#xff0c;我是不停移动的。</p>
+<h4><a rel="noopener noreferrer" id="_191"></a>根据点求范围内数据【中心固定】</h4>
+<p>georadiusbymember 和 georadius 命令一样&#xff0c; 都可以找出位于指定范围内的元素&#xff0c; 但是 georadiusbymember 的中心点是由给定的位置元素决定的&#xff0c; 而不是使用经度和纬度来决定中心点。</p>
+<pre><code class="prism language-java">georadiusbymember key member radius m<span class="token operator">|</span>km<span class="token operator">|</span>ft<span class="token operator">|</span>mi <span class="token punctuation">[</span>WITHCOORD<span class="token punctuation">]</span> <span class="token punctuation">[</span>WITHDIST<span class="token punctuation">]</span> <span class="token punctuation">[</span>WITHHASH<span class="token punctuation">]</span> <span class="token punctuation">[</span>COUNT count<span class="token punctuation">]</span> <span class="token punctuation">[</span>ASC<span class="token operator">|</span>DESC<span class="token punctuation">]</span> <span class="token punctuation">[</span>STORE key<span class="token punctuation">]</span> <span class="token punctuation">[</span>STOREDIST key<span class="token punctuation">]</span>
+</code></pre>
+<p>参数与georadius 类似。</p>
+<pre><code class="prism language-java"><span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> GEORADIUSBYMEMBER fuxin<span class="token operator">-</span>jianguo fuxing <span class="token number">7</span> km
+<span class="token number">1</span><span class="token punctuation">)</span> <span class="token string">&#34;fuxing&#34;</span>
+<span class="token number">2</span><span class="token punctuation">)</span> <span class="token string">&#34;jianguo&#34;</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span> GEORADIUSBYMEMBER fuxin<span class="token operator">-</span>jianguo fuxing <span class="token number">5</span> km
+<span class="token number">1</span><span class="token punctuation">)</span> <span class="token string">&#34;fuxing&#34;</span>
+<span class="token number">127.0</span><span class="token number">.0</span><span class="token number">.1</span><span class="token operator">:</span><span class="token number">6379</span><span class="token operator">&gt;</span>
+
+</code></pre>
+<p>感觉这个的具体应用就是<strong>我家附近的美食</strong>&#xff0c;我家是固定不变的。</p>

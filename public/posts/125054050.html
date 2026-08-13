@@ -1,0 +1,132 @@
+<p>其实之前对面向对象和面向过程等也有过大概的探究&#xff0c;不过都是应付面试做的一些皮毛的理解&#xff0c;对其发展过程&#xff0c;根本性的区别实际上也不甚了了&#xff0c;例如之前的这篇Blog:<a href="https://tianmaolin.blog.csdn.net/article/details/73087664" rel="nofollow"><strong>【Java SE基础 三】面向对象思想与类模型</strong></a>中给出过一版通俗意义的区别&#xff1a;</p>
+<blockquote>
+ <p><strong>面向过程</strong>就是分析出解决问题所需要的步骤&#xff0c;然后用函数把这些步骤一步一步实现&#xff0c;使用的时候一个一个依次调用就可以了。<strong>面向对象</strong>是把构成问题事务分解成各个对象&#xff0c;建立对象的目的不是为了完成一个步骤&#xff0c;而是为了描叙某个事物在整个解决问题的步骤中的行为。总而言之就是把问题分解成对象&#xff0c;对象直接隔离且有自己完备的结构&#xff0c;可以互相通过方法沟通来达成结构清晰稳定的目标</p>
+</blockquote>
+<blockquote>
+ <p><strong>面向对象优势</strong>&#xff1a; 由于面向对象更容易从我们自身的角度出发去看问题&#xff0c;所以有天然的拟人优势&#xff0c;而且由于结构清晰明了&#xff0c;所以具备如下优势&#xff1a;较高的开发效率&#xff1b;较高的扩展性和代码可重用性&#xff1b;保证软件的高可维护性&#xff0c;这些优势又是由面向对象的特征来决定的。</p>
+</blockquote>
+<p>以上的对面向对象和面向过程的对比以及面向对象的优势描述的其实很清晰&#xff0c;但之前我的理解是不深刻的&#xff0c;例如为什么面向对象有较高的扩展性&#xff1f;为什么开发的软件有高可维护性&#xff1f;这些都没有深入的思考&#xff0c;所以从根里还是不能很区分&#xff0c;<strong>再加上MVC贫血模式的开发方式下&#xff0c;往往接口和数据分离&#xff0c;看起来还是再基于面向过程编程</strong>&#xff0c;这样概念就更模糊了&#xff0c;所以有必要辨析清楚。</p>
+<h2><a rel="noopener noreferrer" id="VS_9"></a>面向对象VS面向过程</h2>
+<p>什么是面向对象与面向对象编程语言&#xff1f;</p>
+<ul><li><strong>面向对象编程</strong>是一种编程范式或编程风格。它以<strong>类或对象</strong>作为组织代码的基本单元&#xff0c;并将<strong>封装、抽象、继承、多态</strong>四个特性&#xff0c;作为代码设计和实现的基石 。</li><li><strong>面向对象编程语言</strong>是支持类或对象的语法机制&#xff0c;并有现成的语法机制&#xff0c;能方便地<strong>实现面向对象编程四大特性&#xff08;封装、抽象、继承、多态&#xff09;的编程语言</strong>。</li></ul>
+<p>类比面向对象编程与面向对象编程语言的定义&#xff0c;面向过程编程和面向过程编程语言&#xff1a;</p>
+<ul><li><strong>面向过程编程</strong>也是一种编程范式或编程风格。它以<strong>过程&#xff08;可以理解为方法、函数、操作&#xff09;<strong>作为组织代码的基本单元&#xff0c;以</strong>数据&#xff08;可以理解为成员变量、属性&#xff09;与方法相分离为最主要的特点</strong>。面向过程风格是一种流程化的编程风格&#xff0c;通过拼接一组顺序执行的方法来操作数据完成一项功能。</li><li><strong>面向过程编程语言</strong>首先是一种编程语言。它最大的特点是<strong>不支持类和对象两个语法概念&#xff0c;不支持丰富的面向对象编程特性&#xff08;比如继承、多态、封装&#xff09;&#xff0c;仅支持面向过程编程</strong>。</li></ul>
+<p>举一个直观的例子来看下&#xff1a;假设我们有一个记录了用户信息的文本文件 users.txt&#xff0c;每行文本的格式是 <code>name&amp;age&amp;gender</code>&#xff08;比如&#xff0c;小王 &amp;28&amp; 男&#xff09;。我们希望写一个程序&#xff0c;从 users.txt 文件中逐行读取用户信息&#xff0c;然后格式化成 <code>name\tage\tgender</code>&#xff08;其中&#xff0c;\t 是分隔符&#xff09;这种文本格式&#xff0c;并且按照 age 从小到大排序之后&#xff0c;重新写入到另一个文本文件 <code>formatted_users.txt</code> 中。针对这样一个小程序的开发&#xff0c;我们一块来看看&#xff0c;用面向过程和面向对象两种编程风格&#xff0c;编写出来的代码有什么不同&#xff0c;首先来看面向过程&#xff0c;使用c语言实现&#xff1a;</p>
+<pre><code class="prism language-c"><span class="token keyword">struct</span> <span class="token class-name">User</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">char</span> name<span class="token punctuation">[</span><span class="token number">64</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token keyword">int</span> age<span class="token punctuation">;</span>
+  <span class="token keyword">char</span> gender<span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">struct</span> <span class="token class-name">User</span> <span class="token function">parse_to_user</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> text<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// 将text(“小王&amp;28&amp;男”)解析成结构体struct User</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">char</span><span class="token operator">*</span> <span class="token function">format_to_text</span><span class="token punctuation">(</span><span class="token keyword">struct</span> <span class="token class-name">User</span> user<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// 将结构体struct User格式化成文本&#xff08;&#34;小王\t28\t男&#34;&#xff09;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span> <span class="token function">sort_users_by_age</span><span class="token punctuation">(</span><span class="token keyword">struct</span> <span class="token class-name">User</span> users<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// 按照年龄从小到大排序users</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span> <span class="token function">format_user_file</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> origin_file_path<span class="token punctuation">,</span> <span class="token keyword">char</span><span class="token operator">*</span> new_file_path<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token comment">// open files...</span>
+  <span class="token keyword">struct</span> <span class="token class-name">User</span> users<span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token comment">// 假设最大1024个用户</span>
+  <span class="token keyword">int</span> count <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+  <span class="token keyword">while</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token comment">// read until the file is empty</span>
+    <span class="token keyword">struct</span> <span class="token class-name">User</span> user <span class="token operator">&#61;</span> <span class="token function">parse_to_user</span><span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    users<span class="token punctuation">[</span>count<span class="token operator">&#43;&#43;</span><span class="token punctuation">]</span> <span class="token operator">&#61;</span> user<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token function">sort_users_by_age</span><span class="token punctuation">(</span>users<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">char</span><span class="token operator">*</span> formatted_user_text <span class="token operator">&#61;</span> <span class="token function">format_to_text</span><span class="token punctuation">(</span>users<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// write to new file...</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">// close files...</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">int</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span><span class="token operator">*</span> args<span class="token punctuation">,</span> <span class="token keyword">int</span> argv<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token function">format_user_file</span><span class="token punctuation">(</span><span class="token string">&#34;/home/user.txt&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;/home/formatted_users.txt&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>接着是面向对象的写法&#xff0c;使用java语言实现&#xff1a;</p>
+<pre><code class="prism language-java">
+ <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">User</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token keyword">int</span> age<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> <span class="token class-name">String</span> gender<span class="token punctuation">;</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">User</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">,</span> <span class="token keyword">int</span> age<span class="token punctuation">,</span> <span class="token class-name">String</span> gender<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>age <span class="token operator">&#61;</span> age<span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>gender <span class="token operator">&#61;</span> gender<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">User</span> <span class="token function">praseFrom</span><span class="token punctuation">(</span><span class="token class-name">String</span> userInfoText<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 将text(“小王&amp;28&amp;男”)解析成类User</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">formatToText</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// 将类User格式化成文本&#xff08;&#34;小王\t28\t男&#34;&#xff09;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">UserFileFormatter</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">format</span><span class="token punctuation">(</span><span class="token class-name">String</span> userFile<span class="token punctuation">,</span> <span class="token class-name">String</span> formattedUserFile<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token comment">// Open files...</span>
+    <span class="token class-name">List</span> users <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token comment">// read until file is empty </span>
+      <span class="token comment">// read from file into userText...</span>
+      <span class="token class-name">User</span> user <span class="token operator">&#61;</span> <span class="token class-name">User</span><span class="token punctuation">.</span><span class="token function">parseFrom</span><span class="token punctuation">(</span>userText<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      users<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>user<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// sort users by age...</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> users<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token operator">&#43;&#43;</span>i<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+      <span class="token class-name">String</span> formattedUserText <span class="token operator">&#61;</span> user<span class="token punctuation">.</span><span class="token function">formatToText</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment">// write to new file...</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// close files...</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MainApplication</span> <span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token class-name">UserFileFormatter</span> userFileFormatter <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">UserFileFormatter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    userFileFormatter<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">&#34;/home/users.txt&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;/home/formatted_users.txt&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>从上面的代码中&#xff0c;我们可以看出&#xff0c;面向过程和面向对象最基本的区别就是&#xff0c;代码的组织方式不同。面向过程风格的代码被组织成了一组方法集合及其数据结构&#xff08;struct User&#xff09;&#xff0c;方法和数据结构的定义是分开的。面向对象风格的代码被组织成一组类&#xff0c;方法和数据结构被绑定一起&#xff0c;定义在类中。</p>
+<h2><a rel="noopener noreferrer" id="_111"></a>面向对象的优势</h2>
+<p>上边的例子&#xff0c;两种编程风格实现的代码貌似差不多&#xff0c;顶多就是代码的组织方式有点区别&#xff0c;没有感觉到面向对象编程有什么明显的优势呀&#xff01;之所以有这种感觉&#xff0c;主要原因是这个例子程序比较简单、不够复杂。</p>
+<h3><a rel="noopener noreferrer" id="1OOP__113"></a>1.OOP 更加能够应对大规模复杂程序的开发</h3>
+<p><strong>对于简单程序的开发来说</strong>&#xff0c;不管是用面向过程编程风格&#xff0c;还是用面向对象编程风格&#xff0c;差别确实不会很大&#xff0c;甚至有的时候&#xff0c;面向过程的编程风格反倒更有优势。因为需求足够简单&#xff0c;整个程序的处理流程只有一条主线&#xff0c;很容易被划分成顺序执行的几个步骤&#xff0c;然后逐句翻译成代码&#xff0c;这就非常适合采用面向过程这种面条式的编程风格来实现。</p>
+<p>但<strong>对于大规模复杂程序的开发</strong>来说&#xff0c;<strong>整个程序的处理流程错综复杂&#xff0c;并非只有一条主线。如果把整个程序的处理流程画出来的话&#xff0c;会是一个网状结构</strong>。如果我们再用面向过程编程这种流程化、线性的思维方式&#xff0c;去翻译这个网状结构&#xff0c;去思考如何把程序拆解为一组顺序执行的方法&#xff0c;就会比较吃力。这个时候&#xff0c;面向对象的编程风格的优势就比较明显了。</p>
+<p><font color="red"><strong>首先面向对象提供了一种网状复杂业务开发的高效开发方式</strong></font>面向对象编程是以类为思考对象。在进行面向对象编程的时候&#xff0c;我们并不是一上来就去思考&#xff0c;如何将复杂的流程拆解为一个一个方法&#xff0c;而是</p>
+<ol><li><strong>先去思考如何给业务建模&#xff0c;如何将需求翻译为类&#xff0c;如何给类之间建立交互关系</strong>&#xff0c;而完成这些工作完全不需要考虑错综复杂的处理流程</li><li>当我们有了类的设计之后&#xff0c;然后<strong>再像搭积木一样&#xff0c;按照处理流程&#xff0c;将类组装起来形成整个程序</strong>。</li></ol>
+<p>这种开发模式、思考问题的方式&#xff0c;能让我们在应对复杂程序开发的时候&#xff0c;思路更加清晰。</p>
+<p><font color="red"><strong>其次&#xff0c;面向对象编程还提供了一种更加清晰的、更加模块化的代码组织方式</strong></font>。比如&#xff0c;我们开发一个电商交易系统&#xff0c;业务逻辑复杂&#xff0c;代码量很大&#xff0c;可能要定义数百个函数、数百个数据结构&#xff0c;那如何分门别类地组织这些函数和数据结构&#xff0c;才能不至于看起来比较凌乱呢&#xff1f;<strong>类就是一种非常好的组织这些函数和数据结构的方式&#xff0c;是一种将代码模块化的有效手段</strong>&#xff0c;虽然像C语言这样的面向过程开发&#xff0c;也能通过文件夹分门别类处理&#xff0c;但是并不强制&#xff0c;面向对象的类强制完成了这种代码组织方式。实际上面向过程语言也能实现面向对象的代码组织形式&#xff0c;只不过实现的成本更高而已。</p>
+<h3><a rel="noopener noreferrer" id="2OOP__127"></a>2.OOP 风格的代码更易复用、易扩展、易维护</h3>
+<p>面向对象支持面向对象思想的四大编程特性&#xff1a;封装、继承、抽象、多态&#xff1a;</p>
+<ul><li>封装特性&#xff1a;<strong>封装特性是面向对象编程相比于面向过程编程的一个最基本的区别</strong>&#xff0c;因为它基于的是面向对象编程中最基本的类的概念。面向对象编程通过类这种组织代码的方式&#xff0c;将数据和方法绑定在一起&#xff0c;通过访问权限控制&#xff0c;只允许外部调用者通过类暴露的有限方法访问数据&#xff0c;而不会像面向过程编程那样&#xff0c;数据可以被任意方法随意修改。因此&#xff0c;<font color="red"><strong>面向对象编程提供的封装特性更有利于提高代码的易维护性</strong></font>。</li><li>抽象特性&#xff1a;函数本身就是一种抽象&#xff0c;它隐藏了具体的实现。我们在使用函数的时候&#xff0c;只需要了解函数具有什么功能&#xff0c;而不需要了解它是怎么实现的。从这一点上&#xff0c;<strong>不管面向过程编程还是是面向对象编程&#xff0c;都支持抽象特性</strong>。不过&#xff0c;<font color="red"><strong>面向对象编程还提供了其他抽象特性的实现方式。这些实现方式是面向过程编程所不具备的&#xff0c;比如基于接口实现的抽象。基于接口的抽象&#xff0c;可以让我们在不改变原有实现的情况下&#xff0c;轻松替换新的实现逻辑&#xff0c;提高了代码的可扩展性</strong></font>。</li><li>继承特性&#xff1a;继承特性是面向对象编程相比于面向过程编程所特有。如果两个类有一些相同的属性和方法&#xff0c;我们就可以将这些相同的代码&#xff0c;抽取到父类中&#xff0c;让两个子类继承父类。这样两个子类也就可以重用父类中的代码&#xff0c;避免了代码重复写多遍&#xff0c;<font color="red"><strong>继承特性提高了代码的复用性</strong></font>。</li><li>多态特性&#xff1a;基于这个特性&#xff0c;我们在需要修改一个功能实现的时候&#xff0c;可以通过实现一个新的子类的方式&#xff0c;在子类中重写原来的功能逻辑&#xff0c;用子类替换父类。<font color="red"><strong>在实际的代码运行过程中&#xff0c;调用子类新的功能逻辑&#xff0c;而不是在原有代码上做修改。这就遵从了“对修改关闭、对扩展开放”的设计原则&#xff0c;提高代码的扩展性</strong></font>。除此之外&#xff0c;<font color="red"><strong>利用多态特性&#xff0c;不同的类对象可以传递给相同的方法&#xff0c;执行不同的代码逻辑&#xff0c;提高了代码的复用性</strong></font>。</li></ul>
+<p>所以说&#xff0c;基于这四大特性&#xff0c;利用面向对象编程&#xff0c;我们可以更轻松地写出<strong>易复用、易扩展、易维护</strong>的代码。当然&#xff0c;我们不能说&#xff0c;利用面向过程风格就不可以写出易复用、易扩展、易维护的代码&#xff0c;但没有四大特性的帮助&#xff0c;付出的代价可能就要高一些。</p>
+<h3><a rel="noopener noreferrer" id="3OOP__135"></a>3.OOP 语言更加人性化、更加高级、更加智能</h3>
+<p>跟<strong>二进制指令、汇编语言、面向过程编程语言相比&#xff0c;面向对象编程语言的编程套路、思考问题的方式&#xff0c;是完全不一样的。前三者是一种计算机思维方式&#xff0c;而面向对象是一种人类的思维方式</strong>。我们在用前面三种语言编程的时候&#xff0c;我们是在思考&#xff0c;如何设计一组指令&#xff0c;告诉机器去执行这组指令&#xff0c;操作某些数据&#xff0c;帮我们完成某个任务。而在进行面向对象编程时候&#xff0c;我们是在思考&#xff0c;如何给业务建模&#xff0c;如何将真实的世界映射为类或者对象&#xff0c;这让我们更加能聚焦到业务本身&#xff0c;而不是思考如何跟机器打交道。可以这么说&#xff0c;越高级的编程语言离机器越远&#xff0c;离我们人类越近&#xff0c;越智能&#xff0c;由此可见&#xff0c;未来更智能的编程语言可能只需要我们搞清楚需求文档就自动实现了&#xff0c;这他喵不就是PaaS低代码平台么&#xff1f;</p>
+<h2><a rel="noopener noreferrer" id="_137"></a>面向对象语言写的面向过程代码</h2>
+<p>实际上为什么长久以来不很分的清面向对象和面向过程的概念&#xff0c;就是一些错误的编程习惯&#xff0c;虽然在用Java这种面向对象编程语言和类、对象这种最小组织单元编写代码&#xff0c;但是写出来的其实很多都是面向过程风格的代码</p>
+<h3><a rel="noopener noreferrer" id="1__gettersetter__139"></a>1 滥用 getter、setter 方法</h3>
+<p>在之前参与的项目开发中&#xff0c;我们经常是直接用 IDE 或者 Lombok 插件&#xff08;如果是 Java 项目的话&#xff09;自动生成所有属性的 getter、setter 方法&#xff0c;主要是因为虽然现在不一定用的上&#xff0c;但以后可能也会用。但这种方式实际上破坏了面向面向对象编程的封装特性&#xff0c;相当于将面向对象编程风格退化成了面向过程编程风格。</p>
+<p><font color="red"><strong>在设计实现类的时候&#xff0c;除非真的需要&#xff0c;否则&#xff0c;尽量不要给属性定义 setter 方法。除此之外&#xff0c;尽管 getter 方法相对 setter 方法要安全些&#xff0c;但是如果返回的是集合容器&#xff08;比如例子中的 List 容器&#xff09;&#xff0c;也要防范集合内部数据被修改的危险</strong></font></p>
+<h3><a rel="noopener noreferrer" id="2_143"></a>2.全局变量和全局方法</h3>
+<p>在面向对象编程中&#xff0c;<strong>常见的全局变量有单例类对象、静态成员变量、常量等</strong>&#xff0c;常见的<strong>全局方法有静态方法</strong>。单例类对象在全局代码中只有一份&#xff0c;所以&#xff0c;它相当于一个全局变量。静态成员变量归属于类上的数据&#xff0c;被所有的实例化对象所共享&#xff0c;也相当于一定程度上的全局变量。而常量是一种非常常见的全局变量&#xff0c;比如一些代码中的配置参数&#xff0c;一般都设置为常量&#xff0c;放到一个 Constants 类中。静态方法一般用来操作静态变量或者外部数据&#xff0c;也就是我们常用的各种 Utils 类&#xff0c;里面的方法一般都会定义成静态方法&#xff0c;可以在不用创建对象的情况下&#xff0c;直接拿来使用。静态方法将方法与数据分离&#xff0c;破坏了封装特性&#xff0c;是典型的面向过程风格。</p>
+<p>虽然存在这种面向过程的全局变量与全局方法&#xff0c;但不表示我们就是完全排斥的&#xff0c;只要利于我们代码复用也是可以大胆用的&#xff0c;不过<font color="red"><strong>对于这两种类的设计&#xff0c;我们尽量能做到职责单一&#xff0c;定义一些细化的小类&#xff0c;比如 RedisConstants、FileUtils&#xff0c;而不是定义一个大而全的 Constants 类、Utils 类。除此之外&#xff0c;如果能将这些类中的属性和方法&#xff0c;划分归并到其他业务类中&#xff0c;那是最好不过的了&#xff0c;能极大地提高类的内聚性和代码的可复用性</strong></font>。</p>
+<h3><a rel="noopener noreferrer" id="3__147"></a>3. 基于贫血模型的开发模式</h3>
+<p>面向对象编程过程中&#xff0c;常见的面向过程风格的代码。那就是&#xff0c;<strong>数据定义在一个类中&#xff0c;方法定义在另一个类中</strong>。实际上&#xff0c;像我们这种基于 MVC 三层结构做 Web 方面的后端开发&#xff0c;这样的代码可能天天都在写。这种开发模式叫作基于贫血模型的开发模式&#xff0c;也是我们现在非常常用的一种 Web 项目的开发模式。相较于这种贫血模式&#xff0c;基于DDD的充血模式开发方式也是一种好的实现方法。</p>
+<h2><a rel="noopener noreferrer" id="_149"></a>辩证看待面向过程与面向对象</h2>
+<p>实际上&#xff0c;我们在进行面向对象编程的时候&#xff0c;很容易不由自主地就写出面向过程风格的代码&#xff0c;这是因为面向过程编程风格符合人的流程化思维方式&#xff0c;例如在生活中&#xff0c;去完成一个任务&#xff0c;我们一般都会思考&#xff0c;应该先做什么、后做什么&#xff0c;如何一步一步地顺序执行一系列操作&#xff0c;最后完成整个任务&#xff0c;实际上做需求也是类似&#xff0c;我们趋向于流程化的解决问题。<strong>而面向对象编程风格正好相反。它是一种自底向上的思考方式。它不是先去按照执行流程来分解任务&#xff0c;而是将任务翻译成一个一个的小的模块&#xff08;也就是类&#xff09;&#xff0c;设计类之间的交互&#xff0c;最后按照流程将类组装起来&#xff0c;完成整个任务。面向对象设计更难&#xff0c;所以大脑趋利避害。</strong></p>
+<p>不管使用面向过程还是面向对象哪种风格来写代码&#xff0c;我们最终的目的还是写出易维护、易读、易复用、易扩展的高质量代码。只要我们能避免面向过程编程风格的一些弊端&#xff0c;控制好它的副作用&#xff0c;在掌控范围内为我们所用&#xff0c;我们就大可不用避讳在面向对象编程中写面向过程风格的代码</p>
+<h2><a rel="noopener noreferrer" id="_153"></a>总结一下</h2>
+<p>面向对象还是面向过程&#xff1f;其实不是那么重要&#xff0c;我们只看最终目的&#xff1a;是否能写出易维护、易读、易复用、易扩展的高质量代码&#xff0c;面对复杂网状业务场景的时候我们更趋向于使用面向对象的方式&#xff0c;因为设计它的语言四大基本特性&#xff08;封装、继承、抽象、多态&#xff09;和代码组织方式&#xff08;类和对象&#xff09;具备编写高质量代码的先决条件。但这并不能说明面向过程一无是处&#xff0c;在简单的线状业务场景下面向过程可能会更快的实现&#xff0c;甚至我们经常使用的网站开发模式MVC贫血模式就是基于面向过程实现的&#xff0c;因为简单且流程化的思维更容易被我们理解。所以还是那个道理&#xff1a;谈概念和优势的时候一定要关联使用场景&#xff0c;没有最好&#xff0c;只有最合适。</p>

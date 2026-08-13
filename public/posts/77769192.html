@@ -1,0 +1,119 @@
+<p><strong>应用层是为了解决某一类应用问题</strong>&#xff0c;而问题的解决又是通过位于不同主机中的多个应用进程之间的通信和协同工作来完成的。这些服务通常使用对应的协议&#xff0c;常见的几种服务协议有<font color="red">&#xff08;HTTP&#xff0c;FTP/TFTP, TELENT&#xff09;</font>无论是哪种服务&#xff0c;都需要<font color="red">域名服务器(DNS)</font>来解析ip地址才能通信以提供服务。</p>
+<h3><a rel="noopener noreferrer" id="_1"></a>域名系统</h3>
+<p>DNS是域名系统(DomainNameSystem)的缩写&#xff0c;万维网上作为域名和IP地址相互映射的一个分布式数据库&#xff0c;能够使用户更方便的访问互联网&#xff0c;而<strong>不用去记住能够被机器直接读取的IP数串</strong>&#xff0c;<strong>可以简单地理解为将URL转换为IP地址</strong>。</p>
+<ul><li><strong>域名是由圆点分开一串单词或缩写组成的&#xff0c;每一个域名都对应一个惟一的IP地址</strong>&#xff0c;在Internet上域名与IP地址之间是一一对应的</li><li>DNS就是进行域名解析的服务器。</li></ul>
+<p>DNS命名用于Internet等TCP/IP网络中&#xff0c;通过用户友好的名称查找计算机和服务。</p>
+<h4><a rel="noopener noreferrer" id="_7"></a>域名结构</h4>
+<p>任何一个连接在因特网上的<strong>主机或者路由器</strong>&#xff0c;都是有一个唯一的层次结构的名字&#xff0c;即域名&#xff08;domain name&#xff09;。域可以分为<strong>顶级域、二级域、三级域等等</strong>。DNS规定&#xff1a;</p>
+<ul><li>域名中的标号都是有<strong>英文字母和数字</strong>组成&#xff0c;每一个标号不超过63个字符&#xff08;为了方便记忆最好不要超过12个字符&#xff09;</li><li><strong>不区分大小写字母</strong></li><li>标号中<strong>除连字符&#xff08;-&#xff09;外不能使用其他的标点符号</strong>。</li><li><strong>级别最低的域名写在最左边&#xff0c;而级别最高的顶级域名则写在最右边</strong>。由多个标号组成的完整域总共不超过255个字符。</li></ul>
+<p>各级域名的层级关系如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-01-46a36a285e.png" loading="lazy"><br />
+<strong>其中顶级域名服务器分为三大类&#xff1a;</strong></p>
+<ul><li>国家顶级域名nTLD。如cn,us,uk….</li><li>通用顶级域名gTLD。如com,net,org……</li><li>基础结构域名&#xff08;infrastructure domain&#xff09;&#xff1a;这种域名只有一个&#xff0c;即arpa&#xff0c;用于反向域名解析&#xff0c;因此又称为反向域名。</li></ul>
+<p><strong>域名只是个逻辑概念&#xff0c;并不代表计算机所在的物理地点</strong>。变长的域名和使用有助记忆的字符串&#xff0c;是为了便于人使用</p>
+<h4><a rel="noopener noreferrer" id="_23"></a>域名服务器</h4>
+<p>一个域名服务器所负责管辖的(或有权限的)范围叫做区(zone)。各单位根据具体情况来划分自己管辖范围的区。但在<strong>一个区中的所有节点必须是能够连通的</strong>。每一个区设置相应的<strong>权限域名服务器</strong>(authoritative name server)&#xff0c;用来保存该区中的所有主机的域名到IP地址的映射&#xff0c;以进行域名(domain name)和与之相对应的IP地址 (IP address)转换&#xff0c;解析域名<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-02-4954aec354.png" loading="lazy"><br />
+互联网上的DNS域名服务器也是按照层次安排的。<strong>每一个域名服务器都只对域名体系中的一部分进行管辖</strong></p>
+<h4><a rel="noopener noreferrer" id="_28"></a>域名解析过程</h4>
+<p><strong>主机向本地域名服务器的查询采用递归</strong>&#xff0c;特点就是&#xff0c;询问者和答复者一层一层构成递归。<strong>本地域名服务器向根域名服务器的查询通常采用迭代</strong>&#xff0c;特点就是<strong>询问者不停的询问可能的答复者</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-03-b1c72e47d8.png" loading="lazy"></p>
+<p>当DNS客户机需要在程序中使用名称时&#xff0c;它会查询DNS服务器来解析该名称。客户机发送的每条查询信息包括三条信息&#xff1a;包括&#xff1a;<strong>指定的DNS域名&#xff0c;指定的查询类型&#xff0c;DNS域名的指定类别</strong>。基于UDP服务&#xff0c;端口53. <strong>该应用一般不直接为用户使用&#xff0c;而是为其他应用服务&#xff0c;如HTTP&#xff0c;SMTP等在其中需要完成主机名到IP地址的转换。</strong></p>
+<h3><a rel="noopener noreferrer" id="WWW_34"></a>WWW万维网</h3>
+<p><strong>万维网并不等同计算机网络&#xff0c;万维网只是计算机网络所能提供的服务其中之一&#xff0c;是靠着计算机网络运行的一项应用</strong>。万维网以客户服务器方式工作。</p>
+<ul><li><strong>浏览器</strong>就是在用户主机上的万维网客户程序。</li><li><strong>万维网文档所驻留的主机则运行服务器程序</strong>&#xff0c;因此这台主机也称为万维网服务器。</li><li><strong>客户程序向服务器程序发出请求</strong>&#xff0c;服务器程序向客户程序送回客户所要的万维网文档</li></ul>
+<p>为了实现以上功能</p>
+<ul><li>万维网使用统一资源定位符<strong>URL</strong>&#xff08;uniform resource locator&#xff09;来标志万维网上的各种文档&#xff0c;并使每一个文档在整个互联网的范围内具有唯一的标识符URL</li><li>万维网客户程序与万维网服务器程序之间的交互遵守严格的协议&#xff0c;这就是超文本传送协议HTTP (HyperText Transfer Protocol)。HTTP是一个应用层协议&#xff0c;<strong>它使用TCP连接进行可靠的传送</strong></li><li>万维网使用<strong>超文本标记语言HTML</strong> (HyperText Markup Language)&#xff0c;使得万维网页面的设计者可以很方便地用链接从本页面的某处链接到互联网上的任何一个万维网页面&#xff0c;并且能够在自己的主机屏幕上将这些页面显示出来</li></ul>
+<p>所以我们可以通俗的理解为万维网就是一个CS的模式&#xff0c;只不过客户端是浏览器而已。而其它客户端程序也有自己的协议和通信方式&#xff0c;只不过不用http而已。</p>
+<h4><a rel="noopener noreferrer" id="URL_46"></a>统一资源定位符URL</h4>
+<p>URL 相当于一个文件名在网络范围的扩展&#xff0c;URL是与互联网相连的机器上的任何可访问对象的一个指针。由于访问不同对象所使用的协议不同&#xff0c;所以URL还指出读取某个对象时所使用的协议&#xff0c;URL的统一格式为&#xff1a;<code>&lt;协议&gt;://&lt;主机&gt;:&lt;端口&gt;/&lt;路径&gt;</code>&#xff1a;</p>
+<ul><li>&lt;协议&gt;就是指出<strong>使用什么协议来获取该万维网文档</strong>。现在最常用的协议就是http(超文本传送协议HTTP )以及https(简单讲是HTTP的安全版)&#xff0c;其次是ftp(文件传送协议FTP)</li><li>在&lt;协议&gt;后面的://是规定的格式&#xff0c;: 也是固定格式。它的右边是第二部分&lt;主机&gt;&#xff0c;它指出<strong>这个万维网文档是在哪一台主机上。这里的&lt;主机&gt;就是指该主机在互联网上的域名</strong>。</li><li>再后面是第三和第四部分**&lt;端口&gt;和&lt;路径&gt;**&#xff0c;有时可省略</li></ul>
+<p>对应例如&#xff1a;http://localhost:8080/AIR/index.jsp端口和路径有时可以省略。HTTP的默认端口号是80&#xff0c;通常可省略。若再省略文件的&lt;路径&gt;项&#xff0c;则URL就指到互联网上的<strong>某个主页</strong>(home page)</p>
+<h4><a rel="noopener noreferrer" id="HTTP_54"></a>超文本传送协议HTTP</h4>
+<p>HTTP 协议定义了浏览器(即万维网客户进程)怎样向万维网服务器请求万维网文档&#xff0c;以及服务器怎样把文档传送给浏览器。从层次的角度看&#xff0c;HTTP是<strong>面向事务的无状态的(transaction-oriented)应用层协议</strong>&#xff0c;它是<strong>万维网上能够可靠地交换文件(包括文本、声音、图像等各种多媒体文件)的重要基础</strong>。请注意&#xff0c;HTTP不仅传送完成超文本跳转所必需的信息&#xff0c;而且也传送任何可从互联网上得到的信息&#xff0c;如文本、超文本、声音和图像等<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-04-38294d6065.png" loading="lazy"><br />
+这是一个逻辑上的通信过程&#xff0c;实际通信还依赖下三层&#xff08;物理层&#xff0c;数据链路层&#xff0c;网络层&#xff09;&#xff1a;</p>
+<ul><li>HTTP使用了面向连接的TCP作为运输层协议&#xff0c;保证了数据的可靠传输。HTTP不必考虑数据在传输过程中被丢弃后又怎样被重传。但是&#xff0c;<strong>HTTP协议本身是无连接的</strong>。这就是说&#xff0c;虽然HTTP使用了TCP连接&#xff0c;但通信的双方在交换HTTP报文之前不需要先建立HTTP连接</li><li><strong>HTTP协议是无状态的(stateless)</strong>。也就是说&#xff0c;同一个客户第二次访问同一个服务器上的页面时&#xff0c;服务器的响应与第一次被访问时的相同(假定现在服务器还没有把该页面更新)&#xff0c;因为服务器并不记得曾经访问过的这个客户&#xff0c;也不记得为该客户曾经服务过多少次。HTTP的无状态特性简化了服务器的设计&#xff0c;使服务器更容易支持大量并发的HTTP请求</li></ul>
+<p>HTTP的无状态可以理解为<strong>幂等的</strong>。</p>
+<h5><a rel="noopener noreferrer" id="_62"></a>代理服务器</h5>
+<p>代理服务器(proxy server)是一种网络实体&#xff0c;它又称为<strong>万维网高速缓存(Web cache)</strong>。代理服务器<strong>把最近的一些请求和响应暂存在本地磁盘中</strong>。当新请求到达时&#xff0c;若代理服务器发现这个请求与暂时存放的请求相同&#xff0c;就返回暂存的响应&#xff0c;而不需要按URL的地址再次去互联网访问该资源。<strong>代理服务器可在客户端或服务器端工作</strong>&#xff0c;也可在中间系统上工作。</p>
+<p>我们有时候需要清空浏览器缓存来刷新网络请求&#xff0c;也是因为我们现在用的浏览器也具有这个功能。<strong>如果服务器页面已更新&#xff0c;但是客户端请求到的页面没有改变&#xff0c;可能就需要清空一下缓存了</strong></p>
+<h5><a rel="noopener noreferrer" id="HTTP_67"></a>HTTP报文</h5>
+<p>由于HTTP 是面向文本的((text-oriented)&#xff0c;因此在<strong>报文中的每一个字段都是一些ASCII码串</strong>&#xff0c;因而各个字段的长度都是不确定的&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-05-2db21a7e3c.png" loading="lazy"><br />
+HTTP请求报文和响应报文都是由三个部分组成的。可以看出&#xff0c;这两种报文格式的区别就是开始行不同。</p>
+<ul><li>开始行&#xff0c;<strong>用于区分是请求报文还是响应报文。在请求报文中的开始行叫做请求行(Request-Line)&#xff0c;而在响应报文中的开始行叫做状态行</strong>(Status-Line)。在开始行的三个字段之间都以空格分隔开&#xff0c;最后的“CR”和“LF”分别代表“回车”和“换行”。</li><li>首部行&#xff0c;<strong>用来说明浏览器、服务器或报文主体的一些信息</strong>。首部可以有好几行&#xff0c;但也可以不使用。在每一个首部行中都有首部字段名和它的值&#xff0c;每一行在结束的地方都要有“回车”和“换行”。整个首部行结束时&#xff0c;还有一空行将首部行和后面的实体主体分开。</li><li>实体主体(entity body)&#xff0c;<strong>在请求报文中一般都不用这个字段&#xff0c;而在响应报文中也可能没有这个字段</strong>。</li></ul>
+<p>下面分别介绍HTTP请求报文和响应报文的一些主要特点。</p>
+<h6><a rel="noopener noreferrer" id="HTTP_76"></a>HTTP请求报文</h6>
+<p>请求报文的主要特点&#xff1a;请求报文的第一行“请求行”只有三个内容&#xff0c;即<strong>方法</strong>&#xff0c;<strong>请求资源的URL</strong>&#xff0c;以及<strong>http的版本</strong>。</p>
+<ul><li>方法(method)是面向对象技术中使用的专门名词。所谓方法就是<strong>对所请求的对象进行的操作</strong>&#xff0c;这些方法实际上也就是一些命令<img alt="在这里插入图片描述" src="./posts/assets/77769192-06-9751d6abce.png" loading="lazy"></li><li>中间部分为URL地址</li><li>最后部分是http协议使用的版本&#xff0c;后续详细说明两个版本的区别</li></ul>
+<p>一个请求行的实例&#xff1a;<strong>GET http://www.xvz.edu.cn/dir/index.htm HTTP/1.1</strong></p>
+<h6><a rel="noopener noreferrer" id="HTTP_83"></a>HTTP响应报文</h6>
+<p>响应报文的主要特点&#xff1a;响应报文的第一行就是状态行。包含三个内容&#xff0c;<strong>http版本</strong>&#xff0c;<strong>状态码</strong>&#xff0c;<strong>以及解释状态码的简单短语</strong>。<strong>状态码的含义</strong></p>
+<ul><li><strong>1XX Informational(信息性状态码)</strong></li><li><strong>2XX Success(成功状态码)</strong>。例如&#xff1a;200 OK 表示从客户端发来的请求在服务器端被正常处理了。</li><li><strong>3XX Redirection</strong>(<strong>重定向状态码</strong>) 例如&#xff1a;302&#xff0c;客户请求的文档转移到了一个新的地址&#xff0c;请求被重定向了。</li><li><strong>4XX Client Error(客户端错误状态码)</strong>。例如&#xff1a;404 Not Found 该状态码表明服务器上无法找到请求的资源。除此之外&#xff0c;也可以在服务器端拒绝请求且不想说明理由时使用。</li><li><strong>5XX Server Error(服务器错误状态码)</strong>。例如&#xff1a;500 Internal Server Error 该状态码表明服务器端在执行请求时发生了错误。</li></ul>
+<p>以上就是响应的一个例子</p>
+<h4><a rel="noopener noreferrer" id="HTTP_94"></a>HTTP请求中各个概念的对比</h4>
+<p>包括<strong>HTTP和HTTPS的区别、HTTP1.0和HTTP1.1的区别、HTTP1.0和HTTP2.0的区别、POST 与 GET 的区别</strong>&#xff0c;<strong>URI和URL的区别</strong>&#xff0c;<strong>POST 与 GET 的区别</strong>&#xff0c;方便我们各种使用。</p>
+<h5><a rel="noopener noreferrer" id="HTTPHTTPS_96"></a>HTTP和HTTPS的区别</h5>
+<p>分别就端口、安全性和资源消耗来进行对比&#xff1a;</p>
+<ul><li><strong>端⼝</strong> &#xff1a;HTTP的URL由“http://”起始且默认使⽤端⼝80&#xff0c;⽽HTTPS的URL由“https://”起始且默认使⽤端⼝443。</li><li><strong>安全性和资源消耗</strong>
+<ul><li>HTTP协议运⾏在TCP之上&#xff0c;<strong>所有传输的内容都是明⽂</strong>&#xff0c;客户端和服务器端都⽆法验证对⽅的身份&#xff0c;HTTPS是运⾏在SSL/TLS之上的HTTP协议&#xff0c;SSL/TLS 运⾏在TCP之上。所有传输的内容都经过加密&#xff0c;加密采⽤对称加密&#xff0c;但对称加密的密钥⽤服务器⽅的证书进⾏了⾮对称加密。所以说&#xff0c;<strong>HTTP 安全性没有 HTTPS⾼&#xff0c;但是 HTTPS ⽐HTTP耗费更多服务器资源</strong>。</li></ul>
+</li></ul>
+<p>简单介绍下对称加密和非对称加密&#xff1a;</p>
+<ul><li><strong>对称加密&#xff1a;密钥只有⼀个</strong>&#xff0c;加密解密为同⼀个密码&#xff0c;且加解密速度快&#xff0c;典型的对称加密算法有DES、AES等&#xff1b;</li><li><strong>⾮对称加密&#xff1a;密钥成对出现</strong>&#xff08;且根据公钥⽆法推知私钥&#xff0c;根据私钥也⽆法推知公钥&#xff09;&#xff0c;加密解密使⽤不同密钥&#xff08;公钥加密需要私钥解密&#xff0c;私钥加密需要公钥解密&#xff09;&#xff0c;相对对称加密速度较慢&#xff0c;典型的⾮对称加密算法有RSA、DSA等。</li></ul>
+<p>总结而言http有以下缺点&#xff1a;</p>
+<ul><li>通信使用明文不加密&#xff0c;内容可能被窃听</li><li>不验证通信方身份&#xff0c;可能遭到伪装</li><li>无法验证报文完整性&#xff0c;可能被篡改</li></ul>
+<p>而https可以做到很好的安全性&#xff0c;虽然耗费的服务器资源会多一点,<font color="red"><strong>https的目标是保障传输的安全性</strong></font></p>
+<h5><a rel="noopener noreferrer" id="HTTP10HTTP11_112"></a>HTTP1.0和HTTP1.1的区别</h5>
+<p>HTTP1.0最早在⽹⻚中使⽤是在1996年&#xff0c;那个时候只是使⽤⼀些较为简单的⽹⻚上和⽹络请求上&#xff0c;⽽HTTP1.1则在1999年才开始⼴泛应⽤于现在的各⼤浏览器⽹络请求中&#xff0c;同时HTTP1.1也是当前使⽤最为⼴泛的HTTP协议。 主要区别主要体现在&#xff1a;</p>
+<ol><li><strong>⻓连接 : 在HTTP/1.0中&#xff0c;默认使⽤的是短连接&#xff0c;也就是说每次请求都要重新建⽴⼀次连接</strong>。<br />
+HTTP 是基于TCP/IP协议的,每⼀次建⽴或者断开连接都需要三次握⼿四次挥⼿的开销&#xff0c;如果每次<br />
+请求都要这样的话&#xff0c;开销会⽐较⼤。因此最好能维持⼀个⻓连接&#xff0c;可以⽤个⻓连接来发多个请<br />
+求。<strong>HTTP 1.1起&#xff0c;默认使⽤⻓连接 ,默认开启Connection&#xff1a; keep-alive</strong>。 HTTP/1.1的持续连接<br />
+有⾮流⽔线⽅式和流⽔线⽅式 。
+<ul><li>流⽔线⽅式是客户在收到HTTP的响应报⽂之前就能接着发送新的请求报⽂。</li><li>⾮流⽔线⽅式是客户在收到前⼀个响应后才能发送下⼀个请求。</li></ul>
+</li><li><strong>错误状态响应码 :在HTTP1.1中新增了24个错误状态响应码</strong>&#xff0c;如409&#xff08;Conflict&#xff09;表示请求的资源<br />
+与资源的当前状态发⽣冲突&#xff1b;410&#xff08;Gone&#xff09;表示服务器上的某个资源被永久性的删除。</li><li>缓存处理 :在HTTP1.0中主要使⽤header⾥的If-Modified-Since,Expires来做为缓存判断的标准&#xff0c;<strong>HTTP1.1则引⼊了更多的缓存控制策略</strong>例如Entity tag&#xff0c;If-Unmodified-Since, If-Match,If-None-Match等更多可供选择的缓存头来控制缓存策略。</li><li>带宽优化及⽹络连接的使⽤ :HTTP1.0中&#xff0c;存在⼀些浪费带宽的现象&#xff0c;例如客户端只是需要某个对象的⼀部分&#xff0c;⽽服务器却将整个对象送过来了&#xff0c;并且不⽀持断点续传功能&#xff0c;<strong>HTTP1.1则在请求头引⼊了range头域&#xff0c;它允许只请求资源的某个部分</strong>&#xff0c;即返回码是206&#xff08;Partial Content&#xff09;&#xff0c;这样就⽅便了开发者⾃由的选择以便于充分利⽤带宽和连接</li></ol>
+<p>总体而言HTTP1.1完胜HTTP1.0.<font color="red"><strong>http1.1的目标是全面提升优化1.0</strong></font></p>
+<h5><a rel="noopener noreferrer" id="HTTP10HTTP20_127"></a>HTTP1.0和HTTP2.0的区别</h5>
+<p>HTTP1.0已经比HTTP1.1弱很多了&#xff0c;相比于HTTP2则更差&#xff1a;</p>
+<ul><li><strong>1.HTTP2使用的是二进制传送&#xff0c;HTTP1.X是文本&#xff08;字符串&#xff09;传送。</strong><br />
+大家都知道HTTP1.X使用的是明文的文本传送&#xff0c;而HTTP2使用的是二进制传送&#xff0c;二进制传送的单位是帧和流。帧组成了流&#xff0c;同时流还有流ID标示&#xff0c;通过流ID就牵扯出了第二个区别<br />
+<strong>2.HTTP2支持多路复用</strong>因为有流ID&#xff0c;所以通过<strong>同一个http请求实现多个http请求传输</strong>变成了可能&#xff0c;可以通过流ID来标示究竟是哪个流从而定位到是哪个http请求<br />
+<strong>3.HTTP2头部压缩</strong>HTTP2通过gzip和compress压缩头部然后再发送&#xff0c;同时客户端和服务器端同时维护一张头信息表&#xff0c;所有字段都记录在这张表中&#xff0c;<strong>这样后面每次传输只需要传输表里面的索引Id就行&#xff0c;通过索引ID就可以知道表头的值了</strong><br />
+<strong>4.HTTP2支持服务器推送</strong>HTTP2支持在客户端未经请求许可的情况下&#xff0c;主动向客户端推送内容</li></ul>
+<p>总而言之&#xff1a;<font color="red"><strong>http/2.0的目标是改善用户使用web时的速度体验</strong></font></p>
+<h5><a rel="noopener noreferrer" id="URIURL_138"></a>URI和URL的区别</h5>
+<p>URI的作⽤像身份证号⼀样&#xff0c;URL的作⽤更像家庭住址⼀样。</p>
+<ul><li>URI(Uniform Resource Identifier) 是统⼀资源标志符&#xff0c;<strong>可以唯⼀标识⼀个资源</strong>。</li><li>URL(Uniform Resource Location) 是统⼀资源定位符&#xff0c;<strong>可以提供该资源的路径。它是⼀种具体的 URI&#xff0c;即 URL 可以⽤来标识⼀个资源&#xff0c;⽽且还指明了如何 locate 这个资源</strong>。</li></ul>
+<p>URL是⼀种具体的URI&#xff0c;它不仅唯⼀标识资源&#xff0c;⽽且还提供了定位该资源的信息</p>
+<h5><a rel="noopener noreferrer" id="POST__GET__145"></a>POST 与 GET 的区别</h5>
+<p><strong>Get是从服务器上获取数据&#xff0c;是安全的和幂等的&#xff0c;POST是修改服务器上的数据</strong></p>
+<ul><li><strong>安全的 意味着该操作用于获取信息而非修改信息</strong>。换句话说&#xff0c;GET请求一般不应产生副作用。就是说&#xff0c;它仅仅是获取资源信息&#xff0c;就像数据库查询一样&#xff0c;不会修改&#xff0c;增加数据&#xff0c;不会影响资源的状态。</li><li><strong>幂等 的意味着对同一URL的多个请求应该返回同样的结果。</strong></li></ul>
+<p><strong>GET请求的数据会附在URL之后&#xff0c;POST把提交的数据则放置在是HTTP包的包体中。POST的安全性更高</strong></p>
+<ul><li>GET方式提交的数据<strong>最多只能是2048字节</strong>&#xff0c;理论上POST没有限制&#xff0c;可传较大量的数据</li><li><strong>GET支持缓存&#xff08;取到的资源&#xff09;&#xff0c;POST不支持缓存</strong></li></ul>
+<p>总的来说&#xff0c;Get是向服务器发索取数据的一种请求&#xff0c;而Post是向服务器提交数据的一种请求。</p>
+<h3><a rel="noopener noreferrer" id="_159"></a>用户状态保存</h3>
+<p>HTTP 是⼀种不保存状态&#xff0c;即<strong>⽆状态&#xff08;stateless&#xff09;协议</strong>。也就是说 HTTP 协议⾃身不对请求和响应之间<br />
+的通信状态进⾏保存。那么我们保存⽤户状态呢&#xff1f;</p>
+<h4><a rel="noopener noreferrer" id="SessionCookie_162"></a>Session和Cookie</h4>
+<p>先来了解两个概念&#xff0c;Session和Cookie&#xff0c;<strong>Cookie 和 Session都是⽤来跟踪浏览器⽤户身份的会话⽅式&#xff0c;但是两者的应⽤场景不太⼀样</strong>。</p>
+<ul><li>Cookie <strong>⼀般⽤来保存⽤户信息</strong>&#xff0c;通过这种方式不需要用户反复去输入用户信息去登录
+<ul><li>我们在 Cookie 中保存已经登录过得⽤户信息&#xff0c;下次访问⽹站的时候⻚⾯可以⾃动帮你登录的⼀些基本信息给填了&#xff1b;</li><li>⼀般的⽹站都会有保持登录也就是说下次你再访问⽹站的时候就不需要重新登录了&#xff0c;这是因为<strong>⽤户登录的时候我们可以存放了⼀个 Token 在 Cookie中</strong>&#xff0c;下次登录的时候只需要根据 Token 值来查找⽤户即可(为了安全考虑&#xff0c;重新登录⼀般要将 Token重写)&#xff1b;</li><li>登录⼀次⽹站后<strong>访问⽹站其他⻚⾯不需要重新登录</strong>。</li></ul>
+</li><li>Session 的主要作⽤就是<strong>通过服务端记录⽤户的状态</strong>。 典型的场景是购物⻋&#xff0c;当你要添加商品到购物⻋的时候&#xff0c;系统不知道是哪个⽤户操作的&#xff0c;因为 HTTP 协议是⽆状态的。服务端给特定的⽤户创建特定的 Session 之后就可以标识这个⽤户并且跟踪这个⽤户了。</li><li><strong>Cookie 数据保存在客户端(浏览器端)&#xff0c;Session 数据保存在服务器端</strong>。Cookie 存储在客户端中&#xff0c;⽽Session存储在服务器上&#xff0c;相对来说 Session 安全性更⾼。如果要在Cookie 中存储⼀些敏感信息&#xff0c;不要直接写⼊ Cookie 中&#xff0c;最好能将 Cookie 信息加密然后使⽤到的时候再去服务器端解密</li></ul>
+<p>可以通俗的这么理解&#xff0c;Cookie在客户端保存用户信息&#xff0c;知道用户干了什么事儿&#xff0c;Session则在服务端给用户创建了相应的数据存档&#xff0c;下次只要对应用户登录就能读档&#xff0c;那么要想找到用户正确的访问内容需要二位配合了。</p>
+<h4><a rel="noopener noreferrer" id="_172"></a>用户状态保存机制</h4>
+<p>Session 和Cookie联手可以解决这个问题&#xff0c;Session 的主要作⽤就是<strong>通过服务端记录⽤户的状态</strong>。典型的场景是购物⻋&#xff0c;当你要添加商品到购物⻋的时候&#xff0c;系统不知道是哪个⽤户操作的&#xff0c;因为 HTTP 协议是⽆状态的。</p>
+<ul><li><strong>服务端给特定的⽤户创建特定的Session 之后就可以标识这个⽤户并且跟踪这个⽤户了</strong></li><li>⼀般情况下&#xff0c;服务器会在⼀定时间内保存这个Session&#xff0c;过了时间限制&#xff0c;就会销毁这个Session</li><li>在服务端保存 Session 的⽅法很多&#xff0c;最常⽤的就是内存和数据库(<strong>⽐如是使⽤内存数据库redis保存</strong>)。</li></ul>
+<p>既然 Session 存放在服务器端&#xff0c;那么我们如何实现 Session 跟踪呢&#xff1f;⼤部分情况下&#xff0c;我们都是通过<strong>在Cookie 中附加⼀个 Session ID 来⽅式来跟踪</strong>&#xff0c;这样用户登录并且携带sessionid&#xff0c;在访问对应网站时去redis里找对应的session信息&#xff0c;就拿到了购物车里的物品&#xff0c;也就是知道了买了什么东西。</p>
+<h3><a rel="noopener noreferrer" id="_179"></a>其它常用服务和协议</h3>
+<p>简单介绍下其他的一些协议&#xff1a;<strong>FTP、SMTP、POP3以及TELNET</strong>这几种基于TCP的协议</p>
+<h4><a rel="noopener noreferrer" id="SMTPPOP3_181"></a>SMTP及POP3</h4>
+<p>个电子邮件系统有三个主要组成构件&#xff1a;<strong>用户代理</strong>、<strong>邮件服务器</strong>&#xff0c;以及<strong>邮件协议</strong>&#xff08;包括邮件发送协议&#xff0c;如SMTP&#xff0c;邮件读取协议&#xff0c;如POP3&#xff09;。用户代理和邮件服务器都要运行这两种协议。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-07-31e84a6986.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="FTP_185"></a>FTP</h4>
+<p>件传送协议FTP&#xff08;file transfer protocol&#xff09;是英特网上使用得最广泛的文件传送协议。 网络文件系统NFS&#xff0c;<strong>允许应用进程打开一个远地文件&#xff0c;并能在该文件的某一个特定的位置上开始读写数据</strong>。,它使用TCP来确保文件传输的可靠性<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-08-f060f0aacf.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="TELNET_189"></a>远程终端协议TELNET</h4>
+<p>TELNET又称为终端仿真协议。它定义了数据和命令应怎样通过因特网&#xff0c;这些定义就是所谓的网络虚拟终端NVT&#xff08;network virtual terminal&#xff09;。所有的通信都是用8位一个字节&#xff0c;在运转时&#xff0c;NVT使用7位ASCⅡ码传送数据&#xff0c;而当高位置1时用作控制命令。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/77769192-09-e14844ea92.png" loading="lazy"></p>

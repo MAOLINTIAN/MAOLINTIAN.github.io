@@ -1,0 +1,127 @@
+<p>本文是Java并发编程系列的第一篇&#xff0c;在正式进行Java中的并发编程方式之前&#xff0c;我们先来了解下什么是并发编程。并发编程的优势是什么&#xff0c;又有什么挑战和问题&#xff0c;以及该如何解决&#xff1f;那么首先要搞清楚什么是并发的概念&#xff1f;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114162901-01-dc6b72eadf.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_4"></a>并发的基本概念</h2>
+<p><strong>并发</strong>是指两个或多个事件在同一时间间隔内发生&#xff0c;在多道程序环境下&#xff0c;一段时间内宏观上有多个程序在同时执行&#xff0c;而在同一时刻&#xff0c;单处理器环境下实际上只有一个程序在执行&#xff0c;故<strong>微观上这些程序还是在分时的交替进行</strong>。操作系统的并发是通过分时得以实现的&#xff0c;和串行以及并行的概念区别&#xff1a;</p>
+<ul><li><strong>串行</strong>&#xff1a;顺序做不同事的能力&#xff1a;先洗衣服&#xff0c;洗完后做饭。</li><li><strong>并发</strong>&#xff1a;交替做不同事的能力&#xff1a;一会儿洗衣服&#xff0c;一会儿做饭&#xff0c;交替执行&#xff0c;但快如闪电。洗衣服和做饭的是一个&#xff08;cpu&#xff09;&#xff0c;在<strong>同一个时间段</strong>内每个cpu各司其职。<strong>并发的实质是一个物理CPU(也可以多个物理CPU) 在若干道程序之间多路复用&#xff0c;并发性是对有限物理资源强制行使多用户共享以提高效率。</strong></li><li><strong>并行</strong>&#xff1a;同时做不同事的能力&#xff1a;左手洗衣服右手做饭&#xff0c;在同一时刻同时做两件事。并行性指两个或两个以上事件或活动在同一时刻发生。在多道程序环境下&#xff0c;并行性使多个程序同一时刻可在<strong>不同CPU</strong>上同时执行。</li></ul>
+<p>并发关注的是<strong>资源充分利用</strong>&#xff08;也就是不让cpu闲下来&#xff09;&#xff0c;并行关注的是<strong>一个任务被分解给多个执行者同时做&#xff0c;缩短这个任务的完成时间</strong>&#xff08;也就是尽快做完这件事&#xff09;&#xff0c;操作系统的并发性是指计算机系统中同时存在多个运行着的程序&#xff0c;因此它具有处理和调度多个程序同时执行的能力。在操作系统中&#xff0c;引入进程的目的是使程序能并发执行。并行则是同时间同时刻有几个程序同时运行&#xff0c;有几核就就几个程序在并行。<font color="red"><strong>单核CPU只能并发多个程序&#xff0c;多核CPU可以并发也可以并行</strong></font>【4核CPU可以并行4个程序&#xff0c;程序大于核心时就需要用到并发性】</p>
+<h2><a rel="noopener noreferrer" id="_12"></a>并发编程的挑战</h2>
+<p>并发编程的优势不言而喻&#xff0c;我们的主要问题是如何解决并发编程带来的挑战&#xff0c;包括<strong>线程轮转执行的上下文切换问题、对同步资源加锁时的死锁问题&#xff0c;整体的资源限制问题</strong></p>
+<h3><a rel="noopener noreferrer" id="_14"></a>上下文切换</h3>
+<p>通过对并发概念的理解&#xff0c;我们知道<strong>即使是单核处理器也支持多线程执行代码&#xff0c;CPU通过给每个线程分配CPU时间片来实现这个机制</strong>。时间片是CPU分配给各个线程的时间&#xff0c;因为时间片非常短&#xff0c;所以CPU通过不停地切换线程执行&#xff0c;让我们感觉多个线程是同时执行的&#xff0c;时间片一般是<strong>几十毫秒&#xff08;ms&#xff09;</strong>。</p>
+<p>CPU通过时间片分配算法来循环执行任务&#xff0c;当前任务执行一个时间片后会切换到下一个任务。但是&#xff0c;在切换前会保存上一个任务的状态&#xff0c;以便下次切换回这个任务时&#xff0c;可以再加载这个任务的状态。所以<font color="red"><strong>任务从保存到再加载的过程就是一次上下文切换</strong></font>&#xff0c;正是因为有了线程的创建上下文切换的开销&#xff0c;多线程有时候执行起来不一定有单线程快</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>company<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThreadTest</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">long</span> count <span class="token operator">&#61;</span> <span class="token number">10000</span>l<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+        <span class="token function">concurrency</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">serial</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">concurrency</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> InterruptedException <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">long</span> start <span class="token operator">&#61;</span> System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Thread thread <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> a <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">long</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                a <span class="token operator">&#43;&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        thread<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> b <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">long</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            b<span class="token operator">--</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">long</span> time <span class="token operator">&#61;</span> System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> start<span class="token punctuation">;</span>
+        thread<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;concurrency :&#34;</span> <span class="token operator">&#43;</span> time<span class="token operator">&#43;</span><span class="token string">&#34;ms,b&#61;&#34;</span><span class="token operator">&#43;</span>b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">serial</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">long</span> start <span class="token operator">&#61;</span> System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> a <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">long</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            a <span class="token operator">&#43;&#61;</span> <span class="token number">5</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">int</span> b <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">long</span> i <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            b<span class="token operator">--</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">long</span> time <span class="token operator">&#61;</span> System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> start<span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;serial:&#34;</span> <span class="token operator">&#43;</span> time<span class="token operator">&#43;</span><span class="token string">&#34;ms,b&#61;&#34;</span><span class="token operator">&#43;</span>b<span class="token operator">&#43;</span><span class="token string">&#34;,a&#61;&#34;</span><span class="token operator">&#43;</span>a<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>当循环执行1万次的时候&#xff0c;打印结果如下&#xff1a;</p>
+<pre><code class="prism language-java">concurrency <span class="token operator">:</span><span class="token number">35</span>ms<span class="token punctuation">,</span>b<span class="token operator">&#61;</span><span class="token operator">-</span><span class="token number">10000</span>
+serial<span class="token operator">:</span><span class="token number">0</span>ms<span class="token punctuation">,</span>b<span class="token operator">&#61;</span><span class="token operator">-</span><span class="token number">10000</span><span class="token punctuation">,</span>a<span class="token operator">&#61;</span><span class="token number">50000</span>
+</code></pre>
+<p>当循环执行1亿次的时候&#xff0c;打印结果如下&#xff1a;</p>
+<pre><code class="prism language-java">concurrency <span class="token operator">:</span><span class="token number">90</span>ms<span class="token punctuation">,</span>b<span class="token operator">&#61;</span><span class="token operator">-</span><span class="token number">100000000</span>
+serial<span class="token operator">:</span><span class="token number">65</span>ms<span class="token punctuation">,</span>b<span class="token operator">&#61;</span><span class="token operator">-</span><span class="token number">100000000</span><span class="token punctuation">,</span>a<span class="token operator">&#61;</span><span class="token number">500000000</span>
+</code></pre>
+<p>当循环执行10亿次的时候&#xff0c;打印结果如下&#xff1a;</p>
+<pre><code class="prism language-java">concurrency <span class="token operator">:</span><span class="token number">354</span>ms<span class="token punctuation">,</span>b<span class="token operator">&#61;</span><span class="token operator">-</span><span class="token number">1000000000</span>
+serial<span class="token operator">:</span><span class="token number">581</span>ms<span class="token punctuation">,</span>b<span class="token operator">&#61;</span><span class="token operator">-</span><span class="token number">1000000000</span><span class="token punctuation">,</span>a<span class="token operator">&#61;</span><span class="token number">705032704</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_78"></a>如何减少上下文切换</h4>
+<p>既然上下文切换会耗费时间资源&#xff0c;那么该如何减少上下文切换呢&#xff1f;减少上下文切换的方法有<strong>无锁并发编程</strong>、<strong>CAS算法</strong>、<strong>使用最少线程</strong>和<strong>使用协程</strong>。</p>
+<ul><li><strong>无锁并发编程</strong>。多线程竞争锁时&#xff0c;会引起上下文切换&#xff0c;所以多线程处理数据时&#xff0c;可以用一些办法来避免使用锁&#xff0c;如将数据的ID按照Hash算法取模分段&#xff0c;不同的线程处理不同段的数据。</li><li><strong>CAS算法</strong>。Java的Atomic包使用CAS算法来更新数据&#xff0c;而不需要加锁。</li><li><strong>使用最少线程</strong>。避免创建不需要的线程&#xff0c;比如任务很少&#xff0c;但是创建了很多线程来处理&#xff0c;这样会造成大量线程都处于等待状态。</li><li><strong>协程</strong>&#xff1a;在单线程里实现多任务的调度&#xff0c;并在单线程里维持多个任务间的切换</li></ul>
+<p>关于线程和进程的概念和使用会在后文提到。总而言之就是<font color="red"><strong>使用适量的线程尽量少用锁、执行内容分配前置&#xff0c;代码逻辑写漂亮了&#xff0c;上下文切换就少</strong></font></p>
+<h3><a rel="noopener noreferrer" id="_87"></a>死锁</h3>
+<p>我们可以从多线程的设计原则中可以看到&#xff0c;并发编程可以大大提高CPU的利用率&#xff0c;但是因为其存在对共享和可变状态的资源进行访问&#xff0c;所以存在一定的问题。</p>
+<ul><li><strong>共享</strong>就意味着变量可以被多个线程同时访问。我们知道系统中的资源是有限的&#xff0c;不同的线程对资源都是具有着同等的使用权。有限、公平就意味着竞争&#xff0c;竞争就有可能会引发线程安全问题。</li><li><strong>可变</strong>是指变量的值在其生命周期内是可以发生改变的。“可变”对应的是“不可变”。我们知道不可变的对象一定是线程安全的&#xff0c;并且永远也不需要额外的同步&#xff08;因为一个不可变的对象只要构建正确&#xff0c;其外部可见状态永远都不会发生改变&#xff09;。所以可变意味着存在线程不安全的风险。</li></ul>
+<p>二者展现的核心问题就是如何保证共享和可变的资源不被错误的执行&#xff0c;解决方式很简单&#xff0c;就是<strong>对于共享的资源让线程协同持有和处理</strong>。这里就会用到对资源的锁&#xff0c;而<strong>锁</strong>会导致一系列线程同步问题</p>
+<p>锁是个非常有用的工具&#xff0c;运用场景非常多&#xff0c;因为它使用起来非常简单&#xff0c;而且易于理解。但同时它也会带来一些困扰&#xff0c;那就是可能会引起死锁&#xff0c;一旦产生死锁&#xff0c;就会造成系统功能不可用</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>company<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ThreadTest</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span>  Object moniterA<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span>  Object moniterB<span class="token operator">&#61;</span><span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span>  <span class="token punctuation">{<!-- --></span>
+        Thread t1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+
+                <span class="token keyword">synchronized</span> <span class="token punctuation">(</span>moniterA<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                        Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">2000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>    <span class="token comment">//t1休眠2秒以便t2能拿到moniterB</span>
+                    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                        e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    <span class="token keyword">synchronized</span> <span class="token punctuation">(</span>moniterB<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;AM&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Thread t2 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{<!-- --></span>
+
+            <span class="token keyword">synchronized</span> <span class="token punctuation">(</span>moniterB<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+                    Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">2000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">synchronized</span> <span class="token punctuation">(</span>moniterA<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;CH&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        t1<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        t2<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>查看dump信息可以看到线程的状态&#xff1a;thread-0等待锁<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114162901-02-c345c1a457.png" loading="lazy"><br />
+thread-1也在等待锁&#xff0c;这样导致了相互等待锁来执行代码&#xff0c;导致了死锁。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/114162901-03-ef4b28f224.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_141"></a>如何避免死锁</h4>
+<p>虽然死锁不能百分百解除&#xff0c;例如t1拿到锁之后&#xff0c;因为一些异常情况没有释放锁&#xff08;死循环&#xff09;。又或者是t1拿到一个数据库锁&#xff0c;释放锁的时候抛出了异常&#xff0c;没释放掉&#xff0c;但是有如下几种避免死锁的机制&#xff1a;</p>
+<ul><li><strong>避免一个线程同时获取多个锁</strong>。</li><li><strong>避免一个线程在锁内同时占用多个资源</strong>&#xff0c;尽量保证每个锁只占用一个资源。</li><li><strong>尝试使用定时锁</strong>&#xff0c;使用lock.tryLock&#xff08;timeout&#xff09;来替代使用内部锁机制。</li><li>对于数据库锁&#xff0c;加锁和解锁必须在一个数据库连接里&#xff0c;否则会出现解锁失败的情况</li></ul>
+<p>总而言之就是&#xff0c;如果要使用锁&#xff0c;<font color="red"><strong>一个线程只使用一个定时的锁去锁住一个资源</strong></font>。</p>
+<h3><a rel="noopener noreferrer" id="_150"></a>资源限制</h3>
+<p>资源限制是指在进行并发编程时&#xff0c;程序的执行速度受限于计算机硬件资源或软件资源。例如&#xff0c;服务器的带宽只有2Mb/s&#xff0c;某个资源的下载速度是1Mb/s每秒&#xff0c;系统启动10个线程下载资源&#xff0c;下载速度不会变成10Mb/s&#xff0c;所以在进行并发编程时&#xff0c;要考虑这些资源的限制:</p>
+<ul><li><strong>硬件资源限制</strong>&#xff1a;带宽的上传/下载速度、硬盘读写速度和CPU的处理速度</li><li><strong>软件资源限制</strong>&#xff1a;数据库的连接数和socket连接数等</li></ul>
+<p>在并发编程中&#xff0c;<strong>将代码执行速度加快的原则是将代码中串行执行的部分变成并发执行</strong>&#xff0c;但是如果将某段串行的代码并发执行&#xff0c;因为受限于资源&#xff0c;仍然在串行执行&#xff0c;这时候程序不仅不会加快执行&#xff0c;反而会更慢</p>
+<ul><li>对于硬件资源限制&#xff0c;可以考虑<strong>使用集群并行执行程序</strong>。既然单机的资源有限制&#xff0c;那么就让程序在多机上运行</li><li>对于软件资源限制&#xff0c;可以考虑<strong>使用资源池将资源复用</strong>。比如使用连接池将数据库和Socket连接复用</li></ul>
+<p>所以总而言之&#xff0c;<font color="red"><strong>解决资源限制的问题依赖于分布式集群的搭建和资源池的建立和复用</strong></font>。</p>
+<h2><a rel="noopener noreferrer" id="_161"></a>总结</h2>
+<p>本篇Blog主要介绍了什么是并发编程&#xff0c;并发的优势不言而喻&#xff0c;主要是在并发过程中会遇到什么问题&#xff08;上下文切换、死锁、资源限制&#xff09;&#xff0c;为了解决这些问题&#xff0c;这个系列的Blog才有了存在的意义。</p>

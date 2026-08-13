@@ -1,0 +1,274 @@
+<p>Servlet中有几个常用的对象&#xff0c;如果大家还记得之前在JSP的内置对象中介绍过的内容那么应该会对这几个对象大致有个印象<a href="https://tianmaolin.blog.csdn.net/article/details/118735843" rel="nofollow">JSP内置对象</a>&#xff0c;分别是下图中的这几个红圈内容&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-01-103d05c15c.png" loading="lazy"><br /> 我们知道JSP编译后就是Servlet&#xff0c;这也再次证明了这一点。</p>
+<h2><a rel="noopener noreferrer" id="_4"></a>常用对象使用</h2>
+<p>接下来我们详细介绍下Servlet中使用最频繁的这四个常用对象。</p>
+<h3><a rel="noopener noreferrer" id="HttpServletRequest_7"></a>HttpServletRequest接口</h3>
+<p>HttpServletRequest 接口代表客户端的请求&#xff0c;它包含了客户端提交过来的请求数据&#xff1a;</p>
+<ul><li>HttpServletRequest 接口来自于Servlet规范。</li><li>HttpServletRequest 接口实现类由Http服务器厂商提供。</li><li>HttpServletRequest 接口读取请求协议包中的内容。</li><li>一般习惯将 HttpServletRequest 接口修饰的对象称为 请求对象。</li></ul>
+<p>然后我们探索下主要功能。</p>
+<h4><a rel="noopener noreferrer" id="request_15"></a>request主要功能</h4>
+<p>主要功能如下&#xff1a;</p>
+<ul><li>HttpServletRequest 接口读取请求包中的请求行中的信息&#xff08;url、method、uri、scheme&#xff09;</li><li>HttpServletRequest 接口读取请求包中请求头或者请求体中参数的信息。</li><li>HttpServletRequest 接口代替浏览器向Tomcat索要资源文件【请求转发】。</li></ul>
+<p>实现以上功能的方法如下</p>
+<h4><a rel="noopener noreferrer" id="request_23"></a>request常用方法</h4>
+<p>常用的方法如下&#xff0c;例如获取请求的参数等&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-02-451064de4f.png" loading="lazy"><br /> 请求头和请求体中的一些数据<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-03-da2e049ca0.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="request_29"></a>request使用示例</h4>
+<p>一个获取请求中内容的示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">//读取请求行中的url属性信息</span>
+        String url<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getRequestURL</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//读取请求行中method的属性信息</span>
+        String method<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//读取请求行中的uri属性信息</span>
+        <span class="token comment">//uri是从url中截取的一段字符串&#xff0c;格式&#xff1a;&#34;/网站名/资源文件名&#34;&#xff0c;可以帮助tomcat进行资源定位</span>
+        String uri<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getRequestURI</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">//获取请求行中的协议信息</span>
+        String scheme<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getScheme</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        PrintWriter out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;url&#61;&#61;&#61;&#34;</span> <span class="token operator">&#43;</span> url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;uri&#61;&#61;&#61;&#34;</span> <span class="token operator">&#43;</span> uri<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;method&#61;&#61;&#61;&#34;</span> <span class="token operator">&#43;</span> method<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;scheme&#61;&#61;&#61;&#34;</span> <span class="token operator">&#43;</span> scheme<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token comment">//请求转发的写法</span>
+ RequestDispatcher requestDispatcher<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getRequestDispatcher</span><span class="token punctuation">(</span><span class="token string">&#34;/five.html&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        requestDispatcher<span class="token punctuation">.</span><span class="token function">forward</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span>response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>打印结果如下&#xff1a;</p>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118962991-04-9a87ec4121.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="HttpServletResponse_61"></a>HttpServletResponse接口</h3>
+<p>HttpServletResponse 接口代表向客户端发送的响应&#xff0c;利用response可以向客户 端响应信息或跳转界面&#xff1a;</p>
+<ul><li>HttpServletResponse 接口来自于Servlet规范。</li><li>HttpServletResponse 接口实现类由Http服务器厂商提供。</li><li>HttpServletResponse 接口可以将Servlet中的运行结果写入到响应包。</li><li>一般习惯将 HttpServletResponse 接口修饰的对象称为 响应对象</li></ul>
+<p>然后我们探索下主要功能。</p>
+<h4><a rel="noopener noreferrer" id="response_70"></a>response主要功能</h4>
+<p>主要功能如下&#xff1a;</p>
+<ul><li>HttpServletResponse 接口负责将Servlet运行结果以<strong>二进制</strong>形式写入到响应包中的响应体。</li><li>HttpServletResponse 接口负责设置响应包中响应头的content-type属性&#xff0c;控制浏览器采用对应的解析器和编译器对响应体中的二进制数据进行处理。</li><li>HttpServletResponse 接口负责将一个请求地址写入到响应头中的location属性中&#xff0c;来控制浏览器下一次请求的方式【重定向】。</li></ul>
+<p>实现这样功能的方法如下</p>
+<h4><a rel="noopener noreferrer" id="response_78"></a>response常用方法</h4>
+<p>HttpServletResponse常用方法如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-05-72f527d03c.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="response_81"></a>response使用示例</h4>
+<p>一个重定向的使用的示例如下&#xff1a;</p>
+<pre><code class="prism language-java">   <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+        String url<span class="token operator">&#61;</span><span class="token string">&#34;http://www.baidu.com&#34;</span><span class="token punctuation">;</span>
+        <span class="token comment">//通过响应对象将地址写入到响应头中的location</span>
+        response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>这样我们可以重定向到百度页面&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-06-d42e61ee69.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="ServletConfig_96"></a>ServletConfig对象</h3>
+<p>在 Web 容器初始化一个 Servlet 实例时&#xff0c;会为当前的 Servlet 准备一个唯一的 ServletConfig 实例配置对象。ServletConfig 对象能读取配置在 web.xml 文件中对应Servlet 配置的初始化参数。</p>
+<p>ServletConfig用于封装servlet的配置信息。从一个servlet被实例化后&#xff0c;对任何客户端在任何时候访问有效&#xff0c;但仅对servlet自身有效&#xff0c;一个servlet的ServletConfig对象不能被另一个servlet访问</p>
+<p><strong>ServletConfig只能针对当前配置的Servlet有效</strong>&#xff0c;例如我们在注解中定义和通过配置获取代码如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;Servlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/myFirstServlet&#34;</span><span class="token punctuation">,</span>initParams <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token annotation punctuation">&#64;WebInitParam</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;name&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token annotation punctuation">&#64;WebInitParam</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;age&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;27&#34;</span><span class="token punctuation">)</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FirstServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html;charset&#61;gbk&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PrintWriter out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取 ServletConfig 实例</span>
+        ServletConfig config <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getServletConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取指定名称的初始化参数的字符串值</span>
+        String name <span class="token operator">&#61;</span> config<span class="token punctuation">.</span><span class="token function">getInitParameter</span><span class="token punctuation">(</span><span class="token string">&#34;name&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String age <span class="token operator">&#61;</span> config<span class="token punctuation">.</span><span class="token function">getInitParameter</span><span class="token punctuation">(</span><span class="token string">&#34;age&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;servlet 初始化参数 name 的值是&#xff1a;&#34;</span> <span class="token operator">&#43;</span> name <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br/&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;servlet 初始化参数 age 的值是&#xff1a;&#34;</span> <span class="token operator">&#43;</span> age <span class="token operator">&#43;</span> <span class="token string">&#34;&lt;br/&gt;&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>浏览器的打印结果为&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-07-a848ecc846.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="ServletContext_125"></a>ServletContext对象</h3>
+<p>ServletContext可以实现多个Servlet获取相同的初始化参数值&#xff0c;它不属于某一个Servlet所有&#xff0c;而是Web 应用程序的上下文环境的参数。</p>
+<p>servlet容器在启动时会加载web应用&#xff0c;并为每个web应用创建唯一的servlet context对象&#xff0c;可以把ServletContext看成是一个Web应用的服务器端组件的共享内存&#xff0c;在ServletContext中可以存放共享数据。ServletContext对象是真正的一个全局对象&#xff0c;凡是web容器中的Servlet都可以访问。 整个web应用只有唯一的一个ServletContext对象</p>
+<p>我们可以做个实验&#xff0c;分别在两个Servlet里都加入同样的计数器代码&#xff0c;在HelloServlet中&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>ServletContext<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &#64;author tianmaolin
+ */</span>
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;helloServlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/hello-servlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> String message<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        message <span class="token operator">&#61;</span> <span class="token string">&#34;Hello World!&#34;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html;charset&#61;gbk&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PrintWriter out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取 ServletContext 对象</span>
+        ServletContext context <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getServletContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取指定名称的 Web 应用程序的上下文初始参数的字符串值</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>null<span class="token operator">&#61;&#61;</span>context<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            context<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token keyword">else</span><span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> counter<span class="token operator">&#61;</span><span class="token punctuation">(</span>Integer<span class="token punctuation">)</span>context<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            context<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">,</span> counter<span class="token operator">&#43;</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;当前计数器数值为&#34;</span><span class="token operator">&#43;</span>counter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>在FirstServlet中&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">package</span> com<span class="token punctuation">.</span>example<span class="token punctuation">.</span>myfirstweb<span class="token punctuation">.</span>controller<span class="token punctuation">;</span> <span class="token comment">/**
+ * * &#64;Name ${NAME}
+ * * &#64;Description
+ * * &#64;author tianmaolin
+ * * &#64;Data 2021/7/19
+ */</span>
+
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>annotation<span class="token punctuation">.</span>*<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>IOException<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>PrintWriter<span class="token punctuation">;</span>
+
+<span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;Servlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/myFirstServlet&#34;</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FirstServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">&#34;text/html;charset&#61;gbk&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PrintWriter out <span class="token operator">&#61;</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取 ServletContext 对象</span>
+        ServletContext context <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getServletContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 获取指定名称的 Web 应用程序的上下文初始参数的字符串值</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>null<span class="token operator">&#61;&#61;</span>context<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span>
+            context<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token keyword">else</span><span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> counter<span class="token operator">&#61;</span><span class="token punctuation">(</span>Integer<span class="token punctuation">)</span>context<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            context<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;counter&#34;</span><span class="token punctuation">,</span> counter<span class="token operator">&#43;</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&#34;当前计数器数值为&#34;</span><span class="token operator">&#43;</span>counter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doPost</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p><strong>每个Servlet中都可以读取上下文初始化的参数</strong>&#xff0c;分别请求两个页面&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-08-029d7efc9e.png" loading="lazy"><br /> 他们没有各自累加&#xff0c;而是总体在累加<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-09-58cf8d0bf1.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="_221"></a>请求转发和重定向</h2>
+<p>其实在JSP中的这篇Blog&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/118735843" rel="nofollow">JSP内置对象</a>中就详细介绍了请求转发和重定向&#xff0c;当时并没有引入Servlet的概念&#xff0c;当我们将Servlet作为请求的目标时这两个概念依然存在&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-10-a1387d8d30.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_224"></a>二者的请求流程</h3>
+<p>整个执行流程比较好理解&#xff0c;一句话&#xff0c;转发是服务器行为&#xff0c;重定向是客户端行为。为什么这样说呢&#xff0c;这就要看两个动作的工作流程&#xff1a;</p>
+<ul><li><strong>转发过程</strong>&#xff1a;客户浏览器发送http请求----》web服务器接受此请求–》调用内部的一个方法在容器内部完成请求处理和转发动作----》将目标资源 发送给客户&#xff1b;</li></ul>
+<p>在这里&#xff0c;<strong>转发的路径必须是同一个web容器下的url&#xff0c;其不能转向到其他的web路径上去&#xff0c;中间传递的是自己的容器内的request</strong>。在客户浏览器路径栏显示的仍然是其第一次访问的路径&#xff0c;也就是说客户是感觉不到服务器做了转发的。转发行为是浏览器只做了一次访问请求。</p>
+<ul><li><strong>重定向过程</strong>&#xff1a;客户浏览器发送http请求----》web服务器接受后发送302状态码响应及对应新的location给客户浏览器–》客户浏览器发现 是302响应&#xff0c;则自动再发送一个新的http请求&#xff0c;请求url是新的location地址----》服务器根据此请求寻找资源并发送给客户。</li></ul>
+<p>在这里 <strong>location可以重定向到任意URL&#xff0c;既然是浏览器重新发出了请求&#xff0c;则就没有什么request传递的概念了</strong>。在客户浏览器路径栏显示的是其重定向的 路径&#xff0c;客户可以观察到地址的变化的。重定向行为是浏览器做了至少两次的访问请求的</p>
+<h3><a rel="noopener noreferrer" id="_234"></a>二者的主要区别</h3>
+<p>从以下几个浅层的角度分别来看下二者的区别&#xff1a;</p>
+<ol><li> <p><strong>从地址栏显示的角度来看</strong>&#xff1a;</p>
+  <ul><li>forward&#xff1a;是服务器请求资源,服务器直接访问目标地址的URL&#xff0c;把那个URL的响应内容读取过来&#xff0c;然后把这些内容再发给浏览器&#xff0c;浏览器根本不知道服务器发送的内容从哪里来的,所以它的地址栏还是原来的地址&#xff1b;</li><li>redirect&#xff1a;是服务端根据逻辑发送一个状态码告诉浏览器重新去请求那个地址&#xff0c;所以地址栏显示的是新的URL.</li></ul> </li><li> <p><strong>从数据共享的角度来看</strong>&#xff1a;</p>
+  <ul><li>forward&#xff1a;转发页面和转发到的页面可以共享request里面的数据.</li><li>redirect&#xff1a;请求页面和重定向页面不可以共享request里面的数据</li></ul> </li><li> <p><strong>从使用场景的角度来看</strong>&#xff1a;</p>
+  <ul><li>forward: 一般用于用户登陆的时候&#xff0c;根据角色转发到相应的模块.</li><li>redirect: 一般用于用户注销登陆时返回主页面和跳转到其它的网站等.</li></ul> </li><li> <p><strong>从请求效率的角度来看</strong>&#xff1a;</p>
+  <ul><li>forward: 高&#xff0c;因为forwar全程依然在一个请求里&#xff0c;所以效率较高</li><li>redirect: 低&#xff0c;因为至少发生了两次请求&#xff0c;所以效率一般较低</li></ul> </li><li> <p>从使用优先级角度来看&#xff1a;</p>
+  <ul><li>优先选择转发&#xff0c;因为转发效率更高</li><li>在同一个 Web 应用程序的两个请求间传递数据时&#xff0c;采用转发</li><li><strong>如果需要跳转到其他服务器上的资源&#xff0c;则必须使用重定向</strong></li></ul> </li></ol>
+<p>理解了二者的区别我们来看一下写法&#xff1a;</p>
+<pre><code class="prism language-java">  <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+        <span class="token comment">//请求转发的写法</span>
+        RequestDispatcher requestDispatcher<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getRequestDispatcher</span><span class="token punctuation">(</span><span class="token string">&#34;/first.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        requestDispatcher<span class="token punctuation">.</span><span class="token function">forward</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span>response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">//重定向的写法</span>
+        response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span><span class="token string">&#34;/first.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>具体的使用区别可以参照&#xff1a;<a href="https://tianmaolin.blog.csdn.net/article/details/118735843" rel="nofollow"><strong>JSP内置对象</strong></a>。</p>
+<h2><a rel="noopener noreferrer" id="Servlet_271"></a>Servlet同步问题</h2>
+<p>Servlet在多线程下其本身并不是线程安全的。首先<strong>明白几个前置概念</strong>&#xff1a;</p>
+<ul><li>JSP/Servlet默认是以多线程模式执行的。</li><li>Servlet本身是单实例的&#xff0c;当有多个用户访问某个Servlet会访问该唯一实例中的成员变量。</li></ul>
+<p>每个浏览器各自创建的request请求当然是不一样的&#xff0c;都有各自的set和getattribute方法&#xff0c;互不干扰&#xff0c;即使是session也是如此&#xff0c;各自的set和getattribute互不干扰。只有application例外&#xff0c;作用于整个服务器 。<strong>但是以上说法皆是基于变量是局部变量&#xff0c;如果是成员变量&#xff0c;由于servlet是单实例的&#xff0c;所以会出现线程紊乱现象</strong></p>
+<h3><a rel="noopener noreferrer" id="_277"></a>问题示例</h3>
+<p>例如我们在Servlet里定义一个成员变量&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">&#64;WebServlet</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;Servlet&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;/myFirstServlet&#34;</span><span class="token punctuation">,</span>initParams <span class="token operator">&#61;</span> <span class="token punctuation">{<!-- --></span> <span class="token annotation punctuation">&#64;WebInitParam</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;name&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token annotation punctuation">&#64;WebInitParam</span><span class="token punctuation">(</span>name <span class="token operator">&#61;</span> <span class="token string">&#34;age&#34;</span><span class="token punctuation">,</span> value <span class="token operator">&#61;</span> <span class="token string">&#34;27&#34;</span><span class="token punctuation">)</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FirstServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">private</span> String username<span class="token punctuation">;</span>  <span class="token comment">//成员变量</span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+        <span class="token keyword">this</span><span class="token punctuation">.</span>username<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">5000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        request<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span>username<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        request<span class="token punctuation">.</span><span class="token function">getRequestDispatcher</span><span class="token punctuation">(</span><span class="token string">&#34;jsp/result.jsp&#34;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forward</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>返回的结果的jsp页面为&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  Created by IntelliJ IDEA<span class="token punctuation">.</span>
+  User<span class="token operator">:</span> tianmaolin
+  Date<span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">14</span>
+  Time<span class="token operator">:</span> <span class="token number">11</span><span class="token operator">:</span><span class="token number">32</span> 上午
+  To change <span class="token keyword">this</span> template use File <span class="token operator">|</span> Settings <span class="token operator">|</span> File Templates<span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics function"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics function"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics function"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>跳转的结果页面<span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics function"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token generics function"><span class="token punctuation">&lt;</span>a<span class="token punctuation">&gt;</span></span>我是跳转后的结果页面<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>request<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<p>当有两个请求同时到达时&#xff0c;第一个用户会发现自己设置的值没有生效(因为休眠了5秒&#xff0c;这里模拟线程并发)&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-11-7c0a6800d4.png" loading="lazy"><br /> 最终两个页面都会显示同一个&#xff0c;也就是后来的那个值。<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-12-5a7c82184c.png" loading="lazy"><br /> 对于request作用域&#xff0c;一个浏览器的两个请求会发生这个问题&#xff0c;对于session作用域&#xff0c;两个浏览器的两个请求也会发生这个问题。需要注意的是无论是request还是session&#xff0c;他们的作用域都没有改变&#xff0c;出现这种现象的原因是他们获取的usernam都来自Servlet实例&#xff0c;而一个Servlet实例从初始化生成之后直到销毁之前&#xff08;一般是服务器down&#xff09;一直存在&#xff0c;所以它们才看起来能像application一样在作用域隔离的情况下还能一直获取到相同的值。<font color="red"><strong>需要厘清一个概念&#xff0c;作用域与具体的Servlet无关</strong></font></p>
+<p>而application作用域不会有问题&#xff0c;因为application本来就是服务共享的&#xff0c;在我们的预期之中。</p>
+<h3><a rel="noopener noreferrer" id="_330"></a>解决方法</h3>
+<p>很简单&#xff0c;当我们不使用成员变量的时候就不会有这个问题&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FirstServlet</span> <span class="token keyword">extends</span> <span class="token class-name">HttpServlet</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token annotation punctuation">&#64;Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">doGet</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> ServletException<span class="token punctuation">,</span> IOException <span class="token punctuation">{<!-- --></span>
+
+        String username<span class="token operator">&#61;</span>request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{<!-- --></span>
+            java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">5000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        request<span class="token punctuation">.</span><span class="token function">setAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">,</span> username<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PrintWriter out<span class="token operator">&#61;</span>response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>request<span class="token punctuation">.</span><span class="token function">getAttribute</span><span class="token punctuation">(</span><span class="token string">&#34;username&#34;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+</code></pre>
+<p><img alt="在这里插入图片描述" src="./posts/assets/118962991-13-1e7811d528.png" loading="lazy"><br /> 两个请求都获取了自己设置的值。<br /> <img alt="在这里插入图片描述" src="./posts/assets/118962991-14-04a2287288.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_357"></a>使用规范</h3>
+<p>如果在类中定义成员变量&#xff0c;而在service中根据不同的线程对该成员变量进行更改&#xff0c;那么在并发的时候就会引起错误。</p>
+<p><strong>最好是在方法中&#xff0c;定义局部变量&#xff0c;而不是类变量或者对象的成员变量</strong>&#xff0c;由于方法中的局部变量是在栈中&#xff0c;彼此各自都拥有独立的运行空间而不会互相干扰&#xff0c;因此才做到线程安全</p>
+<h2><a rel="noopener noreferrer" id="_362"></a>总结一下</h2>
+<p>其实Servlet中的对象和JSP中的类似&#xff0c;重点掌握request和response就行了&#xff0c;而这两个之中再了解了请求转发和重定向的原理即可。当然Servlet是单实例这一点也需要知道&#xff0c;在并发的情况下&#xff0c;可能会有多线程下的并发问题。</p>

@@ -1,0 +1,394 @@
+<p>第一次看到这章的标题有点懵&#xff0c;啥是合式类型&#xff0c;是一种值类型和引用类型之外的类型么&#xff0c;以前也没有听说过呀&#xff1f;其实并不是&#xff0c;合式类型其实说白了就是<strong>合适的类型</strong>&#xff0c;如何定义类型&#xff0c;如何操作类型才更好&#xff0c;<strong>如何创建合适的值类型和引用类型</strong>&#xff1f;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103842234-01-724ff05d93.png" loading="lazy"><br />
+这一章的内容比较杂&#xff0c;基本上类似于基础部分的终结之章&#xff0c;回顾下之前学习的章节&#xff0c;1-5章介绍了结构性编程的基础知识&#xff0c;6-10章来介绍面向对象的内容&#xff0c;加上接下来11章对异常处理的延伸学习后&#xff0c;基本内容部分相当于结束了&#xff01;</p>
+<h3><a rel="noopener noreferrer" id="Object_3"></a>重写Object的成员</h3>
+<p>回顾一下万类始祖的Object所具有的虚方法&#xff0c;除了<strong>Finalize方法不能直接调用</strong>以外&#xff0c;我们有三个虚方法可以用来重写&#xff0c;<strong>用来比较对象的Equals和GetHashCode&#xff0c;以及用于返回字符串的ToString</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103842234-02-b8b4f5fbf1.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="ToSring_6"></a>重写ToSring</h4>
+<p>为啥要重写ToString&#xff0c;因为Object提供的默认ToString方法提供的<strong>是对当前类型的完全限定名输出</strong>&#xff0c;这个完全没有任何意义啊&#xff0c;我输出这个对象的字符串信息是想知道一些有用的信息&#xff0c;所以一定要重写。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103842234-03-d896848f7f.png" loading="lazy"><br />
+例如我想输出这个坐标对象的具体坐标&#xff0c;就要通过重写的方式来获得&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103842234-04-9931793daa.png" loading="lazy"><br />
+重写ToString需要注意以下几条原则&#xff1a;</p>
+<ul><li><strong>如需返回有用的、面向开发人员的诊断字符串&#xff0c;就要重写ToString&#xff08;&#xff09;</strong>。</li><li>要使ToString&#xff08;&#xff09;返回的字符串简短。</li><li>不要从ToString&#xff08;&#xff09;返回空字符串来代表“空”&#xff08;null&#xff09;。</li><li><strong>避免ToString&#xff08;&#xff09;引发异常或造成可观察到的副作用&#xff08;改变对象状态&#xff09;</strong>。</li><li>如果返回值与语言文化相关或要求格式化&#xff08;例如DateTime&#xff09;&#xff0c;就要重载ToString&#xff08;string format&#xff09;或实现IFormattable。</li><li>考虑从ToString&#xff08;&#xff09;返回独一无二的字符串以标识对象实例。</li></ul>
+<p>总而言之就是要<strong>返回有用信息并且千万别在重写的方法里抛异常</strong>。</p>
+<h4><a rel="noopener noreferrer" id="GetHashCode_22"></a>重写GetHashCode()</h4>
+<p>GetHashCode方法是用来获取和对象对应的哈希码&#xff0c;有两种情况必须重写该方法&#xff1a;</p>
+<ul><li><strong>重写Equals()方法一定要重写GetHashCode()</strong>&#xff0c;否则编译器会有警告</li><li><strong>将类作为hash表集合的键使用</strong>的时候也要重写GetHashCode()。</li></ul>
+<p>要获得良好的性能实现需要参照以下重写规则&#xff08;<strong>“必须”是指必须满足的要求&#xff0c;“性能”是指为了增强性能而需要采取的措施&#xff0c;“安全性”是指为了保障安全性而需要采取的措施</strong>&#xff09;&#xff1a;<br />
+&#xff09;。</p>
+<ul><li><strong>必须</strong>&#xff1a;<strong>相等的对象必然有相等的哈希码</strong>&#xff08;若a.Equals&#xff08;b&#xff09;&#xff0c;则a.GetHashCode&#xff08;&#xff09;&#61;&#61;b.GetHashCode&#xff08;&#xff09;&#xff09;。<font color="red"><strong>也就是相等的哈希码是对象相等性的必要不充分条件&#xff0c;对象相等则哈希码一定相等&#xff0c;哈希码相等对象不一定相等&#xff0c;还需要其它条件来满足</strong></font></li><li><strong>必须</strong>&#xff1a;在特定对象的生存期内&#xff0c;GetHashCode&#xff08;&#xff09;始终返回相同的值&#xff0c;即使对象的数据发生了改变。许多时候应缓存方法的返回值&#xff0c;从而确保这一点。</li><li><strong>必须</strong>&#xff1a;<font color="red"><strong>GetHashCode&#xff08;&#xff09;不应引发任何异常</strong></font>&#xff1b;GetHashCode&#xff08;&#xff09;总是成功返回一个值。</li><li><strong>性能</strong>&#xff1a;<strong>哈希码应尽可能唯一</strong>。但由于哈希码只是返回一个int&#xff0c;所以只要一种对象包含的值比一个int能够容纳得多&#xff08;这就几乎涵盖所有类型了&#xff09;&#xff0c;那么哈希码肯定存在重复。一个很容易想到的例子是long&#xff0c;因为long的取值范围大于int&#xff0c;所以假如规定每个int值都只能标识一个不同的long值&#xff0c;那么肯定剩下大量long值没法标识。</li><li><strong>性能</strong>&#xff1a;<strong>可能的哈希码值应当在int的范围内平均分布</strong>。例如&#xff0c;创建哈希码时如果没有考虑到字符串在拉丁语言中的分布主要集中在初始的128个ASCII字符上&#xff0c;就会造成字符串值的分布非常不平均&#xff0c;所以不能算是好的GetHashCode&#xff08;&#xff09;算法。</li><li><strong>性能</strong>&#xff1a;GetHashCode&#xff08;&#xff09;的性能应该优化。GetHashCode&#xff08;&#xff09;通常在Equals&#xff08;&#xff09;实现中用于“短路”一次完整的相等性比较&#xff08;哈希码都不同&#xff0c;自然没必要进行完整的相等性比较了&#xff09;。所以&#xff0c;<strong>当类型作为字典集合中的键类型使用时&#xff0c;会频繁调用该方法</strong>。</li><li><strong>性能</strong>&#xff1a;<strong>两个对象的细微差异应造成哈希值的极大差异</strong>。理想情况下&#xff0c;1 bit的差异应造成哈希码平均16 bits的差异。这有助于确保不管哈希表如何对哈希值进行“装桶”&#xff08;bucketing&#xff09;&#xff0c;也能保持良好的平衡性。</li><li><strong>安全性</strong>&#xff1a;攻击者应难以伪造具有特定哈希码的对象。攻击手法是向哈希表中填写大量哈希为同一个值的数据。如哈希表的实现不高效&#xff0c;就易于受到DOS&#xff08;拒绝服务&#xff09;攻击。</li></ul>
+<p>补充说明一点&#xff1a;高效的哈希表实现就是指哈希值可以良好的均匀的随机分布。</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter10<span class="token punctuation">.</span>Listing10_02
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">public</span> <span class="token keyword">struct</span> Coordinate
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Coordinate</span><span class="token punctuation">(</span><span class="token class-name">Longitude</span> longitude<span class="token punctuation">,</span> <span class="token class-name">Latitude</span> latitude<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Longitude <span class="token operator">&#61;</span> longitude<span class="token punctuation">;</span>
+            Latitude <span class="token operator">&#61;</span> latitude<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">Longitude</span> Longitude <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token class-name">Latitude</span> Latitude <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">int</span> <span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> hashCode <span class="token operator">&#61;</span> Longitude<span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// As long as the hash codes are not equal</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>Longitude<span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> Latitude<span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                hashCode <span class="token operator">^</span><span class="token operator">&#61;</span> Latitude<span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">// eXclusive OR</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> hashCode<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">string</span> <span class="token function">ToString</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">string</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">&#34;{0} {1}&#34;</span><span class="token punctuation">,</span> Longitude<span class="token punctuation">,</span> Latitude<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">struct</span> Longitude <span class="token punctuation">{<!-- --></span> <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">struct</span> Latitude <span class="token punctuation">{<!-- --></span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这里使用了异或运算&#xff0c;<strong>如果a、b两个值不相同&#xff0c;则异或结果为1。如果a、b两个值相同&#xff0c;异或结果为0。</strong></p>
+<ul><li><strong>首先向来自相关类型的哈希码应用XOR操作符</strong>&#xff0c;并确保操作数不相近或相等&#xff08;否则结果全零&#xff09;</li><li><strong>在操作数相近或相等的情况下&#xff0c;考虑改为使用移位&#xff08;bit shift&#xff09;和加法&#xff08;add&#xff09;操作</strong>。其他备选的操作符——AND和OR——具有类似的限制&#xff0c;但这些限制会发生得更加频繁。多次应用AND&#xff0c;会逐渐变成全为0&#xff1b;而多次应用OR&#xff0c;会逐渐变成全为1。</li></ul>
+<p>这里的Longitude和Latitude都是只读自动属性&#xff0c;所以值不会变&#xff0c;如果是会发生改变的值&#xff0c;则应该对哈希码进行缓存&#xff0c;来<strong>满足生命周期内哈希码的唯一性原则</strong>。</p>
+<h4><a rel="noopener noreferrer" id="Equals_86"></a>重写Equals()</h4>
+<p>重写Equal和重写GetHashCode有一些区别&#xff0c;这要从<strong>对象同一性</strong>和<strong>相等的对象值</strong>说起&#xff1a;</p>
+<ul><li><strong>两个引用假如引用同一个实例&#xff0c;就说这两个引用是同一的</strong>。object&#xff08;因而延展到所有派生类型&#xff09;提供名为**ReferenceEquals&#xff08;&#xff09;**的静态方法来显式检查对象同一性</li><li>引用同一性只是“相等性”的一个例子。<strong>两个对象实例的成员值部分或全部相等&#xff0c;也可以说它们相等</strong>。</li></ul>
+<p>也就是同一个引用只是对象相等的一部分例子&#xff0c;两个对象实例的成员值部分或全部相等&#xff0c;也可以说它们相等。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103842234-05-3c34c21cba.png" loading="lazy"><br />
+例如重写Equals方法后&#xff0c;就可以认为对象相等&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">TML</span> tml1 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">TML</span><span class="token punctuation">(</span><span class="token string">&#34;PV&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;1000&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;09187234&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">TML</span> tml2 <span class="token operator">&#61;</span> tml1<span class="token punctuation">;</span>
+            <span class="token class-name">TML</span> tml3 <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">TML</span><span class="token punctuation">(</span><span class="token string">&#34;PV&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;1000&#34;</span><span class="token punctuation">,</span> <span class="token string">&#34;09187234&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 对象是不是引用同一</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>TML<span class="token punctuation">.</span><span class="token function">ReferenceEquals</span><span class="token punctuation">(</span>tml1<span class="token punctuation">,</span> tml2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">&#34;serialNumber1 does NOT &#34;</span> <span class="token operator">&#43;</span> <span class="token string">&#34;reference equal serialNumber2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 不引用同一总相等吧</span>
+            <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>tml1<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>tml2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">&#34;serialNumber1 does NOT equal serialNumber2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">else</span>
+            <span class="token punctuation">{<!-- --></span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;serialNumber1 reference equals serialNumber2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;serialNumber1 equals serialNumber2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token comment">// 对象是不是引用同一</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>TML<span class="token punctuation">.</span><span class="token function">ReferenceEquals</span><span class="token punctuation">(</span>tml1<span class="token punctuation">,</span> tml3<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">&#34;serialNumber1 DOES reference &#34;</span> <span class="token operator">&#43;</span> <span class="token string">&#34;equal serialNumber3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 不引用同一总相等吧</span>
+            <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>tml1<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>tml3<span class="token punctuation">)</span> <span class="token operator">||</span>tml1<span class="token operator">!&#61;</span> tml3<span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">&#34;serialNumber1 does NOT equal serialNumber3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token string">&#34;serialNumber1 equals serialNumber3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TML</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">TML</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> price<span class="token punctuation">,</span> <span class="token keyword">string</span> number<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+            Price <span class="token operator">&#61;</span> price<span class="token punctuation">;</span>
+            Number <span class="token operator">&#61;</span> number<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Price <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Number <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>输出如下&#xff1a;</p>
+<pre><code class="prism language-csharp">serialNumber1 reference equals serialNumber2
+serialNumber1 equals serialNumber2
+serialNumber1 equals serialNumber3
+</code></pre>
+<p>其中serialNumber1 和serialNumber2是引用同一&#xff0c;<strong>serialNumber1 和serialNumber3是重写Equals方法和&#xff01;&#61;操作符后的相等性验证通过</strong>&#xff0c;这个验证接下来会说到。注意这里的serialNumber1 和serialNumber3相等需要的场景也有很多&#xff0c;很多时候可以用于查重&#xff0c;如果不通过重写的方式验证相等则只能认定引用同一才是相等&#xff0c;这样通过不同方式创建的数据就都能逃过查重检验了。这里需要注意的两点&#xff1a;</p>
+<ul><li><font color="red"><strong>只有引用类型才能使用ReferenceEquals方法判断&#xff0c;值类型的调用永远是false</strong></font>&#xff0c;因为值类型要调用该方法一定要装箱为object&#xff0c;而各自装箱产生的引用一定不是同一个。</li><li><font color="red"><strong>Object.Equals&#xff08;&#xff09;的实现只是简单调用了一下ReferenceEquals方法&#xff0c;所以用处很有限</strong></font>。大多数情况下需要重写。</li></ul>
+<p>了解了引用同一性和想等性我们来看看重写Equals的步骤吧&#xff1a;</p>
+<ol><li>检查是否为null--------<strong>不为null才能继续哦&#xff0c;否则没有比较的必要</strong></li><li>如果是引用类型&#xff0c;就检查引用是否相等------<strong>引用同一则一定相等</strong></li><li>检查数据类型是否相同</li><li>调用一个指定了具体类型的辅助方法&#xff0c;它的操作数是具体要比较的类型而不是object&#xff08;例如代码清单10.5中的Equals&#xff08;Coordinate obj&#xff09;方法&#xff09;</li><li>可能要检查哈希码是否相等来短路一次全面的、逐字段的比较---------相等的两个对象不可能哈希码不同&#xff0c;<strong>哈希码不同则一定不等</strong>,但是有时候散列不均匀或者没有缓存&#xff0c;则可能导致返回的hash值并非独一无二&#xff0c;所以不能依赖它判断亮哥对象是否相等。</li><li>如基类重写了Equals&#xff08;&#xff09;&#xff0c;就检查base.Equals&#xff08;&#xff09;</li><li><font color="red"><strong>比较每一个标识字段&#xff08;关键字段&#xff09;&#xff0c;判断是否相等</strong></font></li><li><font color="red"><strong>重写GetHashCode&#xff08;&#xff09;</strong></font></li><li><font color="red"><strong>重写&#61;&#61;和&#xff01;&#61;操作符&#xff08;参见下一节&#xff09;</strong></font></li></ol>
+<p>可以通过如下代码实现来验证步骤&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">namespace</span> AddisonWesley<span class="token punctuation">.</span>Michaelis<span class="token punctuation">.</span>EssentialCSharp<span class="token punctuation">.</span>Chapter10<span class="token punctuation">.</span>Listing10_05
+<span class="token punctuation">{<!-- --></span>
+    <span class="token keyword">using</span> System<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Program</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">//...</span>
+
+            <span class="token class-name">Coordinate</span> coordinate1 <span class="token operator">&#61;</span>
+                <span class="token keyword">new</span> <span class="token class-name">Coordinate</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Longitude</span><span class="token punctuation">(</span><span class="token number">48</span><span class="token punctuation">,</span> <span class="token number">52</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                                <span class="token keyword">new</span> <span class="token class-name">Latitude</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// Value types will never be reference equal</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>Coordinate<span class="token punctuation">.</span><span class="token function">ReferenceEquals</span><span class="token punctuation">(</span>coordinate1<span class="token punctuation">,</span>
+                coordinate1<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span>
+                    <span class="token string">&#34;coordinate1 reference equals coordinate1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>
+                <span class="token string">&#34;coordinate1 does NOT reference equal itself&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">struct</span> Coordinate <span class="token punctuation">:</span> IEquatable<span class="token operator">&lt;</span>Coordinate<span class="token operator">&gt;</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Coordinate</span><span class="token punctuation">(</span><span class="token class-name">Longitude</span> longitude<span class="token punctuation">,</span> <span class="token class-name">Latitude</span> latitude<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Longitude <span class="token operator">&#61;</span> longitude<span class="token punctuation">;</span>
+            Latitude <span class="token operator">&#61;</span> latitude<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token class-name">Longitude</span> Longitude <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token class-name">Latitude</span> Latitude <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">bool</span> <span class="token function">Equals</span><span class="token punctuation">(</span><span class="token keyword">object</span> obj<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// STEP 1: Check for null</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>obj <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// STEP 3: Equivalent data types</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">GetType</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!&#61;</span> obj<span class="token punctuation">.</span><span class="token function">GetType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token function">Equals</span><span class="token punctuation">(</span><span class="token punctuation">(</span>Coordinate<span class="token punctuation">)</span>obj<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">Equals</span><span class="token punctuation">(</span><span class="token class-name">Coordinate</span> obj<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// STEP 1: Check for null if a reference type</span>
+            <span class="token comment">// (e.g., a reference type)</span>
+            <span class="token comment">// if (obj &#61;&#61; null)</span>
+            <span class="token comment">// {<!-- --></span>
+            <span class="token comment">//     return false;</span>
+            <span class="token comment">// }</span>
+
+            <span class="token comment">// STEP 2: Check for ReferenceEquals if this </span>
+            <span class="token comment">// is a reference type.</span>
+            <span class="token comment">// if ( ReferenceEquals(this, obj))</span>
+            <span class="token comment">// {<!-- --></span>
+            <span class="token comment">//   return true;</span>
+            <span class="token comment">// }</span>
+
+            <span class="token comment">// STEP 4: Possibly check for equivalent hash codes.</span>
+            <span class="token comment">// if (this.GetHashCode() !&#61; obj.GetHashCode())</span>
+            <span class="token comment">// {<!-- --></span>
+            <span class="token comment">//    return false;</span>
+            <span class="token comment">// } </span>
+
+            <span class="token comment">// STEP 5: Check base.Equals if base overrides Equals().</span>
+            <span class="token comment">// System.Diagnostics.Debug.Assert(</span>
+            <span class="token comment">//     base.GetType() !&#61; typeof(object) );</span>
+            <span class="token comment">// if ( !base.Equals(obj) )</span>
+            <span class="token comment">// {<!-- --></span>
+            <span class="token comment">//    return false;</span>
+            <span class="token comment">// } </span>
+
+            <span class="token comment">// STEP 6: Compare identifying fields for equality</span>
+            <span class="token comment">// using an overload of Equals on Longitude</span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>Longitude<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>obj<span class="token punctuation">.</span>Longitude<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span>
+                <span class="token punctuation">(</span>Latitude<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>obj<span class="token punctuation">.</span>Latitude<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// STEP 7: Override GetHashCode</span>
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">int</span> <span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">int</span> hashCode <span class="token operator">&#61;</span> Longitude<span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            hashCode <span class="token operator">^</span><span class="token operator">&#61;</span> Latitude<span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// Xor (eXclusive OR)</span>
+            <span class="token keyword">return</span> hashCode<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token keyword">operator</span> <span class="token operator">&#61;&#61;</span><span class="token punctuation">(</span>
+            <span class="token class-name">Coordinate</span> leftHandSide<span class="token punctuation">,</span>
+            <span class="token class-name">Coordinate</span> rightHandSide<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span>leftHandSide<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>rightHandSide<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token keyword">operator</span> <span class="token operator">!&#61;</span><span class="token punctuation">(</span>
+            <span class="token class-name">Coordinate</span> leftHandSide<span class="token punctuation">,</span>
+            <span class="token class-name">Coordinate</span> rightHandSide<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token operator">!</span><span class="token punctuation">(</span>leftHandSide<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>rightHandSide<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">struct</span> Longitude
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Longitude</span><span class="token punctuation">(</span><span class="token keyword">int</span> x<span class="token punctuation">,</span> <span class="token keyword">int</span> y<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">struct</span> Latitude
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Latitude</span><span class="token punctuation">(</span><span class="token keyword">int</span> x<span class="token punctuation">,</span> <span class="token keyword">int</span> y<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>该实现的前两个检查很容易理解。但注意如果类型密封&#xff0c;步骤3可以省略&#xff0c;<strong>步骤4&#xff5e;6在Equals&#xff08;&#xff09;的一个重载版本中进行&#xff0c;它获取Coordinate类型的对象作为参数。这样在比较两个Coordinate对象时&#xff0c;就可完全避免执行Equals&#xff08;object obj&#xff09;及其GetType&#xff08;&#xff09;检查</strong>。要注意如下设计规范&#xff1a;</p>
+<ul><li><font color="red"><strong>要一起实现GetHashCode&#xff08;&#xff09;、Equals&#xff08;&#xff09;、&#61;&#61;操作符和&#xff01;&#61;操作符&#xff0c;缺一不可</strong></font>。</li><li><font color="red"><strong>要用相同算法实现Equals&#xff08;&#xff09;、&#61;&#61;和&#xff01;&#61;</strong></font>。</li><li><strong>避免在GetHashCode&#xff08;&#xff09;、Equals&#xff08;&#xff09;、&#61;&#61;和&#xff01;&#61;的实现中引发异常</strong>。</li><li>避免在可变引用类型&#xff08;也就是Object&#xff09;上重载相等性操作符&#xff08;如重载的实现速度过慢&#xff0c;也不要重载&#xff09;。</li><li>要在实现IComparable时实现与相等性相关的所有方法。</li></ul>
+<p>说了这么多&#xff0c;实际上重写Equal就是为了达到标识数据相等的目的。这里为啥不用GetHashCode&#xff0c;因为这里没有缓存哦&#xff0c;所以不能百分百保证相等的对象就一定返回相等的hash&#xff0c;有可能因为缓存没有处理好导致其不等&#xff0c;实际上却是相等的。</p>
+<h4><a rel="noopener noreferrer" id="GetHashCodeEquals_312"></a>用元组重写GetHashCode()和Equals()</h4>
+<p>其实GetHashCode()和Equals()的主要作用就是克服Object呆板简单的判断&#xff0c;但是实现起来却很繁琐&#xff0c;<strong>需要对所有关键标识数据进行操作</strong>。对于Equals&#xff08;Coordinate coordinate&#xff09;&#xff0c;可将每个标识&#xff08;关键&#xff09;成员合并到一个元组中&#xff0c;并将它们和同类型的目标实参比较&#xff1a;</p>
+<pre><code class="prism language-csharp">    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TML</span> <span class="token punctuation">:</span> <span class="token class-name">IEquatable</span><span class="token operator">&lt;</span>TML<span class="token operator">&gt;</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">TML</span><span class="token punctuation">(</span><span class="token keyword">string</span> name<span class="token punctuation">,</span> <span class="token keyword">string</span> price<span class="token punctuation">,</span> <span class="token keyword">string</span> number<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Name <span class="token operator">&#61;</span> name<span class="token punctuation">;</span>
+            Price <span class="token operator">&#61;</span> price<span class="token punctuation">;</span>
+            Number <span class="token operator">&#61;</span> number<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Name <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Price <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Number <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">Equals</span><span class="token punctuation">(</span><span class="token class-name">TML</span> tml<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span>Name<span class="token punctuation">,</span> Price<span class="token punctuation">,</span> Number<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span><span class="token punctuation">(</span>tml<span class="token punctuation">.</span>Name<span class="token punctuation">,</span> tml<span class="token punctuation">.</span>Price<span class="token punctuation">,</span> tml<span class="token punctuation">.</span>Number<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">override</span> <span class="token keyword">int</span> <span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span>Name<span class="token punctuation">,</span> Price<span class="token punctuation">,</span> Number<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">GetHashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>使用元组&#xff0c;所有的底层实现都由元组搞定&#xff0c;只需要标识用来比较的关键成员信息就行了。</p>
+<h3><a rel="noopener noreferrer" id="_343"></a>操作符重载</h3>
+<p>实现操作符的过程称为操作符重载&#xff0c;不仅仅包括&#61;&#61;和!&#61;&#xff0c;还支持一些其它操作符&#xff0c;当然在使用的时候需要注意以下两点&#xff0c;防止出现误操作&#xff1a;</p>
+<ul><li>赋值运算符&#61;不支持重载</li><li>重载的操作符不能通过IntelliSense呈现&#xff0c;也就是不能智能提示。</li><li><font color="red"><strong>&#61;&#61;默认也只是执行引用相等性检查&#xff0c;所以为了保证和Equals的同一性&#xff0c;一定也要重写该操作符&#xff01;</strong></font></li></ul>
+<p>对于&#61;&#61;和!&#61;操作符而言&#xff0c;其操作行为可以直接委托给Equals&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="_351"></a>&#61;&#61;和!&#61;重载</h4>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">sealed</span> <span class="token keyword">class</span> <span class="token class-name">ProductSerialNumber</span>
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">ProductSerialNumber</span><span class="token punctuation">(</span>
+            <span class="token keyword">string</span> productSeries<span class="token punctuation">,</span> <span class="token keyword">int</span> model<span class="token punctuation">,</span> <span class="token keyword">long</span> id<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            ProductSeries <span class="token operator">&#61;</span> productSeries<span class="token punctuation">;</span>
+            Model <span class="token operator">&#61;</span> model<span class="token punctuation">;</span>
+            Id <span class="token operator">&#61;</span> id<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">string</span> ProductSeries <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> Model <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">long</span> Id <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">bool</span> <span class="token function">Equals</span><span class="token punctuation">(</span><span class="token class-name">ProductSerialNumber</span> obj<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>obj <span class="token operator">!&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>ProductSeries <span class="token operator">&#61;&#61;</span> obj<span class="token punctuation">.</span>ProductSeries<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>Model <span class="token operator">&#61;&#61;</span> obj<span class="token punctuation">.</span>Model<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>Id <span class="token operator">&#61;&#61;</span> obj<span class="token punctuation">.</span>Id<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token keyword">operator</span> <span class="token operator">&#61;&#61;</span><span class="token punctuation">(</span>
+            <span class="token class-name">ProductSerialNumber</span> leftHandSide<span class="token punctuation">,</span>
+            <span class="token class-name">ProductSerialNumber</span> rightHandSide<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">ReferenceEquals</span><span class="token punctuation">(</span>leftHandSide<span class="token punctuation">,</span> <span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">{<!-- --></span>
+                <span class="token keyword">return</span> <span class="token function">ReferenceEquals</span><span class="token punctuation">(</span>rightHandSide<span class="token punctuation">,</span> <span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">return</span> <span class="token punctuation">(</span>leftHandSide<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>rightHandSide<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">bool</span> <span class="token keyword">operator</span> <span class="token operator">!&#61;</span><span class="token punctuation">(</span>
+            <span class="token class-name">ProductSerialNumber</span> leftHandSide<span class="token punctuation">,</span>
+            <span class="token class-name">ProductSerialNumber</span> rightHandSide<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token operator">!</span><span class="token punctuation">(</span>leftHandSide <span class="token operator">&#61;&#61;</span> rightHandSide<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>这里需要注意的是&#xff0c;<strong>一定不要用相等性操作符执行空检查&#xff08;leftHandSide&#61;&#61;null&#xff09;。否则会递归调用方法&#xff0c;造成只有栈溢出才会终止的死循环</strong>。相反&#xff0c;应调用ReferenceEquals&#xff08;&#xff09;检查是否为空。</p>
+<h4><a rel="noopener noreferrer" id="_394"></a>&#43;和-重载</h4>
+<p>定义两个对象之间的&#43;和-实际上也就是定义其关键数据的&#43;和-&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">struct</span> Coordinate
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Coordinate</span><span class="token punctuation">(</span><span class="token class-name">Longitude</span> longitude<span class="token punctuation">,</span> <span class="token class-name">Latitude</span> latitude<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Longitude <span class="token operator">&#61;</span> longitude<span class="token punctuation">;</span>
+            Latitude <span class="token operator">&#61;</span> latitude<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">Coordinate</span> <span class="token keyword">operator</span> <span class="token operator">&#43;</span><span class="token punctuation">(</span>
+            <span class="token class-name">Coordinate</span> source<span class="token punctuation">,</span> <span class="token class-name">Arc</span> arc<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Coordinate</span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Coordinate</span><span class="token punctuation">(</span>
+                <span class="token keyword">new</span> <span class="token class-name">Longitude</span><span class="token punctuation">(</span>
+                    source<span class="token punctuation">.</span>Longitude <span class="token operator">&#43;</span> arc<span class="token punctuation">.</span>LongitudeDifference<span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token keyword">new</span> <span class="token class-name">Latitude</span><span class="token punctuation">(</span>
+                    source<span class="token punctuation">.</span>Latitude <span class="token operator">&#43;</span> arc<span class="token punctuation">.</span>LatitudeDifference<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">Coordinate</span> <span class="token keyword">operator</span> <span class="token operator">-</span><span class="token punctuation">(</span>
+            <span class="token class-name">Coordinate</span> source<span class="token punctuation">,</span> <span class="token class-name">Arc</span> arc<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token class-name">Coordinate</span> result <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Coordinate</span><span class="token punctuation">(</span>
+                <span class="token keyword">new</span> <span class="token class-name">Longitude</span><span class="token punctuation">(</span>
+                    source<span class="token punctuation">.</span>Longitude <span class="token operator">-</span> arc<span class="token punctuation">.</span>LongitudeDifference<span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token keyword">new</span> <span class="token class-name">Latitude</span><span class="token punctuation">(</span>
+                    source<span class="token punctuation">.</span>Latitude <span class="token operator">-</span> arc<span class="token punctuation">.</span>LatitudeDifference<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="_430"></a>转型操作符</h4>
+<p>怎么将值类型转换为一个不相干的引用类型呢&#xff1f;或者将值类型转换为一个不相干的结构&#xff0c;这需要定义一个转换器&#xff0c;例如转换double类型和高度类型Latitude&#xff1a;</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">public</span> <span class="token keyword">struct</span> Latitude
+    <span class="token punctuation">{<!-- --></span>
+        <span class="token keyword">public</span> <span class="token function">Latitude</span><span class="token punctuation">(</span><span class="token keyword">double</span> decimalDegrees<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            DecimalDegrees <span class="token operator">&#61;</span> <span class="token function">Normalize</span><span class="token punctuation">(</span>decimalDegrees<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">double</span> DecimalDegrees <span class="token punctuation">{<!-- --></span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+        <span class="token comment">// ...</span>
+
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">implicit</span> <span class="token keyword">operator</span> <span class="token keyword">double</span><span class="token punctuation">(</span><span class="token class-name">Latitude</span> latitude<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> latitude<span class="token punctuation">.</span>DecimalDegrees<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">implicit</span> <span class="token keyword">operator</span> <span class="token function">Latitude</span><span class="token punctuation">(</span><span class="token keyword">double</span> degrees<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Latitude</span><span class="token punctuation">(</span>degrees<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">double</span> <span class="token function">Normalize</span><span class="token punctuation">(</span><span class="token keyword">double</span> decimalDegrees<span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// here you would normalize the data</span>
+            <span class="token keyword">return</span> decimalDegrees<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+</code></pre>
+<p>说白了就是通过方法来换值&#xff0c;但是有一个需要注意的就是转换操作符<code>implicit operator&#xff08;隐式转换&#xff09;</code>&#xff0c;<code>explicit operator&#xff08;显式转换&#xff09;</code>&#xff0c;和之前的规范一样&#xff0c;<strong>如果判断是有损转换&#xff0c;一定声明为显式的&#xff0c;提醒操作者可能的精度丢失</strong>。</p>
+<p>小小的总结一下&#xff0c;其实本章这两部分内容都是围绕着优化现有Object以及C#提供的操作符的优化&#xff0c;大多数时候其它封装类都定义好了这些&#xff0c;但是我们需要知道&#xff0c;转换是怎么做的&#xff0c;有什么好的方式。明白原理&#xff01;</p>

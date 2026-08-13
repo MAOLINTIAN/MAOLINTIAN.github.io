@@ -1,0 +1,10 @@
+<p>在开发环境和测试环境创建好数据表后&#xff0c;我们想实现一键将建表语句及建索引语句等发到线上&#xff0c;有什么好的方式么&#xff1f;DateGrip可以轻松完成这个任务&#xff0c;例如我们想要将person表导出为建表语句<br />
+<img alt="在这里插入图片描述" src="./posts/assets/124746661-01-2147a4af5c.png" loading="lazy"><br />
+可以在要处理的表右键&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/124746661-02-d8d1a57b36.png" loading="lazy"><br />
+点击<code>SQL Generator</code>即可。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/124746661-03-24a970f2c5.png" loading="lazy"><br />
+但是因为建表和建索引语句是分开的&#xff0c;有些公司的上线申请在建表语句框是不允许创建索引的&#xff0c;那索引只能通过alter来创建上去&#xff0c;这样无疑很麻烦&#xff0c;得走两个审批&#xff0c;解决方案很简单&#xff0c;把创建索引sql包在建表语句中即可&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/124746661-04-e7f890692a.png" loading="lazy"><br />
+效果如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/124746661-05-be0a5426c9.png" loading="lazy"></p>

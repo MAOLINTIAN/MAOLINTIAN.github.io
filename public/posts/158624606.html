@@ -1,0 +1,99 @@
+<blockquote>
+ <p>本文旨在用通俗的语言和生动的比喻，帮你打通操作系统、Java并发、IO模型、数据库和消息中间件背后的性能设计思想。我们将从最基础的“用户态/内核态”开始，逐步剖析各种资源消耗的本质，最后解释为什么那些经典技术（如Reactor、锁升级、零拷贝）能提升性能。</p>
+</blockquote>
+<hr>
+<h2><a rel="noopener noreferrer" id="__6"></a>一 用户态与内核态：谁才是真正的“管理员”？</h2>
+<p>计算机系统中，CPU 执行指令时有两种不同的“权限级别”：</p>
+<ul>
+ <li><strong>用户态</strong>：普通应用程序运行的环境。就像公司里的普通员工，只能在工位上干活，不能碰核心设备（比如服务器电源、网络配置）。在用户态，代码不能直接访问硬件，也不能执行特权指令。</li>
+ <li><strong>内核态</strong>：操作系统内核运行的环境。就像公司的管理员，拥有最高权限，可以操作硬件、管理内存、调度线程。所有涉及资源分配、硬件交互的操作都必须在内核态完成。</li>
+</ul>
+<p><strong>为什么要有这种区分？</strong><br> 为了保证系统安全。如果任何程序都能直接操作硬件，病毒可以随意破坏磁盘，系统会乱套。所以，普通程序需要内核帮忙时，必须通过<strong>系统调用</strong>（System Call）——就像员工通过内部工单向管理员申请资源，这个过程会触发<strong>用户态→内核态</strong>的切换，处理完后再切回用户态。</p>
+<p><strong>切换的开销</strong>：<br> 切换本身需要保存当前状态（寄存器、栈指针）、检查权限、恢复新状态，这些都会消耗CPU周期。因此，<strong>频繁的用户态/内核态切换是性能杀手之一</strong>。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="_CPU__21"></a>二 CPU 和内存：计算机的两大核心资源</h2>
+<ul>
+ <li><strong>CPU</strong>：负责执行指令。它的特点是<strong>快</strong>，但同一时刻一个CPU核心只能执行一个线程的指令。为了“同时”做多件事，CPU通过<strong>分时复用</strong>（时间片轮转）在多个线程之间快速切换，造成并发的假象。每次切换（上下文切换）都需要保存当前线程的状态、加载新线程的状态，这也消耗CPU时间。</li>
+ <li><strong>内存</strong>：存放数据和指令的地方。CPU直接从内存读写数据，但内存的访问速度远慢于CPU的缓存（L1/L2/L3），而且内存带宽有限。大量数据拷贝会占用内存带宽，影响整体性能。</li>
+</ul>
+<p><strong>我们的目标</strong>：让CPU尽可能多地执行<strong>有效计算</strong>（你的业务逻辑），而不是花在<strong>管理开销</strong>（切换、拷贝、等待）上。</p>
+<hr>
+<h2><a rel="noopener noreferrer" id="_CPU_30"></a>三 开销的本质：CPU时间与资源的“管理成本”</h2>
+<p>所有开销最终都体现为<strong>CPU有效计算时间的减少</strong>，而CPU时间被消耗在两类事情上：</p>
+<ol>
+ <li><strong>等待外部资源</strong>：如磁盘IO、网络IO，此时CPU要么空闲（阻塞），要么在中断处理中短暂介入。同时内核态相关的操作又很耗时</li>
+ <li><strong>管理内部资源</strong>：如线程的创建销毁、上下文切换、锁竞争等，这些操作让CPU忙于“行政工作”而非业务计算。</li>
+</ol>
+<p>开销的本质：线程切换、用户态/内核态切换、数据拷贝</p>
+<ol>
+ <li> <p>CPU线程间分时时间片切换开销（都在用户态）</p> <p>· 开销类型：CPU时间 + 内存访问。<br> · 具体过程：当CPU从一个线程切换到另一个线程时，需要保存当前线程的上下文（寄存器、程序计数器、栈指针等）到内存，再加载新线程的上下文。这：<br> · 消耗CPU周期（执行保存/加载指令）。<br> · 访问内存（读写线程控制块），可能引起缓存未命中。<br> · 结论：主要开销是CPU时间，但伴随内存访问。</p> </li>
+ <li> <p>CPU内核态-用户态切换开销</p> <p>· 开销类型：CPU时间 + 内存访问。<br> · 具体过程：当线程发起系统调用时，CPU需要从用户态切换到内核态：<br> · 保存用户态寄存器、切换到内核栈等（CPU指令）。<br> · 检查权限、复制参数（内存操作）。<br> · 结论：也是CPU时间主导，但涉及内存操作。</p> </li>
+ <li> <p>CPU操作数据在内核态-用户态拷贝开销</p> <p>· 开销类型：CPU时间 + 内存带宽。<br> · 具体过程：数据从内核空间拷贝到用户空间（或反之）时，需要CPU执行memcpy指令，这占用CPU周期，同时占用内存带宽（搬运数据）。<br> · 结论：既消耗CPU，也消耗内存资源。</p> </li>
+</ol>
+<p>· 这些开销最终都表现为“CPU有效计算时间减少”。无论是切换还是拷贝，CPU都在做“管理性工作”，而不是在运行你的业务逻辑。</p>
+<table>
+ <thead>
+  <tr>
+   <th align="left">层面</th>
+   <th align="left">操作/场景类型</th>
+   <th align="left">具体表现</th>
+   <th align="left">消耗的主要资源</th>
+   <th align="left">与文中技术的关联（如何被优化）</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <td align="left"><strong>基础硬件与系统调用</strong></td>
+   <td align="left"><strong>磁盘IO</strong></td>
+   <td align="left">读写文件、数据库落盘</td>
+   <td align="left"><strong>CPU</strong>：发起系统调用、处理中断；<br><strong>内存</strong>：数据在内核空间与用户空间之间拷贝（如<code>read</code>/<code>write</code>）；<br><strong>时间</strong>：机械磁盘的寻道、旋转延迟。 <font color="red"><strong>CPU内核态-用户态切换开销、数据在内核态-用户态拷贝开销</strong></font></td>
+   <td align="left"><strong>Kafka的零拷贝</strong>：利用<code>sendfile</code>或<code>mmap</code>，让数据直接在内核空间从磁盘缓存传输到网卡，避免CPU参与拷贝，减少内核↔用户切换。<br><strong>Redis内存数据库</strong>：直接操作内存数据，减少实际磁盘IO次数。</td>
+  </tr>
+  <tr>
+   <td align="left"></td>
+   <td align="left"><strong>网络IO</strong></td>
+   <td align="left">发送/接收数据包</td>
+   <td align="left"><strong>CPU</strong>：协议栈处理（TCP/IP）、硬件中断处理；<br><strong>内存</strong>：数据在内核空间与用户空间之间拷贝（如<code>send</code>/<code>recv</code>）；<br><strong>带宽</strong>：网络链路传输延迟。 <font color="red"><strong>CPU内核态-用户态切换开销、数据在内核态-用户态拷贝开销</strong></font></td>
+   <td align="left"><strong>Reactor模式</strong>：通过<code>epoll</code>事件驱动，让单线程监控大量连接，避免大量线程阻塞和上下文切换，使CPU更专注于处理有数据的连接。<br><strong>零拷贝</strong>：同样适用于网络，如<code>sendfile</code>直接从磁盘到网卡，或网卡支持的数据直接放置（RDMA）。</td>
+  </tr>
+  <tr>
+   <td align="left"><strong>线程管理</strong></td>
+   <td align="left"><strong>线程创建/销毁</strong></td>
+   <td align="left"><code>new Thread().start()</code> / 线程结束</td>
+   <td align="left"><strong>CPU</strong>：系统调用（<code>clone</code>、<code>pthread_create</code>）涉及内核态切换；<br><strong>内存</strong>：分配线程栈、线程控制块（TCB）。 <font color="red"><strong>CPU内核态-用户态切换开销</strong></font></td>
+   <td align="left"><strong>线程池</strong>：预先创建核心线程并复用，避免频繁走内核创建销毁，同时控制线程总数，减少内存占用。</td>
+  </tr>
+  <tr>
+   <td align="left"></td>
+   <td align="left"><strong>线程上下文切换</strong></td>
+   <td align="left"><strong>类型一：RUNNABLE内切换</strong><br>（就绪←→运行，时间片用完/抢占）</td>
+   <td align="left"><strong>CPU</strong>：保存/恢复寄存器、程序计数器、栈指针（完全在内核态完成）；<br><strong>缓存失效</strong>：新线程的数据可能不在CPU缓存中。<font color="red"><strong>CPU分时时间片浪费</strong></font></td>
+   <td align="left"><strong>线程池</strong>：限制线程总数，避免过多线程导致频繁切换。<br><strong>CPU亲和性</strong>：让线程绑定CPU，减少迁移。<br><strong>轻量级锁自旋</strong>：线程在RUNNABLE状态下自旋，若被调度出去则发生此切换；自旋的目的是避免进入类型二的切换。</td>
+  </tr>
+  <tr>
+   <td align="left"></td>
+   <td align="left"></td>
+   <td align="left"><strong>类型二：进入/退出 BLOCKED/WAITING</strong><br>（线程主动阻塞或等待，以及后续唤醒）</td>
+   <td align="left"><strong>包含类型一的所有CPU开销</strong>，并<strong>额外增加</strong>：<br><strong>两次用户态/内核态切换</strong>（进入阻塞和唤醒时）。<font color="red"><strong>CPU分时时间片浪费、CPU内核态-用户态切换开销</strong></font></td>
+   <td align="left"><strong>重量级锁阻塞/唤醒</strong>：线程竞争锁失败时进入此状态，引发此开销。<br><strong>Reactor模式</strong>：通过非阻塞IO避免线程阻塞。<br><strong>无锁编程（CAS）</strong>：从根源避免线程进入阻塞。</td>
+  </tr>
+ </tbody>
+</table>
+<hr>
+<h2><a rel="noopener noreferrer" id="_JavaMySQL_71"></a>四 现实中的例子：Java线程和MySQL查询如何经历这些开销</h2>
+<h3><a rel="noopener noreferrer" id="1_Java_73"></a>1. Java线程的生命周期与资源开销</h3>
+<p>在Java中，线程的生命周期由<code>Thread.State</code>枚举定义，包含6种状态。但站在资源消耗的角度，我们更关心的是：<strong>线程在什么时候会占用CPU？什么时候会释放CPU？状态切换时，是谁（用户代码还是内核）在干活？</strong> 下面结合你提供的状态图，逐一分析。</p>
+<h4><a rel="noopener noreferrer" id="1__77"></a>1 线程状态全景图</h4>
+<p><img alt="线程状态图" src="./posts/assets/158624606-01-97a2b373cb.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="2__80"></a>2 状态详解与开销分析</h4>
+<h5><a rel="noopener noreferrer" id="1_NEW_82"></a>1. <strong>新建（NEW）</strong>：线程对象已创建，但尚未启动</h5>
+<ul>
+ <li><strong>动作</strong>：<code>new Thread()</code> 只是在Java堆中分配了一个对象，<strong>还没有调用操作系统内核创建真正的线程</strong>。</li>
+ <li><strong>资源消耗</strong>：仅占用少量堆内存，<strong>无内核态切换</strong>，无CPU时间片。</li>
+</ul>
+<h5><a rel="noopener noreferrer" id="2_RUNNABLE_86"></a>2. <strong>可运行（RUNNABLE）</strong>：线程已经就绪，可以运行</h5>
+<p>这个状态在Java中统一为<code>RUNNABLE</code>，但它实际包含两个子状态：<strong>就绪（READY）</strong> 和 <strong>运行（RUNNING）</strong>。</p>
+<ul>
+ <li><strong>就绪（READY）</strong>：线程已调用<code>start()</code>，内核中已创建了对应的线程实体，它被放入了操作系统的调度队列，随时等待被分配CPU时间片。此时线程<strong>没有CPU时间片</strong>，但随时可能获得。</li>
+ <li><strong>运行（RUNNING）</strong>：线程获得了CPU时间片，正在执行代码。此时线程<strong>拥有CPU时间片</strong>。</li>
+</ul>

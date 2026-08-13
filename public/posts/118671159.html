@@ -1,0 +1,268 @@
+<p>上文中提到&#xff0c;Tomcat会处理JSP和Servlet两种类型的文件&#xff0c;那么我们先来看看这两种类型文件是什么&#xff0c;有什么作用&#xff0c;然后再从Tomcat的架构角度去看请求是怎么被处理的&#xff0c;本篇文章重点探讨JSP的整体运行机制。</p>
+<h2><a rel="noopener noreferrer" id="JSP_1"></a>JSP概念简介</h2>
+<p>前文我们说过有静态和动态两种网站模式&#xff0c;其实我们大多数的网站都是动态网站&#xff0c;所以不能依赖单纯的Html去构建。这个时候我们有两种方式去解决这个问题&#xff1a;</p>
+<ol><li>把html代码和样式嵌入到Java代码中&#xff0c;然后将Java文件解析运行&#xff0c;这种方式下我们需要分析的是html代码&#xff0c;将html代码打印出来</li><li>把Java代码嵌入到html代码和样式中&#xff0c;然后将该文件动态解析为Java文件运行&#xff0c;这种方式下我们需要分析的是Java代码&#xff0c;将Java代码运行。</li></ol>
+<p>依据实际情况来看&#xff0c;因为html样式代码数量远大于Java代码&#xff0c;我们的修改动作也较为频繁&#xff0c;而我们希望更方便的调整html样式而不需要面对大量的print打印语句。</p>
+<p>所以我们选择第二种方式&#xff0c;由此也引出了JSP的概念&#xff1a;Java Server Page 简称 JSP&#xff0c;是由 Sun 公司倡导建立的一种动态网页技术标准&#xff0c;用于开发动态网页&#xff0c;<strong>JSP就是将传统Java代码嵌入到Html页面代码中&#xff0c;由Web服务器进行编译执行&#xff0c;生成最终的静态Html返回客户端</strong>。</p>
+<h2><a rel="noopener noreferrer" id="JSP_11"></a>JSP执行流程</h2>
+<p>浏览器无法直接运行JSP文件&#xff0c;只有将包含JSP文件的Web项目部署到Web服务器上&#xff0c;才能看到JSP的显示效果&#xff0c;当客户端浏览器向服务器发出请求访问一个JSP页面后&#xff0c;<strong>服务器根据该请求加载相应的JSP 页面&#xff0c;并对该页面进行转换、编译和执行。</strong><br /> <img alt="在这里插入图片描述" src="./posts/assets/118671159-01-ef58bd68ec.png" loading="lazy"><br /> 具体的执行过程如下&#xff1a;</p>
+<ol><li>浏览器发送一个 HTTP 请求给服务器。</li><li>Web 服务器识别出这是一个对 JSP 网页的请求&#xff0c;并且将该请求传递给 JSP 引擎。通过使用 URL或者 .jsp 文件来完成。</li><li>JSP 引擎从磁盘中载入 JSP 文件&#xff0c;然后<strong>将它们转化为 Servlet</strong>。这种转化只是简单地将所有模板文本改用 println() 语句&#xff0c;并且将所有的 JSP 元素转化成 Java 代码。</li><li>JSP 引擎将 Servlet 编译成可执行类&#xff0c;并且将原始请求传递给 Servlet 引擎。</li><li>Web 服务器的某组件将会调用 Servlet 引擎&#xff0c;然后载入并执行 Servlet 类。在执行过程中&#xff0c;Servlet 产生 HTML 格式的输出并将其内嵌于 HTTP response 中上交给 Web 服务器。</li><li>Web 服务器以静态 HTML 网页的形式将 HTTP response 返回到浏览器中。</li><li>最终&#xff0c;Web 浏览器处理 HTTP response 中动态产生的HTML网页&#xff0c;就好像在处理静态网页一样</li></ol>
+<p>总体而言&#xff0c;引擎会帮我们将JSP编译为Servlet&#xff0c;然后执行</p>
+<h2><a rel="noopener noreferrer" id="JSP_26"></a>JSP组成元素</h2>
+<p>JSP文件中包括两类代码&#xff1a;JSP元素和Template(模版)&#xff1a;</p>
+<ul><li>JSP元素&#xff1a;指的就是<code>&lt;%...... %&gt;</code>内的代码&#xff0c;这部分代码是JSP引擎直接处理的部分&#xff0c;这部分必须符合Java语法</li><li>Template(模版)&#xff1a;指的就是<code>&lt;%...... %&gt;</code>外的代码&#xff0c;例如代码中HTML的内容&#xff0c;这些数据JSP引擎不作处理&#xff0c;直接返回给客户端的浏览器</li></ul>
+<p>所以解析处理的时候其实只需要处理JSP元素。</p>
+<h2><a rel="noopener noreferrer" id="JSP_32"></a>JSP生命周期</h2>
+<p>JSP生命周期就是从创建到销毁的整个过程&#xff0c;类似于servlet生命周期&#xff0c;区别在于JSP生命周期还包括将JSP文件编译成servlet&#xff1a;</p>
+<ol><li><strong>编译阶段</strong>&#xff1a;servlet容器编译servlet源文件&#xff0c;生成servlet类。当浏览器请求JSP页面时&#xff0c;JSP引擎会首先去检查是否需要编译这个文件。如果这个文件没有被编译过&#xff0c;或者在上次编译后被更改过&#xff0c;则编译这个JSP文件。分为三个步骤&#xff1a;<strong>解析JSP文件&#xff1b;将JSP文件转为servlet&#xff1b;编译servlet</strong></li><li><strong>初始化阶段</strong>&#xff1a;加载与JSP对应的servlet类&#xff0c;创建其实例&#xff0c;并调用它的初始化方法jspInit</li><li><strong>执行阶段</strong>&#xff1a;调用与JSP对应的servlet实例的服务方法_jspService</li><li><strong>销毁阶段</strong>&#xff1a;调用与JSP对应的servlet实例的销毁方法jspDestroy&#xff0c;然后销毁servlet实例</li></ol>
+<p>整个流程图如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118671159-02-c51f6f5e15.png" loading="lazy"></p>
+<h2><a rel="noopener noreferrer" id="JSP_44"></a>JSP语法标识</h2>
+<p>JSP的语法分为三类&#xff1a;<strong>指令标识、脚本标识</strong>、<strong>注释标识</strong>和<strong>动作标识</strong>。这里我们以一个JSP页面进行举例&#xff0c;贯穿接下来的练习代码</p>
+<blockquote>
+ <p><strong>index.jsp文件</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html; charset&#61;UTF-8&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.*&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; include file<span class="token operator">&#61;</span><span class="token string">&#34;top.jsp&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">!</span>DOCTYPE html<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>JSP <span class="token operator">-</span> <span class="token class-name">Hello</span> <span class="token class-name">World</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span>
+        <span class="token keyword">int</span> number <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span><span class="token comment">// 声明全局变量</span>
+
+        <span class="token keyword">int</span> <span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            number<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span><span class="token comment">//number 自增</span>
+            <span class="token keyword">return</span> number<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>h1<span class="token punctuation">&gt;</span></span><span class="token operator">&lt;</span><span class="token operator">%&#61;</span> <span class="token string">&#34;Hello World!&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>h1<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+    <span class="token class-name">String</span> print <span class="token operator">&#61;</span> <span class="token string">&#34;我是脚本语句内容&#34;</span><span class="token punctuation">;</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> strList <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">//  strList.add(&#34;脚本语句4&#34;);  //这是一个Java注释&#xff0c;用来注释Java代码&#xff0c;查看源码时不可见</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>a href<span class="token operator">&#61;</span><span class="token string">&#34;hello-servlet&#34;</span><span class="token operator">&gt;</span>我的第一个<span class="token class-name">JavaWeb</span>项目<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span> <span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 这是一个html注释&#xff0c;可见<span class="token operator">&lt;</span><span class="token operator">%&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token operator">--</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>这是一个JSP注释&#xff0c;查看源码时不可见<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+声明语句示例&#xff1a;这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+表达式语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+脚本语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>print<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token punctuation">,</span> 打印列表 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>strList<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>jsp<span class="token operator">:</span>forward page<span class="token operator">&#61;</span><span class="token string">&#34;result.jsp&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>forward<span class="token operator">&gt;</span>
+跳转语句之后&#xff0c;代码不会被执行&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个跳转后的表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+</code></pre>
+<blockquote>
+ <p><strong>top.jsp文件</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">13</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">8</span><span class="token operator">:</span><span class="token number">15</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html; charset&#61;UTF-8&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span> <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.*&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>我是include的top<span class="token punctuation">.</span>jsp页面<span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>
+  <span class="token class-name">String</span> printTop<span class="token operator">&#61;</span><span class="token string">&#34;top打印&#34;</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>a href<span class="token operator">&#61;</span><span class="token string">&#34;hello-servlet&#34;</span><span class="token operator">&gt;</span>我是top的打印&#xff0c;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span>printTop<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<blockquote>
+ <p><strong>result.jsp文件</strong></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">14</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">11</span><span class="token operator">:</span><span class="token number">32</span> 上午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>跳转的结果页面<span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>a<span class="token punctuation">&gt;</span></span>我是跳转后的结果页面<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<blockquote>
+ <p><strong>test.jsp文件</strong></p>
+</blockquote>
+<p>按照语法基础&#xff0c;我们实践三种语法流程&#xff1a;判断逻辑&#xff0c;循环逻辑&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>
+  <span class="token class-name">Created</span> by <span class="token class-name">IntelliJ</span> <span class="token class-name">IDEA<span class="token punctuation">.</span>
+  User</span><span class="token operator">:</span> tianmaolin
+  <span class="token class-name">Date</span><span class="token operator">:</span> <span class="token number">2021</span><span class="token operator">/</span><span class="token number">7</span><span class="token operator">/</span><span class="token number">14</span>
+  <span class="token class-name">Time</span><span class="token operator">:</span> <span class="token number">12</span><span class="token operator">:</span><span class="token number">30</span> 下午
+  <span class="token class-name">To</span> change <span class="token keyword">this</span> template use <span class="token class-name">File</span> <span class="token operator">|</span> <span class="token class-name">Settings</span> <span class="token operator">|</span> <span class="token class-name">File</span> <span class="token class-name">Templates</span><span class="token punctuation">.</span>
+<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page contentType<span class="token operator">&#61;</span><span class="token string">&#34;text/html;charset&#61;UTF-8&#34;</span> language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.*,java.io.*&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
+<span class="token generics"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+    <span class="token generics"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span><span class="token class-name">Title</span><span class="token operator">&lt;</span><span class="token operator">/</span>title<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>head<span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span> <span class="token keyword">int</span> day <span class="token operator">&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+
+<span class="token keyword">if</span>语句输出练习&#xff1a;
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>day <span class="token operator">&#61;&#61;</span> <span class="token number">1</span> <span class="token operator">||</span> day <span class="token operator">&#61;&#61;</span> <span class="token number">7</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>今天是周末<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token generics"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>今天不是周末<span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span> <span class="token punctuation">}</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+
+
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token keyword">for</span>语句输出练习&#xff1b;
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token keyword">for</span> <span class="token punctuation">(</span> <span class="token keyword">int</span> fontSize <span class="token operator">&#61;</span> <span class="token number">1</span><span class="token punctuation">;</span> fontSize <span class="token operator">&lt;&#61;</span> <span class="token number">3</span><span class="token punctuation">;</span> fontSize<span class="token operator">&#43;&#43;</span><span class="token punctuation">)</span><span class="token punctuation">{<!-- --></span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>span style<span class="token operator">&#61;</span><span class="token string">&#34;color: green; &#34;</span><span class="token operator">&gt;</span>
+    循环第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>fontSize<span class="token operator">%</span><span class="token operator">&gt;</span> 遍<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>span<span class="token operator">&gt;</span><span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">%</span><span class="token punctuation">}</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>html<span class="token operator">&gt;</span>
+
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_178"></a>指令标识</h3>
+<p>指令标识主要用于设定在整个 JSP 页面范围内都有效的相关设置信息&#xff0c;它是被服务器解释并执行的&#xff0c;不会产生任何内容输出到网页中&#xff0c;格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; 指令名 属性 <span class="token number">1</span><span class="token operator">&#61;</span>“属性值 <span class="token number">1</span>” 属性 <span class="token number">2</span><span class="token operator">&#61;</span>“属性值 <span class="token number">2</span>”<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>%<span class="token operator">&gt;</span>
+</code></pre>
+<ul><li><strong>指令名</strong>&#xff1a;用于指定指令名称&#xff0c;在 JSP 中包含 <strong>page、include 和 taglib</strong> 3 个指令。</li><li><strong>属性</strong>&#xff1a;用于指定属性名称&#xff0c;不同的指令包含不同的属性。在一个指令中&#xff0c;可以设置多个属性&#xff0c;属性之间用逗号或空格隔开。</li><li><strong>属性值</strong>&#xff1a;用户指定属性值</li></ul>
+<p>上述文件中<code>&lt;%&#64; page contentType&#61;&#34;text/html; charset&#61;UTF-8&#34; pageEncoding&#61;&#34;UTF-8&#34; %&gt;</code> 就是一个page指令。<br /> <img alt="在这里插入图片描述" src="./posts/assets/118671159-03-4add5992f5.png" loading="lazy"><br /> 指令标识包含&#xff1a;page指令、include指令以及taglib指令。</p>
+<h4><a rel="noopener noreferrer" id="page_191"></a>page指令</h4>
+<p>Page指令为容器提供当前页面的使用说明。一个JSP页面可以包含多个page指令&#xff0c;page的标准语法如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page attribute<span class="token operator">&#61;</span><span class="token string">&#34;value&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>page指令的常用属性如下&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118671159-04-1824dd6f1c.png" loading="lazy">例如我们想要访问list相关的方法&#xff0c;就需要引入java的util类&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; page language<span class="token operator">&#61;</span><span class="token string">&#34;java&#34;</span> <span class="token keyword">import</span><span class="token operator">&#61;</span><span class="token string">&#34;java.util.*,java.io.*&#34;</span> pageEncoding<span class="token operator">&#61;</span><span class="token string">&#34;UTF-8&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="include_204"></a>include指令</h4>
+<p>JSP可以通过include指令来包含其他文件。被包含的文件可以是JSP文件、HTML文件或文本文件。包含的文件就好像是该JSP文件的一部分&#xff0c;会被<strong>同时编译执行</strong>。Include指令的语法格式如下:</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>&#64; include file<span class="token operator">&#61;</span><span class="token string">&#34;文件相对 url 地址&#34;</span> <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>include 指令中的文件名实际上是一个相对的 URL 地址&#xff0c;例如&#xff1a;<img alt="在这里插入图片描述" src="./posts/assets/118671159-05-e1151afa20.png" loading="lazy"><br /> <strong>注意</strong>&#xff1a;在应用 include 指令包含文件时&#xff0c;为使整个页面的层次结果不发生冲突&#xff0c;应将被包含页面中的 元素和 元素删除&#xff0c;因为包含该页面的文件中已经指定了这些标记</p>
+<h4><a rel="noopener noreferrer" id="Taglib_212"></a>Taglib指令</h4>
+<p>在 JSP 文件中&#xff0c;可以通过 taglib 指令声明该页面中所使用的标签库&#xff0c;同时引用标签库&#xff0c;并指定标签前缀&#xff0c;在页面中引用标签库后&#xff0c;就可以<strong>通过前缀引用标签库中的标签</strong>&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token annotation punctuation">&#64;taglib</span> prefix<span class="token operator">&#61;</span>“core” uri<span class="token operator">&#61;</span>“http<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>java<span class="token punctuation">.</span>sun<span class="token punctuation">.</span>com<span class="token operator">/</span>jsp<span class="token operator">/</span>jstl<span class="token operator">/</span>core” <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>标签库的使用后续会提到。</p>
+<h3><a rel="noopener noreferrer" id="_219"></a>脚本标识</h3>
+<p>脚本标识是JSP中最主要的元素&#xff0c;相当于JSP中需要编译的那一部分内容&#xff0c;也是JSP语法中的核心内容&#xff0c;包含<strong>声明、表达式以及脚本段</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_221"></a>声明</h4>
+<p>声明标识用于在 JSP 页面中定义<strong>全局的变量或方法</strong>&#xff0c;通常使用该标识定义整个 JSP 页面需要引用的变量或方法&#xff0c;在JSP文件中&#xff0c;必须先声明这些变量和方法然后才能使用它们&#xff0c;<font color="red"><strong>相当于Java里的成员变量和成员方法定义</strong></font>。语法规则如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span> 声明变量或方法代码 <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>一个全局的统计访问次数的例子如下&#xff1a;</p>
+<pre><code class="prism language-java">   <span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">!</span>
+        <span class="token keyword">int</span> number <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span><span class="token comment">// 声明全局变量</span>
+        <span class="token keyword">int</span> <span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>  <span class="token comment">//声明全局方法</span>
+            number<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span><span class="token comment">//number 自增</span>
+            <span class="token keyword">return</span> number<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+  这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+</code></pre>
+<p>可以打印出来第几次访问页面</p>
+<h4><a rel="noopener noreferrer" id="_240"></a>脚本段</h4>
+<p>Scriptlet&#xff08;代码片段&#xff09;脚本程序&#xff0c;是在 JSP 页面中嵌入的 Java 代码或脚本代码&#xff0c;代码片段将在页面请求的处理期间被执行&#xff0c;通过 Java 代码可以定义变量或流程控制语句等&#xff0c;<font color="red"><strong>相当于Java里main方法的代码逻辑</strong></font>&#xff0c;语法规则如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span> 表达式或者变量名 <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>脚本段语句示例&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>
+    <span class="token class-name">String</span> print <span class="token operator">&#61;</span> <span class="token string">&#34;我是脚本语句内容&#34;</span><span class="token punctuation">;</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> strList <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+脚本语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>print<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token punctuation">,</span> 打印列表 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>strList<span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>可以直接打印脚本段内的内容。</p>
+<h4><a rel="noopener noreferrer" id="_261"></a>表达式</h4>
+<p>JSP 表达式用于向页面中输出信息&#xff0c;类似于<code>System.out.println()</code>括号中的内容&#xff0c;<font color="red"><strong>相当于Java里main方法里的<code>System.out.println()</code>语句&#xff0c;只不过是输出回客户端&#xff0c;而非服务端本地打印</strong></font>&#xff0c;语法规则如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%&#61;</span> 表达式或者变量名 <span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>以上我们无论是声明还是脚本段的输出其实都用到了表达式&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+声明语句示例&#xff1a;这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+表达式语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+脚本语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>print<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token punctuation">,</span> 打印列表 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>strList<span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_277"></a>注释标识</h3>
+<p>注释用于对某些代码做功能性的说明&#xff0c;从而增加程序的可读性。JSP 程序中可以包含 3 种不同类型的注释&#xff1a;</p>
+<h4><a rel="noopener noreferrer" id="JSP_279"></a>JSP注释</h4>
+<p>JSP注释主要有两个作用&#xff1a;为代码作注释以及将某段代码注释掉。主要是给JSP页面提供注释&#xff0c;<font color="red"><strong>JSP注释在客户端浏览器无法查看到&#xff0c;注释内容不会被发送至浏览器甚至不会被编译</strong>&#xff0c;其语法规则如下&#xff1a;</font></p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span> JSP标准注释 <span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>例如我们可以这么编写&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span><span class="token operator">--</span>表达式展示的JSP注释<span class="token operator">--</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+声明语句示例&#xff1a;这是第 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">%</span><span class="token operator">&gt;</span> 次访问该页面
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+表达式语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>br<span class="token operator">/</span><span class="token operator">&gt;</span>
+脚本语句示例&#xff1a; <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>print<span class="token operator">%</span><span class="token operator">&gt;</span><span class="token punctuation">,</span> 打印列表 <span class="token operator">&lt;</span><span class="token operator">%&#61;</span>strList<span class="token operator">%</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>body<span class="token operator">&gt;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="Java_296"></a>Java注释</h4>
+<p>Java注释指的是java代码&#xff0c;和Java代码的注释格式是一致的&#xff0c;同样的<font color="red"><strong>Java注释在客户端浏览器无法查看到&#xff0c;注释内容不会被发送至浏览器甚至不会被编译</strong></font>&#xff0c;语法规则如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>
+       <span class="token comment">//Java单行注释</span>
+       <span class="token comment">/*
+           Java多行注释
+       */</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>例如我们可以这么编写&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">%</span>
+    <span class="token class-name">String</span> print <span class="token operator">&#61;</span> <span class="token string">&#34;我是脚本语句内容&#34;</span><span class="token punctuation">;</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> strList <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句1&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句2&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    strList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">&#34;脚本语句3&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">//  strList.add(&#34;脚本语句4&#34;);  //这是一个Java注释&#xff0c;用来注释Java代码</span>
+<span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h4><a rel="noopener noreferrer" id="HTML_320"></a>HTML注释</h4>
+<p>HTML注释主要给JSP页面的Template元素提供注释&#xff0c;<font color="red"><strong>HTML网页注释在客户端浏览器可以看到</strong></font>&#xff0c;语法规则如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> HTML网页注释 <span class="token operator">--</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>这类在查看源码时可见&#xff0c;其中的脚本语句也是可执行的&#xff0c;示例如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span><span class="token operator">!</span><span class="token operator">--</span> 这是一个html注释&#xff0c;可见<span class="token operator">&lt;</span><span class="token operator">%&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span><span class="token operator">&gt;</span> <span class="token operator">--</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>点击查看源码我们可以看到注释&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118671159-06-49cc041f1b.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_334"></a>动作标识</h3>
+<p>JSP行为标签使用XML语法结构来控制servlet引擎。它能够动态插入一个文件&#xff0c;重用JavaBean组件&#xff0c;引导用户去另一个页面&#xff0c;为Java插件产生相关的HTML等等。行为标签只有一种语法格式&#xff0c;它严格遵守XML标准。其语法格式如下&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>jsp<span class="token operator">:</span>action_name attribute<span class="token operator">&#61;</span><span class="token string">&#34;value&#34;</span> <span class="token operator">/</span><span class="token operator">&gt;</span>
+</code></pre>
+<p>包含很多种可以作用的动作标识&#xff1a;<br /> <img alt="在这里插入图片描述" src="./posts/assets/118671159-07-efefe3ffee.png" loading="lazy"><br /> 举例说明如下&#xff0c;执行到跳转动作后会跳转到结果页面&#xff1a;</p>
+<pre><code class="prism language-java"><span class="token operator">&lt;</span>jsp<span class="token operator">:</span>forward page<span class="token operator">&#61;</span><span class="token string">&#34;result.jsp&#34;</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>jsp<span class="token operator">:</span>forward<span class="token operator">&gt;</span>
+跳转语句之后&#xff0c;代码不会被执行&#xff1a;<span class="token operator">&lt;</span><span class="token operator">%&#61;</span><span class="token string">&#34;我是一个跳转后的表达式语句&#34;</span><span class="token operator">%</span><span class="token operator">&gt;</span>
+</code></pre>
+<h2><a rel="noopener noreferrer" id="_350"></a>总结一下</h2>
+<p>这篇Blog我们大致了解了JSP的基本概念&#xff0c;为什么要用JSP&#xff0c;以及JSP的生命周期、执行流程和组成元素&#xff0c;但是最最重要的还是JSP的基本语法&#xff1a;<strong>指令、注释、脚本、动作</strong>&#xff0c;这几个各有用处&#xff0c;指令管理页面的配置和属性&#xff0c;<strong>脚本管理JSP元素的代码和逻辑</strong>&#xff0c;动作可以简化指令和脚本&#xff0c;用标签的形式去体现&#xff0c;让整个页面Java代码更少看起来更加的配置化&#xff0c;注释则用于对文件进行解释。其中脚本可谓核心&#xff0c;我们希望脚本的内容越少越好&#xff0c;这样JSP的视图而非逻辑作用发挥的就越好&#xff0c;所以后续我们还会学习一些高级语法&#xff1a;<strong>JSTL标签和EL表达式&#xff0c;这两配合起来可以大量简化写法</strong></p>

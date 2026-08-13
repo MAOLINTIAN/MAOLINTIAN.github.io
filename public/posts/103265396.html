@@ -1,0 +1,75 @@
+<p>本章来介绍C#语言里的基本数据类型&#xff0c;以及字符串的一些操作方式。</p>
+<h3><a rel="noopener noreferrer" id="_1"></a>基本数据类型</h3>
+<p>C#语言里的基本数据类型包括<strong>八种整数类型、两种用于科学计算的二进制浮点类型、一种用于金融计算的十进制浮点类型&#xff0c;一种布尔类型以及一种字符类型&#xff08;包括其组合的string&#xff09;</strong>。</p>
+<h4><a rel="noopener noreferrer" id="_3"></a>整数类型</h4>
+<p>整数类型有以下几种&#xff0c;BCL是什么呢&#xff1f;在我的另一篇博客里介绍到了&#xff0c;其实就是CLR定义的适用于全平台语言的基本类型。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103265396-01-4419fa7d67.png" loading="lazy"><br />
+<font color="red"> <strong>要使用C#自己的类型而不是BCL类型&#xff01;要用string而不是String</strong></font>&#xff0c;这也解释了多年的困惑&#xff0c;为啥C#里有String和string&#xff0c;其实是相同的关键字&#xff0c;但是推荐使用C#自己的关键字。</p>
+<h4><a rel="noopener noreferrer" id="_7"></a>浮点类型</h4>
+<p>浮点类型包括两种&#xff0c;其实和我们大多数接触过的语言都类似&#xff0c;float和double&#xff0c;值得注意的是&#xff1a;<strong>浮点数的精度由有效数位的个数来决定&#xff0c;而不是一个固定值。</strong><br />
+<img alt="在这里插入图片描述" src="./posts/assets/103265396-02-8848c72624.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="decimal_11"></a>decimal类型</h4>
+<p>decimal是<strong>128位精度的十进制浮点类型</strong>&#xff0c;虽然它的<font color="red"> <strong>精度比浮点型更高&#xff0c;但是范围比浮点型更小</strong></font>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103265396-03-3780005317.png" loading="lazy"></p>
+<h4><a rel="noopener noreferrer" id="_14"></a>布尔类型</h4>
+<p>在条件表达式和条件语句中表示真或假&#xff0c;允许的值包括关键字true和false。由8位二进制位表示。</p>
+<h4><a rel="noopener noreferrer" id="_16"></a>字符类型</h4>
+<p>字符类型就是char&#xff0c;由16位二进制位表示。需要注意的是其特殊字符的插入形式&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103265396-04-f869f80bfe.png" loading="lazy"><br />
+从上至下分别为&#xff1a;<strong>单引号、双引号、反斜杠以及Null</strong>。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103265396-05-1d819c4476.png" loading="lazy"><br />
+从上至下分别为&#xff1a;Alert&#xff0c;退格、换页、<strong>换行、回车、水平制表符</strong>、垂直制表符、十六进制Unicode字符、十六进制Unicode字符&#xff08;长度可变版本&#xff09;、Unicode转义序列&#xff08;用于创建代理项对&#xff09;。</p>
+<h3><a rel="noopener noreferrer" id="C_23"></a>C#冷知识</h3>
+<p>1&#xff0c;在构造字符串这件事上&#xff0c;<strong>string类型是不可变的&#xff0c;而StringBuilder不仅可以提供和string类似的方法&#xff0c;例如&#xff1a;Append、AppendFormat、Insert、Remove、Relpace&#xff0c;还能保证方法可以直接修改StringBuilder本身的数据</strong>而不是返回一个新的字符串。</p>
+<p>2&#xff0c;<strong>赋值为null表示变量已赋值&#xff0c;但无任何值变量已赋值&#xff0c;但无任何值</strong>&#xff0c;这和赋值为“”以及不赋值是有区别的&#xff0c;区别如下&#xff1a;<br />
+<img alt="在这里插入图片描述" src="./posts/assets/103265396-06-815db1a0fb.png" loading="lazy"></p>
+<p>3&#xff0c;可以使用System.WriteLine()和System.Environment.NewLine()这两个方法来保证跨平台的换行符兼容性。</p>
+<p>4&#xff0c;<strong>字面值表示源代码中的固定值</strong>&#xff0c;直接将值放到代码中叫<strong>硬编码</strong>&#xff0c;只要改值就需要重新编译代码&#xff0c;<strong>可以考虑将值通过配置文件读取&#xff0c;这样就不需要重新编译代码了。</strong></p>
+<p>5&#xff0c;默认情况下&#xff0c;输入小数会被当成double&#xff0c;输入整数会被当成int&#xff0c;如果整数超过int范围会被当成long。<strong>而C#还支持各种字面值的显示</strong>。</p>
+<pre><code class="prism language-csharp"> <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token number">0</span>b1000010<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//二进制字面值</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token number">0x0002AFE</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//十六进制字面值</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span><span class="token number">6.02</span>E23F<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//指数计数法&#xff1a;E标识指数&#xff0c;F表示为浮点</span>
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>$<span class="token string">&#34;0x{42:x}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//将十进制格式化为十六进制&#xff1a;0x2a,如果是大写X&#xff0c;则为0x2A</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>6&#xff0c;通过<strong>R格式化</strong>来保留值的精度&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">const</span> <span class="token keyword">double</span> number <span class="token operator">&#61;</span> <span class="token number">1.618033988749895</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">var</span> text <span class="token operator">&#61;</span> $<span class="token string">&#34;{number}&#34;</span><span class="token punctuation">;</span>
+            <span class="token keyword">var</span> result <span class="token operator">&#61;</span> <span class="token keyword">double</span><span class="token punctuation">.</span><span class="token function">Parse</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//精度丢失</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>$<span class="token string">&#34;{result &#61;&#61; number}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//返回false</span>
+
+            text <span class="token operator">&#61;</span> $<span class="token string">&#34;{number:R}&#34;</span><span class="token punctuation">;</span>
+            result <span class="token operator">&#61;</span> <span class="token keyword">double</span><span class="token punctuation">.</span><span class="token function">Parse</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//保留原值</span>
+            System<span class="token punctuation">.</span>Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>$<span class="token string">&#34;{result &#61;&#61; number}&#34;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">//返回true</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>7&#xff0c;字符串驻留技术&#xff0c;虽然字符串不可变&#xff0c;赋值操作只会重新创建一个指向新内存的引用&#xff0c;所以改变str2的值操作并不会改变str1的值&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">string</span> str1 <span class="token operator">&#61;</span> <span class="token string">&#34;tml&#34;</span><span class="token punctuation">;</span>
+<span class="token keyword">string</span> str2 <span class="token operator">&#61;</span> str1<span class="token punctuation">;</span>
+str2 <span class="token operator">&#61;</span> <span class="token string">&#34;hhh&#34;</span> <span class="token comment">//并不会改变str1的值</span>
+</code></pre>
+<p>公共语言运行库通过维护一个表来存放字符串&#xff0c;该表称为拘留池&#xff0c;它包含程序中以编程方式声明或创建的每个唯一的字符串的一个引用。因此&#xff0c;<strong>具有特定值的字符串的实例在系统中只有一个</strong>&#xff1a;</p>
+<pre><code class="prism language-csharp"><span class="token keyword">string</span> str1 <span class="token operator">&#61;</span> <span class="token string">&#34;CharlesChen&#34;</span><span class="token punctuation">;</span>
+<span class="token keyword">string</span> str2 <span class="token operator">&#61;</span> <span class="token string">&#34;CharlesChen&#34;</span><span class="token punctuation">;</span>
+System<span class="token punctuation">.</span>Object<span class="token punctuation">.</span><span class="token function">Equals</span><span class="token punctuation">(</span>str1<span class="token punctuation">,</span>str2&#xff09;  <span class="token comment">//返回True</span>
+</code></pre>
+<p>当我们调用时候&#xff0c;返回值是True&#xff0c;按道理说是应该返回为false&#xff0c;str1和str2应该指向不同的内存空间才对。怎么会返回为true呢&#xff1f;这里就引入了&#34;字符串驻留技术&#34;。</p>
+<p>其实这里CLR使用了字符串驻留技术&#xff0c;当CLR初始化时&#xff0c;<strong>会创建一个内部的散列表(Hash表),其中的键位字符串&#xff0c;值为指向托管堆中字符串的引用</strong>。刚开始&#xff0c;散列表为空&#xff0c;JIT编译器编译方法时&#xff0c;会在散列表中查找每一个文本字符串常量&#xff08;这里是&#34;CharlesChen&#34;&#xff09;,首先会查找&#34;CharlesChen&#34;&#xff0c;并且因为没找到&#xff0c;编译器会在托管堆中构造一个全新的指向&#34;CharlesChen&#34;的对象引用&#xff0c;然后将&#34;abc&#34;字符串和执行该对象的引用添加到散列表中去。</p>
+<p>当string str2&#61;“CharlesChen&#34;时候&#xff0c;由于前面已经在散列表中加了该&#34;CharlesChen&#34;字符串&#xff0c;所以编译器不会执行任何分配内存空间的操作。首先编译器会在内部的散列表中查找&#34;CharlesChen”&#xff0c;并且会找到&#xff0c;这样指向先前创建的String对象的引用就会被找到&#xff0c;并且这里Str2就指向找到的那个引用。<strong>因此Str1和Str2就指向了内存中同一个地址的引用</strong>。所以System.Ojbect.Equals(str1,str2)就返回为true了。</p>
+<h3><a rel="noopener noreferrer" id="C_82"></a>C#新知识</h3>
+<p>1&#xff0c;类型转换这件事&#xff1a;所有数值类型都能通过Parse()方法将对应的string类型转为数值类型。然而这种转换是不安全的&#xff01;推荐使用<strong>TryParse</strong>方法</p>
+<pre><code class="prism language-csharp"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+       <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">const</span> <span class="token keyword">string</span> tml1 <span class="token operator">&#61;</span> <span class="token string">&#34;1234568&#34;</span><span class="token punctuation">;</span> <span class="token comment">//变量未赋值&#xff0c;编译不能通过</span>
+            <span class="token keyword">var</span> flag <span class="token operator">&#61;</span> <span class="token keyword">int</span><span class="token punctuation">.</span><span class="token function">TryParse</span><span class="token punctuation">(</span>tml1<span class="token punctuation">,</span> <span class="token keyword">out</span> <span class="token keyword">var</span> output<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            Console<span class="token punctuation">.</span><span class="token function">WriteLine</span><span class="token punctuation">(</span>output<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+</code></pre>
+<p>从C#7.0开始&#xff0c;<font color="red"> <strong>out参数可以使用内联的形式而不需要事先声明了!</strong> </font>除此之外&#xff0c;还推荐使用System.Convert()方法。</p>
+<p>2&#xff0c;区分大小写的字符串比较&#xff1a;<code>string.Compare(temp1,temp2)</code>&#xff0c;不区分大小写的字符串比较&#xff1a;<code>string.Compare(temp1,temp2&#xff0c;true)</code>&#xff0c;</p>

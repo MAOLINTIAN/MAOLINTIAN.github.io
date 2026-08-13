@@ -1,0 +1,286 @@
+<p>废话不多说&#xff0c;喊一句号子鼓励自己&#xff1a;程序员永不失业&#xff0c;程序员走向架构&#xff01;本篇Blog的主题是LRU缓存结构设计&#xff0c;这类题目出现频率还是很高的&#xff0c;几乎所有大厂都常考。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/132548878-01-ba872a75d6.png" loading="lazy"><br />
+当然面对这道题&#xff0c;首先要讲清楚LRU是干什么的</p>
+<h2><a rel="noopener noreferrer" id="LRU_3"></a>LRU定义</h2>
+<p>LRU&#xff08;Least Recently Used&#xff09;缓存结构是一种常见的缓存管理策略&#xff0c;<font color="red"><strong>用于在有限的缓存空间内存储最近被访问过的数据</strong></font>。该策略的基本思想是&#xff0c;当缓存空间已满并且需要插入新数据时&#xff0c;会优先淘汰掉最近最少被访问的数据&#xff0c;以便为新数据腾出空间。</p>
+<p>LRU缓存结构的工作原理如下&#xff1a;</p>
+<ol><li>当某个数据被访问时&#xff0c;如果它已经在缓存中&#xff0c;那么它会被标记为最近被访问的数据&#xff0c;因此它会被移到缓存的队列头部&#xff08;或者链表的头部&#xff09;。</li><li>当缓存空间已满并且需要插入新数据时&#xff0c;会淘汰掉队列尾部&#xff08;或链表末尾&#xff09;的数据&#xff0c;因为这些数据是最近最少被访问的。</li><li>每次访问缓存中的数据&#xff0c;都会导致该数据被移到队列头部&#xff0c;以反映其最近被访问的状态。</li></ol>
+<p>实现LRU缓存结构可以使用多种数据结构&#xff0c;包括链表、双向链表和哈希表。链表用于维护数据访问的顺序&#xff0c;哈希表用于快速查找特定的数据。常见的实现方式是使用一个双向链表和一个哈希表&#xff0c;其中哈希表的键是数据的键&#xff0c;值是指向链表节点的指针。这样&#xff0c;可以通过哈希表快速定位数据&#xff0c;并通过链表维护数据的访问顺序。</p>
+<p>总之&#xff0c;LRU缓存结构是一种用于管理缓存的策略&#xff0c;确保缓存中的数据是最近被访问过的数据&#xff0c;从而提高访问效率。</p>
+<p>LRU被称为&#34;最近最少使用&#34;&#xff08;Least Recently Used&#xff09;是因为该缓存替换策略的核心思想是<font color="red"><strong>淘汰最近最少被使用的数据</strong></font>。在LRU策略中&#xff0c;当缓存空间已满需要淘汰数据时&#xff0c;系统会选择那些最近最少被访问的数据进行淘汰&#xff0c;以便为新的数据腾出空间。</p>
+<p>这个名称的含义可以拆解为两个部分&#xff1a;</p>
+<ol><li>
+<p>“<strong>最近</strong>”&#xff1a;这部分指的是数据的使用时间。在LRU策略中&#xff0c;被访问过的数据会被移动到队列的前面&#xff0c;即链表的头部&#xff0c;使其保持在最近的位置。因此&#xff0c;&#34;最近&#34;表示数据被访问的时间是近期的。</p>
+</li><li>
+<p>“<strong>最少使用</strong>”&#xff1a;这部分指的是数据的访问频率。在LRU中&#xff0c;当缓存空间已满&#xff0c;需要淘汰数据时&#xff0c;会选择那些在最近一段时间内被使用最少的数据进行淘汰。这意味着缓存系统更倾向于保留经常被访问的数据&#xff0c;而淘汰很少被访问的数据。</p>
+</li></ol>
+<p>综合起来&#xff0c;LRU策略的名字&#34;最近最少使用&#34;反映了它在淘汰数据时考虑了数据的使用时间和频率&#xff0c;以确保缓存中保留的是最近被使用且使用频率较高的数据。</p>
+<h2><a rel="noopener noreferrer" id="LRUHARD_25"></a>模拟设计LRU缓存结构【HARD】</h2>
+<p>进入正题</p>
+<h3><a rel="noopener noreferrer" id="_27"></a>题干</h3>
+<p><img alt="在这里插入图片描述" src="./posts/assets/132548878-02-5f1f6e5ede.png" loading="lazy"></p>
+<pre><code class="prism language-java">输入&#xff1a;
+<span class="token punctuation">[</span><span class="token string">&#34;set&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;set&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;set&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;set&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;get&#34;</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token number">2</span>
+
+返回值&#xff1a;
+<span class="token punctuation">[</span><span class="token string">&#34;null&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;null&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;1&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;null&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;-1&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;null&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;-1&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;3&#34;</span><span class="token punctuation">,</span><span class="token string">&#34;4&#34;</span><span class="token punctuation">]</span>
+
+说明&#xff1a;
+我们将缓存看成一个队列&#xff0c;最后一个参数为<span class="token number">2</span>代表capacity&#xff0c;所以
+<span class="token class-name">Solution</span> s <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">Solution</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+s<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//将(1,1)插入缓存&#xff0c;缓存是{&#34;1&#34;&#61;1}&#xff0c;set操作返回&#34;null&#34;</span>
+s<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//将(2,2)插入缓存&#xff0c;缓存是{&#34;2&#34;&#61;2&#xff0c;&#34;1&#34;&#61;1}&#xff0c;set操作返回&#34;null&#34;</span>
+output<span class="token operator">&#61;</span>s<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">// 因为get(1)操作&#xff0c;缓存更新&#xff0c;缓存是{&#34;1&#34;&#61;1&#xff0c;&#34;2&#34;&#61;2}&#xff0c;get操作返回&#34;1&#34;</span>
+s<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//将(3,3)插入缓存&#xff0c;缓存容量是2&#xff0c;故去掉某尾的key-value&#xff0c;缓存是{&#34;3&#34;&#61;3&#xff0c;&#34;1&#34;&#61;1}&#xff0c;set操作返回&#34;null&#34; </span>
+output<span class="token operator">&#61;</span>s<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">// 因为get(2)操作&#xff0c;不存在对应的key&#xff0c;故get操作返回&#34;-1&#34;</span>
+s<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">//将(4,4)插入缓存&#xff0c;缓存容量是2&#xff0c;故去掉某尾的key-value&#xff0c;缓存是{&#34;4&#34;&#61;4&#xff0c;&#34;3&#34;&#61;3}&#xff0c;set操作返回&#34;null&#34; </span>
+output<span class="token operator">&#61;</span>s<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">// 因为get(1)操作&#xff0c;不存在对应的key&#xff0c;故get操作返回&#34;-1&#34;</span>
+output<span class="token operator">&#61;</span>s<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//因为get(3)操作&#xff0c;缓存更新&#xff0c;缓存是{&#34;3&#34;&#61;3&#xff0c;&#34;4&#34;&#61;4}&#xff0c;get操作返回&#34;3&#34;</span>
+output<span class="token operator">&#61;</span>s<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">//因为get(4)操作&#xff0c;缓存更新&#xff0c;缓存是{&#34;4&#34;&#61;4&#xff0c;&#34;3&#34;&#61;3}&#xff0c;get操作返回&#34;4&#34;   </span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_51"></a>解题思路</h3>
+<p>使用<font color="red"><strong>双向链表&#43;哈希表</strong></font>的方式解决该题。这是因为&#xff1a;于是我们可以想到数据结构的组合&#xff1a;</p>
+<ol><li><strong>访问O(1)很容易想到了哈希表</strong></li><li>插入O(1)的数据结构有很多&#xff0c;但是<strong>如果访问到了这个地方再选择插入&#xff0c;且超出长度要在O(1)之内删除&#xff0c;我们可以想到用链表&#xff0c;可以用哈希表的key值对应链表的节点&#xff0c;完成直接访问</strong>。</li><li>我们还需要把每次访问的key值节点加入链表头&#xff0c;同时删掉链表尾&#xff0c;所以<strong>选择双向链表&#xff0c;便于删除与移动</strong>。</li></ol>
+<p>这里顺便再补充一下哈希表和双向链表的一些背景知识。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/132548878-03-80605db508.png" loading="lazy"></p>
+<h3><a rel="noopener noreferrer" id="_62"></a>代码实现</h3>
+<blockquote>
+<p><strong>基本数据结构</strong>&#xff1a;<font color="red"><strong>双向链表</strong></font><br />
+<strong>辅助数据结构</strong>&#xff1a;<font color="red"><strong>哈希表</strong></font><br />
+<strong>算法</strong>&#xff1a;<font color="red"><strong>无</strong></font><br />
+<strong>技巧</strong>&#xff1a;<font color="red"><strong>哈希查找</strong></font></p>
+</blockquote>
+<p>Java代码实现如下&#xff0c;分为三部分&#xff1a;</p>
+<ol><li>定义双向链表、虚拟头节点、虚拟尾节点、哈希表、哈希容量、LRU容量</li><li>初始化双向链表结构</li><li>编写get方法和set方法&#xff0c;明确需要的两个辅助函数&#xff1a;移动到头部【更新频率】和删除尾节点【缩小容量】、</li><li>编写辅助函数&#xff0c;明确用到的基本数据操作&#xff1a;插入元素到指定位置和删除元素</li></ol>
+<p><strong>数据结构及算法</strong>&#xff1a;<font color="red"><strong>双向链表|哈希表&#43;哈希查找</strong></font></p>
+<pre><code class="prism language-java"><span class="token keyword">import</span> <span class="token import"><span class="token namespace">java<span class="token punctuation">.</span>util<span class="token punctuation">.</span></span><span class="token operator">*</span></span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Solution</span> <span class="token punctuation">{<!-- --></span>
+
+    <span class="token comment">// 1 定义双向链表结构&#xff1a;构建一个双向链表的类&#xff0c;记录key值与val值&#xff0c;同时一前一后两个指针</span>
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">DLinkedNode</span>  <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 链表的data</span>
+        <span class="token keyword">int</span> key<span class="token punctuation">;</span>
+        <span class="token keyword">int</span> val<span class="token punctuation">;</span>
+        <span class="token comment">// 前驱节点</span>
+        <span class="token class-name">DLinkedNode</span>  pre<span class="token punctuation">;</span>
+        <span class="token comment">// 后继节点</span>
+        <span class="token class-name">DLinkedNode</span>  next<span class="token punctuation">;</span>
+        <span class="token comment">// 初始化链表节点</span>
+        <span class="token keyword">public</span> <span class="token class-name">DLinkedNode</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">public</span> <span class="token class-name">DLinkedNode</span> <span class="token punctuation">(</span><span class="token keyword">int</span> key<span class="token punctuation">,</span> <span class="token keyword">int</span> val<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>key <span class="token operator">&#61;</span> key<span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>val <span class="token operator">&#61;</span> val<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 2 定义哈希表&#xff1a;用哈希表存储key和链表节点&#xff0c;这样可以根据key在哈希表中直接锁定链表节点&#xff0c;从而实现链表中到O(1)时间访问链表任意节点</span>
+    <span class="token keyword">private</span> <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">,</span> <span class="token class-name">DLinkedNode</span><span class="token punctuation">&gt;</span></span> map <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// LRU存储元素数量</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> size<span class="token punctuation">;</span>
+    <span class="token comment">// LRU容量</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> capacity<span class="token punctuation">;</span>
+    <span class="token comment">// LRU虚拟头尾节点</span>
+    <span class="token keyword">private</span> <span class="token class-name">DLinkedNode</span> dummyHead<span class="token punctuation">,</span> dummyTail<span class="token punctuation">;</span>
+
+    <span class="token comment">// 3 初始化LRU</span>
+    <span class="token keyword">public</span> <span class="token class-name">Solution</span><span class="token punctuation">(</span><span class="token keyword">int</span> capacity<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 设置链表虚拟头和虚拟尾</span>
+        dummyHead <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">DLinkedNode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dummyTail <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">DLinkedNode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>capacity <span class="token operator">&#61;</span> capacity<span class="token punctuation">;</span>
+        size <span class="token operator">&#61;</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        dummyHead<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> dummyTail<span class="token punctuation">;</span>
+        dummyTail<span class="token punctuation">.</span>pre <span class="token operator">&#61;</span> dummyHead<span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 4 set方法&#xff1a;用到了moveToHead【更新频率】和removeTail【缩小容量】</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">set</span><span class="token punctuation">(</span><span class="token keyword">int</span> key<span class="token punctuation">,</span> <span class="token keyword">int</span> value<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 查看hash表中是否存在</span>
+        <span class="token class-name">DLinkedNode</span> node <span class="token operator">&#61;</span> map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>node <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token comment">// 如果 key 不存在&#xff0c;创建一个新节点</span>
+            <span class="token class-name">DLinkedNode</span> newNode <span class="token operator">&#61;</span> <span class="token keyword">new</span> <span class="token class-name">DLinkedNode</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 新节点添加进哈希表</span>
+            map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> newNode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            size<span class="token operator">&#43;&#43;</span><span class="token punctuation">;</span>
+            <span class="token comment">// 新节点添加至双向链表的头部</span>
+            <span class="token function">addNode</span><span class="token punctuation">(</span>dummyHead<span class="token punctuation">,</span> newNode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>size <span class="token operator">&gt;</span> capacity<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+                <span class="token comment">// 如果超出容量&#xff0c;删除双向链表的尾部节点</span>
+                <span class="token class-name">DLinkedNode</span> delNode <span class="token operator">&#61;</span> <span class="token function">removeTail</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 删除哈希表中对应的项</span>
+                map<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>delNode<span class="token punctuation">.</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                size<span class="token operator">--</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{<!-- --></span>
+            node<span class="token punctuation">.</span>val <span class="token operator">&#61;</span> value<span class="token punctuation">;</span>
+            <span class="token function">moveToHead</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 5 get方法: 用到了moveToHead【更新频率】</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">get</span><span class="token punctuation">(</span><span class="token keyword">int</span> key<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 1 找到节点位置</span>
+        <span class="token class-name">DLinkedNode</span> node <span class="token operator">&#61;</span> map<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>node <span class="token operator">&#61;&#61;</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+            <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 2 移动节点到最近访问</span>
+        <span class="token function">moveToHead</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> node<span class="token punctuation">.</span>val<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token comment">// 辅助方法&#xff1a;将某个节点移动到头节点【更新频率】</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span>  <span class="token function">moveToHead</span><span class="token punctuation">(</span><span class="token class-name">DLinkedNode</span> node<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token function">removeNode</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">addNode</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>dummyHead<span class="token punctuation">,</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 辅助方法&#xff1a; 删除尾节点&#xff0c;当前节点插入到虚拟头节点后边最新一位【缩小容量】</span>
+    <span class="token keyword">private</span> <span class="token class-name">DLinkedNode</span> <span class="token function">removeTail</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        <span class="token comment">// 待删除节点</span>
+        <span class="token class-name">DLinkedNode</span> delNode <span class="token operator">&#61;</span> <span class="token keyword">this</span><span class="token punctuation">.</span>dummyTail<span class="token punctuation">.</span>pre<span class="token punctuation">;</span>
+        <span class="token function">removeNode</span><span class="token punctuation">(</span>delNode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> delNode<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 基本操作&#xff1a;插入某个节点后面</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">addNode</span><span class="token punctuation">(</span><span class="token class-name">DLinkedNode</span> preNode<span class="token punctuation">,</span> <span class="token class-name">DLinkedNode</span> node<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        node<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> preNode<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        node<span class="token punctuation">.</span>next<span class="token punctuation">.</span>pre <span class="token operator">&#61;</span> node<span class="token punctuation">;</span>
+        node<span class="token punctuation">.</span>pre <span class="token operator">&#61;</span> preNode<span class="token punctuation">;</span>
+        preNode<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> node<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 基本操作&#xff1a;删除任意位置节点</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">removeNode</span><span class="token punctuation">(</span><span class="token class-name">DLinkedNode</span> node<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+        node<span class="token punctuation">.</span>pre<span class="token punctuation">.</span>next <span class="token operator">&#61;</span> node<span class="token punctuation">.</span>next<span class="token punctuation">;</span>
+        node<span class="token punctuation">.</span>next<span class="token punctuation">.</span>pre <span class="token operator">&#61;</span> node<span class="token punctuation">.</span>pre<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">/**
+ * Your Solution object will be instantiated and called as such:
+ * Solution solution &#61; new Solution(capacity);
+ * int output &#61; solution.get(key);
+ * solution.set(key,value);
+ */</span>
+</code></pre>
+<h3><a rel="noopener noreferrer" id="_196"></a>复杂度分析</h3>
+<p>使用双向链表和哈希表实现LRU缓存可以使查找和删除操作都在O(1)时间内完成&#xff0c;这是因为双向链表支持快速的插入和删除操作&#xff0c;而哈希表支持快速的查找操作。</p>
+<p><strong>空间复杂度</strong>&#xff1a;</p>
+<ol><li>双向链表&#xff1a;双向链表存储了实际的缓存数据项&#xff0c;因此<strong>空间复杂度是O(n)</strong>&#xff0c;其中n是缓存的最大容量。</li><li>哈希表&#xff1a;哈希表存储了键和指向链表节点的指针&#xff0c;因此<strong>空间复杂度也是O(n)</strong>&#xff0c;其中n是缓存的最大容量。</li></ol>
+<p>综合起来&#xff0c;使用双向链表和哈希表实现LRU缓存的空间复杂度为O(n)。</p>
+<p><strong>时间复杂度</strong>&#xff1a;</p>
+<ol><li>插入操作&#xff1a;当向LRU缓存中插入一个新的数据项时&#xff0c;需要在双向链表的头部插入节点&#xff0c;并在哈希表中插入键和指针。这两个操作的时间复杂度都是O(1)。</li><li>访问操作&#xff1a;当访问一个数据项时&#xff0c;需要将该节点移动到双向链表的头部&#xff0c;这涉及到双向链表节点的删除和插入操作&#xff0c;以及哈希表的更新操作&#xff0c;所有这些操作的时间复杂度都是O(1)。</li><li>删除操作&#xff1a;当删除最久未使用的数据项时&#xff0c;需要从双向链表尾部删除节点&#xff0c;并在哈希表中删除对应的键和指针。这两个操作的时间复杂度都是O(1)。</li><li>哈希表查找操作&#xff1a;通过哈希表查找某个键对应的链表节点的指针&#xff0c;时间复杂度是O(1)。</li></ol>
+<p>综合起来&#xff0c;使用双向链表和哈希表实现LRU缓存的各项操作的时间复杂度都是O(1)。</p>
+<h2><a rel="noopener noreferrer" id="_213"></a>拓展&#xff1a;哈希表和双向链表</h2>
+<p>补充一些哈希表和双向链表知识</p>
+<h3><a rel="noopener noreferrer" id="_215"></a>哈希表</h3>
+<p>哈希表&#xff08;Hash Table&#xff09;&#xff0c;也被称为散列表&#xff0c;是一种用于存储键值对&#xff08;key-value pairs&#xff09;的数据结构&#xff0c;它允许快速插入、删除和查找操作。哈希表通过使用哈希函数将键映射到数组中的索引位置&#xff0c;从而实现快速的数据存取。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/132548878-04-f500ac455c.png" loading="lazy"></p>
+<p>以下是哈希表的定义和基本特点&#xff1a;</p>
+<ul><li>
+<p><strong>定义&#xff1a;</strong> 哈希表是由一组键值对构成的数据结构&#xff0c;其中每个键是唯一的&#xff0c;而且每个键对应一个值。哈希表通过哈希函数将键转换为数组中的索引&#xff0c;从而将键值对存储在特定的位置上。</p>
+</li><li>
+<p><strong>哈希函数&#xff1a;</strong> 哈希函数是一个将任意大小的输入&#xff08;如键&#xff09;映射为固定大小输出&#xff08;如数组索引&#xff09;的函数。好的哈希函数应该具有以下特点&#xff1a;快速计算、分布均匀、尽可能避免碰撞&#xff08;多个键映射到同一个索引位置&#xff09;。</p>
+</li><li>
+<p><strong>数组&#xff1a;</strong> 哈希表的底层通常是一个数组&#xff0c;数组的每个位置被称为“桶”&#xff08;bucket&#xff09;。每个桶可以存储一个键值对&#xff0c;或者更复杂的情况下&#xff0c;它可能存储一个链表、树或其他数据结构&#xff0c;用于处理碰撞。</p>
+</li><li>
+<p><strong>碰撞处理&#xff1a;</strong> 由于哈希函数可能会将不同的键映射到相同的索引位置&#xff0c;所以碰撞&#xff08;collision&#xff09;是不可避免的。哈希表需要一种策略来处理碰撞&#xff0c;常见的策略包括链地址法&#xff08;使用链表解决碰撞&#xff09;、开放寻址法&#xff08;线性探测、二次探测等&#xff09;、双散列等。</p>
+</li><li>
+<p><strong>基本操作&#xff1a;</strong> 哈希表的基本操作包括插入&#xff08;将键值对插入表中&#xff09;、删除&#xff08;从表中删除一个键值对&#xff09;、查找&#xff08;根据键查找对应的值&#xff09;等。</p>
+</li></ul>
+<p>哈希表的优势在于它<font color="red"><strong>提供了平均时间复杂度为 O(1) 的插入、删除和查找操作</strong></font>。因此<font color="red"><strong>哈希表常用来统计频率、快速检验某个元素是否出现过等</strong></font></p>
+<h4><a rel="noopener noreferrer" id="_232"></a>时间复杂度</h4>
+<p>哈希表的插入、删除和查找操作的平均时间复杂度通常被认为是O(1)&#xff0c;即常数时间。但需要注意的是&#xff0c;这个平均情况下的时间复杂度是在哈希函数能够将键均匀地映射到桶&#xff08;数组位置&#xff09;的情况下成立的。以下是具体操作的时间复杂度&#xff1a;</p>
+<ol><li>
+<p><strong>插入操作&#xff08;Average Case&#xff09;&#xff1a;</strong> 在平均情况下&#xff0c;插入一个键值对到哈希表中的时间复杂度是O(1)。这是因为好的哈希函数能够在常数时间内找到对应的桶&#xff0c;只需简单地将键值对放入桶中。</p>
+</li><li>
+<p><strong>删除操作&#xff08;Average Case&#xff09;&#xff1a;</strong> 在平均情况下&#xff0c;删除一个键值对的时间复杂度也是O(1)。与插入类似&#xff0c;哈希函数可以快速定位到键所对应的桶&#xff0c;然后删除相应的键值对。</p>
+</li><li>
+<p><strong>查找操作&#xff08;Average Case&#xff09;&#xff1a;</strong> 在平均情况下&#xff0c;查找一个键对应的值的时间复杂度也是O(1)。通过哈希函数&#xff0c;可以快速找到键所在的桶&#xff0c;并在常数时间内获取到值。</p>
+</li></ol>
+<p>然而&#xff0c;需要注意以下几点&#xff1a;</p>
+<ul><li>
+<p><strong>最坏情况&#xff1a;</strong> 在一些情况下&#xff0c;哈希表的性能可能不如平均情况好。例如&#xff0c;如果哈希函数产生了大量的冲突&#xff0c;导致多个键映射到同一个桶&#xff0c;那么查找、插入和删除操作的时间复杂度可能会接近O(n)&#xff0c;其中n是哈希表中的元素数量。</p>
+</li><li>
+<p><strong>哈希冲突&#xff1a;</strong> 哈希表的性能关键在于避免哈希冲突&#xff0c;即多个键映射到同一个桶。不同的碰撞解决策略会影响到哈希表的性能。</p>
+</li><li>
+<p><strong>哈希函数的选择&#xff1a;</strong> 好的哈希函数在尽量均匀地将键映射到桶&#xff0c;从而减少冲突&#xff0c;提高平均性能。</p>
+</li></ul>
+<p>总结起来&#xff0c;哈希表的平均时间复杂度为O(1)&#xff0c;但在特定情况下&#xff0c;性能可能会受到哈希冲突等因素的影响。</p>
+<h4><a rel="noopener noreferrer" id="_251"></a>空间复杂度</h4>
+<p>哈希表的插入、删除和查找操作的空间复杂度通常被认为是O(n)&#xff0c;其中n是哈希表中存储的键值对数量。然而&#xff0c;实际的空间复杂度可能会受到哈希函数的质量、冲突处理策略以及底层数据结构的影响。</p>
+<p>以下是哈希表各操作的空间复杂度&#xff1a;</p>
+<ol><li>
+<p><strong>插入操作&#xff1a;</strong> 插入操作的空间复杂度是O(1)&#xff0c;因为只需为新的键值对分配内存空间&#xff0c;不考虑已有的键值对数量。但是&#xff0c;如果哈希表中的负载因子过高&#xff0c;可能需要重新调整哈希表的大小&#xff08;rehashing&#xff09;&#xff0c;这可能会引起更多的内存分配和复制操作。</p>
+</li><li>
+<p><strong>删除操作&#xff1a;</strong> 删除操作的空间复杂度是O(1)&#xff0c;类似于插入操作&#xff0c;只需释放被删除节点的内存空间。</p>
+</li><li>
+<p><strong>查找操作&#xff1a;</strong> 查找操作的空间复杂度是O(1)&#xff0c;因为在查找时不会引入新的内存分配。</p>
+</li></ol>
+<p>然而&#xff0c;需要注意以下几点&#xff1a;</p>
+<ul><li>
+<p><strong>额外空间&#xff1a;</strong> 虽然单次操作的空间复杂度是O(1)&#xff0c;但是哈希表本身需要占用一定的内存空间来存储桶&#xff08;数组&#xff09;、指针和元数据等。</p>
+</li><li>
+<p><strong>负载因子&#xff1a;</strong> 负载因子是哈希表中实际存储的键值对数量与桶数量之间的比率。当负载因子过高时&#xff0c;哈希表容易发生冲突&#xff0c;可能需要进行调整大小。这可能会导致更多的内存分配和复制操作&#xff0c;增加空间复杂度。</p>
+</li><li>
+<p><strong>调整大小&#xff1a;</strong> 哈希表在插入过程中可能需要动态调整大小&#xff0c;以保持较低的负载因子。这可能会涉及创建新的哈希表&#xff0c;将现有数据复制到新表中&#xff0c;然后释放旧表。这个过程可能导致短时间内的额外内存使用&#xff0c;影响空间复杂度。</p>
+</li></ul>
+<p>综上所述&#xff0c;哈希表的单次插入、删除和查找操作通常具有O(1)的空间复杂度&#xff0c;但整体空间复杂度可能会受到负载因子、调整大小和底层数据结构等因素的影响。</p>
+<h3><a rel="noopener noreferrer" id="_271"></a>双向链表</h3>
+<p>双向链表&#xff08;Doubly Linked List&#xff09;是一种常见的线性数据结构&#xff0c;它与普通链表&#xff08;单向链表&#xff09;不同之处在于&#xff0c;每个节点都包含两个指针&#xff0c;一个指向前一个节点&#xff0c;一个指向后一个节点&#xff0c;从而实现双向的连接。<br />
+<img alt="在这里插入图片描述" src="./posts/assets/132548878-05-b1b289ab43.png" loading="lazy"></p>
+<p>以下是双向链表的定义和特点&#xff1a;</p>
+<ul><li>
+<p><strong>定义&#xff1a;</strong> 双向链表由多个节点组成&#xff0c;每个节点都包含三个部分&#xff1a;一个数据域用于存储数据&#xff0c;一个指向前一个节点的指针&#xff08;通常称为<code>prev</code>指针或<code>previous</code>指针&#xff09;&#xff0c;一个指向后一个节点的指针&#xff08;通常称为<code>next</code>指针或<code>next</code>域&#xff09;。</p>
+</li><li>
+<p><strong>双向连接&#xff1a;</strong> 每个节点都与其前一个节点和后一个节点相连接&#xff0c;形成一个双向链表。这使得在双向链表中&#xff0c;你可以从任意节点开始&#xff0c;向前或向后遍历链表。</p>
+</li><li>
+<p><strong>插入和删除操作&#xff1a;</strong> <font color="red"><strong>双向链表相对于单向链表的一个优势在于插入和删除操作的效率更高</strong></font>。在双向链表中&#xff0c;插入和删除一个节点时&#xff0c;只需改变相邻节点的指针&#xff0c;不需要像单向链表那样遍历到前一个节点。</p>
+</li><li>
+<p><strong>操作灵活性&#xff1a;</strong> 由于双向链表允许双向遍历&#xff0c;它在某些场景下更灵活。例如&#xff0c;可以从链表尾部向前遍历&#xff0c;这在某些问题中是有用的。</p>
+</li><li>
+<p><strong>内存消耗&#xff1a;</strong> 相对于单向链表&#xff0c;双向链表需要额外的指针来存储前后节点的引用&#xff0c;因此在内存上会占用更多的空间。</p>
+</li><li>
+<p><strong>双向链表与迭代器&#xff1a;</strong> 双向链表的双向遍历性质使得它在实现迭代器&#xff08;Iterator&#xff09;等数据结构时非常有用&#xff0c;因为迭代器可以轻松地向前和向后移动。</p>
+</li></ul>
+<p>总之&#xff0c;双向链表是一种具有双向连接能力的线性数据结构&#xff0c;它在插入、删除和遍历操作上有着一些优势&#xff0c;但也会占用更多的内存空间。它在一些特定的应用场景中非常有用。</p>
+<h4><a rel="noopener noreferrer" id="_291"></a>时间复杂度</h4>
+<p>双向链表&#xff08;Doubly Linked List&#xff09;的插入、删除和查找操作的时间复杂度取决于操作的位置。以下是双向链表各操作的时间复杂度&#xff1a;</p>
+<ol><li>
+<p><strong>插入操作&#xff1a;</strong></p>
+<ul><li>在链表开头插入&#xff1a;O(1) - 无论链表多大&#xff0c;只需将新节点插入到头部并更新相应的指针。</li><li>在链表结尾插入&#xff1a;O(1) - 类似于在开头插入&#xff0c;将新节点插入到尾部并更新指针。</li><li>在给定位置插入&#xff1a;O(n) - 如果需要插入到链表的中间位置&#xff0c;则需要先找到目标位置&#xff0c;这可能需要遍历链表。</li></ul>
+</li><li>
+<p><strong>删除操作&#xff1a;</strong></p>
+<ul><li>删除头节点&#xff1a;O(1) - 直接更新头指针。</li><li>删除尾节点&#xff1a;O(1) - 直接更新尾指针。</li><li>删除给定位置的节点&#xff1a;O(n) - 需要先找到目标节点&#xff0c;这可能需要遍历链表。</li></ul>
+</li><li>
+<p><strong>查找操作&#xff1a;</strong></p>
+<ul><li>根据值查找节点&#xff1a;O(n) - 需要遍历链表以找到匹配的节点。</li><li>根据索引查找节点&#xff1a;O(n) - 需要从链表的头部或尾部开始遍历&#xff0c;以找到指定索引的节点。</li></ul>
+</li></ol>
+<p>需要注意的是&#xff0c;上述时间复杂度是针对双向链表的平均和最坏情况。在特定情况下&#xff0c;如删除或插入开头或结尾时&#xff0c;双向链表的操作是高效的。但是在查找和在中间位置插入或删除时&#xff0c;双向链表需要遍历一部分或全部节点&#xff0c;因此这些操作会相对较慢。</p>
+<p>总结起来&#xff0c;双向链表在插入和删除开头、结尾的情况下具有常数时间复杂度&#xff0c;但在查找和中间位置的插入/删除操作上具有线性时间复杂度。这使得它在一些情况下很有用&#xff0c;但在其他情况下可能不如其他数据结构&#xff08;如哈希表或平衡树&#xff09;高效。</p>
+<h4><a rel="noopener noreferrer" id="_314"></a>空间复杂度</h4>
+<p>双向链表的插入、删除和查找操作的空间复杂度主要取决于链表中节点的数量&#xff0c;通常是O(n)&#xff0c;其中n是链表中的节点数。以下是双向链表各操作的空间复杂度&#xff1a;</p>
+<ol><li>
+<p><strong>插入操作&#xff1a;</strong> 插入操作的空间复杂度是O(1)&#xff0c;因为只需为新节点分配内存空间&#xff0c;并更新相应的指针。插入操作不涉及额外的内存分配&#xff0c;而是将新节点添加到链表中。</p>
+</li><li>
+<p><strong>删除操作&#xff1a;</strong> 删除操作的空间复杂度也是O(1)&#xff0c;类似于插入操作&#xff0c;只需释放被删除节点的内存空间&#xff0c;并更新相邻节点的指针。</p>
+</li><li>
+<p><strong>查找操作&#xff1a;</strong> 查找操作的空间复杂度是O(1)&#xff0c;因为在查找时不会引入新的内存分配。</p>
+</li></ol>
+<p>需要注意以下几点&#xff1a;</p>
+<ul><li>
+<p><strong>额外空间&#xff1a;</strong> 除了节点本身所需的内存空间&#xff0c;双向链表需要一些额外的内存来存储指向前后节点的指针&#xff0c;这会占用一些额外的空间。</p>
+</li><li>
+<p><strong>节点数量&#xff1a;</strong> 插入、删除和查找操作的空间复杂度不会随链表中节点数量的增加而增加。这使得双向链表在需要频繁插入和删除操作的情况下比较有优势。</p>
+</li><li>
+<p><strong>碰撞处理&#xff1a;</strong> 虽然不像哈希表那样会涉及哈希函数和冲突处理&#xff0c;但在某些情况下&#xff0c;双向链表可能需要额外的内存空间来处理一些特殊情况&#xff0c;例如特定的节点操作或额外的指针。</p>
+</li></ul>
+<p>总结起来&#xff0c;双向链表的插入、删除和查找操作通常具有O(1)的空间复杂度&#xff0c;但链表本身需要一些额外的内存空间来存储节点间的指针。在需要频繁插入和删除操作的情况下&#xff0c;双向链表可能比其他数据结构更适用。</p>
